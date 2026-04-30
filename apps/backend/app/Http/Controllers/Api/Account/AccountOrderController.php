@@ -22,11 +22,11 @@ final class AccountOrderController extends TenantAccountController
         $scoped = $request->duplicate(query: [...$request->query->all(), 'company_id' => $this->tenantCompanyId($request)]);
 
         /** @phpstan-ignore-next-line */
-        $paginator = $this->orderService->paginate($scoped);
+        $paginator = $this->orderService->paginate($scoped, withOperationalRoute: false);
 
         /** @phpstan-ignore-next-line */
         $paginator->getCollection()->transform(
-            fn (Order $order): array => OrderJson::listRow($order)
+            fn (Order $order): array => OrderJson::portalListRow($order)
         );
 
         return ApiResponses::paginated($paginator, 'items');
@@ -39,11 +39,12 @@ final class AccountOrderController extends TenantAccountController
         /** @phpstan-ignore-next-line */
         $order->loadMissing([
             'company:id,name,city',
-            'booking:id,scheduled_date',
-            'operationalRoute:id,name,route_status,scheduled_date',
+            'booking:id,scheduled_date,booking_status',
             'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(250),
+            'items' => fn ($q) => $q->orderBy('created_at'),
+            'invoices' => fn ($q) => $q->orderByDesc('created_at')->limit(1),
         ]);
 
-        return ApiResponses::success(OrderJson::detail($order));
+        return ApiResponses::success(OrderJson::portalDetail($order));
     }
 }

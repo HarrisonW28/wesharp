@@ -15,6 +15,14 @@ const MetaSchema = z
   })
   .passthrough();
 
+/** Present only when the backend has a real subscription / programme record (never fabricated). */
+export const TenantSubscriptionSummarySchema = z.object({
+  plan_name: z.string(),
+  status: z.string().nullable().optional(),
+  current_period_end: z.string().nullable().optional(),
+  summary: z.string().nullable().optional(),
+});
+
 export const DashboardResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({
@@ -52,6 +60,7 @@ export const DashboardResponseSchema = z.object({
           updated_at: z.string().nullable(),
         })
         .nullable(),
+      subscription: TenantSubscriptionSummarySchema.nullable().optional(),
     }),
     basis: z.record(z.string(), z.string()).optional(),
   }),
@@ -80,14 +89,98 @@ export const BookingDetailEnvelopeSchema = z.object({
   data: z.record(z.string(), z.unknown()),
 });
 
+/** Tenant booking detail (`GET /api/account/bookings/{id}`) — customer-safe fields only from the API. */
+export const AccountBookingDetailDataSchema = BookingRowSchema.extend({
+  customer_cancellable: z.boolean().optional(),
+  customer_notes: z.string().nullable().optional(),
+  requested_collection_date: z.string().nullable().optional(),
+  requested_time_window_start: z.string().nullable().optional(),
+  requested_time_window_end: z.string().nullable().optional(),
+  confirmed_collection_date: z.string().nullable().optional(),
+  confirmed_time_window_start: z.string().nullable().optional(),
+  confirmed_time_window_end: z.string().nullable().optional(),
+  created_at: z.string().nullable().optional(),
+  company: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      city: z.string().nullable().optional(),
+      phone: z.string().nullable().optional(),
+      billing_email: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+  location: z
+    .object({
+      id: z.string(),
+      label: z.string().nullable().optional(),
+      line_one: z.string().nullable().optional(),
+      line_two: z.string().nullable().optional(),
+      city: z.string().nullable().optional(),
+      postcode: z.string().nullable().optional(),
+      country: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+  contact: z
+    .object({
+      id: z.string(),
+      first_name: z.string().nullable().optional(),
+      last_name: z.string().nullable().optional(),
+      email: z.string().nullable().optional(),
+      phone: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+  orders: z
+    .array(
+      z.object({
+        id: z.string(),
+        status: z.string().nullable().optional(),
+        knife_count: z.number().nullable().optional(),
+        total_pence: z.number().optional(),
+        currency: z.string().nullable().optional(),
+      }),
+    )
+    .optional(),
+}).passthrough();
+
+export const AccountBookingDetailResponseSchema = z.object({
+  success: z.literal(true),
+  data: AccountBookingDetailDataSchema,
+});
+
+export const AccountPortalBookingSummarySchema = z.object({
+  id: z.string(),
+  scheduled_date: z.string().nullable().optional(),
+  status: z.string().nullable().optional(),
+});
+
 export const OrderRowTenantSchema = z
   .object({
     id: z.string(),
+    display_reference: z.string().optional(),
     status: z.string().nullable().optional(),
+    payment_status: z.string().nullable().optional(),
     total_pence: z.number().nullable().optional(),
+    subtotal_pence: z.number().nullable().optional(),
+    tax_pence: z.number().nullable().optional(),
+    formatted_amount: z.string().nullable().optional(),
+    formatted_total: z.string().nullable().optional(),
+    formatted_subtotal: z.string().nullable().optional(),
+    formatted_tax: z.string().nullable().optional(),
     currency: z.string().nullable().optional(),
     knife_count: z.number().nullable().optional(),
     scheduled_date: z.string().nullable().optional(),
+    booking: AccountPortalBookingSummarySchema.nullable().optional(),
+    company: z
+      .object({
+        name: z.string().nullable().optional(),
+        city: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
+    created_at: z.string().nullable().optional(),
     updated_at: z.string().nullable().optional(),
   })
   .passthrough();
@@ -96,6 +189,48 @@ export const PaginatedTenantOrdersSchema = z.object({
   success: z.literal(true),
   data: z.object({ items: z.array(OrderRowTenantSchema) }),
   meta: MetaSchema.optional(),
+});
+
+export const AccountPortalOrderKnifeSchema = z.object({
+  tag_id: z.string().nullable().optional(),
+  label: z.string().nullable().optional(),
+  knife_type: z.string().nullable().optional(),
+  brand: z.string().nullable().optional(),
+  status: z.string().nullable().optional(),
+});
+
+export const AccountPortalOrderItemSchema = z.object({
+  description: z.string(),
+  quantity: z.number(),
+  unit_amount_pence: z.number(),
+  line_total_pence: z.number(),
+  formatted_unit_amount: z.string(),
+  formatted_line_total: z.string(),
+});
+
+export const AccountPortalOrderInvoiceSchema = z.object({
+  id: z.string(),
+  invoice_number: z.string().nullable().optional(),
+  status: z.string().nullable().optional(),
+  subtotal_pence: z.number(),
+  tax_pence: z.number(),
+  total_pence: z.number(),
+  formatted_subtotal: z.string(),
+  formatted_tax: z.string(),
+  formatted_total: z.string(),
+});
+
+/** Tenant order detail (`GET /api/account/orders/{id}`) — customer-safe payload. */
+export const AccountOrderDetailDataSchema = OrderRowTenantSchema.extend({
+  completed_at: z.string().nullable().optional(),
+  knives: z.array(AccountPortalOrderKnifeSchema).optional(),
+  items: z.array(AccountPortalOrderItemSchema).optional(),
+  invoice: AccountPortalOrderInvoiceSchema.nullable().optional(),
+}).passthrough();
+
+export const AccountOrderDetailResponseSchema = z.object({
+  success: z.literal(true),
+  data: AccountOrderDetailDataSchema,
 });
 
 export const KnifeRowTenantSchema = z

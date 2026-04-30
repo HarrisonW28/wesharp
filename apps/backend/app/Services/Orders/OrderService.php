@@ -20,16 +20,20 @@ final class OrderService
         private CompleteOrderAction $completeOrderAction,
     ) {}
 
-    public function paginate(Request $request): LengthAwarePaginator
+    public function paginate(Request $request, bool $withOperationalRoute = true): LengthAwarePaginator
     {
         $perPage = min(75, max(1, (int) $request->query('per_page', 20)));
 
+        $with = [
+            'company:id,name,city',
+            'booking:id,scheduled_date,booking_status',
+        ];
+        if ($withOperationalRoute) {
+            $with[] = 'operationalRoute:id,name,route_status,scheduled_date';
+        }
+
         $query = Order::query()
-            ->with([
-                'company:id,name,city',
-                'booking:id,scheduled_date',
-                'operationalRoute:id,name,route_status,scheduled_date',
-            ])
+            ->with($with)
             ->orderByDesc('created_at');
 
         if (($v = trim((string) $request->query('q', ''))) !== '') {

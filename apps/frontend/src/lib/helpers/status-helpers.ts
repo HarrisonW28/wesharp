@@ -5,6 +5,30 @@ export function humanizeUnderscored(value: string | null | undefined): string {
   return s === "" ? "—" : s.replace(/_/g, " ");
 }
 
+/** Bucketed labels for customer portal (maps several internal statuses to a small friendly set). */
+export function customerBookingStatusLabel(status: string): string {
+  const key = status.trim().toLowerCase();
+  if (key === "requested") {
+    return "Requested";
+  }
+  if (key === "confirmed" || key === "assigned_to_route") {
+    return "Confirmed";
+  }
+  if (key === "collected" || key === "in_sharpening" || key === "quality_checked" || key === "returned") {
+    return "In progress";
+  }
+  if (key === "completed" || key === "converted_to_order") {
+    return "Completed";
+  }
+  if (key === "cancelled" || key === "no_show") {
+    return "Cancelled";
+  }
+  if (key === "draft") {
+    return "Draft";
+  }
+  return humanizeUnderscored(key);
+}
+
 export function bookingStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     [BOOKING_STATUS.DRAFT]: "Draft",
@@ -60,6 +84,24 @@ export function orderStatusLabel(status: string): string {
   };
   const key = status.trim();
   return labels[key] ?? humanizeUnderscored(key);
+}
+
+/** Customer portal — short, non-technical fulfilment wording. */
+export function customerOrderStatusLabel(status: string | null | undefined): string {
+  const key = (status ?? "").trim().toLowerCase();
+  if (key === ORDER_STATUS.DRAFT) {
+    return "Being prepared";
+  }
+  if (key === ORDER_STATUS.ACTIVE) {
+    return "In progress";
+  }
+  if (key === ORDER_STATUS.COMPLETED) {
+    return "Completed";
+  }
+  if (key === ORDER_STATUS.CANCELLED) {
+    return "Cancelled";
+  }
+  return humanizeUnderscored(key);
 }
 
 export function routeStatusLabel(status: string): string {

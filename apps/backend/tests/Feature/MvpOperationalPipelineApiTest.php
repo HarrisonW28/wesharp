@@ -187,9 +187,16 @@ final class MvpOperationalPipelineApiTest extends TestCase
 
             $this->withHeaders($tH)->getJson('/api/account/dashboard')->assertOk()->assertJsonPath('success', true);
 
-            $this->withHeaders($tH)->getJson('/api/account/orders/'.$orderId)->assertOk()
-                /** @phpstan-ignore-next-line */
-                ->assertJsonPath('data.id', $orderId);
+            $orderDetail = $this->withHeaders($tH)->getJson('/api/account/orders/'.$orderId)->assertOk();
+            /** @phpstan-ignore-next-line */
+            $orderDetail->assertJsonPath('data.id', $orderId);
+            /** @phpstan-ignore-next-line */
+            $payload = $orderDetail->json('data');
+            self::assertIsArray($payload);
+            self::assertArrayNotHasKey('company_id', $payload);
+            self::assertArrayNotHasKey('booking_id', $payload);
+            self::assertArrayNotHasKey('route_id', $payload);
+            self::assertArrayHasKey('display_reference', $payload);
 
             $listInvoices = $this->withHeaders($tH)->getJson('/api/account/invoices?per_page=50');
             $listInvoices->assertOk();

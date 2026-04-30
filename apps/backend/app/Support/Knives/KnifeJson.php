@@ -7,6 +7,19 @@ use App\Models\Knife;
 
 final class KnifeJson
 {
+    /** Customer portal — no company/order/booking identifiers. */
+    /** @return array<string, mixed> */
+    public static function portalSummary(Knife $knife): array
+    {
+        return [
+            'tag_id' => $knife->tag_id,
+            'label' => $knife->label,
+            'knife_type' => $knife->knife_type,
+            'brand' => $knife->brand,
+            'status' => $knife->knife_status?->value,
+        ];
+    }
+
     /** @return array<string, mixed> */
     public static function summary(Knife $knife): array
     {

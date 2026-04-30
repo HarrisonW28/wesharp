@@ -2,12 +2,29 @@
 
 namespace App\Support\Portal;
 
+use App\Enums\BookingStatus;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 
 final class PortalBookingPayload
 {
+    /**
+     * Mirrors {@see \App\Policies\BookingPolicy::cancel()} for tenant customers — single source for the portal UI.
+     */
+    public static function customerCanCancel(Booking $booking): bool
+    {
+        if ($booking->assigned_route_id !== null) {
+            return false;
+        }
+
+        if ($booking->orders()->exists()) {
+            return false;
+        }
+
+        return in_array($booking->booking_status, [BookingStatus::Requested, BookingStatus::Confirmed], true);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -23,6 +40,8 @@ final class PortalBookingPayload
             $row['currency'],
         );
 
+        $row['customer_cancellable'] = self::customerCanCancel($booking);
+
         return $row;
     }
 
@@ -37,8 +56,6 @@ final class PortalBookingPayload
             'company:id,name,city,phone,billing_email',
             'location',
             'contact',
-            'assignedRoute:id,name,route_status,scheduled_date',
-            'routeStop:id,sequence,route_stop_status',
             'orders' => fn ($q) => $q->select('id', 'company_id', 'booking_id', 'order_status', 'total_pence', 'currency', 'knife_count')->limit(50),
         ]);
 
@@ -67,17 +84,6 @@ final class PortalBookingPayload
                 'last_name' => $booking->contact->last_name,
                 'email' => $booking->contact->email,
                 'phone' => $booking->contact->phone,
-            ] : null,
-            'assigned_route' => $booking->assignedRoute !== null ? [
-                'id' => (string) $booking->assignedRoute->id,
-                'name' => $booking->assignedRoute->name,
-                'route_status' => $booking->assignedRoute->route_status?->value,
-                'scheduled_date' => $booking->assignedRoute->scheduled_date?->format('Y-m-d'),
-            ] : null,
-            'route_stop' => $booking->routeStop ? [
-                'id' => (string) $booking->routeStop->id,
-                'sequence' => $booking->routeStop->sequence,
-                'route_stop_status' => $booking->routeStop->route_stop_status?->value,
             ] : null,
             'orders' => $booking->relationLoaded('orders') ? $booking->orders->map(static fn ($o): array => [
                 'id' => (string) $o->id,
