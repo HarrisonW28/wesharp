@@ -43,3 +43,27 @@ Criteria below assume Clerk auth, internal **`staff`** middleware, and permissio
 - [ ] **`/admin/routes/.../stops/[stopId]`** shows contact + workflow buttons; **`PUT`** saves knife counts / damage strings; **`tel:` / Google Maps links** behave on device.
 - [ ] Route Manager layout omits **`AdminShell`** sidebar (**`StaffRouteGate`** only).
 - [ ] **`src/app/manifest.ts`** publishes web app manifest; **`/offline`** placeholder reachable.
+
+## Orders (`/admin/orders`)
+
+- [ ] List loads **`GET /api/admin/orders`** with URL-synced pagination; **loading**, **empty**, and **error + Retry** are distinct UI states (not only toasts).
+
+## Orders — create
+
+- [ ] **New order** validates UUIDs (**`company_id`**, **`booking_id`**) ; **`POST /api/admin/orders`** succeeds; toast + redirect **`/admin/orders/{id}`** on happy path.
+
+## Order detail (`/admin/orders/[orderId]`)
+
+- [ ] Loads **`GET /api/admin/orders/{id}`**; shows commercial totals (**`*_pence`** fields mirror API).
+- [ ] **Add one knife**, **Bulk add knives** call **`POST …/add-knife`**, **`POST …/bulk-add-knives`**; manifests refresh (**`knives`** / **`knife_count`**).
+- [ ] **Complete order** invokes **`POST …/complete`** when policy allows (**`completed`** disables button).
+
+## Knives (`/admin/knives`)
+
+- [ ] **`GET /api/admin/knives`** with filters **`tag_id`**, **`q`**, **`status`**, **`company_id`**, **`order_id`** wired from filter panel (**Apply**) + pagination preserves query string.
+
+## Knife detail (`/admin/knives/[knifeId]`)
+
+- [ ] Loads knife detail (**`KnifeDetailResponseSchema`**); workflow buttons gated by transition graph mirrored in **`knife-status-workflow.ts`** vs backend **`KnifeStatusTransitions`**.
+- [ ] **`POST`** transition failures surface **toast error** (**422**) after server round-trip.
+- [ ] **Report issue** requires **`damage_notes`**; **`timeline`** renders **`audit_logs`** for **`App\Models\Knife`**.

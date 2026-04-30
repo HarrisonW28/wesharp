@@ -33,9 +33,9 @@ WeSharp MVP tables (`2026_04_29_*` migrations):
 | `**routes**`        | Yes     | **Operational batches** (named `OperationalRoute` in code). Column `route_status` (enum string). FK `driver_user_id` → `users` |
 | `bookings`          | Yes     | FKs `company_id`, `company_location_id` → `company_locations`; `scheduled_date`; `booking_status`, `service_type`              |
 | `route_stops`       | Yes     | FK `route_id` → `**routes**`; nullable FK `booking_id` → `bookings`; `sequence`, timestamps                                    |
-| `orders`            | Yes     | FK `company_id`, `booking_id` (cascade)                                                                                        |
+| `orders`            | Yes     | FK **`company_id`**, **`booking_id`** (cascade); nullable FK **`route_id`** → **`routes`**; **`order_status`**; monetary columns **`subtotal_pence`**, **`tax_pence`**, **`total_pence`**, **`discount_pence`**, **`price_per_knife_pence`**, **`knife_count`**; **`payment_status`** (`OrderPaymentStatus`); **`currency`** |
 | `order_items`       | Yes     | FK `order_id` (cascade)                                                                                                        |
-| `knives`            | Yes     | FK `company_id`; nullable `booking_id`, `order_id`                                                                             |
+| `knives`            | Yes     | FK **`company_id`**; nullable **`booking_id`**, **`order_id`**; unique **`tag_id`**; **`knife_status`**; optional **`description`**, attribution FKs (**`sharpened_by_user_id`** …) |
 | `knife_photos`      | Yes     | FK `knife_id`; nullable FK `uploaded_file_id`                                                                                  |
 | `damage_reports`    | Yes     | FK `knife_id`, `company_id`, nullable `order_id`; optional `reported_by_id` → `users`                                          |
 | `invoices`          | Yes     | FK `company_id`, `order_id`; unique `invoice_number`; `issued_on`, `due_on` dates                                              |
@@ -87,8 +87,7 @@ All live under `**App\Enums\`**. Persisted columns use the enum **value** (`->va
 | `BookingStatus`          | `booking_status`                         | Visit/job pipeline                                                                                              |
 | `OperationalRouteStatus` | `routes.route_status`                    | Driver route lifecycle                                                                                          |
 | `RouteStopStatus`        | `route_stop_status`                      | Per-stop progress                                                                                               |
-| `KnifeStatus`            | `knife_status`                           | Per-blade lifecycle                                                                                             |
-| `OrderStatus`            | `order_status`                           | Charge / fulfilment grouping                                                                                    |
+| `OrderPaymentStatus`     | **`payment_status`** on **`orders`**     | Operational expectation of invoice settlement (**distinct** from PSP `payments`) |
 | `InvoiceStatus`          | `invoice_status`                         | AR lifecycle                                                                                                    |
 | `PaymentStatus`          | `payment_status`                         | **Ledger semantics** on `payments`. Values: `unpaid`, `part_paid`, `paid`, `overdue`, `refunded`, `written_off` |
 | `ServiceType`            | `service_type` on bookings/pricing_rules | Collection vs onsite                                                                                            |

@@ -180,14 +180,36 @@ export default function AdminKnifeDetailPage() {
 
   if (knifeQuery.isPending) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-      </div>
+      <>
+        <Breadcrumbs crumbs={[{ label: "Knives", href: "/admin/knives" }, { label: "…" }]} />
+        <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+        </div>
+      </>
     );
   }
 
-  if (knifeQuery.isError || !knifeQuery.data) {
-    return <p className="text-sm text-destructive">{(knifeQuery.error as Error)?.message ?? "Knife not found."}</p>;
+  if (knifeQuery.isError) {
+    return (
+      <>
+        <Breadcrumbs crumbs={[{ label: "Knives", href: "/admin/knives" }, { label: "Error" }]} />
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
+          <p className="font-medium text-destructive">{(knifeQuery.error as Error).message}</p>
+          <Button className="mt-3" type="button" variant="outline" size="sm" onClick={() => void knifeQuery.refetch()}>
+            Retry
+          </Button>
+        </div>
+      </>
+    );
+  }
+
+  if (!knifeQuery.data) {
+    return (
+      <>
+        <Breadcrumbs crumbs={[{ label: "Knives", href: "/admin/knives" }, { label: "Not found" }]} />
+        <p className="text-sm text-muted-foreground">Knife could not be loaded.</p>
+      </>
+    );
   }
 
   const k = knifeQuery.data;

@@ -36,7 +36,19 @@
 
 ---
 
+## Orders & workshop knives
+
+**As intake staff**, I want **orders** grouped by booking and route so manifests match field reality.
+
+**As workshop QA**, I want **distinct knife records** each with **tag ID** and lifecycle status transitions so **every blade stays traceable** from collection **through return**.
+
+**As finance adjacent ops**, I want **commercial totals per order** (**subtotal/discount/VAT**) that update when knives are registered so invoicing aligns with manifested work (**subject to separate invoice tooling**).
+
+**As admin**, I want **filters across knives** (**tag**, **account/order UUID**, **status**) plus an **immutable audit timeline** when disputes arise.
+
+---
+
 ## Non-goals (MVP)
 
 - Automated marketing journeys, enrichment, outbound email sequencing.
-- Full quote-to-cash quoting inside CRM screens (orders/invoices remain read-centric tables).
+- Full quote-to-cash quoting inside CRM screens (orders/invoices remain read-centric tables unless invoice UI landed separately).

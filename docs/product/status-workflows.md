@@ -151,6 +151,22 @@ Authoritative graph: `App\Support\Routes\RouteStopTransitions` — each hop is p
 
 **Column:** `knives.knife_status`
 
+### Transitions (centralised)
+
+Authoritative graph: **`App\Support\Knives\KnifeStatusTransitions`**. Mutation actions (**`MarkKnifeInspectedAction`**, **`Sharpened`**, **`QualityChecked`**, **`Returned`**, **`ReportKnifeIssueAction`**) use **`MarkKnifeTrait::transitionKnife`** inside a **`DB::transaction`**, **`KnifeStatusTransitions::assertCan($from, $to)`** on invalid hops → **422**, and **`AuditRecorder::record`** for every transition (payload includes `from` / `to`).
+
+**Representative hops**
+
+- **`logged`** → `collected`, `inspected`, `issue_reported`
+- **`inspected`** → `sharpened`, `issue_reported`
+- **`quality_checked`** → `returned`, `issue_reported`
+- **`issue_reported`** → `inspected` or `sharpened` (resume workshop)
+- **`returned`** → terminal (empty edges)
+
+**API (admin)** — **`POST`** on `/api/admin/knives/{knife}/…`
+
+- **`mark-inspected`**, **`mark-sharpened`**, **`mark-quality-checked`**, **`mark-returned`**, **`report-issue`** — require **`KnifePolicy::transition`** ⇒ **`knives.update`** scoped to **`company_id`**.
+
 ---
 
 ## Order — `OrderStatus`
@@ -165,6 +181,20 @@ Authoritative graph: `App\Support\Routes\RouteStopTransitions` — each hop is p
 
 
 **Column:** `orders.order_status`
+
+### Transitions (centralised)
+
+Authoritative graph: **`App\Support\Orders\OrderStatusTransitions`**. Operational completion uses **`CompleteOrderAction`** (invoked by **`POST /api/admin/orders/{order}/complete`**) inside a DB transaction alongside order-side effects; **`OrderStatus`** is not bulk-assigned on **`PUT`** ( **`UpdateOrderRequest`** blocks **`order_status`** ).
+
+**Allowed single-hop moves**
+
+- `draft → active | completed | cancelled`
+- `active → completed | cancelled`
+- **`completed`** and **`cancelled`** are terminal (`[]` outward edges).
+
+**API (admin)**
+
+- **`POST …/complete`**: **`complete`** policy (**`orders.update`** per **`company_id`**) transitions toward **`completed`** when allowed.
 
 ---
 
