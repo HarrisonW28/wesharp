@@ -1,0 +1,33 @@
+import { Boxes, CalendarClock, ClipboardList, Gauge, LayoutDashboard, MapPinned, Users, Utensils } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+export type NavItem = {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  /** Server permission key from Laravel — optional for purely cosmetic links. */
+  permission?: string;
+};
+
+export const ADMIN_NAV: NavItem[] = [
+  { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, permission: "dashboard.view" },
+  { title: "CRM", href: "/admin/crm", icon: Users, permission: "companies.view" },
+  { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
+  { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
+  { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
+  { title: "Routes · Today", href: "/admin/routes/today", icon: MapPinned, permission: "routes.view" },
+];
+
+export const ACCOUNT_NAV: NavItem[] = [
+  { title: "Dashboard", href: "/account/dashboard", icon: Gauge, permission: "dashboard.view" },
+  { title: "Bookings", href: "/account/bookings", icon: CalendarClock, permission: "bookings.view" },
+  { title: "Invoices", href: "/account/invoices", icon: Boxes, permission: "invoices.view" },
+];
+
+export const ROUTE_MANAGER_NAV: NavItem[] = [
+  { title: "Today", href: "/admin/routes/today", icon: MapPinned, permission: "routes.view" },
+  { title: "All routes", href: "/admin/routes", icon: Boxes, permission: "routes.view" },
+  { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
+  { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
+  { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
+];

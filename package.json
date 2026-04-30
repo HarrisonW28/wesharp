@@ -1,0 +1,9 @@
+{
+  "name": "wesharp",
+  "private": true,
+  "scripts": {
+    "install:frontend": "npm install --prefix apps/frontend",
+    "watch": "npm --prefix apps/frontend run watch",
+    "watch:turbo": "npm --prefix apps/frontend run watch:turbo"
+  }
+}

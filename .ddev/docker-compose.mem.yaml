@@ -1,0 +1,5 @@
+# Merged by DDEV. Raises the shared web/Nginx/php/Node container RAM cap so Next dev is less likely
+# to be killed with exit code 137 (SIGKILL/OOM). Increase Docker Desktop’s memory allocation if needed.
+services:
+  web:
+    mem_limit: 6g

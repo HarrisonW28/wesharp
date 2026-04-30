@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\CompanyStatus;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Company extends Model
+{
+    use HasFactory;
+    use HasUuids;
+    use SoftDeletes;
+
+    protected $fillable = [
+        'name',
+        'slug',
+        'company_status',
+        'phone',
+        'billing_email',
+        'city',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'company_status' => CompanyStatus::class,
+        ];
+    }
+
+    public function locations(): HasMany
+    {
+        return $this->hasMany(CompanyLocation::class);
+    }
+
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class);
+    }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function knives(): HasMany
+    {
+        return $this->hasMany(Knife::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function notes(): MorphMany
+    {
+        return $this->morphMany(Note::class, 'noteable');
+    }
+
+    public function uploadedFiles(): MorphMany
+    {
+        return $this->morphMany(UploadedFile::class, 'fileable');
+    }
+
+    public function damageReports(): HasMany
+    {
+        return $this->hasMany(DamageReport::class);
+    }
+}
