@@ -17,25 +17,34 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
 
   const navLinkClass =
     "text-sm text-muted-foreground transition-colors hover:text-foreground aria-[current]:font-medium aria-[current]:text-foreground";
+  /** Desktop header: keep labels on one row between logo and CTAs */
+  const navLinkDesktopClass = `${navLinkClass} whitespace-nowrap`;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 md:h-16 md:px-6">
-          <div className="flex min-w-0 items-center gap-2 md:gap-6">
-            <Link href="/" className="inline-flex shrink-0 items-center" aria-label="WeSharp home">
-              <WeSharpLogo className="h-11 w-auto sm:h-12 md:h-14" />
+        <div className="mx-auto flex h-14 max-w-6xl flex-nowrap items-center justify-between gap-2 px-4 md:h-16 md:gap-3 md:px-6">
+          <div className="flex min-w-0 max-w-full flex-1 flex-nowrap items-center overflow-hidden md:max-w-none md:flex-initial md:overflow-visible">
+            <Link
+              href="/"
+              className="group inline-flex shrink-0 items-center rounded-md text-foreground no-underline opacity-90 outline-none ring-offset-background transition-opacity duration-200 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label="WeSharp home"
+            >
+              <WeSharpLogo className="h-8 w-auto sm:h-9 md:h-9 lg:h-10" />
             </Link>
-            <nav aria-label="Primary" className="hidden items-center gap-5 md:flex">
+            <nav
+              aria-label="Primary"
+              className="ml-3 hidden shrink min-w-0 flex-1 flex-nowrap items-center gap-x-3 gap-y-0 overflow-x-auto border-l border-border/70 pl-3 sm:ml-4 sm:gap-x-4 sm:pl-4 md:flex md:min-w-0 md:shrink md:flex-initial md:gap-x-4 md:overflow-visible"
+            >
               {PUBLIC_SITE_NAV_LINKS.map((l) => (
-                <Link key={l.href} href={l.href} className={navLinkClass}>
+                <Link key={l.href} href={l.href} className={navLinkDesktopClass}>
                   {l.label}
                 </Link>
               ))}
-              <Link href="/trade-accounts" className={navLinkClass}>
+              <Link href="/trade-accounts" className={navLinkDesktopClass}>
                 Trade accounts
               </Link>
-              <Link href="/safety" className={navLinkClass}>
+              <Link href="/safety" className={navLinkDesktopClass}>
                 Safety
               </Link>
             </nav>
