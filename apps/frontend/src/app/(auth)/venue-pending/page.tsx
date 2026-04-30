@@ -103,6 +103,7 @@ export default function VenuePendingPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["backend-me"] });
+      await queryClient.refetchQueries({ queryKey: ["backend-me"] });
       router.replace("/account/dashboard");
       router.refresh();
     },
@@ -142,14 +143,21 @@ export default function VenuePendingPage() {
         </p>
       </div>
 
-      <div className="space-y-2" role="radiogroup" aria-label="Account type">
-        <Label className="text-xs text-muted-foreground">How should we set you up?</Label>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div
+        className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-sm"
+        role="radiogroup"
+        aria-label="Account type"
+      >
+        <Label className="text-sm font-medium text-foreground">How should we set you up?</Label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Button
             type="button"
             variant={sole ? "outline" : "default"}
-            className={cn("h-auto justify-start py-3 text-left", sole && "border-border bg-transparent")}
-            aria-pressed={!sole}
+            className={cn(
+              "h-auto w-full min-w-0 justify-start whitespace-normal py-3 text-left",
+              sole && "border-border bg-transparent",
+            )}
+            aria-checked={!sole}
             role="radio"
             onClick={() => setRegistrationType("business")}
           >
@@ -159,8 +167,11 @@ export default function VenuePendingPage() {
           <Button
             type="button"
             variant={sole ? "default" : "outline"}
-            className={cn("h-auto justify-start py-3 text-left", !sole && "border-border bg-transparent")}
-            aria-pressed={sole}
+            className={cn(
+              "h-auto w-full min-w-0 justify-start whitespace-normal py-3 text-left",
+              !sole && "border-border bg-transparent",
+            )}
+            aria-checked={sole}
             role="radio"
             onClick={() => setRegistrationType("sole_customer")}
           >

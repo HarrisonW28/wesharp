@@ -12,7 +12,7 @@ import { useBackendMe } from "@/hooks/use-backend-me";
 export function TenantRouteGate({ children }: PropsWithChildren) {
   const router = useRouter();
   const { isLoaded: clerkLoaded, userId } = useAuth();
-  const { data, status, fetchStatus, error } = useBackendMe();
+  const { data, status, fetchStatus, error, isFetching } = useBackendMe();
 
   useEffect(() => {
     if (!clerkLoaded || userId === null) {
@@ -36,9 +36,13 @@ export function TenantRouteGate({ children }: PropsWithChildren) {
     }
 
     if (!u.company_id) {
+      // Stale `backend-me` after bootstrap would send users back to venue-pending; wait for refetch.
+      if (isFetching) {
+        return;
+      }
       void router.replace("/venue-pending");
     }
-  }, [clerkLoaded, data, router, status, userId]);
+  }, [clerkLoaded, data, isFetching, router, status, userId]);
 
   if (!clerkLoaded || userId === null) {
     return (
@@ -54,6 +58,22 @@ export function TenantRouteGate({ children }: PropsWithChildren) {
       <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         <span className="text-sm">Loading venue workspace…</span>
+      </div>
+    );
+  }
+
+  const profile = data?.data?.user;
+  if (
+    status === "success" &&
+    profile &&
+    profile.role_bucket === "customer" &&
+    !profile.company_id &&
+    isFetching
+  ) {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+        <span className="text-sm">Linking your workspace…</span>
       </div>
     );
   }

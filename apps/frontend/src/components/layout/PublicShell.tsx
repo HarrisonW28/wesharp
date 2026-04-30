@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { useState } from "react";
 
-import { ArrowRight, Menu } from "lucide-react";
+import { ArrowRight, LayoutDashboard, Menu } from "lucide-react";
 
 import { PUBLIC_SITE_NAV_LINKS } from "@/config/public-site-nav";
 
@@ -65,9 +66,21 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                   <Link href="/contact" className={navLinkClass} onClick={() => setOpen(false)}>
                     Contact
                   </Link>
-                  <Link href="/login" className={navLinkClass} onClick={() => setOpen(false)}>
-                    Sign in
-                  </Link>
+                  <SignedOut>
+                    <Link href="/login" className={navLinkClass} onClick={() => setOpen(false)}>
+                      Sign in
+                    </Link>
+                  </SignedOut>
+                  <SignedIn>
+                    <Link
+                      href="/auth/continue"
+                      className={`${navLinkClass} inline-flex items-center gap-2`}
+                      onClick={() => setOpen(false)}
+                    >
+                      <LayoutDashboard className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+                      My workspace
+                    </Link>
+                  </SignedIn>
                   <Button asChild className="mt-2">
                     <Link href="/book" onClick={() => setOpen(false)}>
                       Request a pickup <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
@@ -77,9 +90,19 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
-              <Link href="/login">Sign in</Link>
-            </Button>
+            <SignedOut>
+              <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+                <Link href="/login">Sign in</Link>
+              </Button>
+            </SignedOut>
+            <SignedIn>
+              <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+                <Link href="/auth/continue" className="gap-2">
+                  <LayoutDashboard className="h-4 w-4" aria-hidden />
+                  My workspace
+                </Link>
+              </Button>
+            </SignedIn>
             <Button size="sm" asChild>
               <Link href="/book">
                 <span className="hidden sm:inline">Request pickup</span>
