@@ -10,17 +10,20 @@ return new class extends Migration
     {
         Schema::create('knives', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('company_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('booking_id')->nullable()->constrained()->nullOnDelete()->index();
-            $table->foreignUuid('order_id')->nullable()->constrained()->nullOnDelete()->index();
+            $table->uuid('company_id');
+            $table->uuid('booking_id')->nullable();
+            $table->uuid('order_id')->nullable();
             $table->string('knife_status', 32)->index();
             $table->string('label')->nullable();
             $table->unsignedSmallInteger('position')->nullable();
             $table->text('notes')->nullable();
             $table->timestampsTz();
             $table->index(['company_id', 'knife_status']);
-            $table->index('company_id');
             $table->index('created_at');
+
+            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
+            $table->foreign('booking_id')->references('id')->on('bookings')->nullOnDelete();
+            $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
         });
     }
 
