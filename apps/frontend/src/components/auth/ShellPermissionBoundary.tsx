@@ -7,9 +7,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
+import { accountPermissionForPath, adminPermissionForPath } from "@/lib/route-permissions";
 
 type ShellPermissionBoundaryProps = PropsWithChildren<{
-  resolver: (pathname: string) => string;
+  /** Which portal’s path→permission map to use (serializable for RSC prerender). */
+  scope: "admin" | "account";
   /** Visible while permissions are loading — keeps deep links from flashing forbidden. */
   label?: string;
 }>;
@@ -18,12 +20,13 @@ type ShellPermissionBoundaryProps = PropsWithChildren<{
  * Ensures SPA navigation cannot render admin/tenant consoles without the matching Laravel permission.
  */
 export function ShellPermissionBoundary({
-  resolver,
+  scope,
   children,
   label = "Checking workspace permissions…",
 }: ShellPermissionBoundaryProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const resolver = scope === "account" ? accountPermissionForPath : adminPermissionForPath;
   const required = resolver(pathname);
   const { data, status, fetchStatus, error } = useBackendMe();
 

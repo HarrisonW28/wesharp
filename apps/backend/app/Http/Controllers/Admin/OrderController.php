@@ -118,7 +118,7 @@ final class OrderController extends Controller
     {
         $this->authorize('manipulateKnives', $order);
 
-        $knife = $this->orderService->addKnife($order->fresh(['company_id', 'booking_id']), $request->validated(), $request->user(), $request);
+        $knife = $this->orderService->addKnife($order->fresh(), $request->validated(), $request->user(), $request);
 
         return ApiResponses::success(KnifeJson::detail($knife), 201);
     }
@@ -127,7 +127,7 @@ final class OrderController extends Controller
     {
         $this->authorize('manipulateKnives', $order);
 
-        $result = $this->orderService->bulkAddKnives($order->fresh(['company_id']), $request->validated(), $request->user(), $request);
+        $result = $this->orderService->bulkAddKnives($order->fresh(), $request->validated(), $request->user(), $request);
 
         /** @phpstan-ignore-next-line */
         /** @var Order $freshOrder */

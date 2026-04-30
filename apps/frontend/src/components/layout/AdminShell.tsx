@@ -14,7 +14,6 @@ import { SidebarNav } from "@/components/navigation/SidebarNav";
 import { TopBar } from "@/components/navigation/TopBar";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
-import { adminPermissionForPath } from "@/lib/route-permissions";
 
 function filterNav(items: NavItem[], permissions: Set<string>): NavItem[] {
   return items.filter((item) => !item.permission || permissions.has(item.permission));
@@ -33,7 +32,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <StaffRouteGate>
       <Toaster richColors closeButton position="top-right" />
-      <ShellPermissionBoundary resolver={adminPermissionForPath} label="Checking operations permissions…">
+      <ShellPermissionBoundary scope="admin" label="Checking operations permissions…">
         <div className="flex min-h-screen bg-gradient-to-br from-muted/35 via-background to-muted/20">
           <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95 md:backdrop-blur">
             <div className="flex h-14 items-center border-b px-4">

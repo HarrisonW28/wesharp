@@ -33,15 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const createBookingSchema = z.object({
-  company_id: z.string().uuid(),
-  location_id: z.string().uuid(),
-  contact_id: z.string().optional(),
-  requested_date: z.string().min(1, "Pick a date."),
-  service_type: z.enum(["collection", "onsite"]),
-  internal_notes: z.string().optional(),
-  price_estimate_pence: z.coerce.number().int().min(0).optional(),
-});
+import { adminCreateBookingFormSchema } from "@/lib/forms/admin-create-booking-form-schema";
 
 const SERVICE_TYPES = ["collection", "onsite"] as const;
 
@@ -124,8 +116,8 @@ export default function AdminBookingsPage() {
     },
   });
 
-  const form = useForm<z.infer<typeof createBookingSchema>>({
-    resolver: zodResolver(createBookingSchema),
+  const form = useForm<z.infer<typeof adminCreateBookingFormSchema>>({
+    resolver: zodResolver(adminCreateBookingFormSchema),
     defaultValues: {
       company_id: "",
       location_id: "",
@@ -138,7 +130,7 @@ export default function AdminBookingsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (payload: z.infer<typeof createBookingSchema>) => {
+    mutationFn: async (payload: z.infer<typeof adminCreateBookingFormSchema>) => {
       const res = await admin.json(`/api/admin/bookings`, {
         method: "POST",
         body: JSON.stringify({

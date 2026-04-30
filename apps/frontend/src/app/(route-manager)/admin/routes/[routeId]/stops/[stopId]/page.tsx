@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 import { StopDetailResponseSchema } from "@/lib/api/admin-routes-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
+import { visibleRouteStopActions } from "@/lib/route-manager/route-stop-workflow";
 
 import { RouteManagerShell } from "@/components/layout/RouteManagerShell";
 import { Button } from "@/components/ui/button";
@@ -127,28 +128,7 @@ export default function RouteStopDetailPage() {
     return bits ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bits)}` : null;
   }, [stop?.location]);
 
-  const actionRows = useMemo(() => {
-    const rows: { key: string; path: string; label: string }[] = [];
-    if (!status) {
-      return rows;
-    }
-    if (status === "not_started") {
-      rows.push({ key: "t", path: "mark-travelling", label: "Mark travelling" });
-    }
-    if (status === "travelling") {
-      rows.push({ key: "a", path: "mark-arrived", label: "Mark arrived" });
-    }
-    if (status === "arrived") {
-      rows.push({ key: "c", path: "mark-collected", label: "Mark collected" });
-    }
-    if (status === "collected" || status === "in_sharpening") {
-      rows.push({ key: "r", path: "mark-returned", label: "Mark returned" });
-    }
-    if (status === "returned") {
-      rows.push({ key: "d", path: "complete", label: "Complete stop" });
-    }
-    return rows;
-  }, [status]);
+  const actionRows = useMemo(() => visibleRouteStopActions(status), [status]);
 
   const stickyFooter =
     tel || mapsHref || actionRows.length > 0 ? (

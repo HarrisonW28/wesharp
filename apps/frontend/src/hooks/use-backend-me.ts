@@ -45,10 +45,17 @@ export function useBackendMe() {
         cache: "no-store",
       });
 
-      const body = (await res.json()) as BackendMePayload;
+      const body = (await res.json().catch(() => ({}))) as BackendMePayload & {
+        error?: { message?: string; code?: string };
+      };
 
       if (!res.ok) {
-        throw new Error("Unable to load API profile.");
+        const apiMsg = body?.error?.message;
+        const suffix =
+          apiMsg != null && apiMsg !== ""
+            ? ` ${apiMsg}`
+            : "";
+        throw new Error(`API /me failed (${res.status}).${suffix}`.trim());
       }
 
       return body;

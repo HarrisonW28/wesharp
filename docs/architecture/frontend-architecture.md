@@ -4,6 +4,16 @@ Workspace: `**apps/frontend**` (Next.js **15**, App Router, React **19**, Tailwi
 
 ---
 
+## Public marketing site
+
+
+| Concern | Implementation |
+| --- | --- |
+| Layout | `src/app/(public)/layout.tsx` + **`PublicShell`** — responsive header (**desktop links** + **`Sheet`** mobile menu), **`PUBLIC_SITE_NAV_LINKS`** in **`src/config/public-site-nav.ts`**. |
+| Pages | **`/`**, **`/book`** (Zod + **`POST /api/public/booking-enquiries`**), **`/how-it-works`**, **`/pricing`**, **`/service-areas`**, **`/trade-accounts`**, **`/safety`**, **`/faq`**, **`/contact`**, **`/login`**, **`/register`**. Brochure pages reuse **`MarketingArticle`**. |
+
+---
+
 ## Admin shell
 
 
@@ -13,6 +23,7 @@ Workspace: `**apps/frontend**` (Next.js **15**, App Router, React **19**, Tailwi
 | Auth gate  | `**StaffRouteGate**` + Clerk session.                                                                                                                                                  |
 | Feedback   | `**sonner**` `**<Toaster />**` mounted in `**AdminShell**` (global toasts).                                                                                                            |
 | Navigation | `src/config/navigation.ts` — CRM (`companies.view`), **Analytics** (`analytics.view`), Orders (`orders.view`), Knives (`knives.view`), **Invoices** (`invoices.view`), **Payments** (`payments.view`), routes (`routes.view`). |
+| Status UI | **`StatusBadge`** (`src/components/status/StatusBadge.tsx`) — shared tone for **`booking` / `order` / `invoice` / `knife` / `route` / `route_stop` / `payment`** rows vs ad-hoc **`Badge`** usage. |
 
 ---
 
@@ -89,15 +100,18 @@ Workspace: `**apps/frontend**` (Next.js **15**, App Router, React **19**, Tailwi
 
 | Concern | Implementation |
 | --- | --- |
-| Layout boundary | `src/app/(route-manager)/admin/layout.tsx` — `StaffRouteGate` + `Toaster` only (no `AdminShell` chrome). |
-| Shell | `src/components/layout/RouteManagerShell.tsx` — compact header, optional `stickyFooter` above `MobileBottomNav`. |
+| Layout boundary | `src/app/(route-manager)/layout.tsx` — **`"use client"`**; **`StaffRouteGate`** + **`ShellPermissionBoundary`** (**`adminPermissionForPath`**) so permission checks are not serialized from a server layout during **`next build`**. |
+| Admin segment layout | `src/app/(route-manager)/admin/layout.tsx` — **`Toaster`** (+ nested **`StaffRouteGate`**). |
+| Shell | **`RouteManagerShell`** — compact header, optional `stickyFooter` above **`MobileBottomNav`**; nav uses **`navHrefIsActive`** so **`/admin/routes/{id}`** highlights **All routes** without clashing **`/admin/routes/today`**. |
 | Screens | `src/app/(route-manager)/admin/routes/**` — Today (`GET /api/admin/routes/today`), list (`GET /api/admin/routes?paginate=1`), detail, stop detail with POST/PUT workflows. |
 | Schemas | `src/lib/api/admin-routes-schema.ts` — Zod mirrors for route + stop payloads. |
-| PWA | `src/app/manifest.ts`; `public/icons/README.txt`; `/offline` placeholder page. |
+| PWA | `src/app/manifest.ts`; `public/icons/README.txt`; **`/offline`** placeholder page. |
+
+**Ops dashboard:** **`src/app/(admin)/admin/dashboard/page.tsx`** pulls **`GET /api/admin/analytics/overview`** + **`sales`** via TanStack Query (Zod parsers) — loaders, retry, empty revenue copy.
 
 ---
 
 ## References
 
-- Product: `docs/product/admin-crm.md`, `docs/product/booking-workflow.md`, `docs/product/route-manager.md`, `docs/product/knife-tracking.md`, `docs/product/orders-invoices-payments.md`, `docs/product/analytics-reporting.md`, `docs/product/customer-portal.md`
+- Product: `docs/product/mvp-scope.md`, `docs/product/public-website.md`, `docs/product/admin-crm.md`, `docs/product/booking-workflow.md`, `docs/product/route-manager.md`, `docs/product/knife-tracking.md`, `docs/product/orders-invoices-payments.md`, `docs/product/analytics-reporting.md`, `docs/product/customer-portal.md`
 - Backend: `docs/architecture/backend-architecture.md` § Admin CRM API, § Admin bookings API, § Orders & knives (operations), § Admin invoices & payments (AR), § Analytics API (internal BI), Route Manager controllers

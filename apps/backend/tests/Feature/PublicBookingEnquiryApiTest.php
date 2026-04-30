@@ -68,6 +68,36 @@ final class PublicBookingEnquiryApiTest extends TestCase
         }
     }
 
+    public function test_validation_rejects_invalid_email(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-04-01 12:00:00', 'UTC'));
+
+        try {
+            $preferred = Carbon::now()->addDays(2)->toDateString();
+
+            $response = $this->postJson('/api/public/booking-enquiries', [
+                'business_name' => 'Test Kitchen PLC',
+                'contact_name' => 'Jamie Prep',
+                'email' => 'not-an-email',
+                'phone' => '+441234567890',
+                'address_line_1' => '1 Wharf Street',
+                'city' => 'Manchester',
+                'postcode' => 'M1 1AA',
+                'preferred_date' => $preferred,
+                'time_window_preference' => 'Morning',
+                'service_type' => 'collection',
+                'message' => 'Need knives sharpened urgently please.',
+                'terms_accepted' => true,
+            ]);
+
+            $response->assertStatus(422)
+                ->assertJsonPath('success', false)
+                ->assertJsonPath('error.code', 'validation_error');
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     public function test_store_requires_terms_accepted(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-04-01 12:00:00', 'UTC'));

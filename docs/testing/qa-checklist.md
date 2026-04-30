@@ -6,6 +6,15 @@ Environment: **`NEXT_PUBLIC_API_ORIGIN`** points at Laravel (**`/api`** prefix).
 
 ---
 
+## Build & marketing smoke (frontend)
+
+- [ ] **`cd apps/frontend && npx tsc --noEmit`** — clean.
+- [ ] **`npm run build`** — completes without **`Missing publishableKey`** (Clerk fallback in **`src/lib/clerk-publishable-key.ts`** covers CI; production must still set a real **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`**).
+- [ ] Public pages render: **`/`**, **`/how-it-works`**, **`/pricing`**, **`/service-areas`**, **`/trade-accounts`**, **`/safety`**, **`/faq`**, **`/contact`**, **`/book`** — mobile header **menu** opens **`Sheet`** nav.
+- [ ] Route manager: **`/admin/routes/today`** + **`/admin/routes`** — bottom nav **Today** vs **All routes** active states at **`/admin/routes/{uuid}`**.
+
+---
+
 ## Regression smoke
 
 - [ ] **`GET /api/health`** (or **`/api/health`**) responds **200**.

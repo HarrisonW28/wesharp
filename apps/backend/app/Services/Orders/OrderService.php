@@ -167,7 +167,7 @@ final class OrderService
                     ? trim((string) $bulk['description_prefix'])
                     : '';
 
-                $knife = $this->knifeService->createForOrder($order->fresh(['company_id', 'booking_id']), [
+                $knife = $this->knifeService->createForOrder($order->fresh(), [
                     'knife_type' => $bulk['knife_type'] ?? null,
                     'condition_before' => $bulk['condition_before'] ?? null,
                     'description' => $descPrefix !== '' ? $descPrefix.' '.$i : 'Knife '.$i,

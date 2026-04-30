@@ -12,7 +12,6 @@ import { SidebarNav } from "@/components/navigation/SidebarNav";
 import { TopBar } from "@/components/navigation/TopBar";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
-import { accountPermissionForPath } from "@/lib/route-permissions";
 
 function filterNav(items: NavItem[], permissions: Set<string>): NavItem[] {
   return items.filter((item) => !item.permission || permissions.has(item.permission));
@@ -27,7 +26,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
 
   return (
     <TenantRouteGate>
-      <ShellPermissionBoundary resolver={accountPermissionForPath} label="Checking venue workspace permissions…">
+      <ShellPermissionBoundary scope="account" label="Checking venue workspace permissions…">
         <div className="flex min-h-screen bg-muted/25">
           <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
             <div className="flex h-14 items-center border-b px-4">
