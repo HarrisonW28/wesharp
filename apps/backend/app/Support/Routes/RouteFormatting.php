@@ -3,6 +3,7 @@
 namespace App\Support\Routes;
 
 use App\Enums\RouteStopStatus;
+use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Models\OperationalRoute;
 use App\Models\RouteStop;
@@ -19,6 +20,7 @@ final class RouteFormatting
             'scheduled_date' => $r->scheduled_date?->format('Y-m-d'),
             'coverage_city' => $r->coverage_city,
             'driver_name' => $r->relationLoaded('driver') ? $r->driver?->name : null,
+            'stops_count' => isset($r->stops_count) ? (int) $r->stops_count : $r->stops()->count(),
         ];
     }
 
@@ -121,6 +123,7 @@ final class RouteFormatting
             'id' => (string) $stop->id,
             'sequence' => $stop->sequence,
             'route_stop_status' => $stop->route_stop_status?->value,
+            'booking_id' => $booking !== null ? (string) $booking->id : null,
             'expected_arrival_at' => $stop->expected_arrival_at?->toIso8601String(),
             'arrived_at' => $stop->arrived_at?->toIso8601String(),
             'departed_at' => $stop->departed_at?->toIso8601String(),
@@ -130,12 +133,17 @@ final class RouteFormatting
             'booking_status' => $booking?->booking_status?->value,
             'service_type' => $booking?->service_type?->value,
             'estimated_knife_count' => $booking?->estimated_knife_count,
+            'customer_notes' => $booking?->customer_notes,
+            'confirmed_collection_date' => $booking?->confirmed_collection_date?->format('Y-m-d'),
+            'confirmed_time_window_start' => BookingResource::formatTimeSlot($booking?->confirmed_time_window_start),
+            'confirmed_time_window_end' => BookingResource::formatTimeSlot($booking?->confirmed_time_window_end),
             'address_line' => collect([
                 $booking?->location?->line_one,
                 $booking?->location?->line_two,
                 $booking?->location?->city,
                 $booking?->location?->postcode,
             ])->filter()->implode(', '),
+            'postcode' => $booking?->location?->postcode,
         ];
     }
 
@@ -185,8 +193,11 @@ final class RouteFormatting
                 'id' => (string) $booking->id,
                 'status' => $booking->booking_status?->value,
                 'requested_date' => $booking->scheduled_date?->format('Y-m-d'),
-                'time_window_start' => $booking->time_window_start,
-                'time_window_end' => $booking->time_window_end,
+                'time_window_start' => BookingResource::formatTimeSlot($booking->requested_time_window_start ?? $booking->time_window_start),
+                'time_window_end' => BookingResource::formatTimeSlot($booking->requested_time_window_end ?? $booking->time_window_end),
+                'confirmed_collection_date' => $booking->confirmed_collection_date?->format('Y-m-d'),
+                'confirmed_time_window_start' => BookingResource::formatTimeSlot($booking->confirmed_time_window_start),
+                'confirmed_time_window_end' => BookingResource::formatTimeSlot($booking->confirmed_time_window_end),
                 'service_type' => $booking->service_type?->value,
                 'estimated_knife_count' => $booking->estimated_knife_count,
                 'actual_knife_count' => $booking->actual_knife_count,

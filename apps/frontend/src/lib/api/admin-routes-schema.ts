@@ -19,6 +19,7 @@ export const RouteStopSummarySchema = z
     id: z.string(),
     sequence: z.number(),
     route_stop_status: z.string().nullable(),
+    booking_id: z.string().nullable().optional(),
     expected_arrival_at: z.string().nullable().optional(),
     arrived_at: z.string().nullable().optional(),
     departed_at: z.string().nullable().optional(),
@@ -28,7 +29,12 @@ export const RouteStopSummarySchema = z
     booking_status: z.string().nullable().optional(),
     service_type: z.string().nullable().optional(),
     estimated_knife_count: z.number().nullable().optional(),
+    customer_notes: z.string().nullable().optional(),
+    confirmed_collection_date: z.string().nullable().optional(),
+    confirmed_time_window_start: z.string().nullable().optional(),
+    confirmed_time_window_end: z.string().nullable().optional(),
     address_line: z.string().nullable().optional(),
+    postcode: z.string().nullable().optional(),
   })
   .passthrough();
 
@@ -87,6 +93,7 @@ export const RouteRowSchema = z.object({
   scheduled_date: z.string().nullable().optional(),
   coverage_city: z.string().nullable().optional(),
   driver_name: z.string().nullable().optional(),
+  stops_count: z.number().optional(),
 });
 
 export const RoutesListResponseSchema = z.object({
@@ -141,6 +148,9 @@ export const StopDetailDataSchema = z
         requested_date: z.string().nullable().optional(),
         time_window_start: z.string().nullable().optional(),
         time_window_end: z.string().nullable().optional(),
+        confirmed_collection_date: z.string().nullable().optional(),
+        confirmed_time_window_start: z.string().nullable().optional(),
+        confirmed_time_window_end: z.string().nullable().optional(),
         service_type: z.string().nullable().optional(),
         estimated_knife_count: z.number().nullable().optional(),
         actual_knife_count: z.number().nullable().optional(),

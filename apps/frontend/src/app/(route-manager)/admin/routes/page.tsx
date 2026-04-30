@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { RoutesListResponseSchema } from "@/lib/api/admin-routes-schema";
@@ -11,7 +11,6 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { RouteManagerShell } from "@/components/layout/RouteManagerShell";
 import { StatusBadge } from "@/components/status/StatusBadge";
-import { Card } from "@/components/ui/card";
 
 export default function RoutesListPage() {
   const admin = useAdminApi();
@@ -52,33 +51,57 @@ export default function RoutesListPage() {
   }
 
   return (
-    <RouteManagerShell title="Routes" subtitle="Operational runs">
-      <div className="space-y-3">
-        {(query.data?.length ?? 0) === 0 ? (
-          <p className="rounded-xl border border-white/10 bg-white/[0.04] p-6 text-center text-sm text-slate-400 md:border-border md:bg-muted/20 md:text-muted-foreground">
-            No routes returned for this page. Create or schedule runs from the Ops console.
-          </p>
-        ) : null}
-        {query.data?.map((r) => (
-          <Link key={r.id} href={`/admin/routes/${r.id}`}>
-            <Card className="border-white/10 bg-white/[0.06] p-4 shadow-none backdrop-blur-md transition-colors hover:bg-white/10 md:border-border md:bg-card md:hover:bg-muted/50">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="font-semibold leading-snug">{r.name}</div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400 md:text-muted-foreground">
-                    <span>{r.scheduled_date ?? "—"}</span>
+    <RouteManagerShell title="Routes" subtitle="Collection runs — date, area, driver, status, stops">
+      <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.04] md:border-border md:bg-card">
+        <table className="w-full min-w-[640px] text-left text-sm">
+          <thead className="border-b border-white/10 bg-white/5 text-[11px] font-semibold uppercase tracking-wide text-slate-400 md:border-border md:bg-muted/50 md:text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2.5">Date</th>
+              <th className="px-3 py-2.5">Run</th>
+              <th className="px-3 py-2.5">Area</th>
+              <th className="px-3 py-2.5">Driver</th>
+              <th className="px-3 py-2.5">Status</th>
+              <th className="px-3 py-2.5 text-right tabular-nums">Stops</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(query.data?.length ?? 0) === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-3 py-8 text-center text-slate-400 md:text-muted-foreground">
+                  No routes on this page. Schedule runs from the Ops console or try another page.
+                </td>
+              </tr>
+            ) : (
+              query.data?.map((r) => (
+                <tr
+                  key={r.id}
+                  className="border-b border-white/5 transition-colors hover:bg-white/[0.06] md:border-border md:hover:bg-muted/40"
+                >
+                  <td className="px-3 py-3 tabular-nums text-slate-200 md:text-foreground">
+                    <Link href={`/admin/routes/${r.id}`} className="text-primary underline underline-offset-2">
+                      {r.scheduled_date ?? "—"}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-3 font-medium text-slate-100 md:text-foreground">
+                    <Link href={`/admin/routes/${r.id}`} className="hover:underline">
+                      {r.name}
+                    </Link>
+                  </td>
+                  <td className="max-w-[140px] truncate px-3 py-3 text-slate-400 md:text-muted-foreground">
+                    {r.coverage_city ?? "—"}
+                  </td>
+                  <td className="px-3 py-3 text-slate-300 md:text-foreground">{r.driver_name ?? "—"}</td>
+                  <td className="px-3 py-3">
                     <StatusBadge kind="route" status={r.route_status ?? ""} />
-                  </div>
-                  <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-400 md:text-muted-foreground">
-                    <MapPin className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
-                    <span>{r.coverage_city ?? "Area open"}</span>
-                  </div>
-                  {r.driver_name ? <div className="mt-1 text-xs">{r.driver_name}</div> : null}
-                </div>
-              </div>
-            </Card>
-          </Link>
-        ))}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums text-slate-300 md:text-foreground">
+                    {r.stops_count ?? 0}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
       <div className="mt-6 flex justify-between text-sm">
         {Number(page) > 1 ? (

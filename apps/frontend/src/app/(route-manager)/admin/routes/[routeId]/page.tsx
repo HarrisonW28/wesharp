@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -11,9 +11,19 @@ import { RouteDetailResponseSchema } from "@/lib/api/admin-routes-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { RouteManagerShell } from "@/components/layout/RouteManagerShell";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+
+function formatConfirmedWindow(
+  start?: string | null,
+  end?: string | null,
+): string | null {
+  if (!start && !end) return null;
+  const f = (s: string) => (s.length >= 5 ? s.slice(0, 5) : s);
+  return `${start ? f(start) : "?"}–${end ? f(end) : "?"}`;
+}
 
 export default function RouteDetailPage() {
   const params = useParams<{ routeId: string }>();
@@ -154,19 +164,39 @@ export default function RouteDetailPage() {
         <ol className="space-y-3">
           {route.stops.map((s) => (
             <li key={s.id}>
-              <Link href={`/admin/routes/${route.id}/stops/${s.id}`}>
-                <Card className="border-white/10 bg-white/[0.06] p-4 shadow-none backdrop-blur-md hover:bg-white/10 md:border-border md:bg-card md:hover:bg-muted/50">
-                  <div className="flex gap-3">
+              <Card className="border-white/10 bg-white/[0.06] p-4 shadow-none backdrop-blur-md md:border-border md:bg-card">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <Link href={`/admin/routes/${route.id}/stops/${s.id}`} className="flex min-w-0 flex-1 gap-3 group">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-lg font-bold md:bg-muted">
                       {s.sequence}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold leading-snug">{s.company_name ?? "Venue"}</div>
-                      <div className="mt-1 line-clamp-2 text-xs text-slate-400 md:text-muted-foreground">{s.address_line ?? "—"}</div>
+                      <div className="font-semibold leading-snug group-hover:underline">{s.company_name ?? "Venue"}</div>
+                      <div className="mt-1 text-xs text-slate-400 md:text-muted-foreground">
+                        {s.address_line ?? "—"}
+                      </div>
+                      {s.postcode ? (
+                        <div className="mt-0.5 text-[11px] text-slate-500 md:text-muted-foreground">{s.postcode}</div>
+                      ) : null}
+                      <div className="mt-2 text-[11px] text-slate-400 md:text-muted-foreground">
+                        <span className="font-medium text-slate-200 md:text-foreground">Confirmed window: </span>
+                        {formatConfirmedWindow(s.confirmed_time_window_start, s.confirmed_time_window_end) ??
+                          "—"}
+                        {s.confirmed_collection_date ? ` · ${s.confirmed_collection_date}` : null}
+                      </div>
+                      {s.customer_notes ? (
+                        <p className="mt-2 line-clamp-2 text-xs text-slate-300 md:text-foreground">
+                          <span className="text-slate-500 md:text-muted-foreground">Notes: </span>
+                          {s.customer_notes}
+                        </p>
+                      ) : null}
+                      {s.damage_notes ? (
+                        <p className="mt-1 line-clamp-2 text-xs text-amber-200/90 md:text-amber-800">
+                          Stop: {s.damage_notes}
+                        </p>
+                      ) : null}
                       <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-                        <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-200 md:bg-emerald-500/15 md:text-emerald-800">
-                          {s.route_stop_status?.replace(/_/g, " ") ?? "—"}
-                        </span>
+                        <StatusBadge kind="route_stop" status={s.route_stop_status ?? ""} />
                         {s.estimated_knife_count != null ? (
                           <span className="rounded-full bg-white/10 px-2 py-0.5 text-slate-200 md:bg-muted md:text-muted-foreground">
                             ~{s.estimated_knife_count} knives
@@ -174,9 +204,22 @@ export default function RouteDetailPage() {
                         ) : null}
                       </div>
                     </div>
+                  </Link>
+                  <div className="flex shrink-0 flex-wrap gap-2 border-t border-white/10 pt-3 sm:border-0 sm:pt-0 md:border-0">
+                    <Button type="button" size="sm" variant="secondary" className="h-8" asChild>
+                      <Link href={`/admin/routes/${route.id}/stops/${s.id}`}>
+                        Stop detail
+                        <ExternalLink className="ml-1 h-3.5 w-3.5 opacity-70" aria-hidden />
+                      </Link>
+                    </Button>
+                    {s.booking_id ? (
+                      <Button type="button" size="sm" variant="outline" className="h-8" asChild>
+                        <Link href={`/admin/bookings/${s.booking_id}`}>Booking</Link>
+                      </Button>
+                    ) : null}
                   </div>
-                </Card>
-              </Link>
+                </div>
+              </Card>
             </li>
           ))}
         </ol>

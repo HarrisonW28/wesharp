@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CompanyLocation;
 use App\Models\OperationalRoute;
+use App\Models\RouteStop;
 use App\Models\User;
 use Database\Seeders\WeSharpDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -96,6 +97,38 @@ final class AdminBookingsApiTest extends TestCase
             ->assertJsonPath('data.status', BookingStatus::AssignedToRoute->value);
 
         self::assertSame((string) $route->id, Booking::query()->find($booking->id)?->assigned_route_id);
+    }
+
+    public function test_assign_route_accepts_sequence_and_optional_confirm_window(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+
+        $route = OperationalRoute::query()->firstOrFail();
+        $booking = Booking::factory()->create([
+            'company_id' => Company::query()->first()->id,
+            'company_location_id' => CompanyLocation::query()->first()->id,
+            'booking_status' => BookingStatus::Confirmed,
+            'scheduled_date' => $route->scheduled_date->format('Y-m-d'),
+            'confirmed_collection_date' => $route->scheduled_date->format('Y-m-d'),
+            'service_type' => ServiceType::Collection,
+        ]);
+
+        $res = $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings/'.$booking->id.'/assign-route', [
+                'route_id' => $route->id,
+                'sequence' => 2,
+                'confirmed_time_window_start' => '10:00',
+                'confirmed_time_window_end' => '12:00',
+            ]);
+
+        $res->assertOk()
+            ->assertJsonPath('data.status', BookingStatus::AssignedToRoute->value);
+
+        $stop = RouteStop::query()->where('booking_id', $booking->id)->firstOrFail();
+        self::assertSame(2, $stop->sequence);
+        $refreshed = Booking::query()->findOrFail($booking->id);
+        self::assertNotNull($refreshed->confirmed_time_window_start);
+        self::assertNotNull($refreshed->confirmed_time_window_end);
     }
 
     public function test_index_supports_filters(): void

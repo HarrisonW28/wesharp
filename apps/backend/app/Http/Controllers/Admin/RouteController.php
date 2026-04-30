@@ -38,7 +38,9 @@ final class RouteController extends Controller
             || $request->has('per_page')
             || $request->boolean('paginate');
 
-        $base = OperationalRoute::query()->with('driver:id,name');
+        $base = OperationalRoute::query()
+            ->with('driver:id,name')
+            ->withCount('stops');
 
         if ($date !== '') {
             $ts = strtotime($date);
@@ -49,14 +51,7 @@ final class RouteController extends Controller
 
         if (! $wantPagination) {
             $rows = $base->orderBy('name')->limit(75)->get()->map(
-                static fn (OperationalRoute $r): array => [
-                    'id' => (string) $r->id,
-                    'name' => $r->name,
-                    'route_status' => $r->route_status?->value,
-                    'scheduled_date' => $r->scheduled_date?->format('Y-m-d'),
-                    'driver_name' => $r->driver?->name,
-                    'coverage_city' => $r->coverage_city,
-                ]
+                static fn (OperationalRoute $r): array => RouteFormatting::listRow($r)
             );
 
             return ApiResponses::success(['items' => $rows]);

@@ -46,6 +46,14 @@ const notesSchema = z.object({
   internal_notes: z.string().optional(),
 });
 
+const assignToRouteSchema = z.object({
+  route_id: z.string().min(1, "Choose a route"),
+  sequence: z.string().optional(),
+  confirmed_collection_date: z.string().optional(),
+  confirmed_time_window_start: z.string().optional(),
+  confirmed_time_window_end: z.string().optional(),
+});
+
 type LifecycleGate =
   | "requested"
   | "confirmed"
@@ -191,9 +199,30 @@ export default function AdminBookingDetailPage() {
     }
   };
 
-  const assignForm = useForm<{ route_id: string }>({
-    defaultValues: { route_id: "" },
+  const assignForm = useForm<z.infer<typeof assignToRouteSchema>>({
+    resolver: zodResolver(assignToRouteSchema),
+    defaultValues: {
+      route_id: "",
+      sequence: "",
+      confirmed_collection_date: "",
+      confirmed_time_window_start: "",
+      confirmed_time_window_end: "",
+    },
   });
+
+  useEffect(() => {
+    if (!assignOpen) return;
+    const row = bookingQuery.data;
+    if (!row) return;
+    assignForm.reset({
+      route_id: "",
+      sequence: "",
+      confirmed_collection_date:
+        row.confirmed_collection_date ?? row.requested_collection_date ?? row.requested_date ?? "",
+      confirmed_time_window_start: (row.confirmed_time_window_start ?? "").slice(0, 5),
+      confirmed_time_window_end: (row.confirmed_time_window_end ?? "").slice(0, 5),
+    });
+  }, [assignOpen, bookingQuery.data, assignForm]);
 
   const saveConfirmedWindow = useMutation({
     mutationFn: async (values: z.infer<typeof confirmedWindowSchema>) => {
@@ -221,10 +250,27 @@ export default function AdminBookingDetailPage() {
   });
 
   const assignMutation = useMutation({
-    mutationFn: async (payload: { route_id: string }) => {
+    mutationFn: async (payload: z.infer<typeof assignToRouteSchema>) => {
+      const body: Record<string, unknown> = { route_id: payload.route_id };
+      if (payload.sequence?.trim()) {
+        const n = parseInt(payload.sequence.trim(), 10);
+        if (!Number.isNaN(n) && n > 0) {
+          body.sequence = n;
+        }
+      }
+      if (payload.confirmed_collection_date?.trim()) {
+        body.confirmed_collection_date = payload.confirmed_collection_date.trim();
+      }
+      if (payload.confirmed_time_window_start?.trim()) {
+        body.confirmed_time_window_start = payload.confirmed_time_window_start.trim().slice(0, 5);
+      }
+      if (payload.confirmed_time_window_end?.trim()) {
+        body.confirmed_time_window_end = payload.confirmed_time_window_end.trim().slice(0, 5);
+      }
+
       const res = await admin.json(`/api/admin/bookings/${bookingId}/assign-route`, {
         method: "POST",
-        body: JSON.stringify({ route_id: payload.route_id }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         throw new Error(res.message);
@@ -232,12 +278,21 @@ export default function AdminBookingDetailPage() {
 
       return res.data;
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, vars) => {
       toast.success("Route assigned.");
       setAssignOpen(false);
-      assignForm.reset({ route_id: "" });
+      assignForm.reset({
+        route_id: "",
+        sequence: "",
+        confirmed_collection_date: "",
+        confirmed_time_window_start: "",
+        confirmed_time_window_end: "",
+      });
       await qc.invalidateQueries({ queryKey: ["admin-booking-detail", bookingId] });
       await qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+      await qc.invalidateQueries({ queryKey: ["admin-routes-list"] });
+      await qc.invalidateQueries({ queryKey: ["admin-routes-today"] });
+      await qc.invalidateQueries({ queryKey: ["admin-route-detail", vars.route_id] });
     },
     onError: (e: unknown) => {
       toast.error(e instanceof Error ? e.message : "Assign route failed.");
@@ -764,12 +819,12 @@ export default function AdminBookingDetailPage() {
           </DialogHeader>
           <form
             className="space-y-3"
-            onSubmit={assignForm.handleSubmit((v) => assignMutation.mutate({ route_id: v.route_id }))}
+            onSubmit={assignForm.handleSubmit((v) => assignMutation.mutate(v))}
           >
             <RouteLookup
               label="Route run"
               value={assignForm.watch("route_id") === "" ? null : assignForm.watch("route_id")}
-              onChange={(id) => assignForm.setValue("route_id", id ?? "")}
+              onChange={(id) => assignForm.setValue("route_id", id ?? "", { shouldValidate: true })}
               extraParams={collectionDateForRoute ? { date: collectionDateForRoute } : undefined}
               placeholder={
                 collectionDateForRoute
@@ -778,6 +833,35 @@ export default function AdminBookingDetailPage() {
               }
               disabled={!collectionDateForRoute}
             />
+            {assignForm.formState.errors.route_id ? (
+              <p className="text-xs text-destructive">{assignForm.formState.errors.route_id.message}</p>
+            ) : null}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="assign-seq">Stop sequence (optional)</Label>
+                <Input
+                  id="assign-seq"
+                  inputMode="numeric"
+                  placeholder="e.g. 2 — leave blank for end of run"
+                  {...assignForm.register("sequence")}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2 md:col-span-1">
+                <Label htmlFor="assign-conf-day">Confirm collection date (optional)</Label>
+                <Input id="assign-conf-day" type="date" {...assignForm.register("confirmed_collection_date")} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="assign-conf-start">Confirmed window start</Label>
+                <Input id="assign-conf-start" type="time" {...assignForm.register("confirmed_time_window_start")} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="assign-conf-end">Confirmed window end</Label>
+                <Input id="assign-conf-end" type="time" {...assignForm.register("confirmed_time_window_end")} />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Date must match the route run. Updating the confirmed window here saves it on Assignment — customers see it in the portal.
+            </p>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setAssignOpen(false)}>
                 Close
