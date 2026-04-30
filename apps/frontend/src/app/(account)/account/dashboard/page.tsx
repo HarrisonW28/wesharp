@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CustomerInvoiceStatusBadge } from "@/components/invoices/CustomerInvoiceStatusBadge";
 import { CustomerOrderStatusBadge } from "@/components/orders/CustomerOrderStatusBadge";
 import { StatusBadge } from "@/components/status/StatusBadge";
 
@@ -482,7 +483,10 @@ export default function AccountDashboardPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="tabular-nums">{formatGBP(inv.total ?? null)}</span>
-                      {inv.status ? <StatusBadge kind="invoice" status={inv.status} /> : null}
+                      {inv.status ? <CustomerInvoiceStatusBadge status={inv.status} /> : null}
+                      <Button type="button" variant="link" className="h-auto px-0" asChild>
+                        <Link href={`/account/invoices/${inv.id}`}>View</Link>
+                      </Button>
                     </div>
                   </li>
                 ))}

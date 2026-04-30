@@ -26,6 +26,7 @@ class Invoice extends Model
         'tax_pence',
         'total_pence',
         'currency',
+        'is_subscription_billing',
     ];
 
     protected function casts(): array
@@ -34,6 +35,7 @@ class Invoice extends Model
             'invoice_status' => InvoiceStatus::class,
             'issued_on' => 'date',
             'due_on' => 'date',
+            'is_subscription_billing' => 'boolean',
         ];
     }
 

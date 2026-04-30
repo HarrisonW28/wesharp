@@ -51,6 +51,8 @@ function variantInvoice(status: string): Variant {
       return "destructive";
     case "draft":
       return "secondary";
+    case "sent":
+      return "warning";
     default:
       return "default";
   }

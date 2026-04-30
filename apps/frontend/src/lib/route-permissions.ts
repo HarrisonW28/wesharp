@@ -47,10 +47,14 @@ export function accountPermissionForPath(pathname: string): string {
     return "invoices.view";
   }
   if (pathname.startsWith("/account/locations")) {
-    return "account.locations.manage";
+    return "companies.view";
   }
-  if (pathname.startsWith("/account/settings")) {
-    return "account.settings.update";
+  if (
+    pathname.startsWith("/account/settings") ||
+    pathname.startsWith("/account/profile") ||
+    pathname.startsWith("/account/business")
+  ) {
+    return "account.settings.view";
   }
   return "dashboard.view";
 }

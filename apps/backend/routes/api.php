@@ -44,6 +44,7 @@ Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (
     Route::middleware('permission:knives.view')->get('knives', [AccountKnifeController::class, 'index'])->name('api.account.knives.index');
 
     Route::middleware('permission:invoices.view')->get('invoices', [AccountInvoiceController::class, 'index'])->name('api.account.invoices.index');
+    Route::middleware('permission:invoices.view')->get('invoices/{invoice}', [AccountInvoiceController::class, 'show'])->whereUuid('invoice')->name('api.account.invoices.show');
 
     Route::middleware('permission:account.locations.manage')->get('locations', [AccountLocationController::class, 'index'])->name('api.account.locations.index');
     Route::middleware('permission:account.locations.manage')->post('locations', [AccountLocationController::class, 'store'])->name('api.account.locations.store');

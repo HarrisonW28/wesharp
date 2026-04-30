@@ -17,8 +17,8 @@ final class InvoiceService
         $query = Invoice::query()
             ->with([
                 'company:id,name',
-                'order:id,booking_id',
-                'payments:id,invoice_id,amount_pence',
+                'order:id,booking_id,created_at,order_status',
+                'payments:id,invoice_id,amount_pence,payment_status,payment_method,paid_at',
             ]);
 
         if (($v = trim((string) $request->query('q', ''))) !== '') {

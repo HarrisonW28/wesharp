@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Account;
 
 use App\Http\Requests\Account\AccountStoreCompanyLocationRequest;
 use App\Http\Requests\Account\AccountUpdateCompanyLocationRequest;
+use App\Models\Company;
 use App\Models\CompanyLocation;
 use App\Support\ApiResponses;
 use Illuminate\Http\JsonResponse;
@@ -19,20 +20,10 @@ final class AccountLocationController extends TenantAccountController
         $this->authorize('view', $company);
 
         $items = $company->locations()
+            ->orderByDesc('is_default')
             ->orderBy('label')
             ->get()
-            ->map(static fn (CompanyLocation $l): array => [
-                'id' => (string) $l->id,
-                'label' => $l->label,
-                'line_one' => $l->line_one,
-                'line_two' => $l->line_two,
-                'city' => $l->city,
-                'postcode' => $l->postcode,
-                'country' => $l->country,
-                'latitude' => $l->latitude,
-                'longitude' => $l->longitude,
-                'updated_at' => $l->updated_at?->toIso8601String(),
-            ])
+            ->map(fn (CompanyLocation $l): array => $this->locationPayload($l))
             ->values()
             ->all();
 
@@ -47,23 +38,19 @@ final class AccountLocationController extends TenantAccountController
         $this->authorize('manageAccountLocations', $company);
 
         $validated = $request->validated();
+        $makeDefault = (bool) ($validated['is_default'] ?? false);
+        unset($validated['is_default']);
 
         /** @phpstan-ignore-next-line */
         $location = CompanyLocation::query()->create(array_merge($validated, [
             'company_id' => (string) $company->getKey(),
         ]));
 
-        return ApiResponses::success([
-            'id' => (string) $location->id,
-            'label' => $location->label,
-            'line_one' => $location->line_one,
-            'line_two' => $location->line_two,
-            'city' => $location->city,
-            'postcode' => $location->postcode,
-            'country' => $location->country,
-            'latitude' => $location->latitude,
-            'longitude' => $location->longitude,
-        ], 201);
+        if ($makeDefault || $company->locations()->count() === 1) {
+            $this->setAsOnlyDefault($company, $location);
+        }
+
+        return ApiResponses::success($this->locationPayload($location->fresh()), 201);
     }
 
     public function update(
@@ -79,19 +66,47 @@ final class AccountLocationController extends TenantAccountController
         /** @phpstan-ignore-next-line */
         $this->authorize('manageAccountLocations', $company);
 
-        $location->update($request->validated());
+        $validated = $request->validated();
+        $makeDefault = array_key_exists('is_default', $validated) && $validated['is_default'] === true;
+        unset($validated['is_default']);
 
-        return ApiResponses::success([
-            'id' => (string) $location->id,
-            'label' => $location->label,
-            'line_one' => $location->line_one,
-            'line_two' => $location->line_two,
-            'city' => $location->city,
-            'postcode' => $location->postcode,
-            'country' => $location->country,
-            'latitude' => $location->latitude,
-            'longitude' => $location->longitude,
-            'updated_at' => $location->updated_at?->toIso8601String(),
-        ]);
+        if ($validated !== []) {
+            $location->update($validated);
+        }
+
+        if ($makeDefault) {
+            $this->setAsOnlyDefault($company, $location->fresh());
+        }
+
+        /** @phpstan-ignore-next-line */
+        return ApiResponses::success($this->locationPayload($location->fresh()));
+    }
+
+    /** @return array<string, mixed> */
+    private function locationPayload(CompanyLocation $l): array
+    {
+        return [
+            'id' => (string) $l->id,
+            'label' => $l->label,
+            'is_default' => (bool) $l->is_default,
+            'line_one' => $l->line_one,
+            'line_two' => $l->line_two,
+            'city' => $l->city,
+            'postcode' => $l->postcode,
+            'country' => $l->country,
+            'latitude' => $l->latitude,
+            'longitude' => $l->longitude,
+            'updated_at' => $l->updated_at?->toIso8601String(),
+        ];
+    }
+
+    private function setAsOnlyDefault(Company $company, CompanyLocation $location): void
+    {
+        CompanyLocation::query()
+            ->where('company_id', $company->id)
+            ->whereKeyNot($location->id)
+            ->update(['is_default' => false]);
+
+        $location->forceFill(['is_default' => true])->save();
     }
 }

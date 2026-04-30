@@ -214,6 +214,15 @@ final class MvpOperationalPipelineApiTest extends TestCase
             $allIds = collect($wide->json('data.items'))->pluck('id')->all();
             /** @phpstan-ignore-next-line */
             self::assertNotContains((string) $peerInvoice->id, $allIds);
+
+            $invDetail = $this->withHeaders($tH)->getJson('/api/account/invoices/'.$invoiceId)->assertOk();
+            /** @phpstan-ignore-next-line */
+            $invPayload = $invDetail->json('data');
+            self::assertIsArray($invPayload);
+            self::assertArrayNotHasKey('company_id', $invPayload);
+            self::assertArrayNotHasKey('order_id', $invPayload);
+            self::assertArrayHasKey('display_reference', $invPayload);
+            self::assertArrayHasKey('items', $invPayload);
         } finally {
             Carbon::setTestNow();
         }

@@ -248,14 +248,35 @@ export const PaginatedTenantKnivesSchema = z.object({
   meta: MetaSchema.optional(),
 });
 
+export const AccountPortalInvoiceOrderSummarySchema = z.object({
+  id: z.string(),
+  display_reference: z.string().optional(),
+  status: z.string().nullable().optional(),
+});
+
 export const InvoiceRowTenantSchema = z
   .object({
     id: z.string(),
+    display_reference: z.string().optional(),
     invoice_number: z.string().nullable().optional(),
     total: z.number().nullable().optional(),
+    subtotal_pence: z.number().nullable().optional(),
+    tax_pence: z.number().nullable().optional(),
+    total_pence: z.number().nullable().optional(),
+    formatted_subtotal: z.string().nullable().optional(),
+    formatted_tax: z.string().nullable().optional(),
+    formatted_total: z.string().nullable().optional(),
+    formatted_amount: z.string().nullable().optional(),
+    formatted_amount_due: z.string().nullable().optional(),
+    amount_due_pence: z.number().nullable().optional(),
     status: z.string().nullable().optional(),
+    payment_status: z.string().nullable().optional(),
+    overdue: z.boolean().optional(),
     issue_date: z.string().nullable().optional(),
     due_date: z.string().nullable().optional(),
+    company_name: z.string().nullable().optional(),
+    order: AccountPortalInvoiceOrderSummarySchema.nullable().optional(),
+    updated_at: z.string().nullable().optional(),
   })
   .passthrough();
 
@@ -263,6 +284,46 @@ export const PaginatedTenantInvoicesSchema = z.object({
   success: z.literal(true),
   data: z.object({ items: z.array(InvoiceRowTenantSchema) }),
   meta: MetaSchema.optional(),
+});
+
+export const AccountPortalInvoiceLineSchema = z.object({
+  description: z.string(),
+  quantity: z.number(),
+  unit_amount_pence: z.number(),
+  line_total_pence: z.number(),
+  formatted_unit_amount: z.string(),
+  formatted_line_total: z.string(),
+});
+
+export const AccountPortalInvoicePaymentSchema = z.object({
+  formatted_amount: z.string(),
+  amount_pence: z.number(),
+  status: z.string().nullable().optional(),
+  method: z.string().nullable().optional(),
+  paid_at: z.string().nullable().optional(),
+});
+
+export const AccountInvoiceDetailDataSchema = InvoiceRowTenantSchema.extend({
+  items: z.array(AccountPortalInvoiceLineSchema).optional(),
+  payments: z.array(AccountPortalInvoicePaymentSchema).optional(),
+  payment: z
+    .object({
+      online_checkout_available: z.boolean().optional(),
+      cta_label: z.string().optional(),
+      cta_hint: z.string().optional(),
+    })
+    .optional(),
+  documents: z
+    .object({
+      pdf_download_available: z.boolean().optional(),
+      print_available: z.boolean().optional(),
+    })
+    .optional(),
+}).passthrough();
+
+export const AccountInvoiceDetailResponseSchema = z.object({
+  success: z.literal(true),
+  data: AccountInvoiceDetailDataSchema,
 });
 
 export const LocationsResponseSchema = z.object({

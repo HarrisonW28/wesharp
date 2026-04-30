@@ -25,8 +25,15 @@ final class AccountInvoiceController extends TenantAccountController
         $paginator = $this->invoiceService->paginate($scoped);
 
         /** @phpstan-ignore-next-line */
-        $paginator->getCollection()->transform(fn (Invoice $invoice): array => InvoiceJson::listRow($invoice));
+        $paginator->getCollection()->transform(fn (Invoice $invoice): array => InvoiceJson::portalListRow($invoice));
 
         return ApiResponses::paginated($paginator, 'items');
+    }
+
+    public function show(Request $request, Invoice $invoice): JsonResponse
+    {
+        $this->authorize('view', $invoice);
+
+        return ApiResponses::success(InvoiceJson::portalDetail($invoice));
     }
 }

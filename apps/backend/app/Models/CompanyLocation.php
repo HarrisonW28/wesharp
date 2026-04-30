@@ -15,6 +15,7 @@ class CompanyLocation extends Model
 
     protected $fillable = [
         'company_id',
+        'is_default',
         'label',
         'line_one',
         'line_two',
@@ -28,6 +29,7 @@ class CompanyLocation extends Model
     protected function casts(): array
     {
         return [
+            'is_default' => 'boolean',
             'latitude' => 'float',
             'longitude' => 'float',
         ];

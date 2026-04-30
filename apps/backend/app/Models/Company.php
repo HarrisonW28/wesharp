@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -38,6 +39,11 @@ class Company extends Model
     public function locations(): HasMany
     {
         return $this->hasMany(CompanyLocation::class);
+    }
+
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(CompanySubscription::class);
     }
 
     public function contacts(): HasMany

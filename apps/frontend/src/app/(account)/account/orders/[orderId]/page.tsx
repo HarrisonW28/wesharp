@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { CustomerOrderStatusBadge } from "@/components/orders/CustomerOrderStatusBadge";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { CustomerInvoiceStatusBadge } from "@/components/invoices/CustomerInvoiceStatusBadge";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
@@ -204,9 +205,12 @@ export default function TenantOrderDetailPage() {
                   </CardDescription>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <StatusBadge kind="invoice" status={o.invoice.status} />
+                  <CustomerInvoiceStatusBadge status={o.invoice.status} />
+                  <Button size="sm" className="rounded-lg" asChild>
+                    <Link href={`/account/invoices/${o.invoice.id}`}>View invoice</Link>
+                  </Button>
                   <Button size="sm" variant="outline" className="rounded-lg" asChild>
-                    <Link href="/account/invoices">View invoices</Link>
+                    <Link href="/account/invoices">All invoices</Link>
                   </Button>
                 </div>
               </CardHeader>

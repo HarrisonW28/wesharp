@@ -7,6 +7,19 @@ use App\Support\Money\MoneyFormatting;
 
 final class PaymentJson
 {
+    /** Tenant-facing payment row — no internal entity IDs. */
+    /** @return array<string, mixed> */
+    public static function portalCustomerSummary(Payment $payment): array
+    {
+        return [
+            'formatted_amount' => MoneyFormatting::formatGbpFromPence((int) $payment->amount_pence),
+            'amount_pence' => (int) $payment->amount_pence,
+            'status' => $payment->payment_status?->value,
+            'method' => $payment->payment_method?->value,
+            'paid_at' => $payment->paid_at?->toIso8601String(),
+        ];
+    }
+
     /** @return array<string, mixed> */
     public static function summary(Payment $payment): array
     {

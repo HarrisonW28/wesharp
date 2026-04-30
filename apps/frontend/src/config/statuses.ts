@@ -19,6 +19,9 @@ export const KNIFE_CUSTODY_STATUS = {
 
 export const INVOICE_STATUS = {
   DRAFT: "draft",
+  /** Laravel enum value — issued/sent to customer */
+  SENT: "sent",
+  /** Legacy / alternate label in some UIs */
   ISSUED: "issued",
   PAID: "paid",
   OVERDUE: "overdue",

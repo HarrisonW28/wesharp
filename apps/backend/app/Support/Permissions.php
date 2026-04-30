@@ -63,8 +63,14 @@ final class Permissions
     /** Create/update/remove pick-up addresses for the signed-in company (tenant portal). */
     public const ACCOUNT_LOCATIONS_MANAGE = 'account.locations.manage';
 
-    /** Safe profile fields on user + tenant company metadata (non-financial / non-admin fields). */
-    public const ACCOUNT_SETTINGS_UPDATE = 'account.settings.update';
+    /** Read tenant account settings payload (`GET /api/account/settings`). */
+    public const ACCOUNT_SETTINGS_VIEW = 'account.settings.view';
+
+    /** Update own portal user display name (tenant). */
+    public const ACCOUNT_PROFILE_UPDATE = 'account.profile.update';
+
+    /** Update tenant trading / contact fields on the company record (owner only). */
+    public const ACCOUNT_BUSINESS_UPDATE = 'account.business.update';
 
     public const SETTINGS_VIEW = 'settings.view';
 
@@ -106,7 +112,9 @@ final class Permissions
         self::PAYMENTS_OVERRIDE,
         self::ANALYTICS_VIEW,
         self::ACCOUNT_LOCATIONS_MANAGE,
-        self::ACCOUNT_SETTINGS_UPDATE,
+        self::ACCOUNT_SETTINGS_VIEW,
+        self::ACCOUNT_PROFILE_UPDATE,
+        self::ACCOUNT_BUSINESS_UPDATE,
         self::SETTINGS_VIEW,
         self::SETTINGS_MANAGE,
         self::USERS_VIEW,
@@ -166,8 +174,10 @@ final class Permissions
             self::KNIVES_UPDATE,
             self::INVOICES_VIEW,
             self::PAYMENTS_VIEW,
+            self::ACCOUNT_SETTINGS_VIEW,
+            self::ACCOUNT_PROFILE_UPDATE,
+            self::ACCOUNT_BUSINESS_UPDATE,
             self::ACCOUNT_LOCATIONS_MANAGE,
-            self::ACCOUNT_SETTINGS_UPDATE,
         ],
 
         UserRole::CustomerStaff->value => [
@@ -180,8 +190,8 @@ final class Permissions
             self::KNIVES_VIEW,
             self::INVOICES_VIEW,
             self::PAYMENTS_VIEW,
-            self::ACCOUNT_LOCATIONS_MANAGE,
-            self::ACCOUNT_SETTINGS_UPDATE,
+            self::ACCOUNT_SETTINGS_VIEW,
+            self::ACCOUNT_PROFILE_UPDATE,
         ],
     ];
 

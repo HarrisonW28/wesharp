@@ -41,9 +41,9 @@ final class CompanyPolicy
         return Permissions::userMayForCompany($user, Permissions::ACCOUNT_LOCATIONS_MANAGE, $company->id);
     }
 
-    /** Non-admin profile fields exposed on `/api/account/settings` (phone/billing inbox, etc.). */
+    /** Trading / billing contact fields on the tenant company (portal — owner only). */
     public function updateTenantProfile(User $user, Company $company): bool
     {
-        return Permissions::userMayForCompany($user, Permissions::ACCOUNT_SETTINGS_UPDATE, $company->id);
+        return Permissions::userMayForCompany($user, Permissions::ACCOUNT_BUSINESS_UPDATE, $company->id);
     }
 }

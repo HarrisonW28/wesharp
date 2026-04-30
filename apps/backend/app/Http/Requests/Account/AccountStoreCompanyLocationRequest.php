@@ -19,10 +19,22 @@ class AccountStoreCompanyLocationRequest extends FormRequest
             'line_one' => ['required', 'string', 'max:512'],
             'line_two' => ['nullable', 'string', 'max:512'],
             'city' => ['required', 'string', 'max:255'],
-            'postcode' => ['nullable', 'string', 'max:24'],
+            'postcode' => ['required', 'string', 'max:24'],
             'country' => ['nullable', 'string', 'max:120'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'is_default' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'label.required' => 'Give this site a short label (e.g. Main kitchen).',
+            'line_one.required' => 'Address line one is required.',
+            'city.required' => 'City or town is required.',
+            'postcode.required' => 'Postcode is required.',
         ];
     }
 }

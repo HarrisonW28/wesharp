@@ -31,6 +31,6 @@ final class UserPolicy
         }
 
         return $subject->resolvedRole()->isCustomer()
-            && Permissions::userMay($actor, Permissions::ACCOUNT_SETTINGS_UPDATE);
+            && Permissions::userMay($actor, Permissions::ACCOUNT_PROFILE_UPDATE);
     }
 }

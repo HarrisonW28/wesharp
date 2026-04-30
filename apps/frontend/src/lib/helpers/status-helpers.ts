@@ -52,6 +52,7 @@ export function bookingStatusLabel(status: string): string {
 export function invoiceStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     [INVOICE_STATUS.DRAFT]: "Draft",
+    [INVOICE_STATUS.SENT]: "Issued",
     [INVOICE_STATUS.ISSUED]: "Issued",
     [INVOICE_STATUS.PAID]: "Paid",
     [INVOICE_STATUS.OVERDUE]: "Overdue",
@@ -59,6 +60,30 @@ export function invoiceStatusLabel(status: string): string {
   };
   const key = status.trim();
   return labels[key] ?? humanizeUnderscored(key);
+}
+
+/** Short labels for customer invoice document status (what they owe / state of the bill). */
+export function customerInvoiceStatusLabel(status: string | null | undefined): string {
+  const key = (status ?? "").trim().toLowerCase();
+  if (key === INVOICE_STATUS.DRAFT) {
+    return "Draft";
+  }
+  if (key === INVOICE_STATUS.SENT) {
+    return "Payment due";
+  }
+  if (key === INVOICE_STATUS.PAID) {
+    return "Paid";
+  }
+  if (key === INVOICE_STATUS.OVERDUE) {
+    return "Overdue";
+  }
+  if (key === INVOICE_STATUS.VOID) {
+    return "Void";
+  }
+  if (key === INVOICE_STATUS.ISSUED) {
+    return "Payment due";
+  }
+  return humanizeUnderscored(key);
 }
 
 export function knifeStatusLabel(status: string): string {

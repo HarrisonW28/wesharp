@@ -15,6 +15,7 @@ class CompanyLocationFactory extends Factory
     {
         return [
             'company_id' => Company::factory(),
+            'is_default' => false,
             'label' => fake()->randomElement(['Main site', 'Kitchen', 'Warehouse', 'Shop floor']),
             'line_one' => fake()->streetAddress(),
             'line_two' => fake()->boolean(25) ? fake()->secondaryAddress() : null,
