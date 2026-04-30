@@ -63,9 +63,6 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                   <Link href="/safety" className={navLinkClass} onClick={() => setOpen(false)}>
                     Safety
                   </Link>
-                  <Link href="/contact" className={navLinkClass} onClick={() => setOpen(false)}>
-                    Contact
-                  </Link>
                   <SignedOut>
                     <Link href="/login" className={navLinkClass} onClick={() => setOpen(false)}>
                       Sign in

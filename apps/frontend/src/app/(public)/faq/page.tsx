@@ -3,25 +3,33 @@ import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 export default function FaqPage() {
   const items = [
     {
-      q: "Do I need an account to request pickup?",
-      a: "No — use the booking enquiry route. Operators convert qualified leads into companies, locations, and requested bookings.",
+      q: "Do I need an account to book?",
+      a: "No. Send a collection enquiry with your details and we’ll get back to you to confirm timing. Once you’re a regular customer, a free account helps you track bookings, orders, and invoices.",
     },
     {
-      q: "How do invoices work?",
-      a: "Invoices are raised from your knife orders. In your account you can see what’s outstanding; our team handles payment setup.",
+      q: "How long does sharpening take?",
+      a: "It depends on how many knives you send and our route schedule. We’ll give you an expected return date when we confirm your collection — not a vague “soon”.",
     },
     {
-      q: "What is Route Manager?",
-      a: "A mobile-focused shell around today’s operational route, manifests, stops, and completion actions — optimised for thumbs and outdoor lighting.",
+      q: "Can I track my knives?",
+      a: "Yes. After you have an account, you can see bookings and orders in one place so you know where things stand from collection to return.",
     },
     {
-      q: "Which cities are live for the demo?",
-      a: "Seeded data focuses on Greater Manchester & Liverpool — production coverage follows the configured service_areas table.",
+      q: "How do invoices and payment work?",
+      a: "We raise invoices in GBP for the work we’ve done. In your account you can see what’s outstanding; our team will agree payment terms with you when you’re set up.",
+    },
+    {
+      q: "Where do you collect?",
+      a: "We currently serve Greater Manchester and Liverpool. Add your postcode when you book — we’ll only confirm if you’re in an area we cover.",
+    },
+    {
+      q: "Do you work with restaurants only?",
+      a: "We work with professional kitchens of all sizes — restaurants, hotels, butchers, caterers — and with serious home cooks who want the same service.",
     },
   ];
 
   return (
-    <MarketingArticle title="FAQ" lead="Straight answers around the MVP feature slice.">
+    <MarketingArticle title="FAQ" lead="Straight answers before you book. If something’s not here, use Contact and we’ll reply in working hours.">
       <dl className="space-y-4">
         {items.map(({ q, a }) => (
           <div key={q} className="rounded-xl border bg-card px-5 py-4">

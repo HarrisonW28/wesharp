@@ -5,7 +5,7 @@ export default function ServiceAreasPage() {
   return (
     <MarketingArticle
       title="Areas we cover"
-      lead="We currently collect and deliver across Greater Manchester and Liverpool. Tell us your postcode when you book — we’ll confirm we can reach you."
+      lead="We collect and deliver across Greater Manchester and Liverpool. Add your postcode when you book — we only confirm if you’re in range."
     >
       <div className="flex flex-wrap gap-2">
         {SERVICE_AREAS.map((area) => (
@@ -15,7 +15,7 @@ export default function ServiceAreasPage() {
         ))}
       </div>
       <p className="pt-4">
-        Not sure you’re covered? Tell us where you operate on the enquiry form — we qualify against active service areas before confirming a pickup.
+        Not sure you’re covered? Put your address on the enquiry form — we’ll tell you straight away if we can reach you.
       </p>
     </MarketingArticle>
   );

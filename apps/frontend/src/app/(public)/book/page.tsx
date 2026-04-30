@@ -188,7 +188,7 @@ export default function BookPage() {
           <li>If plans change, reply to our message and we will adjust the booking.</li>
         </ul>
         <div className="flex flex-wrap gap-3">
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="rounded-lg">
             <Link href="/">Back home</Link>
           </Button>
         </div>
@@ -199,11 +199,11 @@ export default function BookPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-10 px-4 py-16 md:py-20">
       <div className="space-y-3">
-        <p className="text-sm font-medium text-primary">Request a collection</p>
-        <h1 className="text-balance text-3xl font-semibold tracking-tight">Request a collection or on-site visit</h1>
+        <p className="text-sm font-medium text-primary">Book a collection</p>
+        <h1 className="text-balance text-3xl font-semibold tracking-tight">Book a collection or on-site visit</h1>
         <p className="text-muted-foreground">
-          Tell us about your kitchen and preferred date. We’ll review your request and get back to you to confirm a collection
-          slot — no account needed for this step.
+          Tell us about your kitchen and when you need us. We’ll reply to confirm a slot and anything we need before we
+          arrive — you don’t need an account for this step.
         </p>
       </div>
 
@@ -510,17 +510,17 @@ export default function BookPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button type="submit" disabled={status === "submitting" || apiOrigin() === ""}>
+          <Button type="submit" className="rounded-lg" disabled={status === "submitting" || apiOrigin() === ""}>
             {status === "submitting" ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                 Sending…
               </>
             ) : (
-              "Submit enquiry"
+              "Submit booking enquiry"
             )}
           </Button>
-          <Button type="button" variant="ghost" asChild>
+          <Button type="button" variant="ghost" className="rounded-lg" asChild>
             <Link href="/">Cancel</Link>
           </Button>
         </div>

@@ -1,30 +1,50 @@
+import Link from "next/link";
+
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
+import { PRICING } from "@/config/pricing";
+import { formatGbpFromPence } from "@/lib/format/money";
 
 export default function PricingPage() {
+  const paygFromMinor = Math.min(...PRICING.tiers.map((t) => t.unitAmountMinor));
+
   return (
     <MarketingArticle
       title="Pricing"
-      lead="Every kitchen is different — we price by volume, cadence, and how you like to run collections. Figures below are examples; we confirm a written quote before you commit."
+      lead="Every kitchen is different — we price by volume, how often we visit, and turnaround. Figures below are guide rates in GBP; we confirm a written quote before you commit."
     >
       <div className="rounded-2xl border bg-muted/40 p-6 text-foreground">
         <div className="grid gap-6 md:grid-cols-2">
           <div>
-            <div className="text-sm font-semibold">Pay-as-you-go (example)</div>
-            <div className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">From £8.50</div>
-            <p className="mt-2 text-xs text-muted-foreground">Per knife on a typical ad-hoc collection — confirms on quote.</p>
+            <div className="text-sm font-semibold">Pay-as-you-go (guide)</div>
+            <div className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">
+              From {formatGbpFromPence(paygFromMinor)}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Per knife on a typical ad-hoc collection — confirmed on quote.</p>
+            <ul className="mt-4 space-y-1.5 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+              {PRICING.tiers.map((t) => (
+                <li key={t.id}>
+                  <span className="text-foreground">{t.label}</span> — {formatGbpFromPence(t.unitAmountMinor)} per knife
+                  (guide)
+                </li>
+              ))}
+            </ul>
           </div>
           <div>
-            <div className="text-sm font-semibold">Regular programme (example)</div>
-            <div className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">£49.00</div>
-            <p className="mt-2 text-xs text-muted-foreground">Illustrative monthly bundle for scheduled visits — tailored when we meet.</p>
+            <div className="text-sm font-semibold">Regular programme (guide)</div>
+            <div className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">
+              {formatGbpFromPence(PRICING.subscriptionMonthlyMinor)}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Example monthly figure for scheduled visits — we tailor this when we understand your kitchen.
+            </p>
           </div>
         </div>
       </div>
       <p>
-        Groups on a trade account often combine fixed routes with consolidated invoicing — see{" "}
-        <a href="/trade-accounts" className="font-medium underline underline-offset-4">
+        Trade accounts often combine fixed routes with clear invoicing — see{" "}
+        <Link href="/trade-accounts" className="font-medium underline underline-offset-4">
           trade accounts
-        </a>
+        </Link>
         .
       </p>
     </MarketingArticle>

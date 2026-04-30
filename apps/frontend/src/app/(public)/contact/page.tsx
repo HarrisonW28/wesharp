@@ -5,18 +5,23 @@ import { Button } from "@/components/ui/button";
 
 export default function ContactPage() {
   return (
-    <MarketingArticle showFooterCtas={false} title="Contact" lead="Operational and commercial introductions flow through enquiry first — routing teams pick up promptly during business hours.">
+    <MarketingArticle
+      showFooterCtas={false}
+      title="Contact"
+      lead="Tell us what you need — new site, urgent collection, or a question about coverage and pricing. We reply during business hours."
+    >
       <p>
-        Prefer email? Reach us at&nbsp;
+        Email:&nbsp;
         <a href="mailto:hello@wesharp.uk" className="font-medium text-foreground underline underline-offset-4">
           hello@wesharp.uk
         </a>
-        &nbsp;(placeholder inbox for the MVP brochure site).
       </p>
-      <p>Urgent pickups or new sites: share your postcode, rough knife count, and when you need us — we’ll prioritise getting you booked.</p>
+      <p>
+        For the fastest route to a slot, include your postcode, roughly how many knives need attention, and when you need us.
+      </p>
       <div className="pt-2">
-        <Button asChild>
-          <Link href="/book">Submit booking enquiry</Link>
+        <Button className="rounded-lg" asChild>
+          <Link href="/book">Book a collection</Link>
         </Button>
       </div>
     </MarketingArticle>
