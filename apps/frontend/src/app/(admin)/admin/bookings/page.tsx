@@ -17,6 +17,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { bookingStatusLabel } from "@/lib/helpers/status-helpers";
 import { formatGbpFromPence } from "@/lib/format/money";
 
+import { CompanyLookup, ContactLookup, LocationLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -43,7 +44,6 @@ export default function AdminBookingsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [createOpen, setCreateOpen] = useState(false);
-  const [companyIdDraft, setCompanyIdDraft] = useState("");
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -79,40 +79,6 @@ export default function AdminBookingsPage() {
         throw new Error("Unexpected bookings payload.");
       }
       return parsed.data;
-    },
-  });
-
-  const companiesForPicker = useQuery({
-    enabled: createOpen,
-    queryKey: ["admin-companies-pick", createOpen],
-    queryFn: async () => {
-      const res = await admin.json<unknown>("/api/admin/companies?per_page=75&sort=name&direction=asc");
-      if (!res.ok) {
-        throw new Error(res.message);
-      }
-      const body = res.data as { data?: { items?: Array<{ id: string; name: string }> } };
-
-      return body.data?.items ?? [];
-    },
-  });
-
-  const companyDetail = useQuery({
-    enabled: Boolean(createOpen && companyIdDraft),
-    queryKey: ["admin-company-pick", companyIdDraft],
-    queryFn: async () => {
-      const res = await admin.json<unknown>(`/api/admin/companies/${companyIdDraft}`);
-      if (!res.ok) {
-        throw new Error(res.message);
-      }
-      const body = res.data as {
-        success?: boolean;
-        data?: {
-          contacts?: Array<{ id: string; first_name: string; last_name: string }>;
-          locations?: Array<{ id: string; label: string; city?: string | null }>;
-        };
-      };
-
-      return body.data ?? null;
     },
   });
 
@@ -172,7 +138,6 @@ export default function AdminBookingsPage() {
         internal_notes: "",
         price_estimate_pence: undefined,
       });
-      setCompanyIdDraft("");
       setCreateOpen(false);
       if (id) {
         router.push(`/admin/bookings/${id}`);
@@ -427,9 +392,6 @@ export default function AdminBookingsPage() {
         open={createOpen}
         onOpenChange={(open) => {
           setCreateOpen(open);
-          if (!open) {
-            setCompanyIdDraft("");
-          }
         }}
       >
         <DialogContent className="max-w-lg">
@@ -443,70 +405,43 @@ export default function AdminBookingsPage() {
             })}
           >
             <div className="space-y-2">
-              <Label>Account</Label>
-              <Select
-                value={form.watch("company_id")}
-                disabled={companiesForPicker.isLoading || !companiesForPicker.data?.length}
-                onValueChange={(v) => {
-                  form.setValue("company_id", v);
+              <CompanyLookup
+                label="Account"
+                value={form.watch("company_id") === "" ? null : form.watch("company_id")}
+                onChange={(id) => {
+                  form.setValue("company_id", id ?? "");
                   form.setValue("location_id", "");
                   form.setValue("contact_id", "");
-                  setCompanyIdDraft(v);
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={companiesForPicker.isLoading ? "Loading…" : "Select kitchen"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(companiesForPicker.data ?? []).map((co) => (
-                    <SelectItem key={co.id} value={co.id}>
-                      {co.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Search kitchen…"
+              />
             </div>
 
             <div className="space-y-2">
-              <Label>Location</Label>
-              <Select
-                value={form.watch("location_id")}
-                disabled={!companyIdDraft}
-                onValueChange={(v) => form.setValue("location_id", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Venue site" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(companyDetail.data?.locations ?? []).map((loc) => (
-                    <SelectItem key={loc.id} value={loc.id}>
-                      {loc.label}
-                      {loc.city ? ` · ${loc.city}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <LocationLookup
+                label="Location"
+                value={form.watch("location_id") === "" ? null : form.watch("location_id")}
+                onChange={(id) => form.setValue("location_id", id ?? "")}
+                disabled={!form.watch("company_id")}
+                extraParams={
+                  form.watch("company_id") ? { company_id: form.watch("company_id") } : undefined
+                }
+                placeholder="Venue site"
+              />
             </div>
 
             <div className="space-y-2">
-              <Label>Contact (optional)</Label>
-              <Select
-                value={form.watch("contact_id") === "" ? "__none" : form.watch("contact_id")}
-                disabled={!companyIdDraft}
-                onValueChange={(v) => form.setValue("contact_id", v === "__none" ? "" : v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Anyone on-site" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">—</SelectItem>
-                  {(companyDetail.data?.contacts ?? []).map((co) => (
-                    <SelectItem key={co.id} value={co.id}>
-                      {co.first_name} {co.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ContactLookup
+                label="Contact (optional)"
+                value={form.watch("contact_id") ? (form.watch("contact_id") as string) : null}
+                onChange={(id) => form.setValue("contact_id", id ?? "")}
+                nullable
+                disabled={!form.watch("company_id")}
+                extraParams={
+                  form.watch("company_id") ? { company_id: form.watch("company_id") } : undefined
+                }
+                placeholder="Anyone on-site"
+              />
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">

@@ -9,10 +9,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { OrderDetailResponseSchema } from "@/lib/api/admin-orders-schema";
-import { PaginatedKnivesResponseSchema } from "@/lib/api/admin-knives-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGbpFromPence } from "@/lib/format/money";
 
+import { KnifeLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -22,13 +22,6 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export default function AdminOrderDetailPage() {
   const params = useParams<{ orderId: string }>();
@@ -39,7 +32,7 @@ export default function AdminOrderDetailPage() {
   const [bulkCount, setBulkCount] = useState(5);
   const [addOpen, setAddOpen] = useState(false);
   const [attachOpen, setAttachOpen] = useState(false);
-  const [attachKnifeId, setAttachKnifeId] = useState("");
+  const [attachKnifeId, setAttachKnifeId] = useState<string | null>(null);
   const [addKnifeType, setAddKnifeType] = useState("chefs");
   const [invoiceDraftOnComplete, setInvoiceDraftOnComplete] = useState(true);
 
@@ -56,25 +49,6 @@ export default function AdminOrderDetailPage() {
         throw new Error("Unexpected order payload.");
       }
       return parsed.data.data;
-    },
-  });
-
-  const unassignedKnivesQuery = useQuery({
-    queryKey: ["admin-knives-unassigned", orderId, orderQuery.data?.company_id],
-    enabled: attachOpen && Boolean(orderQuery.data?.company_id),
-    queryFn: async () => {
-      const cid = orderQuery.data!.company_id!;
-      const res = await admin.json<unknown>(
-        `/api/admin/knives?company_id=${encodeURIComponent(cid)}&unassigned_only=1&per_page=100`,
-      );
-      if (!res.ok) {
-        throw new Error(res.message);
-      }
-      const parsed = PaginatedKnivesResponseSchema.safeParse(res.data);
-      if (!parsed.success) {
-        throw new Error("Unexpected knives list.");
-      }
-      return parsed.data.data.items;
     },
   });
 
@@ -124,7 +98,7 @@ export default function AdminOrderDetailPage() {
     onSuccess: () => {
       toast.success("Existing knife attached to this order.");
       setAttachOpen(false);
-      setAttachKnifeId("");
+      setAttachKnifeId(null);
       void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
     },
@@ -326,37 +300,21 @@ export default function AdminOrderDetailPage() {
                 <DialogTitle>Link inventory knife</DialogTitle>
               </DialogHeader>
               <p className="text-sm text-muted-foreground">
-                Pick a blade already on file for {o.company?.name ?? "this customer"} that is not tied to another order.
+                Search unassigned blades already on file for {o.company?.name ?? "this customer"} (not on another
+                order).
               </p>
-              {unassignedKnivesQuery.isLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  Loading knives…
-                </div>
-              ) : unassignedKnivesQuery.isError ? (
-                <p className="text-sm text-destructive">Could not load knives for this account.</p>
-              ) : (unassignedKnivesQuery.data ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No spare blades in inventory — add new knives above or register standalone knives under Knives.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  <Label htmlFor="attach-knife">Knife</Label>
-                  <Select value={attachKnifeId || undefined} onValueChange={(v) => setAttachKnifeId(v)}>
-                    <SelectTrigger id="attach-knife">
-                      <SelectValue placeholder="Choose by tag / type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(unassignedKnivesQuery.data ?? []).map((kn) => (
-                        <SelectItem key={kn.id} value={kn.id}>
-                          {(kn.tag_id ?? "").trim() !== "" ? kn.tag_id : `Knife ${kn.id.slice(0, 8)}`}
-                          {kn.knife_type ? ` · ${kn.knife_type}` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              <KnifeLookup
+                label="Knife"
+                value={attachKnifeId}
+                onChange={setAttachKnifeId}
+                disabled={!o.company_id}
+                extraParams={
+                  o.company_id
+                    ? { company_id: o.company_id, unassigned_only: true }
+                    : undefined
+                }
+                placeholder="Search by tag, type, or label…"
+              />
               <DialogFooter className="gap-2">
                 <Button type="button" variant="outline" onClick={() => setAttachOpen(false)}>
                   Cancel
@@ -364,7 +322,7 @@ export default function AdminOrderDetailPage() {
                 <Button
                   type="button"
                   disabled={attachMutation.isPending || !attachKnifeId}
-                  onClick={() => attachMutation.mutate(attachKnifeId)}
+                  onClick={() => attachKnifeId && attachMutation.mutate(attachKnifeId)}
                 >
                   {attachMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
                   Attach to order

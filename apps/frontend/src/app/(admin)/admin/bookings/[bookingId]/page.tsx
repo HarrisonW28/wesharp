@@ -14,6 +14,7 @@ import { BookingDetailResponseSchema } from "@/lib/api/admin-bookings-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGbpFromPence } from "@/lib/format/money";
 
+import { RouteLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -35,32 +36,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useBackendMe } from "@/hooks/use-backend-me";
-
-const routesPickSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(
-      z.object({
-        id: z.string(),
-        name: z.string().nullable(),
-        route_status: z.string().nullable(),
-        scheduled_date: z.string().nullable(),
-        driver_name: z.string().nullable().optional(),
-      }),
-    ),
-  }),
-});
 
 const notesSchema = z.object({
   internal_notes: z.string().optional(),
@@ -122,24 +100,6 @@ export default function AdminBookingDetailPage() {
     if (!row) return null;
     return row.confirmed_collection_date ?? row.requested_collection_date ?? row.requested_date ?? null;
   }, [bookingQuery.data]);
-
-  const routesQuery = useQuery({
-    enabled: Boolean(collectionDateForRoute),
-    queryKey: ["admin-routes-pick", collectionDateForRoute],
-    queryFn: async () => {
-      const d = collectionDateForRoute;
-      const qs = d ? `?date=${encodeURIComponent(d)}` : "";
-      const res = await admin.json<unknown>(`/api/admin/routes${qs}`);
-      if (!res.ok) {
-        throw new Error(res.message);
-      }
-      const parsed = routesPickSchema.safeParse(res.data);
-      if (!parsed.success) {
-        throw new Error("Unexpected routes picker response.");
-      }
-      return parsed.data.data.items;
-    },
-  });
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -276,13 +236,10 @@ export default function AdminBookingDetailPage() {
     canCancel &&
     ["requested", "confirmed", "assigned_to_route", "collected", "in_sharpening", "quality_checked"].includes(statusKey);
 
-  const routesForDate = routesQuery.data?.length ?? 0;
-
   const canAssignNow =
     assignRoute &&
     (statusKey === "confirmed" || statusKey === "assigned_to_route") &&
-    routesQuery.isSuccess &&
-    routesForDate > 0;
+    Boolean(collectionDateForRoute);
 
   const canConvertNow =
     convertOrder &&
@@ -340,13 +297,14 @@ export default function AdminBookingDetailPage() {
         </Button>
       </div>
 
-      {assignRoute && (statusKey === "confirmed" || statusKey === "assigned_to_route") && collectionDateForRoute && routesQuery.isSuccess && routesForDate === 0 ? (
-        <p className="rounded-lg border border-amber-500/35 bg-amber-500/5 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
-          No driver route exists for <strong>{collectionDateForRoute}</strong>. Add a run for that date in{" "}
-          <Link className="font-medium underline underline-offset-2" href="/admin/routes">
+      {assignRoute && (statusKey === "confirmed" || statusKey === "assigned_to_route") && collectionDateForRoute ? (
+        <p className="text-xs text-muted-foreground">
+          If nothing appears when assigning, create a driver run for{" "}
+          <strong className="text-foreground">{collectionDateForRoute}</strong> under{" "}
+          <Link className="font-medium text-primary underline underline-offset-2" href="/admin/routes">
             Routes
           </Link>
-          , then assign this booking.
+          .
         </p>
       ) : null}
 
@@ -548,30 +506,18 @@ export default function AdminBookingDetailPage() {
             className="space-y-3"
             onSubmit={assignForm.handleSubmit((v) => assignMutation.mutate({ route_id: v.route_id }))}
           >
-            <Label>Route run</Label>
-            {routesQuery.isLoading ? (
-              <div className="flex gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading routes…
-              </div>
-            ) : routesQuery.isError ? (
-              <p className="text-sm text-destructive">Unable to load routes for this date.</p>
-            ) : (
-              <Select
-                value={assignForm.watch("route_id")}
-                onValueChange={(v) => assignForm.setValue("route_id", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pick operational route" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(routesQuery.data ?? []).map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.name ?? r.id.slice(0, 8)} · {r.scheduled_date} {r.driver_name ? `· ${r.driver_name}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <RouteLookup
+              label="Route run"
+              value={assignForm.watch("route_id") === "" ? null : assignForm.watch("route_id")}
+              onChange={(id) => assignForm.setValue("route_id", id ?? "")}
+              extraParams={collectionDateForRoute ? { date: collectionDateForRoute } : undefined}
+              placeholder={
+                collectionDateForRoute
+                  ? "Search routes for this date…"
+                  : "Set a collection date on the booking first"
+              }
+              disabled={!collectionDateForRoute}
+            />
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setAssignOpen(false)}>
                 Close

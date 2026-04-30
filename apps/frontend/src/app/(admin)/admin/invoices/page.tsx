@@ -14,6 +14,7 @@ import { InvoiceDetailResponseSchema, InvoiceRowSchema, PaginatedInvoicesRespons
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGbpFromPence } from "@/lib/format/money";
 
+import { OrderLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -21,8 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/tables/DataTable";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 type InvoiceRow = z.infer<typeof InvoiceRowSchema>;
 
@@ -33,7 +32,7 @@ export default function AdminInvoicesPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const p = new URLSearchParams(searchParams.toString());
@@ -73,7 +72,7 @@ export default function AdminInvoicesPage() {
     mutationFn: async () => {
       const res = await admin.json<unknown>("/api/admin/invoices", {
         method: "POST",
-        body: JSON.stringify({ order_id: orderId.trim() }),
+        body: JSON.stringify({ order_id: (orderId ?? "").trim() }),
       });
       if (!res.ok) throw new Error(res.message);
       const d = InvoiceDetailResponseSchema.safeParse(res.data);
@@ -84,7 +83,7 @@ export default function AdminInvoicesPage() {
       toast.success("Invoice created.");
       void queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
       setCreateOpen(false);
-      setOrderId("");
+      setOrderId(null);
       if (inv.id) router.push(`/admin/invoices/${inv.id}`);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -192,10 +191,7 @@ export default function AdminInvoicesPage() {
               <DialogHeader>
                 <DialogTitle>Create from order</DialogTitle>
               </DialogHeader>
-              <div className="space-y-2">
-                <Label htmlFor="oid">Order ID (UUID)</Label>
-                <Input id="oid" value={orderId} onChange={(e) => setOrderId(e.target.value)} placeholder="Order UUID from /admin/orders" />
-              </div>
+              <OrderLookup label="Order" value={orderId} onChange={setOrderId} placeholder="Search by account or order…" />
               <DialogFooter className="gap-2">
                 <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
                   Cancel

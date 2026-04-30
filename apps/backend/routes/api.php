@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\UserDirectoryController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\KnifeController;
+use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\RouteController;
@@ -83,6 +84,15 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:users.manage')->put('users/{target}', [UserDirectoryController::class, 'update'])->whereNumber('target')->name('api.admin.users.update');
     Route::middleware('permission:users.manage')->post('users/{target}/deactivate', [UserDirectoryController::class, 'deactivate'])->whereNumber('target')->name('api.admin.users.deactivate');
     Route::middleware('permission:users.manage')->post('users/{target}/activate', [UserDirectoryController::class, 'activate'])->whereNumber('target')->name('api.admin.users.activate');
+
+    Route::middleware('permission:companies.view')->get('lookups/companies', [LookupController::class, 'companies'])->name('api.admin.lookups.companies');
+    Route::middleware('permission:users.view')->get('lookups/users', [LookupController::class, 'users'])->name('api.admin.lookups.users');
+    Route::middleware('permission:bookings.view')->get('lookups/bookings', [LookupController::class, 'bookings'])->name('api.admin.lookups.bookings');
+    Route::middleware('permission:routes.view')->get('lookups/routes', [LookupController::class, 'routes'])->name('api.admin.lookups.routes');
+    Route::middleware('permission:orders.view')->get('lookups/orders', [LookupController::class, 'orders'])->name('api.admin.lookups.orders');
+    Route::middleware('permission:knives.view')->get('lookups/knives', [LookupController::class, 'knives'])->name('api.admin.lookups.knives');
+    Route::middleware('permission:companies.view')->get('lookups/locations', [LookupController::class, 'locations'])->name('api.admin.lookups.locations');
+    Route::middleware('permission:companies.view')->get('lookups/contacts', [LookupController::class, 'contacts'])->name('api.admin.lookups.contacts');
 
     Route::middleware('permission:companies.view')->get('companies', [CompanyController::class, 'index'])->name('api.admin.companies.index');
     Route::middleware('permission:companies.create')->post('companies', [CompanyController::class, 'store'])->name('api.admin.companies.store');

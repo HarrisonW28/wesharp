@@ -14,6 +14,7 @@ import type { UserDetail, UserRoleValue, UserStatusValue } from "@/lib/api/admin
 import { UserDetailResponseSchema, UserRoleEnum, UserStatusEnum } from "@/lib/api/admin-users-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
+import { CompanyLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +61,7 @@ const editSchema = z
     if (customerRole(val.role) && val.company_id.trim() === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Customer roles must have a company UUID.",
+        message: "Customer roles must be linked to a company.",
         path: ["company_id"],
       });
     }
@@ -70,7 +71,7 @@ const editSchema = z
     if (!uuidOk) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Enter a valid company UUID or leave blank for staff without a tenant.",
+        message: "Choose a valid company or leave blank for staff without a tenant.",
         path: ["company_id"],
       });
     }
@@ -359,10 +360,25 @@ function ManageUserPanels({ user, userId }: { user: UserDetail; userId: string }
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="company_id">Company UUID</Label>
-                  <Input id="company_id" placeholder="Required for customer roles — paste from CRM" {...form.register("company_id")} />
+                  <CompanyLookup
+                    label="Company"
+                    id="company_id"
+                    value={form.watch("company_id").trim() === "" ? null : form.watch("company_id")}
+                    onChange={(id) => form.setValue("company_id", id ?? "", { shouldValidate: true })}
+                    nullable
+                    placeholder="Search company…"
+                    initialOption={
+                      user.company
+                        ? {
+                            id: user.company.id,
+                            label: user.company.name,
+                            description: user.company.city ?? null,
+                          }
+                        : null
+                    }
+                  />
                   <p className="text-xs text-muted-foreground">
-                    Staff roles may leave blank. Customer roles must point at a valid{" "}
+                    Staff roles may clear this field. Customer roles must point at a valid{" "}
                     <Link href="/admin/crm" className="text-primary underline">
                       CRM account
                     </Link>

@@ -24,6 +24,7 @@ import {
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGbpFromPence } from "@/lib/format/money";
 
+import { LocationLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { CompanyStatusBadge } from "@/components/crm/CompanyStatusBadge";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -733,22 +734,17 @@ export default function AdminCrmCompanyPage() {
             onSubmit={bookingForm.handleSubmit((v) => bookingMutation.mutate(v))}
           >
             <div className="space-y-2">
-              <Label>Location</Label>
-              <Select
-                value={bookingForm.watch("company_location_id")}
-                onValueChange={(v) => bookingForm.setValue("company_location_id", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select site" />
-                </SelectTrigger>
-                <SelectContent>
-                  {c.locations.map((loc) => (
-                    <SelectItem key={loc.id} value={loc.id}>
-                      {loc.label} {loc.city ? `· ${loc.city}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <LocationLookup
+                label="Location"
+                value={
+                  bookingForm.watch("company_location_id") === ""
+                    ? null
+                    : bookingForm.watch("company_location_id")
+                }
+                onChange={(id) => bookingForm.setValue("company_location_id", id ?? "")}
+                extraParams={{ company_id: companyId }}
+                placeholder="Search site…"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="sched">Scheduled date</Label>

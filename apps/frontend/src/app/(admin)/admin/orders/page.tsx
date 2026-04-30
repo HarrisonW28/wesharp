@@ -14,6 +14,7 @@ import { OrderDetailResponseSchema, OrderRowSchema, PaginatedOrdersResponseSchem
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGbpFromPence } from "@/lib/format/money";
 
+import { BookingLookup, CompanyLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -51,8 +52,8 @@ export default function AdminOrdersPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
-  const [companyId, setCompanyId] = useState("");
-  const [bookingId, setBookingId] = useState("");
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [bookingId, setBookingId] = useState<string | null>(null);
   const [pricePence, setPricePence] = useState("");
 
   useEffect(() => {
@@ -98,8 +99,8 @@ export default function AdminOrdersPage() {
   const createMutation = useMutation({
     mutationFn: async () => {
       const ids = createOrderSchema.safeParse({
-        company_id: companyId.trim(),
-        booking_id: bookingId.trim(),
+        company_id: (companyId ?? "").trim(),
+        booking_id: (bookingId ?? "").trim(),
       });
       if (!ids.success) {
         throw new Error(ids.error.issues[0]?.message ?? "Invalid form.");
@@ -144,8 +145,8 @@ export default function AdminOrdersPage() {
       toast.success("Order created.");
       void queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
       setCreateOpen(false);
-      setCompanyId("");
-      setBookingId("");
+      setCompanyId(null);
+      setBookingId(null);
       setPricePence("");
       if (order?.id) {
         router.push(`/admin/orders/${order.id}`);
@@ -257,14 +258,23 @@ export default function AdminOrdersPage() {
                 <p className="text-muted-foreground">
                   Requires a booking belonging to the same company. Prefer converting from a booking where possible.
                 </p>
-                <div className="space-y-1">
-                  <Label htmlFor="company_id">company_id</Label>
-                  <Input id="company_id" value={companyId} onChange={(e) => setCompanyId(e.target.value)} placeholder="UUID" />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="booking_id">booking_id</Label>
-                  <Input id="booking_id" value={bookingId} onChange={(e) => setBookingId(e.target.value)} placeholder="UUID" />
-                </div>
+                <CompanyLookup
+                  label="Account"
+                  value={companyId}
+                  onChange={(id) => {
+                    setCompanyId(id);
+                    setBookingId(null);
+                  }}
+                  placeholder="Search kitchen / company…"
+                />
+                <BookingLookup
+                  label="Booking"
+                  value={bookingId}
+                  onChange={setBookingId}
+                  disabled={!companyId}
+                  extraParams={companyId ? { company_id: companyId } : undefined}
+                  placeholder={companyId ? "Search bookings for this account…" : "Select an account first"}
+                />
                 <div className="space-y-1">
                   <Label htmlFor="ppp">price_per_knife_pence (optional)</Label>
                   <Input id="ppp" inputMode="numeric" value={pricePence} onChange={(e) => setPricePence(e.target.value)} placeholder="e.g. 1200" />

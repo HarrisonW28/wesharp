@@ -13,6 +13,7 @@ import { z } from "zod";
 import { KnifeRowSchema, PaginatedKnivesResponseSchema } from "@/lib/api/admin-knives-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
+import { CompanyLookup, OrderLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -48,15 +49,17 @@ export default function AdminKnivesPage() {
 
   const [draftTag, setDraftTag] = useState(tagFilter);
   const [draftStatus, setDraftStatus] = useState(statusFilter);
-  const [draftCompanyId, setDraftCompanyId] = useState(companyFilter);
-  const [draftOrderId, setDraftOrderId] = useState(orderFilter);
+  const [draftCompanyId, setDraftCompanyId] = useState<string | null>(
+    companyFilter === "" ? null : companyFilter,
+  );
+  const [draftOrderId, setDraftOrderId] = useState<string | null>(orderFilter === "" ? null : orderFilter);
   const [draftQ, setDraftQ] = useState(qFilter);
 
   useEffect(() => {
     setDraftTag(tagFilter);
     setDraftStatus(statusFilter);
-    setDraftCompanyId(companyFilter);
-    setDraftOrderId(orderFilter);
+    setDraftCompanyId(companyFilter === "" ? null : companyFilter);
+    setDraftOrderId(orderFilter === "" ? null : orderFilter);
     setDraftQ(qFilter);
   }, [tagFilter, statusFilter, companyFilter, orderFilter, qFilter]);
 
@@ -150,8 +153,8 @@ export default function AdminKnivesPage() {
 
     setOrDelete("tag_id", draftTag);
     setOrDelete("status", draftStatus);
-    setOrDelete("company_id", draftCompanyId);
-    setOrDelete("order_id", draftOrderId);
+    setOrDelete("company_id", draftCompanyId ?? "");
+    setOrDelete("order_id", draftOrderId ?? "");
     setOrDelete("q", draftQ);
 
     router.push(`${pathname}?${p.toString()}`);
@@ -190,7 +193,7 @@ export default function AdminKnivesPage() {
         <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Knives" }]} />
         <PageHeader
           title="Knife tracking"
-          description="Search by tag or free text; filter by account UUID, order UUID, or workshop status."
+          description="Search by tag or free text; filter by account, order, or workshop status."
         />
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">{(listQuery.error as Error).message}</p>
@@ -236,13 +239,23 @@ export default function AdminKnivesPage() {
             ))}
           </select>
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="cid">Company ID</Label>
-          <Input id="cid" value={draftCompanyId} onChange={(e) => setDraftCompanyId(e.target.value)} placeholder="UUID" />
+        <div className="space-y-1 md:col-span-2">
+          <CompanyLookup
+            label="Account"
+            value={draftCompanyId}
+            onChange={setDraftCompanyId}
+            nullable
+            placeholder="Filter by customer…"
+          />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="oid">Order ID</Label>
-          <Input id="oid" value={draftOrderId} onChange={(e) => setDraftOrderId(e.target.value)} placeholder="UUID" />
+        <div className="space-y-1 md:col-span-2">
+          <OrderLookup
+            label="Order"
+            value={draftOrderId}
+            onChange={setDraftOrderId}
+            nullable
+            placeholder="Filter by order…"
+          />
         </div>
         <div className="flex items-end">
           <Button type="button" className="w-full md:w-auto" onClick={applyFilters}>
