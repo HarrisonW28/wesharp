@@ -36,6 +36,7 @@ use App\Models\RouteStop;
 use App\Models\ServiceArea;
 use App\Models\UploadedFile;
 use App\Models\User;
+use Faker\Generator;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -44,8 +45,11 @@ use Illuminate\Support\Str;
 
 final class WeSharpDemoSeeder extends Seeder
 {
+    private Generator $faker;
+
     public function run(): void
     {
+        $this->faker = \Faker\Factory::create('en_GB');
         DB::transaction(fn () => $this->seedScenario());
     }
 
@@ -362,7 +366,7 @@ final class WeSharpDemoSeeder extends Seeder
             'name' => $payload['name'],
             'slug' => Str::slug($payload['name'].'-'.$catalogueSymbol.'-'.Str::lower(Str::random(5))),
             'company_status' => $payload['status'],
-            'phone' => '+44 '.fake()->numerify('7700######'),
+            'phone' => '+44 '.$this->faker->numerify('7700######'),
             'billing_email' => sprintf('%s@%s.kitchen-demo.test',
                 strtolower(Str::limit(Str::slug($payload['district']), 18)),
                 strtolower($catalogueSymbol)
@@ -373,11 +377,11 @@ final class WeSharpDemoSeeder extends Seeder
         foreach (range(1, 2) as $_) {
             Contact::query()->create([
                 'company_id' => $company->id,
-                'first_name' => fake()->firstName(),
-                'last_name' => fake()->lastName(),
-                'email' => fake()->unique()->safeEmail(),
-                'phone' => '+44 '.fake()->numerify('7700######'),
-                'billing_contact' => fake()->boolean(35),
+                'first_name' => $this->faker->firstName(),
+                'last_name' => $this->faker->lastName(),
+                'email' => $this->faker->unique()->safeEmail(),
+                'phone' => '+44 '.$this->faker->numerify('7700######'),
+                'billing_contact' => $this->faker->boolean(35),
             ]);
         }
 
@@ -385,12 +389,12 @@ final class WeSharpDemoSeeder extends Seeder
             'company_id' => $company->id,
             'label' => 'Primary kitchen rails',
             'line_one' => $payload['district'].' Production Row',
-            'line_two' => 'Hall '.fake()->numerify('#'),
-            'city' => $catalogueSymbol === 'MAN' ? fake()->randomElement(['Manchester', 'Salford', 'Stockport']) : fake()->randomElement(['Liverpool', 'Birkenhead']),
+            'line_two' => 'Hall '.$this->faker->numerify('#'),
+            'city' => $catalogueSymbol === 'MAN' ? $this->faker->randomElement(['Manchester', 'Salford', 'Stockport']) : $this->faker->randomElement(['Liverpool', 'Birkenhead']),
             'postcode' => $payload['postcode'],
             'country' => 'GB',
-            'latitude' => $catalogueSymbol === 'MAN' ? 53.4808 + fake()->randomElement([-0.02, 0.02]) : 53.4084 + fake()->randomElement([-0.02, 0.02]),
-            'longitude' => $catalogueSymbol === 'MAN' ? -2.2426 + fake()->randomElement([-0.02, 0.02]) : -2.9916 + fake()->randomElement([-0.02, 0.02]),
+            'latitude' => $catalogueSymbol === 'MAN' ? 53.4808 + $this->faker->randomElement([-0.02, 0.02]) : 53.4084 + $this->faker->randomElement([-0.02, 0.02]),
+            'longitude' => $catalogueSymbol === 'MAN' ? -2.2426 + $this->faker->randomElement([-0.02, 0.02]) : -2.9916 + $this->faker->randomElement([-0.02, 0.02]),
         ]);
 
         $secondary = CompanyLocation::query()->create([
@@ -431,11 +435,11 @@ final class WeSharpDemoSeeder extends Seeder
             ]),
             Booking::query()->create([
                 'company_id' => $company->id,
-                'company_location_id' => fake()->boolean ? $primary->id : $secondary->id,
-                'booking_status' => fake()->randomElement([BookingStatus::Completed, BookingStatus::QualityChecked]),
-                'service_type' => fake()->randomElement(ServiceType::cases()),
-                'scheduled_date' => now()->subDays(fake()->numberBetween(1, 12))->toDateString(),
-                'internal_notes' => fake()->sentence(),
+                'company_location_id' => $this->faker->boolean() ? $primary->id : $secondary->id,
+                'booking_status' => $this->faker->randomElement([BookingStatus::Completed, BookingStatus::QualityChecked]),
+                'service_type' => $this->faker->randomElement(ServiceType::cases()),
+                'scheduled_date' => now()->subDays($this->faker->numberBetween(1, 12))->toDateString(),
+                'internal_notes' => $this->faker->sentence(),
             ]),
         ]);
 
