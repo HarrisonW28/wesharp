@@ -67,3 +67,18 @@ Criteria below assume Clerk auth, internal **`staff`** middleware, and permissio
 - [ ] Loads knife detail (**`KnifeDetailResponseSchema`**); workflow buttons gated by transition graph mirrored in **`knife-status-workflow.ts`** vs backend **`KnifeStatusTransitions`**.
 - [ ] **`POST`** transition failures surface **toast error** (**422**) after server round-trip.
 - [ ] **Report issue** requires **`damage_notes`**; **`timeline`** renders **`audit_logs`** for **`App\Models\Knife`**.
+
+## Invoices (`/admin/invoices`)
+
+- [ ] **`GET /api/admin/invoices`** fills the table + pagination; **Overdue**, **Invoice status**, and **Payment (rollup)** columns align with JSON **`overdue`**, **`status`**, **`payment_status`** (**not** trusted from UI-only logic).
+- [ ] **New invoice** posts **`order_id`** (**`POST /api/admin/invoices`**) ; duplicate invoices for same order (**non-void**) fail with actionable error toast / message.
+
+## Invoice detail (`/admin/invoices/[invoiceId]`)
+
+- [ ] Loads **`GET /api/admin/invoices/{id}`**; **Line items** and **Payments** tables render API arrays.
+- [ ] Actions: **Send** (**`POST …/send`** placeholder), **Mark paid**, **Void**, **Manual bank payment** (**`POST /api/admin/payments/manual`** with **`invoice_id`** + **`amount_pence`**) behave per policy (**403**/ **422** on misuse).
+
+## Payments (`/admin/payments`)
+
+- [ ] **`GET /api/admin/payments`** list renders (**`payments.view`**).
+

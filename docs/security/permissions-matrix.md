@@ -36,5 +36,6 @@ Legend:
 | `payments.override`              | Write-offs exceeding automated guardrails — **dual control** workflows | ✅ finance tiers + admins (explicit constant)                       |
 | `analytics.view`                 | BI tiles                                                               | ✅ staff leadership + finance                                       |
 
+`settings.view`/`settings.manage` pair controls internal admin surfaces (invite staff, integrations). **Changing another user's role** MUST flow through `**App\Services\UserRoleService::updateRoleForUser()`** (`settings.manage`) so `audit_logs.subject_user_id` captures before/after role transitions.
 
-`settings.view`/`settings.manage` pair controls internal admin surfaces (invite staff, integrations). **Changing another user’s role** MUST flow through `**App\Services\UserRoleService::updateRoleForUser()`** (`settings.manage`) so `audit_logs.subject_user_id` captures before/after role transitions.
+Manual **`POST /api/admin/payments/manual`** enforces **`InvoicePolicy::recordManualPayment`** (**`payments.manage`** + company-scoped **`invoices.view`**); **`payments.override`** applies when **`amount_pence`** exceeds the invoice remainder (**`RecordManualPaymentAction`**).

@@ -1,4 +1,4 @@
-import { Boxes, CalendarClock, ClipboardList, Gauge, LayoutDashboard, MapPinned, Users, Utensils } from "lucide-react";
+import { Banknote, Boxes, CalendarClock, ClipboardList, Gauge, LayoutDashboard, MapPinned, Receipt, Users, Utensils } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export type NavItem = {
@@ -15,6 +15,8 @@ export const ADMIN_NAV: NavItem[] = [
   { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
   { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
   { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
+  { title: "Invoices", href: "/admin/invoices", icon: Receipt, permission: "invoices.view" },
+  { title: "Payments", href: "/admin/payments", icon: Banknote, permission: "payments.view" },
   { title: "Routes · Today", href: "/admin/routes/today", icon: MapPinned, permission: "routes.view" },
 ];
 

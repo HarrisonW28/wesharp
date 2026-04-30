@@ -212,6 +212,19 @@ Authoritative graph: **`App\Support\Orders\OrderStatusTransitions`**. Operationa
 
 **Column:** `invoices.invoice_status`
 
+### Implemented transitions & API (MVP)
+
+**Authoritative behaviour** lives in **`CreateInvoiceFromOrderAction`**, **`SendInvoicePlaceholderAction`**, **`MarkInvoicePaidAction`**, **`VoidInvoiceAction`**, and **`InvoiceService`** for **`PUT`** — not via untrusted payloads for settlement state.
+
+| Transition | Trigger | Notes |
+| --- | --- | --- |
+| _(new)_ → **Draft** | **`POST /api/admin/invoices`** | From **`order_id`** — **`OrderPolicy::invoiceFromOrder`** (**`invoices.create`**). |
+| **Draft** → **Sent** | **`POST /api/admin/invoices/{invoice}/send`** | Placeholder; audit **`invoice.send_placeholder`**. |
+| Non-terminal → **Paid** | **`POST …/mark-paid`** or cumulative manual payments reaching total | **`MarkInvoicePaidAction`** may insert balancing **`Payment`** (method **manual**); may set **`orders.payment_status`** to **Paid**. |
+| Non-paid → **Void** | **`POST …/void`** | Blocked when already **Paid** (**422**). |
+
+**Derived JSON-only:** **`payment_status`** on invoice resources (**`InvoiceRollup::paymentStatus`**) — `unpaid` \| `partial` \| `paid` \| `void`; **`overdue`** boolean (**`InvoiceRollup::isPastDue`**) for Sent/Overdue + past **`due_date`**.
+
 ---
 
 ## Payment — `PaymentStatus`
@@ -228,6 +241,8 @@ Authoritative graph: **`App\Support\Orders\OrderStatusTransitions`**. Operationa
 
 
 **Column:** `payments.payment_status`
+
+**MVP row creation:** Staff record bank/cash-style entries via **`POST /api/admin/payments/manual`** (**`RecordManualPaymentAction`**) — audit **`payment.recorded.manual`**. Settlement fields are computed server-side; browsers cannot assert **`payment_status`** alone.
 
 **Note:** Naming reflects invoice-level settlement state rather than PSP event names alone.
 

@@ -39,4 +39,10 @@ final class OrderPolicy
         return Permissions::userMayForCompany($user, Permissions::KNIVES_UPDATE, $order->company_id)
             && Permissions::userMayForCompany($user, Permissions::ORDERS_UPDATE, $order->company_id);
     }
+
+    /** Create AR invoice referencing this fulfilment charge. */
+    public function invoiceFromOrder(User $user, Order $order): bool
+    {
+        return Permissions::userMayForCompany($user, Permissions::INVOICES_CREATE, (string) $order->company_id);
+    }
 }

@@ -61,6 +61,19 @@ Implementation files: `routes/api.php` (prefix **`/api/admin`**), controllers un
 
 ---
 
+## Admin invoices & payments (AR)
+
+| Route group | Middleware | Notes |
+| --- | --- | --- |
+| **`/api/admin/invoices*`** | `clerk.auth`, `staff` | Thin **`InvoiceController`**: **`index`/`show`** via **`InvoiceService`**, **`store`** (**`StoreInvoiceRequest`**) → **`CreateInvoiceFromOrderAction`** + **`OrderPolicy::invoiceFromOrder`**; **`update`** (**`UpdateInvoiceRequest`**) edits draft metadata; **`send`/`mark-paid`/`void`** delegate to **`SendInvoicePlaceholderAction`**, **`MarkInvoicePaidAction`**, **`VoidInvoiceAction`**. JSON via **`InvoiceJson`** (**`InvoiceRollup`** for **`payment_status`/`overdue`**). |
+| **`/api/admin/payments*`** | `clerk.auth`, `staff` | Thin **`PaymentController`**: **`index`** → **`PaymentService`** + **`PaymentJson::detail`**; **`POST …/payments/manual`** → **`RecordManualPaymentRequest`** → **`InvoicePolicy::recordManualPayment`** → **`RecordManualPaymentAction`** (DB transaction, audit **`payment.recorded.manual`**). |
+
+| Policy | Enforces |
+| --- | --- || **`InvoicePolicy`** | `invoices.view` / `create` / `update`; **`send`/`markPaid`/`voidInvoice`** combos; **`recordManualPayment`** = **`payments.manage`** + **`invoices.view`** for company. **`markPaid`** also requires **`payments.view`**. |
+
+Implementation: `App\Actions\Invoices\*`, `App\Actions\Payments\RecordManualPaymentAction`, `App\Services\Invoices\InvoiceService`, `App\Services\Payments\PaymentService`, `App\Support\Invoices\InvoiceRollup`.
+
+---
 ## Persistence & audit
 
 - `users.clerk_user_id` links Clerk JWT `sub`; nullable for legacy seeded accounts.

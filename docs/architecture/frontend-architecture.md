@@ -12,7 +12,7 @@ Workspace: `**apps/frontend**` (Next.js **15**, App Router, React **19**, Tailwi
 | Layout     | `src/app/(admin)/admin/layout.tsx` wraps children in `**AdminShell`**; `**export const dynamic = 'force-dynamic'**` so Clerk-using routes are not statically prerendered without keys. |
 | Auth gate  | `**StaffRouteGate**` + Clerk session.                                                                                                                                                  |
 | Feedback   | `**sonner**` `**<Toaster />**` mounted in `**AdminShell**` (global toasts).                                                                                                            |
-| Navigation | `src/config/navigation.ts` — items include CRM (`companies.view`), Orders (`orders.view`), Knives (`knives.view`), routes (`routes.view`).                                                                                                        |
+| Navigation | `src/config/navigation.ts` — CRM (`companies.view`), Orders (`orders.view`), Knives (`knives.view`), **Invoices** (`invoices.view`), **Payments** (`payments.view`), routes (`routes.view`). |
 
 
 ---
@@ -54,6 +54,17 @@ Workspace: `**apps/frontend**` (Next.js **15**, App Router, React **19**, Tailwi
 
 ---
 
+
+
+## Admin invoices & payments UI
+
+| Concern | Implementation |
+| --- | --- |
+| Invoices list | `src/app/(admin)/admin/invoices/page.tsx` — **`GET /api/admin/invoices`**; **New invoice** posts **`order_id`** + optional **`issue_date`/`due_date`** (**`InvoiceListResponseSchema`**). Badges + overdue column. **`Breadcrumbs`** supports **`crumbs`** alias. |
+| Invoice detail | `src/app/(admin)/admin/invoices/[invoiceId]/page.tsx` — **Send**, **Mark paid**, **Void**, **Manual payment** dialogs; **`InvoiceDetailResponseSchema`** for items + nested payments. |
+| Payments index | `src/app/(admin)/admin/payments/page.tsx` — **`GET /api/admin/payments`** (**`PaymentsListResponseSchema`**). |
+| Schemas | `src/lib/api/admin-invoices-schema.ts`, `src/lib/api/admin-payments-schema.ts`. |
+
 ## Route Manager UI (mobile technician)
 
 | Concern | Implementation |
@@ -69,4 +80,4 @@ Workspace: `**apps/frontend**` (Next.js **15**, App Router, React **19**, Tailwi
 ## References
 
 - Product: `docs/product/admin-crm.md`, `docs/product/booking-workflow.md`, `docs/product/route-manager.md`, `docs/product/knife-tracking.md`, `docs/product/orders-invoices-payments.md`
-- Backend: `docs/architecture/backend-architecture.md` § Admin CRM API, § Admin bookings API, § Orders & knives (operations), Route Manager controllers
+- Backend: `docs/architecture/backend-architecture.md` § Admin CRM API, § Admin bookings API, § Orders & knives (operations), § Admin invoices & payments (AR), Route Manager controllers

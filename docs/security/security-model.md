@@ -45,6 +45,16 @@ Production controllers SHOULD stack `permission:{key}` for fine granularity.
 
  Overrides (write-offs/refunds exceeding automated tolerances): require **`payments.manage` + elevated approval** enforced by Laravel services (feature flags + dual logging). Frontend labels must not authorize alone.
 
+**Manual invoice payments:** **`POST /api/admin/payments/manual`** authorises **`InvoicePolicy::recordManualPayment`** (**`payments.manage`** + scoped **`invoices.view`**). Posting **`amount_pence`** above the unpaid remainder requires **`payments.override`** (**`RecordManualPaymentAction`**).
+
+---
+
+## Admin invoicing & payments
+
+1. **`staff`** middleware on **`/api/admin/invoices*`** and **`/api/admin/payments*`** ensures only internal Clerk users hit AR endpoints.
+2. **Settlement authority** lives in **`MarkInvoicePaidAction`**, **`RecordManualPaymentAction`**, **`VoidInvoiceAction`**, and **`InvoiceService::update`** — not request bodies asserting paid/void externally.
+3. **Audit hooks** record **`invoice.*`** and **`payment.recorded.manual`** via **`AuditRecorder`** (listed in **`docs/product/orders-invoices-payments.md`**).
+
 ---
 
 ## Customer company scoping

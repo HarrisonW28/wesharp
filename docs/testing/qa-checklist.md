@@ -1,6 +1,6 @@
-# QA checklist — Orders & knives (MVP)
+# QA checklist — Orders, knives, invoices & payments (MVP)
 
-Prereqs: **`apps/backend`** running with **`php artisan migrate --seed`** ( **`WeSharpDemoSeeder`** ), Clerk **staff** user with **`SuperAdmin`** or equivalent **`orders.view` + `knives.view` + `orders.update` + `knives.update`**.
+Prereqs: **`apps/backend`** running with **`php artisan migrate --seed`** ( **`WeSharpDemoSeeder`** ), Clerk **staff** user with **`orders.view` + `knives.view` + `orders.update` + `knives.update`** plus AR permissions **`invoices.view`**, **`invoices.create`**, **`payments.view`**, **`payments.manage`** (add **`payments.override`** only when testing excess manual amounts).
 
 Environment: **`NEXT_PUBLIC_API_ORIGIN`** points at Laravel (**`/api`** prefix). Browser session signed in (**Clerk**).
 
@@ -38,14 +38,35 @@ Spot-check **`audit_logs`** rows: **`auditable_type`** = **`App\Models\Knife`**.
 
 ---
 
+## Invoices & payments (API + `/admin`)
+
+1. [ ] Smoke: **`GET /api/admin/invoices?page=1&per_page=5`** Bearer → **200** + **`items`** (requires **`staff`** + **`invoices.view`** token).
+2. [ ] **`/admin/invoices`** — list loads; **Overdue** column follows API **`overdue`** (**`InvoiceRollup::isPastDue`**).
+3. [ ] Pick an **`order_id`** lacking a non-void invoice — **New invoice** (**`POST /api/admin/invoices`**) opens detail (**`/admin/invoices/{uuid}`**); expect **`audit_logs`** **`invoice.created_from_order`**.
+4. [ ] Detail — **Send** (**`POST …/send`** placeholder) — **`invoice.send_placeholder`** audit when transitioning draft → sent.
+5. [ ] **Manual bank payment** — **`POST /api/admin/payments/manual`** with **`invoice_id`**, **`amount_pence`**, **`payment_method`** — verify **`payment.recorded.manual`** audit and invoice **Paid** when cumulative ≥ total.
+6. [ ] **Mark paid** — **`invoice.marked_paid`** audit row.
+7. [ ] **`/admin/payments`** — matches **`GET /api/admin/payments`** rows.
+
+Minimal **`curl`** (replace **`$TOKEN`** and **`$API`** — base URL ending before **`/api`** or include **`/api`** consistently):
+
+```bash
+curl -sS -H "Authorization: Bearer $TOKEN" "$API/api/admin/invoices?per_page=3"
+curl -sS -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"order_id":"<ORDER_UUID>"}' "$API/api/admin/invoices"
+```
+
+---
+
 ## Permissions spot-check
 
 Using a **Route Manager** seeded user ( **`orders.view` + knives.view`** but **`no orders.create`** if configured): confirm **403** via API on **`POST /api/admin/orders`** when exercised through HTTP client (**not assumption**).
 
+Users with **`invoices.view`** but **without** **`payments.manage`** should receive **403** on **`POST /api/admin/payments/manual`**.
 
 ---
 
 ## Known manual gaps
 
-Automated PHPUnit / Playwright suites may not cover every **`POST`** — keep this doc updated when workflows land in CI.
+Automated PHPUnit / Playwright suites may not cover every **`POST`** — keep this doc updated when workflows land in CI. **Outbound invoice email / PSP webhooks** remain backlog (see **`docs/product/orders-invoices-payments.md`**).
 

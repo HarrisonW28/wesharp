@@ -96,6 +96,8 @@ All live under `**App\Enums\`**. Persisted columns use the enum **value** (`->va
 
 **Deviation:** `**PaymentStatus`** is account-style wording (aligned with invoicing lines), distinct from Stripe “payment intents”. Document business meaning in product copy when integrating payments.
 
+**REST JSON:** **`InvoiceJson`** maps DB **`issued_on`** / **`due_on`** to **`issue_date`** / **`due_date`**, with pence as **`subtotal`**, **`tax_total`**, **`total`**. List/detail responses add derived **`payment_status`** (**`InvoiceRollup`**) and **`overdue`**. **`PaymentJson`** exposes **`amount`** (pence) and **`paid_at`**.
+
 ---
 
 ## 4. Important indexes

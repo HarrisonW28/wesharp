@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\CompanyController;
+use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\KnifeController;
+use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\RouteStopController;
@@ -87,6 +89,17 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::post('knives/{knife}/mark-quality-checked', [KnifeController::class, 'markQualityChecked'])->whereUuid('knife')->name('api.admin.knives.mark_quality_checked');
     Route::post('knives/{knife}/mark-returned', [KnifeController::class, 'markReturned'])->whereUuid('knife')->name('api.admin.knives.mark_returned');
     Route::post('knives/{knife}/report-issue', [KnifeController::class, 'reportIssue'])->whereUuid('knife')->name('api.admin.knives.report_issue');
+
+    Route::get('invoices', [InvoiceController::class, 'index'])->name('api.admin.invoices.index');
+    Route::post('invoices', [InvoiceController::class, 'store'])->name('api.admin.invoices.store');
+    Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->whereUuid('invoice')->name('api.admin.invoices.show');
+    Route::put('invoices/{invoice}', [InvoiceController::class, 'update'])->whereUuid('invoice')->name('api.admin.invoices.update');
+    Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->whereUuid('invoice')->name('api.admin.invoices.send');
+    Route::post('invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->whereUuid('invoice')->name('api.admin.invoices.mark_paid');
+    Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->whereUuid('invoice')->name('api.admin.invoices.void');
+
+    Route::get('payments', [PaymentController::class, 'index'])->name('api.admin.payments.index');
+    Route::post('payments/manual', [PaymentController::class, 'manual'])->name('api.admin.payments.manual');
 });
 
 Route::prefix('public')->group(function (): void {
