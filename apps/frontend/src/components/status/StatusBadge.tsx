@@ -16,6 +16,7 @@ function variantBooking(status: string): Variant {
   switch (status.trim()) {
     case "completed":
     case "returned":
+    case "converted_to_order":
       return "success";
     case "cancelled":
     case "no_show":

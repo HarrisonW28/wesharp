@@ -96,6 +96,8 @@ final class AccountDashboardService
             ->whereNotIn('booking_status', [
                 BookingStatus::Cancelled,
                 BookingStatus::NoShow,
+                BookingStatus::Completed,
+                BookingStatus::ConvertedToOrder,
             ])
             ->whereDate('scheduled_date', '>=', $todayUtc)
             ->orderBy('scheduled_date')

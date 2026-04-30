@@ -12,6 +12,8 @@ use App\Enums\ServiceType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AssignBookingToRouteRequest;
 use App\Http\Requests\CancelBookingRequest;
+use App\Http\Requests\ConfirmBookingRequest;
+use App\Http\Requests\ConvertBookingToOrderRequest;
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Requests\UpdateBookingRequest;
 use App\Http\Resources\BookingDetailResource;
@@ -151,6 +153,9 @@ final class BookingController extends Controller
                 if ($field === 'requested_time_window_end') {
                     $booking->time_window_end = $validated[$field];
                 }
+                if ($field === 'confirmed_collection_date' && $validated[$field] !== null) {
+                    $booking->scheduled_date = $validated[$field];
+                }
             }
         }
 
@@ -241,11 +246,17 @@ final class BookingController extends Controller
         return ApiResponses::success(['deleted' => true]);
     }
 
-    public function confirm(Request $request, Booking $booking): JsonResponse
+    public function confirm(ConfirmBookingRequest $request, Booking $booking): JsonResponse
     {
         $this->authorize('update', $booking);
 
-        $booking = $this->confirmBookingAction->execute($booking, $request->user(), $request);
+        $overrides = $request->overridePayload();
+        $booking = $this->confirmBookingAction->execute(
+            $booking,
+            $request->user(),
+            $request,
+            $overrides === [] ? null : $overrides
+        );
 
         $booking->load(['company:id,name,city', 'location:id,city']);
 
@@ -286,7 +297,8 @@ final class BookingController extends Controller
             $route,
             $request->user(),
             $request,
-            $sequence
+            $sequence,
+            $request->optionalConfirmWindow()
         );
 
         $booking->load(['company:id,name,city', 'location:id,city', 'assignedRoute', 'routeStop']);
@@ -294,7 +306,7 @@ final class BookingController extends Controller
         return ApiResponses::success((new BookingResource($booking))->toArray($request));
     }
 
-    public function convertToOrder(Request $request, Booking $booking): JsonResponse
+    public function convertToOrder(ConvertBookingToOrderRequest $request, Booking $booking): JsonResponse
     {
         $this->authorize('convertToOrder', $booking);
 

@@ -2,16 +2,28 @@
 
 namespace App\Http\Requests\Account;
 
+use App\Enums\ServiceType;
 use App\Support\Bookings\BookingWindowValidator;
-use Illuminate\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class AccountStoreBookingRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return $this->user() !== null && $this->user()->company_id !== null;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('location_id') && $this->has('company_location_id')) {
+            $this->merge(['location_id' => $this->input('company_location_id')]);
+        }
+
+        if (! $this->has('requested_date') && $this->has('requested_collection_date')) {
+            $this->merge(['requested_date' => $this->input('requested_collection_date')]);
+        }
     }
 
     /** @return array<string, mixed> */
@@ -27,8 +39,8 @@ class AccountStoreBookingRequest extends FormRequest
                 Rule::exists('company_locations', 'id')->where('company_id', $companyId),
             ],
             'requested_date' => ['required', 'date', 'after:yesterday'],
-            'time_window_start' => ['nullable', 'date_format:H:i'],
-            'time_window_end' => ['nullable', 'date_format:H:i'],
+            'time_window_start' => ['required', 'date_format:H:i'],
+            'time_window_end' => ['required', 'date_format:H:i'],
             'service_type' => ['required', Rule::enum(ServiceType::class)],
             'estimated_knife_count' => ['nullable', 'integer', 'min:1', 'max:65000'],
             'customer_notes' => ['nullable', 'string', 'max:19500'],
@@ -59,8 +71,8 @@ class AccountStoreBookingRequest extends FormRequest
      * @return array{
      *   location_id: string,
      *   requested_date: string,
-     *   time_window_start: ?string,
-     *   time_window_end: ?string,
+     *   time_window_start: string,
+     *   time_window_end: string,
      *   service_type: ServiceType,
      *   estimated_knife_count: ?int,
      *   customer_notes: ?string,

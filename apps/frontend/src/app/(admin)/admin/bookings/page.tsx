@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, MoreHorizontal } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,6 +24,12 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/tables/DataTable";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -36,6 +42,12 @@ import {
 
 import { adminCreateBookingFormSchema } from "@/lib/forms/admin-create-booking-form-schema";
 
+function formatWindow(a?: string | null, e?: string | null): string {
+  if (!a && !e) return "—";
+  const f = (s: string) => (s.length >= 5 ? s.slice(0, 5) : s);
+  return `${a ? f(a) : "?"}–${e ? f(e) : "?"}`;
+}
+
 const SERVICE_TYPES = ["collection", "onsite"] as const;
 
 export default function AdminBookingsPage() {
@@ -45,6 +57,13 @@ export default function AdminBookingsPage() {
   const searchParams = useSearchParams();
   const [createOpen, setCreateOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  const qFromUrl = searchParams.get("q") ?? "";
+  const [qDraft, setQDraft] = useState(qFromUrl);
+
+  useEffect(() => {
+    setQDraft(qFromUrl);
+  }, [qFromUrl]);
 
   useEffect(() => {
     const p = new URLSearchParams(searchParams.toString());
@@ -63,6 +82,23 @@ export default function AdminBookingsPage() {
       router.replace(`${pathname}?${p.toString()}`, { scroll: false });
     }
   }, [pathname, router, searchParams]);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      const next = qDraft.trim();
+      const cur = qFromUrl.trim();
+      if (next === cur) return;
+      const nextParams = new URLSearchParams(searchParams.toString());
+      if (next) {
+        nextParams.set("q", next);
+      } else {
+        nextParams.delete("q");
+      }
+      nextParams.set("page", "1");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [qDraft, qFromUrl, pathname, router, searchParams]);
 
   const listKey = searchParams.toString();
 
@@ -163,7 +199,7 @@ export default function AdminBookingsPage() {
       {
         accessorKey: "requested_date",
         header: "Date",
-        cell: ({ row }) => <span>{row.original.requested_date ?? "—"}</span>,
+        cell: ({ row }) => <span className="tabular-nums">{row.original.requested_date ?? "—"}</span>,
       },
       {
         accessorKey: "company",
@@ -173,6 +209,42 @@ export default function AdminBookingsPage() {
             {row.original.company?.name ?? "Account"}
           </Link>
         ),
+      },
+      {
+        id: "req_win",
+        header: "Requested window",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground tabular-nums">
+            {formatWindow(
+              row.original.requested_time_window_start ?? row.original.time_window_start,
+              row.original.requested_time_window_end ?? row.original.time_window_end,
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "conf_win",
+        header: "Confirmed window",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground tabular-nums">
+            {formatWindow(row.original.confirmed_time_window_start, row.original.confirmed_time_window_end)}
+          </span>
+        ),
+      },
+      {
+        id: "route",
+        header: "Route",
+        cell: ({ row }) =>
+          row.original.assigned_route_id ? (
+            <Link
+              className="text-primary underline underline-offset-2"
+              href={`/admin/routes/${row.original.assigned_route_id}`}
+            >
+              Run
+            </Link>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
       },
       {
         accessorKey: "venue_city",
@@ -191,13 +263,39 @@ export default function AdminBookingsPage() {
       },
       {
         id: "estimate",
-        header: "Estimate",
+        header: "Est.",
         cell: ({ row }) =>
           row.original.price_estimate != null ? (
             <span className="tabular-nums">{formatGbpFromPence(Number(row.original.price_estimate))}</span>
           ) : (
             "—"
           ),
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="Booking actions">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/bookings/${row.original.id}`}>View booking</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/crm/${row.original.company_id}`}>Open account</Link>
+              </DropdownMenuItem>
+              {row.original.assigned_route_id ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/routes/${row.original.assigned_route_id}`}>Open route</Link>
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
       },
     ],
     [],
@@ -210,7 +308,7 @@ export default function AdminBookingsPage() {
       <Breadcrumbs items={[{ label: "Bookings" }]} />
       <PageHeader
         title="Bookings"
-        description="Operational booking management — Laravel /api/admin/bookings."
+        description="Search, filter, and manage collection bookings — confirm windows, routes, and conversion to orders."
         actions={
           <Button type="button" onClick={() => setCreateOpen(true)}>
             Create booking
@@ -219,7 +317,59 @@ export default function AdminBookingsPage() {
       />
 
       <section className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:p-6">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+          <div className="space-y-2 md:col-span-2">
+            <Label className="text-xs text-muted-foreground">Search</Label>
+            <Input
+              value={qDraft}
+              onChange={(e) => setQDraft(e.target.value)}
+              placeholder="Account, site, city, postcode, or booking ID…"
+              aria-label="Search bookings"
+            />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <CompanyLookup
+              label="Account"
+              value={searchParams.get("company_id") || null}
+              onChange={(id) =>
+                updateParam((p) => {
+                  if (id) {
+                    p.set("company_id", id);
+                  } else {
+                    p.delete("company_id");
+                  }
+                  p.set("page", "1");
+                })
+              }
+              nullable
+              placeholder="All accounts"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Route</Label>
+            <Select
+              value={searchParams.get("route_assigned") ?? "all"}
+              onValueChange={(value) =>
+                updateParam((p) => {
+                  if (value === "all") {
+                    p.delete("route_assigned");
+                  } else {
+                    p.set("route_assigned", value);
+                  }
+                  p.set("page", "1");
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Assignment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any assignment</SelectItem>
+                <SelectItem value="assigned">On a route</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Status</Label>
             <Select

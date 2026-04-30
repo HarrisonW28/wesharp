@@ -20,16 +20,19 @@ final readonly class BookingStatusTransitions
 
         BookingStatus::Confirmed->value => [
             BookingStatus::AssignedToRoute->value,
+            BookingStatus::ConvertedToOrder->value,
             BookingStatus::Cancelled->value,
         ],
 
         BookingStatus::AssignedToRoute->value => [
             BookingStatus::Collected->value,
+            BookingStatus::ConvertedToOrder->value,
             BookingStatus::Cancelled->value,
         ],
 
         BookingStatus::Collected->value => [
             BookingStatus::InSharpening->value,
+            BookingStatus::ConvertedToOrder->value,
             BookingStatus::Cancelled->value,
         ],
 
@@ -51,6 +54,7 @@ final readonly class BookingStatusTransitions
         BookingStatus::NoShow->value => [],
         BookingStatus::Cancelled->value => [],
         BookingStatus::Completed->value => [],
+        BookingStatus::ConvertedToOrder->value => [],
     ];
 
     public static function can(BookingStatus $from, BookingStatus $to): bool

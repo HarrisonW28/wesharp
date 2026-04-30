@@ -38,11 +38,11 @@ export default function AccountBookingsPage() {
       <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "My bookings" }]} />
       <PageHeader
         title="My bookings"
-        description="Collections you’ve booked with us — dates and status update as we confirm your slot."
+        description="Collections you've booked with us — dates, time windows, and status update when we confirm your slot."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button size="sm" className="rounded-lg" asChild>
-              <Link href="/account/bookings/new">Request a collection</Link>
+              <Link href="/account/bookings/new">Book a collection</Link>
             </Button>
             <Button size="sm" variant="outline" className="rounded-lg" asChild>
               <Link href="/pricing">View pricing</Link>
@@ -70,6 +70,7 @@ export default function AccountBookingsPage() {
               <tr>
                 <th className="px-4 py-2 text-left font-medium">Collection date</th>
                 <th className="px-4 py-2 text-left font-medium">Status</th>
+                <th className="px-4 py-2 text-left font-medium">Requested window</th>
                 <th className="px-4 py-2 text-left font-medium">Service</th>
                 <th className="px-4 py-2 text-right font-medium">&nbsp;</th>
               </tr>
@@ -80,6 +81,21 @@ export default function AccountBookingsPage() {
                   <td className="px-4 py-3">{b.requested_date ?? "—"}</td>
                   <td className="px-4 py-3">
                     <StatusBadge kind="booking" status={b.status} />
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {(() => {
+                      const row = b as {
+                        time_window_start?: string | null;
+                        time_window_end?: string | null;
+                        requested_time_window_start?: string | null;
+                        requested_time_window_end?: string | null;
+                      };
+                      const a = row.requested_time_window_start ?? row.time_window_start;
+                      const e = row.requested_time_window_end ?? row.time_window_end;
+                      if (!a && !e) return "—";
+                      const fmt = (s: string) => (s.length >= 5 ? s.slice(0, 5) : s);
+                      return `${a ? fmt(a) : "?"}–${e ? fmt(e) : "?"}`;
+                    })()}
                   </td>
                   <td className="px-4 py-3">{b.service_type?.replace("_", " ") ?? "—"}</td>
                   <td className="px-4 py-3 text-right">

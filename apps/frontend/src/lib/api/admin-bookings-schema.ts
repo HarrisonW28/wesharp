@@ -10,6 +10,7 @@ export const BOOKING_STATUS_VALUES = [
   "quality_checked",
   "returned",
   "completed",
+  "converted_to_order",
   "cancelled",
   "no_show",
 ] as const;
@@ -21,7 +22,7 @@ export const BookingRowSchema = z.object({
   company_id: z.string(),
   location_id: z.string(),
   contact_id: z.string().nullable(),
-  assigned_route_id: z.string().nullable(),
+  assigned_route_id: z.string().nullable().optional(),
   status: z.string(),
   requested_date: z.string().nullable(),
   /** Resolved collection date for ops (requested vs scheduled legacy). */

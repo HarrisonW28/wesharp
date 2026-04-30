@@ -8,6 +8,7 @@ use App\Enums\KnifeStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\RouteStopStatus;
 use App\Enums\ServiceType;
+use App\Models\Booking;
 use App\Models\Invoice;
 use App\Models\Knife;
 use App\Models\Order;
@@ -120,6 +121,11 @@ final class MvpOperationalPipelineApiTest extends TestCase
             $convertRes = $this->withHeaders($opsH())
                 ->postJson('/api/admin/bookings/'.$bookingId.'/convert-to-order', []);
             $convertRes->assertCreated();
+            /** @phpstan-ignore-next-line */
+            self::assertSame(
+                BookingStatus::ConvertedToOrder,
+                Booking::query()->find($bookingId)?->booking_status
+            );
             /** @phpstan-ignore-next-line */
             $orderId = (string) $convertRes->json('data.order_id');
 

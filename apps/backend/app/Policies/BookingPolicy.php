@@ -59,6 +59,10 @@ final class BookingPolicy
 
     public function convertToOrder(User $user, Booking $booking): bool
     {
+        if ($booking->booking_status === BookingStatus::ConvertedToOrder) {
+            return false;
+        }
+
         return Permissions::userMayForCompany($user, Permissions::BOOKINGS_UPDATE, $booking->company_id)
             && Permissions::userMay($user, Permissions::ORDERS_CREATE);
     }

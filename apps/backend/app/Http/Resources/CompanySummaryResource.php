@@ -26,6 +26,7 @@ class CompanySummaryResource extends JsonResource
             'bookings_pipeline_count' => $c->bookings()->whereNotIn('booking_status', [
                 BookingStatus::Cancelled->value,
                 BookingStatus::Completed->value,
+                BookingStatus::ConvertedToOrder->value,
             ])->count(),
             'bookings_total_count' => $c->bookings()->count(),
             'contacts_count' => $c->contacts()->count(),

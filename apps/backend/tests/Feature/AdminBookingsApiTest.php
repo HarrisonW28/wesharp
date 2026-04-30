@@ -97,4 +97,63 @@ final class AdminBookingsApiTest extends TestCase
 
         self::assertSame((string) $route->id, Booking::query()->find($booking->id)?->assigned_route_id);
     }
+
+    public function test_index_supports_filters(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+        $company = Company::query()->firstOrFail();
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->getJson('/api/admin/bookings?company_id='.$company->id.'&route_assigned=unassigned&q=demo')
+            ->assertOk()
+            ->assertJsonPath('success', true);
+    }
+
+    public function test_confirm_accepts_confirmed_window_payload(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+        $company = Company::query()->firstOrFail();
+        $location = CompanyLocation::query()->where('company_id', $company->id)->firstOrFail();
+        $day = now()->addWeek()->toDateString();
+
+        $create = $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings', [
+                'company_id' => $company->id,
+                'location_id' => $location->id,
+                'requested_date' => $day,
+                'service_type' => ServiceType::Collection->value,
+            ]);
+        $create->assertCreated();
+        $bookingId = $create->json('data.id');
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings/'.$bookingId.'/confirm', [
+                'confirmed_time_window_start' => '09:30',
+                'confirmed_time_window_end' => '11:00',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', BookingStatus::Confirmed->value);
+
+        $row = Booking::query()->findOrFail($bookingId);
+        self::assertNotNull($row->confirmed_time_window_start);
+        self::assertNotNull($row->confirmed_time_window_end);
+    }
+
+    public function test_convert_to_order_marks_booking_converted(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+        $booking = Booking::factory()->create([
+            'company_id' => Company::query()->first()->id,
+            'company_location_id' => CompanyLocation::query()->first()->id,
+            'booking_status' => BookingStatus::Collected,
+            'scheduled_date' => now()->addDay()->toDateString(),
+            'service_type' => ServiceType::Collection,
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings/'.$booking->id.'/convert-to-order', [])
+            ->assertCreated();
+
+        self::assertSame(BookingStatus::ConvertedToOrder, $booking->fresh()->booking_status);
+    }
 }

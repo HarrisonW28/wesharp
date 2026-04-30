@@ -12,6 +12,7 @@ enum BookingStatus: string
     case QualityChecked = 'quality_checked';
     case Returned = 'returned';
     case Completed = 'completed';
+    case ConvertedToOrder = 'converted_to_order';
     case Cancelled = 'cancelled';
     case NoShow = 'no_show';
 }

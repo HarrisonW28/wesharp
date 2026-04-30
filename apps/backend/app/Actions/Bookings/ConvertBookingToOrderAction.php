@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Models\Booking;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
+use App\Support\Bookings\BookingStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -44,8 +45,15 @@ final class ConvertBookingToOrderAction
                 'currency' => 'GBP',
             ]);
 
+            $fromStatus = $booking->booking_status;
+            BookingStatusTransitions::assertCanTransition($fromStatus, BookingStatus::ConvertedToOrder);
+            $booking->booking_status = BookingStatus::ConvertedToOrder;
+            $booking->save();
+
             AuditRecorder::record($actor, $booking, 'booking.converted_to_order', [
                 'order_id' => (string) $order->id,
+                'from_status' => $fromStatus->value,
+                'to_status' => BookingStatus::ConvertedToOrder->value,
             ], $request);
 
             AuditRecorder::record($actor, $order, 'order.created_from_booking', [

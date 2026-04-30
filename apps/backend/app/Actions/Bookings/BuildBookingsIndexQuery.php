@@ -7,6 +7,7 @@ use App\Enums\ServiceType;
 use App\Models\Booking;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * Index filters used by BookingController::index — search/filter/sort.
@@ -62,6 +63,37 @@ final class BuildBookingsIndexQuery
             if ($ts !== false) {
                 $query->whereDate('scheduled_date', date('Y-m-d', $ts));
             }
+        }
+
+        $companyId = trim((string) $request->query('company_id', ''));
+        if ($companyId !== '' && Str::isUuid($companyId)) {
+            $query->where('bookings.company_id', $companyId);
+        }
+
+        $assignment = strtolower(trim((string) $request->query('route_assigned', '')));
+        if ($assignment === 'assigned') {
+            $query->whereNotNull('bookings.assigned_route_id');
+        } elseif ($assignment === 'unassigned') {
+            $query->whereNull('bookings.assigned_route_id');
+        }
+
+        $qRaw = trim((string) $request->query('q', ''));
+        if ($qRaw !== '') {
+            $needle = '%'.addcslashes($qRaw, '%_\\').'%';
+            $query->where(function (Builder $sub) use ($needle, $qRaw): void {
+                $sub->whereHas(
+                    'company',
+                    fn (Builder $cq) => $cq->where('name', 'like', $needle)
+                )->orWhereHas(
+                    'location',
+                    fn (Builder $lq) => $lq->where('line_one', 'like', $needle)
+                        ->orWhere('city', 'like', $needle)
+                        ->orWhere('postcode', 'like', $needle)
+                );
+                if (Str::isUuid($qRaw)) {
+                    $sub->orWhere('bookings.id', $qRaw);
+                }
+            });
         }
 
         match ($sort) {

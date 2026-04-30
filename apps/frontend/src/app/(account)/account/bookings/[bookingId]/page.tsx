@@ -61,16 +61,32 @@ export default function TenantBookingDetailPage() {
       ) : query.isError ? (
         <p className="text-sm text-destructive">{(query.error as Error).message}</p>
       ) : d ? (
+        (() => {
+          const fmtT = (t: unknown) =>
+            typeof t === "string" ? (t.length >= 5 ? t.slice(0, 5) : t) : "—";
+          const hasConfirmedDay = Boolean(d.confirmed_collection_date);
+          const hasConfirmedWin = Boolean(d.confirmed_time_window_start || d.confirmed_time_window_end);
+          const confirmedLine = hasConfirmedDay
+            ? `${String(d.confirmed_collection_date)}${
+                hasConfirmedWin
+                  ? ` · ${fmtT(d.confirmed_time_window_start)} — ${fmtT(d.confirmed_time_window_end)}`
+                  : ""
+              }`
+            : "Not yet — we’ll confirm your arrival window.";
+
+          return (
         <div className="grid gap-6 rounded-xl border bg-card p-6 shadow-sm md:grid-cols-2">
           <div className="space-y-2 text-sm">
             <div className="text-xs font-semibold uppercase text-muted-foreground">Status</div>
             <StatusBadge kind="booking" status={typeof d.status === "string" ? d.status : ""} />
             <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Requested day</div>
             <div>{String(d.requested_date ?? "—")}</div>
-            <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Window</div>
+            <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Requested window</div>
             <div>
               {[d.time_window_start, d.time_window_end].filter(Boolean).join(" — ") || "—"}
             </div>
+            <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Confirmed arrival window</div>
+            <div className="text-muted-foreground">{confirmedLine}</div>
           </div>
           <div className="space-y-2 text-sm">
             <div className="text-xs font-semibold uppercase text-muted-foreground">Service</div>
@@ -84,6 +100,8 @@ export default function TenantBookingDetailPage() {
             </Link>
           </div>
         </div>
+          );
+        })()
       ) : null}
     </div>
   );

@@ -20,6 +20,8 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -53,6 +55,7 @@ type LifecycleGate =
   | "quality_checked"
   | "returned"
   | "completed"
+  | "converted_to_order"
   | "cancelled"
   | "no_show";
 
@@ -103,10 +106,42 @@ export default function AdminBookingDetailPage() {
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [reassignWarnOpen, setReassignWarnOpen] = useState(false);
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+
+  const confirmExtrasSchema = z.object({
+    confirmed_collection_date: z.string().optional(),
+    confirmed_time_window_start: z.string().optional(),
+    confirmed_time_window_end: z.string().optional(),
+  });
+
+  const confirmExtrasForm = useForm<z.infer<typeof confirmExtrasSchema>>({
+    resolver: zodResolver(confirmExtrasSchema),
+    defaultValues: {},
+  });
+
+  const confirmedWindowSchema = z.object({
+    confirmed_collection_date: z.string().min(1, "Date required"),
+    confirmed_time_window_start: z.string().min(1, "Start required"),
+    confirmed_time_window_end: z.string().min(1, "End required"),
+  });
+
+  const confirmedWindowForm = useForm<z.infer<typeof confirmedWindowSchema>>({
+    resolver: zodResolver(confirmedWindowSchema),
+    defaultValues: {
+      confirmed_collection_date: "",
+      confirmed_time_window_start: "",
+      confirmed_time_window_end: "",
+    },
+  });
 
   const confirmMutation = useMutation({
-    mutationFn: async () => {
-      const res = await admin.json(`/api/admin/bookings/${bookingId}/confirm`, { method: "POST" });
+    mutationFn: async (body: Record<string, string>) => {
+      const res = await admin.json(`/api/admin/bookings/${bookingId}/confirm`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
       if (!res.ok) {
         throw new Error(res.message);
       }
@@ -124,8 +159,11 @@ export default function AdminBookingDetailPage() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: async () => {
-      const res = await admin.json(`/api/admin/bookings/${bookingId}/cancel`, { method: "POST" });
+    mutationFn: async (reason: string) => {
+      const res = await admin.json(`/api/admin/bookings/${bookingId}/cancel`, {
+        method: "POST",
+        body: JSON.stringify({ reason: reason.trim() || null }),
+      });
       if (!res.ok) {
         throw new Error(res.message);
       }
@@ -135,6 +173,7 @@ export default function AdminBookingDetailPage() {
     onSuccess: async () => {
       toast.success("Booking cancelled.");
       setCancelOpen(false);
+      setCancelReason("");
       await qc.invalidateQueries({ queryKey: ["admin-booking-detail", bookingId] });
       await qc.invalidateQueries({ queryKey: ["admin-bookings"] });
     },
@@ -143,8 +182,42 @@ export default function AdminBookingDetailPage() {
     },
   });
 
+  const openAssignDialog = () => {
+    const row = bookingQuery.data;
+    if (row?.assigned_route_id) {
+      setReassignWarnOpen(true);
+    } else {
+      setAssignOpen(true);
+    }
+  };
+
   const assignForm = useForm<{ route_id: string }>({
     defaultValues: { route_id: "" },
+  });
+
+  const saveConfirmedWindow = useMutation({
+    mutationFn: async (values: z.infer<typeof confirmedWindowSchema>) => {
+      const res = await admin.json(`/api/admin/bookings/${bookingId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          confirmed_collection_date: values.confirmed_collection_date,
+          confirmed_time_window_start: values.confirmed_time_window_start,
+          confirmed_time_window_end: values.confirmed_time_window_end,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
+    onSuccess: async () => {
+      toast.success("Confirmed window updated.");
+      await qc.invalidateQueries({ queryKey: ["admin-booking-detail", bookingId] });
+      await qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Update failed.");
+    },
   });
 
   const assignMutation = useMutation({
@@ -182,6 +255,7 @@ export default function AdminBookingDetailPage() {
     },
     onSuccess: async (payload: unknown) => {
       toast.success("Draft order created.");
+      setConvertOpen(false);
       const env = payload as { data?: { order_id?: string } };
       const oid = env?.data?.order_id;
       if (oid) {
@@ -205,6 +279,36 @@ export default function AdminBookingDetailPage() {
       notesForm.reset({ internal_notes: bookingQuery.data.internal_notes ?? "" });
     }
   }, [bookingQuery.data?.internal_notes, notesForm]);
+
+  useEffect(() => {
+    const row = bookingQuery.data;
+    if (!row || row.status !== "requested") return;
+    confirmExtrasForm.reset({
+      confirmed_collection_date:
+        row.confirmed_collection_date ?? row.requested_collection_date ?? row.requested_date ?? "",
+      confirmed_time_window_start: (
+        row.confirmed_time_window_start ??
+        row.requested_time_window_start ??
+        row.time_window_start ??
+        ""
+      ).slice(0, 5),
+      confirmed_time_window_end: (
+        row.confirmed_time_window_end ?? row.requested_time_window_end ?? row.time_window_end ?? ""
+      ).slice(0, 5),
+    });
+  }, [bookingQuery.data, confirmExtrasForm]);
+
+  // Sync confirmed-window editor when booking loads / server updates those fields.
+  useEffect(() => {
+    const row = bookingQuery.data;
+    if (!row) return;
+    confirmedWindowForm.reset({
+      confirmed_collection_date:
+        row.confirmed_collection_date ?? row.requested_collection_date ?? row.requested_date ?? "",
+      confirmed_time_window_start: (row.confirmed_time_window_start ?? "").slice(0, 5),
+      confirmed_time_window_end: (row.confirmed_time_window_end ?? "").slice(0, 5),
+    });
+  }, [bookingQuery.data, confirmedWindowForm]);
 
   const saveNotes = useMutation({
     mutationFn: async (values: z.infer<typeof notesSchema>) => {
@@ -243,6 +347,7 @@ export default function AdminBookingDetailPage() {
 
   const canConvertNow =
     convertOrder &&
+    statusKey !== "converted_to_order" &&
     !b?.orders.length &&
     (statusKey === "confirmed" || statusKey === "assigned_to_route" || statusKey === "collected");
 
@@ -283,19 +388,67 @@ export default function AdminBookingDetailPage() {
 
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge kind="booking" status={b.status} className="text-xs" />
-        <Button type="button" variant="outline" disabled={!canConfirm || !canUpdateBooking || confirmMutation.isPending} onClick={() => confirmMutation.mutate()}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!canConfirm || !canUpdateBooking || confirmMutation.isPending}
+          onClick={() => {
+            const extras = confirmExtrasForm.getValues();
+            const body: Record<string, string> = {};
+            if (extras.confirmed_collection_date?.trim()) {
+              body.confirmed_collection_date = extras.confirmed_collection_date.trim();
+            }
+            if (extras.confirmed_time_window_start?.trim()) {
+              body.confirmed_time_window_start = extras.confirmed_time_window_start.trim().slice(0, 5);
+            }
+            if (extras.confirmed_time_window_end?.trim()) {
+              body.confirmed_time_window_end = extras.confirmed_time_window_end.trim().slice(0, 5);
+            }
+            confirmMutation.mutate(body);
+          }}
+        >
           Confirm
         </Button>
         <Button type="button" variant="destructive" disabled={!canCancelNow} onClick={() => setCancelOpen(true)}>
           Cancel
         </Button>
-        <Button type="button" variant="secondary" disabled={!canAssignNow} onClick={() => setAssignOpen(true)}>
+        <Button type="button" variant="secondary" disabled={!canAssignNow} onClick={openAssignDialog}>
           Assign to route
         </Button>
-        <Button type="button" variant="secondary" disabled={!canConvertNow || convertMutation.isPending} onClick={() => convertMutation.mutate()}>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!canConvertNow || convertMutation.isPending}
+          onClick={() => setConvertOpen(true)}
+        >
           Convert to order
         </Button>
       </div>
+
+      {canConfirm && canUpdateBooking ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Confirm with arrival window (optional)</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 text-sm sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="confirm-day">Confirmed date</Label>
+              <Input id="confirm-day" type="date" {...confirmExtrasForm.register("confirmed_collection_date")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-start">Window start</Label>
+              <Input id="confirm-start" type="time" {...confirmExtrasForm.register("confirmed_time_window_start")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-end">Window end</Label>
+              <Input id="confirm-end" type="time" {...confirmExtrasForm.register("confirmed_time_window_end")} />
+            </div>
+            <p className="text-xs text-muted-foreground sm:col-span-3">
+              Leave blank to copy the customer&apos;s requested date and window. You can adjust the confirmed window later below.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {assignRoute && (statusKey === "confirmed" || statusKey === "assigned_to_route") && collectionDateForRoute ? (
         <p className="text-xs text-muted-foreground">
@@ -315,6 +468,11 @@ export default function AdminBookingDetailPage() {
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
             <div className="font-medium">{b.company?.name ?? "—"}</div>
+            {b.company?.id ? (
+              <Link className="text-xs text-primary underline underline-offset-2" href={`/admin/crm/${b.company.id}`}>
+                View CRM profile
+              </Link>
+            ) : null}
             <div className="text-muted-foreground">{b.company?.city ?? "—"}</div>
             <div className="text-muted-foreground">{b.company?.billing_email ?? "—"}</div>
             <div className="text-muted-foreground">{b.company?.phone ?? "—"}</div>
@@ -392,6 +550,47 @@ export default function AdminBookingDetailPage() {
         </CardContent>
       </Card>
 
+      {canUpdateBooking && !["cancelled", "converted_to_order", "completed", "no_show"].includes(statusKey) ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Edit confirmed collection window</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              className="grid gap-3 text-sm sm:grid-cols-3"
+              onSubmit={confirmedWindowForm.handleSubmit((values) => saveConfirmedWindow.mutate(values))}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="edit-conf-day">Confirmed date</Label>
+                <Input id="edit-conf-day" type="date" {...confirmedWindowForm.register("confirmed_collection_date")} />
+                {confirmedWindowForm.formState.errors.confirmed_collection_date ? (
+                  <p className="text-xs text-destructive">{confirmedWindowForm.formState.errors.confirmed_collection_date.message}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-conf-start">Window start</Label>
+                <Input id="edit-conf-start" type="time" {...confirmedWindowForm.register("confirmed_time_window_start")} />
+                {confirmedWindowForm.formState.errors.confirmed_time_window_start ? (
+                  <p className="text-xs text-destructive">{confirmedWindowForm.formState.errors.confirmed_time_window_start.message}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-conf-end">Window end</Label>
+                <Input id="edit-conf-end" type="time" {...confirmedWindowForm.register("confirmed_time_window_end")} />
+                {confirmedWindowForm.formState.errors.confirmed_time_window_end ? (
+                  <p className="text-xs text-destructive">{confirmedWindowForm.formState.errors.confirmed_time_window_end.message}</p>
+                ) : null}
+              </div>
+              <div className="sm:col-span-3">
+                <Button type="submit" size="sm" disabled={saveConfirmedWindow.isPending}>
+                  {saveConfirmedWindow.isPending ? "Saving…" : "Save confirmed window"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Internal notes</CardTitle>
@@ -423,9 +622,12 @@ export default function AdminBookingDetailPage() {
           <div>
             <span className="text-muted-foreground">Assigned route: </span>
             {b.assigned_route ? (
-              <span>
+              <Link
+                href={`/admin/routes/${b.assigned_route.id}`}
+                className="font-medium text-primary underline underline-offset-2"
+              >
                 {b.assigned_route.name} ({b.assigned_route.scheduled_date})
-              </span>
+              </Link>
             ) : (
               "—"
             )}
@@ -468,6 +670,14 @@ export default function AdminBookingDetailPage() {
                   <div className="text-xs text-muted-foreground">{row.at ?? ""}</div>
                   <div className="font-medium">{row.action}</div>
                   <div className="text-xs text-muted-foreground">{row.actor_name ?? "—"}</div>
+                  {row.payload !== undefined && row.payload !== null ? (
+                    <details className="mt-2 text-xs">
+                      <summary className="cursor-pointer text-muted-foreground">Audit payload</summary>
+                      <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 whitespace-pre-wrap">
+                        {typeof row.payload === "string" ? row.payload : JSON.stringify(row.payload, null, 2)}
+                      </pre>
+                    </details>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -483,15 +693,65 @@ export default function AdminBookingDetailPage() {
               This records a cancellation in the audit trail. Field routes may need manual cleanup if already scheduled.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-3 px-1 py-2">
+            <Label htmlFor="cancel-note">Reason (optional)</Label>
+            <Textarea
+              id="cancel-note"
+              rows={3}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Short note for the audit log…"
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Back</AlertDialogCancel>
             <Button
               type="button"
               variant="destructive"
               disabled={cancelMutation.isPending}
-              onClick={() => cancelMutation.mutate()}
+              onClick={() => cancelMutation.mutate(cancelReason)}
             >
               {cancelMutation.isPending ? "Cancelling…" : "Confirm cancel"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={reassignWarnOpen} onOpenChange={setReassignWarnOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move route assignment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This booking already has a route. Assigning another run moves the stop and is logged — confirm before continuing.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Back</AlertDialogCancel>
+            <Button
+              type="button"
+              onClick={() => {
+                setReassignWarnOpen(false);
+                setAssignOpen(true);
+              }}
+            >
+              Choose new route
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={convertOpen} onOpenChange={setConvertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert to order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Creates a draft order linked to this booking. The booking is marked converted — you can add knives and continue in the order workflow.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Back</AlertDialogCancel>
+            <Button type="button" disabled={convertMutation.isPending} onClick={() => convertMutation.mutate()}>
+              {convertMutation.isPending ? "Creating…" : "Create draft order"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

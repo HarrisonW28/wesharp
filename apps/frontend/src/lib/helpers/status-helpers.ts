@@ -17,6 +17,7 @@ export function bookingStatusLabel(status: string): string {
     returned: "Returned",
     [BOOKING_STATUS.IN_PROGRESS]: "In progress",
     [BOOKING_STATUS.COMPLETED]: "Completed",
+    converted_to_order: "Converted to order",
     [BOOKING_STATUS.CANCELLED]: "Cancelled",
     no_show: "No show",
   };
