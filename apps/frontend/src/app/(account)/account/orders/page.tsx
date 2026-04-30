@@ -6,7 +6,7 @@ import { ClipboardList, Loader2 } from "lucide-react";
 
 import { PaginatedTenantOrdersSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -83,7 +83,7 @@ export default function AccountOrdersPage() {
                     <StatusBadge kind="order" status={o.status} />
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">
-                    {formatGbpFromPence(o.total_pence ?? null)}
+                    {formatGBP(o.total_pence ?? null)}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link className="font-medium text-primary underline underline-offset-2" href={`/account/orders/${o.id}`}>

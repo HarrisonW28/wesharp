@@ -15,7 +15,7 @@ import type { CompanyRow } from "@/lib/api/admin-crm-schema";
 import type { CompanyStatus } from "@/lib/api/admin-crm-schema";
 import { PaginatedCompaniesResponseSchema } from "@/lib/api/admin-crm-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { CompanyStatusBadge } from "@/components/crm/CompanyStatusBadge";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -160,7 +160,7 @@ export default function AdminCrmPage() {
       {
         id: "spend",
         header: "Total spend",
-        cell: ({ row }) => <span className="tabular-nums">{formatGbpFromPence(row.original.total_spend_pence)}</span>,
+        cell: ({ row }) => <span className="tabular-nums">{formatGBP(row.original.total_spend_pence)}</span>,
       },
       {
         id: "last",

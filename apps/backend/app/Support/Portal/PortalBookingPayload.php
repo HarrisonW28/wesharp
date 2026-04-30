@@ -15,7 +15,13 @@ final class PortalBookingPayload
     {
         $row = (new BookingResource($booking))->toArray($request);
 
-        unset($row['internal_notes'], $row['price_estimate']);
+        unset(
+            $row['internal_notes'],
+            $row['price_estimate'],
+            $row['price_estimate_minor'],
+            $row['formatted_amount'],
+            $row['currency'],
+        );
 
         return $row;
     }

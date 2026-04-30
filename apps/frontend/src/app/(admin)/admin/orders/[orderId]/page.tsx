@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 import { OrderDetailResponseSchema, OrderInvoiceDraftResponseSchema } from "@/lib/api/admin-orders-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { coerceGbpInputToMinorUnits, formatGBP } from "@/lib/format/money";
 
 import { KnifeLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -54,11 +54,6 @@ function makeEmptyBulkRow(): BulkLineRow {
     quantity: 1,
     unitPounds: "5.00",
   };
-}
-
-function poundsInputToPence(s: string): number {
-  const n = Number.parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
-  return Math.round(n * 100);
 }
 
 export default function AdminOrderDetailPage() {
@@ -202,7 +197,7 @@ export default function AdminOrderDetailPage() {
     mutationFn: async () => {
       const items: Record<string, unknown>[] = [];
       for (const row of bulkLines) {
-        const unit_amount_pence = poundsInputToPence(row.unitPounds);
+        const unit_amount_pence = coerceGbpInputToMinorUnits(row.unitPounds);
         if (row.knifeId) {
           items.push({
             knife_id: row.knifeId,
@@ -396,15 +391,15 @@ export default function AdminOrderDetailPage() {
               <dl className="grid gap-2 text-sm">
                 <div className="flex justify-between gap-2">
                   <dt className="text-muted-foreground">Subtotal (ex VAT)</dt>
-                  <dd className="font-medium tabular-nums">{formatGbpFromPence(o.invoice.subtotal_pence)}</dd>
+                  <dd className="font-medium tabular-nums">{formatGBP(o.invoice.subtotal_pence)}</dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-muted-foreground">VAT</dt>
-                  <dd className="font-medium tabular-nums">{formatGbpFromPence(o.invoice.tax_pence)}</dd>
+                  <dd className="font-medium tabular-nums">{formatGBP(o.invoice.tax_pence)}</dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-muted-foreground">Total</dt>
-                  <dd className="font-semibold tabular-nums">{formatGbpFromPence(o.invoice.total_pence)}</dd>
+                  <dd className="font-semibold tabular-nums">{formatGBP(o.invoice.total_pence)}</dd>
                 </div>
               </dl>
               <Button asChild variant="secondary" className="w-full">
@@ -444,23 +439,23 @@ export default function AdminOrderDetailPage() {
             </div>
             <div>
               <dt className="text-muted-foreground">Price / knife</dt>
-              <dd className="font-semibold">{formatGbpFromPence(o.price_per_knife_pence ?? 0)}</dd>
+              <dd className="font-semibold">{formatGBP(o.price_per_knife_pence ?? 0)}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Discount</dt>
-              <dd className="font-semibold">{formatGbpFromPence(o.discount_pence ?? 0)}</dd>
+              <dd className="font-semibold">{formatGBP(o.discount_pence ?? 0)}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Subtotal</dt>
-              <dd className="font-semibold">{formatGbpFromPence(o.subtotal_pence ?? 0)}</dd>
+              <dd className="font-semibold">{formatGBP(o.subtotal_pence ?? 0)}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">VAT</dt>
-              <dd className="font-semibold">{formatGbpFromPence(o.tax_pence ?? 0)}</dd>
+              <dd className="font-semibold">{formatGBP(o.tax_pence ?? 0)}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Total</dt>
-              <dd className="font-semibold">{formatGbpFromPence(o.total_pence ?? 0)}</dd>
+              <dd className="font-semibold">{formatGBP(o.total_pence ?? 0)}</dd>
             </div>
           </dl>
         </Card>
@@ -760,7 +755,7 @@ export default function AdminOrderDetailPage() {
             <li key={line.id} className="rounded-md border bg-muted/20 px-3 py-2 text-sm">
               <div className="font-medium">{line.description}</div>
               <div className="text-xs text-muted-foreground">
-                {line.quantity} × {formatGbpFromPence(line.unit_amount_pence)} ex VAT
+                {line.quantity} × {formatGBP(line.unit_amount_pence)} ex VAT
                 {line.knife_id ? (
                   <>
                     {" "}

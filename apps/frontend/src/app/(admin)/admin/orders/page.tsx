@@ -12,7 +12,7 @@ import { z } from "zod";
 
 import { OrderDetailResponseSchema, OrderRowSchema, PaginatedOrdersResponseSchema } from "@/lib/api/admin-orders-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { parseGbpInputToMinorUnits, formatGBP } from "@/lib/format/money";
 
 import { BookingLookup, CompanyLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -31,20 +31,6 @@ const createOrderSchema = z.object({
   booking_id: z.string().uuid("Booking must be a valid UUID."),
 });
 
-function parseOptionalPence(raw: string): number | undefined {
-  const t = raw.trim();
-  if (t === "") {
-    return undefined;
-  }
-
-  const n = Number.parseInt(t, 10);
-  if (!Number.isFinite(n) || n < 0) {
-    throw new Error("Price must be a non-negative integer (pence).");
-  }
-
-  return n;
-}
-
 export default function AdminOrdersPage() {
   const admin = useAdminApi();
   const router = useRouter();
@@ -54,7 +40,7 @@ export default function AdminOrdersPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
-  const [pricePence, setPricePence] = useState("");
+  const [priceGbp, setPriceGbp] = useState("");
 
   useEffect(() => {
     const p = new URLSearchParams(searchParams.toString());
@@ -109,7 +95,7 @@ export default function AdminOrdersPage() {
       let pence: number | undefined;
 
       try {
-        pence = parseOptionalPence(pricePence);
+        pence = parseGbpInputToMinorUnits(priceGbp);
       } catch (e: unknown) {
         throw new Error(e instanceof Error ? e.message : "Invalid price.");
       }
@@ -147,7 +133,7 @@ export default function AdminOrdersPage() {
       setCreateOpen(false);
       setCompanyId(null);
       setBookingId(null);
-      setPricePence("");
+      setPriceGbp("");
       if (order?.id) {
         router.push(`/admin/orders/${order.id}`);
       }
@@ -188,7 +174,7 @@ export default function AdminOrdersPage() {
         accessorKey: "total_pence",
         header: "Total",
         cell: ({ row }) => (
-          <span className="tabular-nums">{formatGbpFromPence(row.original.total_pence ?? 0)}</span>
+          <span className="tabular-nums">{formatGBP(row.original.total_pence ?? 0)}</span>
         ),
       },
       {
@@ -276,8 +262,14 @@ export default function AdminOrdersPage() {
                   placeholder={companyId ? "Search bookings for this account…" : "Select an account first"}
                 />
                 <div className="space-y-1">
-                  <Label htmlFor="ppp">price_per_knife_pence (optional)</Label>
-                  <Input id="ppp" inputMode="numeric" value={pricePence} onChange={(e) => setPricePence(e.target.value)} placeholder="e.g. 1200" />
+                  <Label htmlFor="ppp">Price per knife (£, optional, ex VAT)</Label>
+                  <Input
+                    id="ppp"
+                    inputMode="decimal"
+                    value={priceGbp}
+                    onChange={(e) => setPriceGbp(e.target.value)}
+                    placeholder="e.g. 12.00"
+                  />
                 </div>
               </div>
               <DialogFooter className="gap-2">
@@ -297,7 +289,7 @@ export default function AdminOrdersPage() {
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">No orders yet.</p>
       ) : (
-        <DataTable<OrderRow> columns={columns} data={rows} />
+        <DataTable<OrderRow> columns={columns} data={rows} emptyDescription="Create an order from a booking or use New order." />
       )}
 
       <div className="mt-4 flex gap-3 text-sm">

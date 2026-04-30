@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 import { BookingDetailResponseSchema } from "@/lib/api/admin-bookings-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { RouteLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -595,7 +595,7 @@ export default function AdminBookingDetailPage() {
           <div>
             <div className="text-xs text-muted-foreground">Price estimate</div>
             <div className="tabular-nums">
-              {b.price_estimate != null ? formatGbpFromPence(b.price_estimate) : "—"}
+              {b.price_estimate != null ? formatGBP(b.price_estimate) : "—"}
             </div>
           </div>
           <div className="sm:col-span-2">
@@ -700,7 +700,7 @@ export default function AdminBookingDetailPage() {
                 {b.orders.map((o) => (
                   <li key={o.id}>
                     <Link href={`/admin/orders/${o.id}`} className="text-sm font-medium text-primary underline underline-offset-2">
-                      {o.order_status?.replace(/_/g, " ") ?? "Order"} · {formatGbpFromPence(o.total_pence)}
+                      {o.order_status?.replace(/_/g, " ") ?? "Order"} · {formatGBP(o.total_pence)}
                       {o.currency ? ` ${o.currency}` : ""}
                     </Link>
                   </li>

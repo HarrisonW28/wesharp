@@ -8,7 +8,7 @@ export const adminCreateBookingFormSchema = z.object({
   requested_date: z.string().min(1, "Pick a date."),
   service_type: z.enum(["collection", "onsite"]),
   internal_notes: z.string().optional(),
-  price_estimate_pence: z.coerce.number().int().min(0).optional(),
+  price_estimate_gbp: z.string().optional(),
 });
 
 export type AdminCreateBookingFormValues = z.infer<typeof adminCreateBookingFormSchema>;

@@ -17,7 +17,6 @@ import {
   CalendarDays,
   CircleDollarSign,
   Landmark,
-  Loader2,
   Receipt,
   RefreshCw,
   UtensilsCrossed,
@@ -29,13 +28,14 @@ import {
   AnalyticsSalesResponseSchema,
 } from "@/lib/api/admin-analytics-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatCurrencyMinor } from "@/lib/formatters/format-currency";
+import { formatGBP } from "@/lib/format/money";
 
 import { ChartCard } from "@/components/cards/ChartCard";
 import { StatCard } from "@/components/cards/StatCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function defaultDateRangeQs(): string {
@@ -104,9 +104,25 @@ export default function AdminDashboardPage() {
 
   if (pending) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-muted-foreground">
-        <Loader2 className="h-10 w-10 animate-spin" aria-hidden />
-        <p className="text-sm">Loading dashboard…</p>
+      <div className="space-y-8">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-72 max-w-full" />
+          </div>
+          <Skeleton className="h-9 w-40 shrink-0" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-32 w-full" />
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-28 w-full" />
+          ))}
+        </div>
+        <Skeleton className="h-72 w-full max-w-4xl" />
       </div>
     );
   }
@@ -162,8 +178,8 @@ export default function AdminDashboardPage() {
           />
           <StatCard
             title="Revenue · this week"
-            value={formatCurrencyMinor(kpis.revenue_this_week_pence)}
-            trend={`This month · ${formatCurrencyMinor(kpis.revenue_this_month_pence)}`}
+            value={formatGBP(kpis.revenue_this_week_pence)}
+            trend={`This month · ${formatGBP(kpis.revenue_this_month_pence)}`}
             trendPositive={kpis.revenue_this_month_pence >= kpis.revenue_this_week_pence}
             icon={CircleDollarSign}
           />
@@ -173,8 +189,8 @@ export default function AdminDashboardPage() {
       {!fault && kpis ? (
         <div className="grid gap-4 lg:grid-cols-3">
           <StatCard title="Outstanding invoices" value={String(kpis.outstanding_invoice_count)} hint="Issued invoices with balance" icon={Receipt} />
-          <StatCard title="Outstanding balance" value={formatCurrencyMinor(kpis.outstanding_invoice_amount_pence)} hint="Totals minus receipts" icon={Landmark} />
-          <StatCard title="Avg price / blade" value={formatCurrencyMinor(kpis.average_price_per_knife_pence)} hint="Completed orders · filter window" icon={Banknote} />
+          <StatCard title="Outstanding balance" value={formatGBP(kpis.outstanding_invoice_amount_pence)} hint="Totals minus receipts" icon={Landmark} />
+          <StatCard title="Avg price / blade" value={formatGBP(kpis.average_price_per_knife_pence)} hint="Completed orders · filter window" icon={Banknote} />
         </div>
       ) : null}
 
@@ -196,13 +212,13 @@ export default function AdminDashboardPage() {
                 <CartesianGrid strokeDasharray="4 6" className="stroke-border/70" />
                 <XAxis dataKey="label" tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis
-                  tickFormatter={(v: number) => formatCurrencyMinor(Number(v))}
+                  tickFormatter={(v: number) => formatGBP(Number(v))}
                   tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
-                  formatter={(value) => formatCurrencyMinor(Number(value ?? 0))}
+                  formatter={(value) => formatGBP(Number(value ?? 0))}
                   labelFormatter={(label) => `Bucket · ${label}`}
                   contentStyle={{ borderRadius: 12 }}
                 />

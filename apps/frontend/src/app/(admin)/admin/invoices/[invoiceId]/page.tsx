@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 import { InvoiceDetailResponseSchema } from "@/lib/api/admin-invoices-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP, parseGbpInputToMinorUnits } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -50,7 +50,7 @@ export default function AdminInvoiceDetailPage() {
   const [manualOpen, setManualOpen] = useState(false);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
-  const [amountPence, setAmountPence] = useState("");
+  const [amountGbp, setAmountGbp] = useState("");
   const [reference, setReference] = useState("");
 
   const invQuery = useQuery({
@@ -114,8 +114,16 @@ export default function AdminInvoiceDetailPage() {
 
   const manualMut = useMutation({
     mutationFn: async () => {
-      const n = Number.parseInt(amountPence, 10);
-      if (!Number.isFinite(n) || n < 1) throw new Error("Enter amount as whole pence (integer).");
+      let n: number;
+      try {
+        const pence = parseGbpInputToMinorUnits(amountGbp);
+        if (pence === undefined || pence < 1) {
+          throw new Error("Enter an amount of at least £0.01.");
+        }
+        n = pence;
+      } catch (e) {
+        throw new Error(e instanceof Error ? e.message : "Invalid amount.");
+      }
 
       const res = await admin.json(`/api/admin/payments/manual`, {
         method: "POST",
@@ -132,7 +140,7 @@ export default function AdminInvoiceDetailPage() {
     onSuccess: () => {
       toast.success("Manual payment recorded.");
       setManualOpen(false);
-      setAmountPence("");
+      setAmountGbp("");
       setReference("");
       invalidate();
     },
@@ -173,12 +181,12 @@ export default function AdminInvoiceDetailPage() {
     {
       accessorKey: "unit_amount",
       header: "Unit",
-      cell: ({ row }) => formatGbpFromPence(row.original.unit_amount ?? 0),
+      cell: ({ row }) => formatGBP(row.original.unit_amount ?? 0),
     },
     {
       accessorKey: "line_total",
       header: "Line",
-      cell: ({ row }) => formatGbpFromPence(row.original.line_total ?? 0),
+      cell: ({ row }) => formatGBP(row.original.line_total ?? 0),
     },
   ];
 
@@ -223,8 +231,14 @@ export default function AdminInvoiceDetailPage() {
                 <DialogTitle>Record FPS / transfer</DialogTitle>
               </DialogHeader>
               <div className="space-y-2">
-                <Label htmlFor="pence">Amount (pence)</Label>
-                <Input id="pence" inputMode="numeric" value={amountPence} onChange={(e) => setAmountPence(e.target.value)} />
+                <Label htmlFor="amount-gbp">Amount (£)</Label>
+                <Input
+                  id="amount-gbp"
+                  inputMode="decimal"
+                  value={amountGbp}
+                  onChange={(e) => setAmountGbp(e.target.value)}
+                  placeholder="e.g. 150.00"
+                />
                 <Label htmlFor="ref">Reference</Label>
                 <Input id="ref" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Optional" />
               </div>
@@ -247,15 +261,15 @@ export default function AdminInvoiceDetailPage() {
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Subtotal</dt>
-              <dd className="tabular-nums">{formatGbpFromPence(inv.subtotal ?? 0)}</dd>
+              <dd className="tabular-nums">{formatGBP(inv.subtotal ?? 0)}</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Tax</dt>
-              <dd className="tabular-nums">{formatGbpFromPence(inv.tax_total ?? 0)}</dd>
+              <dd className="tabular-nums">{formatGBP(inv.tax_total ?? 0)}</dd>
             </div>
             <div className="flex justify-between gap-4 font-semibold">
               <dt>Total</dt>
-              <dd className="tabular-nums">{formatGbpFromPence(inv.total ?? 0)}</dd>
+              <dd className="tabular-nums">{formatGBP(inv.total ?? 0)}</dd>
             </div>
           </dl>
           <Separator className="my-4" />
@@ -278,7 +292,7 @@ export default function AdminInvoiceDetailPage() {
           <ul className="mt-3 space-y-3 text-sm">
             {(inv.payments ?? []).map((p) => (
               <li key={p.id} className="rounded-md border border-border px-3 py-2">
-                <div className="tabular-nums font-medium">{formatGbpFromPence(p.amount ?? 0)}</div>
+                <div className="tabular-nums font-medium">{formatGBP(p.amount ?? 0)}</div>
                 <div className="text-xs text-muted-foreground capitalize">
                   {(p.method ?? "").replace(/_/g, " ")} · {(p.status ?? "").replace(/_/g, " ")}
                 </div>

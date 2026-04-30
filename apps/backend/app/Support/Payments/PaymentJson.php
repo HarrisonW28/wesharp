@@ -3,6 +3,7 @@
 namespace App\Support\Payments;
 
 use App\Models\Payment;
+use App\Support\Money\MoneyFormatting;
 
 final class PaymentJson
 {
@@ -15,6 +16,8 @@ final class PaymentJson
             'order_id' => $payment->order_id !== null ? (string) $payment->order_id : null,
             'invoice_id' => $payment->invoice_id !== null ? (string) $payment->invoice_id : null,
             'amount' => $payment->amount_pence,
+            'amount_minor' => (int) $payment->amount_pence,
+            'formatted_amount' => MoneyFormatting::formatGbpFromPence((int) $payment->amount_pence),
             'method' => $payment->payment_method?->value,
             'status' => $payment->payment_status?->value,
             'paid_at' => $payment->paid_at?->toIso8601String(),

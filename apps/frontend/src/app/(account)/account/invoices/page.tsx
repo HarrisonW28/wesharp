@@ -6,7 +6,7 @@ import { Loader2, Receipt } from "lucide-react";
 
 import { PaginatedTenantInvoicesSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -87,7 +87,7 @@ export default function AccountInvoicesPage() {
                   <td className="px-4 py-3 font-medium tabular-nums">{inv.invoice_number ?? "—"}</td>
                   <td className="px-4 py-3">{inv.issue_date ?? "—"}</td>
                   <td className="px-4 py-3">{inv.due_date ?? "—"}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{formatGbpFromPence(inv.total ?? null)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{formatGBP(inv.total ?? null)}</td>
                   <td className="px-4 py-3 text-right">
                     <StatusBadge kind="invoice" status={inv.status} />
                   </td>

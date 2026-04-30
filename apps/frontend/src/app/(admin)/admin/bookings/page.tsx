@@ -15,7 +15,7 @@ import type { BookingRow } from "@/lib/api/admin-bookings-schema";
 import { BOOKING_STATUS_VALUES, PaginatedBookingsResponseSchema } from "@/lib/api/admin-bookings-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { bookingStatusLabel } from "@/lib/helpers/status-helpers";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP, parseGbpInputToMinorUnits } from "@/lib/format/money";
 
 import { CompanyLookup, ContactLookup, LocationLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -127,12 +127,19 @@ export default function AdminBookingsPage() {
       requested_date: "",
       service_type: "collection",
       internal_notes: "",
-      price_estimate_pence: undefined,
+      price_estimate_gbp: "",
     },
   });
 
   const createMutation = useMutation({
     mutationFn: async (payload: z.infer<typeof adminCreateBookingFormSchema>) => {
+      let price_estimate: number | undefined;
+      try {
+        price_estimate = parseGbpInputToMinorUnits(payload.price_estimate_gbp ?? "");
+      } catch {
+        throw new Error("Price estimate must be a valid amount in pounds.");
+      }
+
       const res = await admin.json(`/api/admin/bookings`, {
         method: "POST",
         body: JSON.stringify({
@@ -148,9 +155,7 @@ export default function AdminBookingsPage() {
           service_type: payload.service_type,
           internal_notes: payload.internal_notes || undefined,
           price_estimate:
-            payload.price_estimate_pence === undefined || payload.price_estimate_pence === null
-              ? undefined
-              : payload.price_estimate_pence,
+            price_estimate === undefined || price_estimate === null ? undefined : price_estimate,
         }),
       });
 
@@ -172,7 +177,7 @@ export default function AdminBookingsPage() {
         requested_date: "",
         service_type: "collection",
         internal_notes: "",
-        price_estimate_pence: undefined,
+        price_estimate_gbp: "",
       });
       setCreateOpen(false);
       if (id) {
@@ -266,7 +271,7 @@ export default function AdminBookingsPage() {
         header: "Est.",
         cell: ({ row }) =>
           row.original.price_estimate != null ? (
-            <span className="tabular-nums">{formatGbpFromPence(Number(row.original.price_estimate))}</span>
+            <span className="tabular-nums">{formatGBP(Number(row.original.price_estimate))}</span>
           ) : (
             "—"
           ),
@@ -623,16 +628,16 @@ export default function AdminBookingsPage() {
 
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="price-estimate-pence">Price estimate (optional)</Label>
+                <Label htmlFor="price-estimate-gbp">Price estimate (optional)</Label>
                 <p id="price-estimate-hint" className="text-xs text-muted-foreground">
-                  Enter whole pence (e.g. 850 for £8.50).
+                  In pounds, excluding VAT (e.g. 8.50).
                 </p>
                 <Input
-                  id="price-estimate-pence"
-                  type="number"
+                  id="price-estimate-gbp"
+                  inputMode="decimal"
                   aria-describedby="price-estimate-hint"
-                  placeholder="Optional"
-                  {...form.register("price_estimate_pence")}
+                  placeholder="e.g. 120.00"
+                  {...form.register("price_estimate_gbp")}
                 />
               </div>
               <div className="space-y-2 md:col-span-2">

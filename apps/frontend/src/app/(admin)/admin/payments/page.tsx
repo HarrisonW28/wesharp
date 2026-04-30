@@ -12,7 +12,7 @@ import { z } from "zod";
 
 import { PaginatedPaymentsResponseSchema, PaymentRowSchema } from "@/lib/api/admin-payments-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -66,7 +66,7 @@ export default function AdminPaymentsPage() {
       {
         accessorKey: "amount",
         header: "Amount",
-        cell: ({ row }) => <span className="tabular-nums">{formatGbpFromPence(row.original.amount ?? 0)}</span>,
+        cell: ({ row }) => <span className="tabular-nums">{formatGBP(row.original.amount ?? 0)}</span>,
       },
       {
         accessorKey: "invoice",

@@ -5,7 +5,7 @@ import { HomeHero } from "@/components/marketing/HomeHero";
 import { Button } from "@/components/ui/button";
 import { PRICING } from "@/config/pricing";
 import { SERVICE_AREAS } from "@/config/service-areas";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 const HOW_STEPS = [
   { step: 1, title: "Book your collection", body: "Pick a date and time window that works around service — online, in minutes." },
@@ -33,7 +33,7 @@ const BENEFITS = [
 
 export default function HomePage() {
   const paygFromMinor = Math.min(...PRICING.tiers.map((t) => t.unitAmountMinor));
-  const subscriptionDisplay = formatGbpFromPence(PRICING.subscriptionMonthlyMinor);
+  const subscriptionDisplay = formatGBP(PRICING.subscriptionMonthlyMinor);
 
   return (
     <>
@@ -136,13 +136,13 @@ export default function HomePage() {
               <div className="text-sm font-semibold text-primary">Pay-as-you-go</div>
               <p className="mt-1 text-xs text-muted-foreground">From our standard per-knife guide rate (indicative).</p>
               <p className="mt-4 text-3xl font-semibold tabular-nums tracking-tight">
-                From {formatGbpFromPence(paygFromMinor)}
+                From {formatGBP(paygFromMinor)}
               </p>
               <p className="mt-2 text-xs text-muted-foreground">Per knife · confirm on quote</p>
               <ul className="mt-4 space-y-2 border-t pt-4 text-sm text-muted-foreground">
                 {PRICING.tiers.map((t) => (
                   <li key={t.id}>
-                    <span className="text-foreground">{t.label}</span> — {formatGbpFromPence(t.unitAmountMinor)} per knife
+                    <span className="text-foreground">{t.label}</span> — {formatGBP(t.unitAmountMinor)} per knife
                     (guide)
                   </li>
                 ))}

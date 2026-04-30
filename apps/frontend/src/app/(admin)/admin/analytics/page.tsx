@@ -35,7 +35,7 @@ import {
   AnalyticsSalesResponseSchema,
 } from "@/lib/api/admin-analytics-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -54,6 +54,11 @@ function buildQs(params: Record<string, string>): string {
   });
   const s = u.toString();
   return s ? `?${s}` : "";
+}
+
+function formatRechartsRevenuePence(value: unknown): string {
+  const pence = typeof value === "number" ? value : Number(value);
+  return formatGBP(Number.isFinite(pence) ? pence : 0);
 }
 
 /** Server-computed GBP display only — totals come only from KPI payload. */
@@ -324,13 +329,13 @@ type ErrWithStatus = Error & { status?: number };
           <InsightCard
             title="Revenue this calendar month"
             description="Recognised revenue from orders marked completed."
-            value={formatGbpFromPence(kpis.revenue_this_month_pence)}
+            value={formatGBP(kpis.revenue_this_month_pence)}
             footnote={`Server KPI · ${overview?.basis?.revenue ?? "orders.updated_at at completion."}`}
           />
           <InsightCard
             title="Revenue this ISO week"
             description="Rolling Monday–Sunday (UTC)."
-            value={formatGbpFromPence(kpis.revenue_this_week_pence)}
+            value={formatGBP(kpis.revenue_this_week_pence)}
           />
           <InsightCard
             title="Knives sharpened this week"
@@ -340,7 +345,7 @@ type ErrWithStatus = Error & { status?: number };
           <InsightCard
             title="Average price per blade"
             description="Across completed orders inside the filtered date span."
-            value={formatGbpFromPence(kpis.average_price_per_knife_pence)}
+            value={formatGBP(kpis.average_price_per_knife_pence)}
           />
           <InsightCard
             title="Active customers"
@@ -350,12 +355,12 @@ type ErrWithStatus = Error & { status?: number };
           <InsightCard title="Outstanding invoices" description="Unsettled billed documents." value={`${kpis.outstanding_invoice_count}`} />
           <InsightCard
             title="Outstanding balance"
-            value={formatGbpFromPence(kpis.outstanding_invoice_amount_pence)}
+            value={formatGBP(kpis.outstanding_invoice_amount_pence)}
             footnote="Invoice totals minus summed posted payments."
           />
           <InsightCard
             title="Overdue exposure"
-            value={formatGbpFromPence(kpis.overdue_amount_pence)}
+            value={formatGBP(kpis.overdue_amount_pence)}
             footnote={overview?.basis?.invoice_balances ?? "Past due or overdue status unpaid portion."}
           />
           <InsightCard
@@ -383,14 +388,7 @@ type ErrWithStatus = Error & { status?: number };
                       `${(typeof v === "number" ? v / 100 : Number(v) / 100).toLocaleString("en-GB", { notation: "compact", style: "currency", currency: "GBP", maximumFractionDigits: 1 })}`
                     }
                   />
-                  <RechartsTooltip
-                    formatter={(val) =>
-                      `${((typeof val === "number" ? val : Number(val)) / 100).toLocaleString("en-GB", {
-                        style: "currency",
-                        currency: "GBP",
-                      })}`
-                    }
-                  />
+                  <RechartsTooltip formatter={(val) => formatRechartsRevenuePence(val)} />
                   <Area type="monotone" dataKey="revenue_pence" name="Revenue (£)" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / .15)" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -422,14 +420,7 @@ type ErrWithStatus = Error & { status?: number };
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis type="number" />
                   <YAxis type="category" dataKey="city" width={120} tick={{ fontSize: 11 }} />
-                  <RechartsTooltip
-                    formatter={(val) =>
-                      `${((typeof val === "number" ? val : Number(val)) / 100).toLocaleString("en-GB", {
-                        style: "currency",
-                        currency: "GBP",
-                      })}`
-                    }
-                  />
+                  <RechartsTooltip formatter={(val) => formatRechartsRevenuePence(val)} />
                   <Bar dataKey="revenue_pence" fill="hsl(var(--primary))" name="Completed orders" radius={[4, 4, 4, 4]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -460,14 +451,7 @@ type ErrWithStatus = Error & { status?: number };
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis type="number" />
                   <YAxis type="category" dataKey="city" width={120} />
-                  <RechartsTooltip
-                    formatter={(val) =>
-                      `${((typeof val === "number" ? val : Number(val)) / 100).toLocaleString("en-GB", {
-                        style: "currency",
-                        currency: "GBP",
-                      })}`
-                    }
-                  />
+                  <RechartsTooltip formatter={(val) => formatRechartsRevenuePence(val)} />
                   <Bar dataKey="revenue_pence" fill="hsl(var(--muted-foreground) / .4)" radius={[4, 4, 4, 4]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -491,7 +475,7 @@ type ErrWithStatus = Error & { status?: number };
                     <tr key={row.company_id} className="border-b border-border/60">
                       <td className="py-2 font-medium">{row.company_name}</td>
                       <td className="py-2 text-muted-foreground">{row.city ?? "—"}</td>
-                      <td className="py-2 text-right tabular-nums">{formatGbpFromPence(row.revenue_pence)}</td>
+                      <td className="py-2 text-right tabular-nums">{formatGBP(row.revenue_pence)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -529,14 +513,14 @@ type ErrWithStatus = Error & { status?: number };
                     <p className="font-medium">Paid in-window</p>
                     <p className="text-muted-foreground">
                       Invoices counted at creation ({sales.paid_vs_open_invoices.paid_full.invoice_count}), billed totals{" "}
-                      {formatGbpFromPence(sales.paid_vs_open_invoices.paid_full.billed_amount_pence)} — server-labelled paid.
+                      {formatGBP(sales.paid_vs_open_invoices.paid_full.billed_amount_pence)} — server-labelled paid.
                     </p>
                   </div>
                 </div>
                 <div>
                   <p className="font-medium">Open residual balance</p>
                   <p className="text-muted-foreground">
-                    Outstanding docs in window with residual {formatGbpFromPence(sales.paid_vs_open_invoices.open_residual.balance_pence)}{" "}
+                    Outstanding docs in window with residual {formatGBP(sales.paid_vs_open_invoices.open_residual.balance_pence)}{" "}
                     across {sales.paid_vs_open_invoices.open_residual.invoice_count} rows.
                   </p>
                   <Link className="text-primary mt-3 inline-flex text-xs underline underline-offset-2" href="/admin/invoices">

@@ -12,7 +12,7 @@ import { z } from "zod";
 
 import { InvoiceDetailResponseSchema, InvoiceRowSchema, PaginatedInvoicesResponseSchema } from "@/lib/api/admin-invoices-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { OrderLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -126,7 +126,7 @@ export default function AdminInvoicesPage() {
       {
         accessorKey: "total",
         header: "Total",
-        cell: ({ row }) => <span className="tabular-nums">{formatGbpFromPence(row.original.total ?? 0)}</span>,
+        cell: ({ row }) => <span className="tabular-nums">{formatGBP(row.original.total ?? 0)}</span>,
       },
       {
         id: "actions",

@@ -1,5 +1,6 @@
 "use client";
 
+import { Inbox } from "lucide-react";
 import {
   flexRender,
   getCoreRowModel,
@@ -14,9 +15,15 @@ type DataTableProps<TData> = {
   columns: ColumnDef<TData, unknown>[];
   data: TData[];
   emptyLabel?: string;
+  emptyDescription?: string;
 };
 
-export function DataTable<TData>({ columns, data, emptyLabel = "No rows yet." }: DataTableProps<TData>) {
+export function DataTable<TData>({
+  columns,
+  data,
+  emptyLabel = "Nothing here yet",
+  emptyDescription = "There is no data to show in this table.",
+}: DataTableProps<TData>) {
   const table = useReactTable({
     data,
     columns,
@@ -43,8 +50,14 @@ export function DataTable<TData>({ columns, data, emptyLabel = "No rows yet." }:
           <tbody className="[&_tr:last-child]:border-0">
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="p-8 text-center text-muted-foreground">
-                  {emptyLabel}
+                <td colSpan={columns.length} className="p-0">
+                  <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                      <Inbox className="h-6 w-6 text-muted-foreground" aria-hidden />
+                    </div>
+                    <p className="text-sm font-medium text-foreground">{emptyLabel}</p>
+                    <p className="max-w-sm text-xs text-muted-foreground">{emptyDescription}</p>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -66,7 +79,7 @@ export function DataTable<TData>({ columns, data, emptyLabel = "No rows yet." }:
         <span>
           Showing <span className="font-medium text-foreground">{rows.length}</span> rows
         </span>
-        <Button type="button" size="sm" variant="outline" disabled>
+        <Button type="button" size="sm" variant="outline" className="rounded-xl" disabled>
           Export (soon)
         </Button>
       </div>

@@ -22,7 +22,7 @@ import {
   OrderPreviewSchema,
 } from "@/lib/api/admin-crm-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { LocationLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { CompanyStatusBadge } from "@/components/crm/CompanyStatusBadge";
@@ -324,7 +324,7 @@ export default function AdminCrmCompanyPage() {
       {
         accessorKey: "total_pence",
         header: "Total",
-        cell: ({ row }) => formatGbpFromPence(row.original.total_pence),
+        cell: ({ row }) => formatGBP(row.original.total_pence),
       },
       { accessorKey: "order_status", header: "Status" },
       { accessorKey: "currency", header: "CCY" },
@@ -347,7 +347,7 @@ export default function AdminCrmCompanyPage() {
       {
         accessorKey: "total_pence",
         header: "Amount",
-        cell: ({ row }) => formatGbpFromPence(row.original.total_pence),
+        cell: ({ row }) => formatGBP(row.original.total_pence),
       },
       { accessorKey: "invoice_status", header: "Status" },
       { accessorKey: "issued_on", header: "Issued" },
@@ -446,7 +446,7 @@ export default function AdminCrmCompanyPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Order revenue</CardTitle>
             </CardHeader>
-            <CardContent className="text-2xl font-semibold tabular-nums">{formatGbpFromPence(summary.orders_total_pence)}</CardContent>
+            <CardContent className="text-2xl font-semibold tabular-nums">{formatGBP(summary.orders_total_pence)}</CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
@@ -468,7 +468,7 @@ export default function AdminCrmCompanyPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-semibold tabular-nums">{summary.invoices_open_count}</div>
-              <p className="text-xs text-muted-foreground tabular-nums">{formatGbpFromPence(summary.invoices_open_total_pence)} outstanding</p>
+              <p className="text-xs text-muted-foreground tabular-nums">{formatGBP(summary.invoices_open_total_pence)} outstanding</p>
             </CardContent>
           </Card>
         </section>

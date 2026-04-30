@@ -14,7 +14,7 @@ import {
   TodayResponseSchema,
 } from "@/lib/api/admin-routes-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { RouteManagerShell } from "@/components/layout/RouteManagerShell";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -177,7 +177,7 @@ export default function RouteTodayPage() {
             </div>
             <div className="col-span-2 md:col-span-1">
               <div className="text-slate-400 md:text-muted-foreground">Est. revenue</div>
-              <div className="text-lg font-semibold tabular-nums">{formatGbpFromPence(safeMetrics.estimated_revenue_pence)}</div>
+              <div className="text-lg font-semibold tabular-nums">{formatGBP(safeMetrics.estimated_revenue_pence)}</div>
             </div>
           </div>
           <ProgressLine route={primary} />

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Booking;
+use App\Support\Money\MoneyFormatting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -40,6 +41,11 @@ final class BookingResource extends JsonResource
             'customer_notes' => $b->customer_notes,
             'internal_notes' => $b->internal_notes,
             'price_estimate' => $b->price_estimate_pence,
+            'price_estimate_minor' => $b->price_estimate_pence,
+            'currency' => 'GBP',
+            'formatted_amount' => $b->price_estimate_pence !== null
+                ? MoneyFormatting::formatGbpFromPence((int) $b->price_estimate_pence)
+                : null,
             'created_at' => $b->created_at?->toIso8601String(),
             'updated_at' => $b->updated_at?->toIso8601String(),
             'company' => [

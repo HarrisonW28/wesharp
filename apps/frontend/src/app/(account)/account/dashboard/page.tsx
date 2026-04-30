@@ -18,12 +18,13 @@ import {
   PaginatedTenantOrdersSchema,
 } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status/StatusBadge";
 
 function isActiveOrderStatus(status: string | null | undefined): boolean {
@@ -101,9 +102,22 @@ export default function AccountDashboardPage() {
 
   if (dashQuery.status === "pending") {
     return (
-      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-        <p className="text-sm">Loading your overview…</p>
+      <div className="space-y-8">
+        <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Overview" }]} />
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-64 max-w-full" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-9 w-36" />
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-48 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -133,7 +147,7 @@ export default function AccountDashboardPage() {
       <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Overview" }]} />
       <PageHeader
         title={`Hello, ${d.company.name}`}
-        description="Collections, orders, and invoices for your business — all in one place."
+        description="Your collections, knife orders, and invoices in one clear view."
         actions={
           <>
             <Button type="button" size="sm" asChild>
@@ -147,34 +161,34 @@ export default function AccountDashboardPage() {
       />
 
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="secondary" size="sm" asChild className="rounded-lg">
+        <Button type="button" variant="secondary" size="sm" asChild>
           <Link href="/account/bookings">
             Check my bookings
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </Button>
-        <Button type="button" variant="secondary" size="sm" asChild className="rounded-lg">
+        <Button type="button" variant="secondary" size="sm" asChild>
           <Link href="/account/orders">
             View my orders
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </Button>
-        <Button type="button" variant="secondary" size="sm" asChild className="rounded-lg">
+        <Button type="button" variant="secondary" size="sm" asChild>
           <Link href="/account/invoices">
             View invoices
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </Button>
-        <Button type="button" variant="outline" size="sm" asChild className="rounded-lg">
+        <Button type="button" variant="outline" size="sm" asChild>
           <Link href="/account/settings">Manage account</Link>
         </Button>
-        <Button type="button" variant="outline" size="sm" asChild className="rounded-lg">
+        <Button type="button" variant="outline" size="sm" asChild>
           <Link href="/account/locations">Add or edit locations</Link>
         </Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="rounded-xl border shadow-sm">
+        <Card className="border shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <CalendarClock className="h-4 w-4 text-primary" aria-hidden />
@@ -205,9 +219,9 @@ export default function AccountDashboardPage() {
                 </Button>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center">
+              <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-6 text-center">
                 <p className="text-muted-foreground">No collection booked yet.</p>
-                <Button type="button" className="mt-4 rounded-lg" size="sm" asChild>
+                <Button type="button" className="mt-4" size="sm" asChild>
                   <Link href="/account/bookings/new">Request a collection</Link>
                 </Button>
               </div>
@@ -215,7 +229,7 @@ export default function AccountDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border shadow-sm">
+        <Card className="border shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Package className="h-4 w-4 text-primary" aria-hidden />
@@ -232,9 +246,9 @@ export default function AccountDashboardPage() {
             ) : ordersPreview.isError ? (
               <p className="text-destructive">{(ordersPreview.error as Error).message}</p>
             ) : activeOrders.length === 0 ? (
-              <div className="rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-muted-foreground">
+              <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-6 text-center text-muted-foreground">
                 No open orders — completed work shows in order history.
-                <Button type="button" className="mt-4 rounded-lg" variant="secondary" size="sm" asChild>
+                <Button type="button" className="mt-4" variant="secondary" size="sm" asChild>
                   <Link href="/account/orders">View my orders</Link>
                 </Button>
               </div>
@@ -244,7 +258,7 @@ export default function AccountDashboardPage() {
                   <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2 last:border-0 last:pb-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge kind="order" status={o.status ?? ""} />
-                      <span className="tabular-nums font-medium">{formatGbpFromPence(o.total_pence ?? null)}</span>
+                      <span className="tabular-nums font-medium">{formatGBP(o.total_pence ?? null)}</span>
                     </div>
                     <Link className="text-primary text-sm font-medium underline underline-offset-2" href={`/account/orders/${o.id}`}>
                       View order
@@ -256,7 +270,7 @@ export default function AccountDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border shadow-sm">
+        <Card className="border shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <WalletCards className="h-4 w-4 text-primary" aria-hidden />
@@ -265,7 +279,7 @@ export default function AccountDashboardPage() {
             <CardDescription>
               Balance we show as outstanding:{" "}
               <span className="font-semibold text-foreground tabular-nums">
-                {formatGbpFromPence(d.kpis.outstanding_balance_pence)}
+                {formatGBP(d.kpis.outstanding_balance_pence)}
               </span>
             </CardDescription>
           </CardHeader>
@@ -278,11 +292,11 @@ export default function AccountDashboardPage() {
             ) : invoicesPreview.isError ? (
               <p className="text-destructive">{(invoicesPreview.error as Error).message}</p>
             ) : unpaidInvoices.length === 0 ? (
-              <div className="rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-muted-foreground">
+              <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-6 text-center text-muted-foreground">
                 {d.kpis.outstanding_balance_pence > 0
                   ? "You have a balance on file — details will appear here once invoices are issued."
                   : "You are all caught up — nothing unpaid right now."}
-                <Button type="button" className="mt-4 rounded-lg" variant="secondary" size="sm" asChild>
+                <Button type="button" className="mt-4" variant="secondary" size="sm" asChild>
                   <Link href="/account/invoices">View invoices</Link>
                 </Button>
               </div>
@@ -298,7 +312,7 @@ export default function AccountDashboardPage() {
                       <div className="text-xs text-muted-foreground">Due {inv.due_date ?? "—"}</div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="tabular-nums">{formatGbpFromPence(inv.total ?? null)}</span>
+                      <span className="tabular-nums">{formatGBP(inv.total ?? null)}</span>
                       {inv.status ? <StatusBadge kind="invoice" status={inv.status} /> : null}
                     </div>
                   </li>
@@ -311,7 +325,7 @@ export default function AccountDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border shadow-sm">
+        <Card className="border shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <ClipboardList className="h-4 w-4 text-primary" aria-hidden />
@@ -328,9 +342,9 @@ export default function AccountDashboardPage() {
             ) : bookingsPreview.isError ? (
               <p className="text-destructive">{(bookingsPreview.error as Error).message}</p>
             ) : (bookingsPreview.data ?? []).length === 0 ? (
-              <div className="rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-muted-foreground">
+              <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-6 text-center text-muted-foreground">
                 No bookings yet.
-                <Button type="button" className="mt-4 rounded-lg" size="sm" asChild>
+                <Button type="button" className="mt-4" size="sm" asChild>
                   <Link href="/account/bookings/new">Request a collection</Link>
                 </Button>
               </div>
@@ -367,7 +381,7 @@ export default function AccountDashboardPage() {
         <CardContent className="grid gap-4 text-sm sm:grid-cols-3">
           <div>
             <div className="text-xs text-muted-foreground">Spend this month</div>
-            <div className="mt-1 text-lg font-semibold tabular-nums">{formatGbpFromPence(d.kpis.monthly_spend_pence)}</div>
+            <div className="mt-1 text-lg font-semibold tabular-nums">{formatGBP(d.kpis.monthly_spend_pence)}</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Knives returned to date</div>
@@ -376,7 +390,7 @@ export default function AccountDashboardPage() {
           <div>
             <div className="text-xs text-muted-foreground">Last order total</div>
             <div className="mt-1 text-lg font-semibold tabular-nums">
-              {d.last_order ? formatGbpFromPence(d.last_order.total_pence) : "—"}
+              {d.last_order ? formatGBP(d.last_order.total_pence) : "—"}
             </div>
           </div>
         </CardContent>

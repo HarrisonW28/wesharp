@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 
 import { OrderDetailResponseSchema } from "@/lib/api/admin-orders-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -75,7 +75,7 @@ export default function TenantOrderDetailPage() {
                 <StatusBadge kind="order" status={o.status} />
               </div>
               <div className="text-muted-foreground">Total</div>
-              <div>{formatGbpFromPence(o.total_pence ?? null)}</div>
+              <div>{formatGBP(o.total_pence ?? null)}</div>
               <div className="text-muted-foreground">Payment</div>
               <div>
                 <StatusBadge kind="payment" status={o.payment_status} />

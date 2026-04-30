@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { PRICING } from "@/config/pricing";
-import { formatGbpFromPence } from "@/lib/format/money";
+import { formatGBP } from "@/lib/format/money";
 
 export default function PricingPage() {
   const paygFromMinor = Math.min(...PRICING.tiers.map((t) => t.unitAmountMinor));
@@ -17,13 +17,13 @@ export default function PricingPage() {
           <div>
             <div className="text-sm font-semibold">Pay-as-you-go (guide)</div>
             <div className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">
-              From {formatGbpFromPence(paygFromMinor)}
+              From {formatGBP(paygFromMinor)}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">Per knife on a typical ad-hoc collection — confirmed on quote.</p>
             <ul className="mt-4 space-y-1.5 border-t border-border/60 pt-4 text-xs text-muted-foreground">
               {PRICING.tiers.map((t) => (
                 <li key={t.id}>
-                  <span className="text-foreground">{t.label}</span> — {formatGbpFromPence(t.unitAmountMinor)} per knife
+                  <span className="text-foreground">{t.label}</span> — {formatGBP(t.unitAmountMinor)} per knife
                   (guide)
                 </li>
               ))}
@@ -32,7 +32,7 @@ export default function PricingPage() {
           <div>
             <div className="text-sm font-semibold">Regular programme (guide)</div>
             <div className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">
-              {formatGbpFromPence(PRICING.subscriptionMonthlyMinor)}
+              {formatGBP(PRICING.subscriptionMonthlyMinor)}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
               Example monthly figure for scheduled visits — we tailor this when we understand your kitchen.

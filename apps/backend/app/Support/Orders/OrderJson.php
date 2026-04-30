@@ -7,6 +7,7 @@ use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Support\Knives\KnifeJson;
+use App\Support\Money\MoneyFormatting;
 
 final class OrderJson
 {
@@ -20,6 +21,8 @@ final class OrderJson
             'subtotal_pence' => (int) $invoice->subtotal_pence,
             'tax_pence' => (int) $invoice->tax_pence,
             'total_pence' => (int) $invoice->total_pence,
+            'total_amount_minor' => (int) $invoice->total_pence,
+            'formatted_amount' => MoneyFormatting::formatGbpFromPence((int) $invoice->total_pence),
         ];
     }
 
@@ -38,6 +41,8 @@ final class OrderJson
             'subtotal_pence' => $order->subtotal_pence,
             'tax_pence' => $order->tax_pence,
             'total_pence' => $order->total_pence,
+            'total_amount_minor' => (int) $order->total_pence,
+            'formatted_amount' => MoneyFormatting::formatGbpFromPence((int) $order->total_pence),
             'currency' => $order->currency,
             'payment_status' => $order->payment_status?->value,
             'company' => $order->relationLoaded('company') && $order->company !== null ? [
