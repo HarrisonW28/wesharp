@@ -96,3 +96,18 @@ Prereqs: Clerk **tenant** user with **`dashboard.view`** + portal permissions (`
 6. [ ] Negative: internal staff JWT calling **`GET /api/account/dashboard`** should **403** (`EnsureTenantCustomer`).
 
 Known gap: invoice PDF download + Stripe pay links still backend/backlog (see **`docs/product/customer-portal.md`**).
+
+---
+
+## Public booking form (`/` + `/book`)
+
+Prereqs: **`NEXT_PUBLIC_API_ORIGIN`**; Laravel reachable from the browser (**CORS** when marketing and API origins differ).
+
+1. [ ] Marketing home shows **Request a pickup** linking to **`/book`**.
+2. [ ] **`/book`** — Zod validation surfaces field errors; terms checkbox blocks submit until checked.
+3. [ ] Happy path: submit a valid enquiry → success message with **next steps**; in admin CRM, confirm **lead** (or matched company), **location**, **contact**, and **`Requested`** booking (details in **`docs/product/public-website.md`**).
+4. [ ] **`422`** — send an invalid payload (for example unchecked terms via **`curl`**) → `success: false` and `error.errors` keyed by field.
+5. [ ] **`429`** — more than **10 POSTs/min per IP** returns throttle response (see **`tests/Feature/PublicBookingEnquiryApiTest`**).
+6. [ ] **`NEXT_PUBLIC_API_ORIGIN`** unset locally → destructive alert and disabled submit.
+
+Known gap: no Playwright/E2E for **`/book`** yet — complement API tests with manual UI checks.

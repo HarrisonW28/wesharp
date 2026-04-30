@@ -22,7 +22,10 @@ use App\Policies\RouteStopPolicy;
 use App\Policies\UserPolicy;
 use App\Services\Clerk\ClerkJwtVerifier;
 use App\Services\Clerk\ClerkUserSynchronizer;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

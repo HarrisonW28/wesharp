@@ -38,6 +38,9 @@ export function HomeHero() {
                 Open customer portal <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
               </Link>
             </Button>
+            <Button size="lg" variant="secondary" asChild>
+              <Link href="/book">Request a pickup</Link>
+            </Button>
             <Button size="lg" variant="outline" asChild>
               <Link href="/admin/dashboard">See operations console</Link>
             </Button>

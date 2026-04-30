@@ -6,7 +6,7 @@ Coordinate **collection / onsite bookings** from **request → field route → w
 
 ## Lifecycle (high level)
 
-1. **Requested** — intake from admin `POST /api/admin/bookings` (or legacy `POST /api/admin/companies/{id}/bookings`).
+1. **Requested** — intake from admin `POST /api/admin/bookings` (or legacy `POST /api/admin/companies/{id}/bookings`), **customer portal** `POST /api/account/bookings`, or **anonymous** `POST /api/public/booking-enquiries` (creates/updates lead company + location + contact + **Requested** booking — see `docs/product/public-website.md`).
 2. **Confirmed** — office accepts the slot (`POST …/confirm`).
 3. **Assigned to route** — planner pins the visit to a vehicle run (`POST …/assign-route`); creates/updates a `route_stop`.
 4. **Collected → In sharpening → Quality → Returned → Completed** — workshop + field progression (future automation; status graph is enforced centrally).
@@ -39,3 +39,4 @@ See `App\Support\Bookings\BookingStatusTransitions`. Random `PUT` status flips a
 - Bulk reschedule, recurring visits, SLA dashboards.
 - Automated progression from route-stop GPS events → booking status (today manual / seed-driven).
 - Delete `DELETE /api/admin/bookings/{id}` returns **501** — cancellations preferred.
+- Public enquiries depend on **CORS** for cross-origin marketing domains; tighten `config/cors.php` per environment.

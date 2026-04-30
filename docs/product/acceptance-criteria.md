@@ -99,3 +99,10 @@ Criteria below assume Clerk auth, internal **`staff`** middleware, and permissio
 - [ ] Sanity curl: **`GET /api/admin/orders`** with tenant token stays **403** (proves **`staff`** fence).
 - [ ] Locations **`POST`/`PUT /api/account/locations`** cannot modify another company’s **`company_locations`** row (expect **404/403** on cross-tenant UUID guessing).
 - [ ] **`PUT /api/account/settings`** limited to **`user.name`** + **`company.{name,phone,billing_email}`** (slug / AR fields remain read-only in UI).
+
+## Public enquiry (`/` + `/book`)
+
+- [ ] **`/book`** uses Zod (`PUBLIC_BOOKING_ENQUIRY_SCHEMA`) aligned with Laravel **`StorePublicBookingEnquiryRequest`**; accessible labels **`htmlFor` / `id`** and **`aria-invalid`** wired for errors.
+- [ ] **`POST /api/public/booking-enquiries`** succeeds without Bearer token when payload is valid and **`terms_accepted`** is accepted; **`201`** returns **`data.accepted`** + **`message`** only (no internal IDs).
+- [ ] Repeated rapid submits from one IP exceed limit → **`429`** (throttle **`booking-enquiries`**).
+- [ ] Laravel creates **`CompanyStatus::Lead`** when email does not match an existing **`billing_email`** / contact email; **`CompanyLocation`**, **`Contact`**, **`BookingStatus::Requested`**, CRM **note**, and **audit** rows (`public.booking_enquiry`, `booking.created_from_public_enquiry`) are recorded (see **`docs/product/public-website.md`**).

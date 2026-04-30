@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\InternalSmokeController;
 use App\Http\Controllers\Api\V1\TenantSmokeController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\Public\PublicBookingEnquiryController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('health', HealthController::class)->name('api.health');
@@ -135,10 +136,6 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
 
 Route::prefix('public')->middleware('throttle:booking-enquiries')->group(function (): void {
     Route::post('booking-enquiries', [PublicBookingEnquiryController::class, 'store'])->name('api.public.booking_enquiries.store');
-});
-
-Route::prefix('public')->group(function (): void {
-    // Pricing / catalog stubs can land here without throttle.
 });
 
 Route::prefix('webhooks')->group(function (): void {

@@ -64,3 +64,12 @@ Internal-only collections stay under **`/api/admin/*`** with explicit **`staff`*
 2. Policies call `Permissions::userMayForCompany()` with model ids.
 3. Query builders should default `where company_id = $user->company_id` for controllers serving tenant dashboards (future scaffolding).
 4. **`/api/account/*`** controllers (`App\Http\Controllers\Api\Account\*`) inherit the same rules: every list endpoint duplicates `company_id` filters or reuses `OrderService`/`InvoiceService`/`KnifeService` with a scoped request, and `AccountStoreBookingRequest` injects the tenant `company_id` server-side.
+
+---
+
+## Public booking enquiries (`/api/public/*`)
+
+1. **`POST /api/public/booking-enquiries`** is **unauthenticated** by design — it must never trust role headers from the client; validation + business rules live in **`StorePublicBookingEnquiryRequest`** and **`CreatePublicBookingEnquiryAction`**.
+2. **Rate limiting** — **`throttle:booking-enquiries`** caps abuse (**10/min/IP**); **429** is expected when exceeded.
+3. **Response shape** — success returns only **`accepted`** + a friendly **`message`** (no CRM/booking IDs) to reduce enumeration and scraping value.
+4. **Audit** — events are recorded with **null actor**; treat as **`system`/anonymous** attribution in reporting.
