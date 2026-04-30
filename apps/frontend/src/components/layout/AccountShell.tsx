@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { ACCOUNT_NAV, type NavItem } from "@/config/navigation";
 
+import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
 import { TenantRouteGate } from "@/components/auth/TenantRouteGate";
 import { ShellPermissionBoundary } from "@/components/auth/ShellPermissionBoundary";
 import { UserMenu } from "@/components/auth/UserMenu";
@@ -30,14 +31,16 @@ export function AccountShell({ children }: { children: ReactNode }) {
         <div className="flex min-h-screen bg-muted/25">
           <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
             <div className="flex h-14 items-center border-b px-4">
-              <div className="text-sm font-semibold tracking-tight">WeSharp</div>
+              <span className="inline-flex text-xl leading-none">
+                <WeSharpLogo />
+              </span>
             </div>
             <SidebarNav items={navItems} />
           </aside>
 
           <div className="flex min-w-0 flex-1 flex-col">
             <TopBar
-              title="WeSharp"
+              title={<WeSharpLogo />}
               showMenu
               subtitle="Your account"
               onMenuClick={() => setDrawerOpen(true)}

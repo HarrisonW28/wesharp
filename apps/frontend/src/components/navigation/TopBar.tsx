@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 type TopBarProps = {
-  title?: string;
+  title?: ReactNode;
   subtitle?: string;
   onMenuClick?: () => void;
   showMenu?: boolean;
@@ -23,8 +23,17 @@ export function TopBar({ title, subtitle, onMenuClick, showMenu, trailing }: Top
           <Menu className="h-5 w-5" />
         </Button>
       ) : null}
-      <div className="flex min-w-0 flex-1 flex-col">
-        {title ? <h1 className="truncate text-base font-semibold leading-tight">{title}</h1> : null}
+      <div className="flex min-w-0 flex-1 flex-col justify-center">
+        {title ? (
+          typeof title === "string" ? (
+            <h1 className="truncate text-base font-semibold leading-tight">{title}</h1>
+          ) : (
+            <>
+              <span className="sr-only">WeSharp</span>
+              <div className="flex min-w-0 items-center text-xl leading-none [&_img]:max-h-7">{title}</div>
+            </>
+          )
+        ) : null}
         {subtitle ? <p className="truncate text-xs text-muted-foreground">{subtitle}</p> : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
