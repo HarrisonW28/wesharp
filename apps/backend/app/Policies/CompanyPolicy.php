@@ -32,4 +32,18 @@ final class CompanyPolicy
     {
         return Permissions::userMayForCompany($user, Permissions::COMPANIES_DELETE, $company->id);
     }
+
+    /**
+     * Pick-up/site addresses for tenant companies (portal) — excludes billing ledgers / internal CRM edits.
+     */
+    public function manageAccountLocations(User $user, Company $company): bool
+    {
+        return Permissions::userMayForCompany($user, Permissions::ACCOUNT_LOCATIONS_MANAGE, $company->id);
+    }
+
+    /** Non-admin profile fields exposed on `/api/account/settings` (phone/billing inbox, etc.). */
+    public function updateTenantProfile(User $user, Company $company): bool
+    {
+        return Permissions::userMayForCompany($user, Permissions::ACCOUNT_SETTINGS_UPDATE, $company->id);
+    }
 }

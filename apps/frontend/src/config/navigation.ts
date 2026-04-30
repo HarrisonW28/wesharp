@@ -1,4 +1,4 @@
-import { Banknote, Boxes, CalendarClock, ClipboardList, Gauge, LayoutDashboard, MapPinned, Receipt, Users, Utensils } from "lucide-react";
+import { Activity, Banknote, Boxes, CalendarClock, ClipboardList, Gauge, LayoutDashboard, MapPinned, Receipt, Settings, Users, Utensils } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export type NavItem = {
@@ -11,6 +11,7 @@ export type NavItem = {
 
 export const ADMIN_NAV: NavItem[] = [
   { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, permission: "dashboard.view" },
+  { title: "Analytics", href: "/admin/analytics", icon: Activity, permission: "analytics.view" },
   { title: "CRM", href: "/admin/crm", icon: Users, permission: "companies.view" },
   { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
   { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
@@ -23,7 +24,11 @@ export const ADMIN_NAV: NavItem[] = [
 export const ACCOUNT_NAV: NavItem[] = [
   { title: "Dashboard", href: "/account/dashboard", icon: Gauge, permission: "dashboard.view" },
   { title: "Bookings", href: "/account/bookings", icon: CalendarClock, permission: "bookings.view" },
-  { title: "Invoices", href: "/account/invoices", icon: Boxes, permission: "invoices.view" },
+  { title: "Orders", href: "/account/orders", icon: ClipboardList, permission: "orders.view" },
+  { title: "Knives", href: "/account/knives", icon: Utensils, permission: "knives.view" },
+  { title: "Invoices", href: "/account/invoices", icon: Receipt, permission: "invoices.view" },
+  { title: "Locations", href: "/account/locations", icon: MapPinned, permission: "account.locations.manage" },
+  { title: "Settings", href: "/account/settings", icon: Settings, permission: "account.settings.update" },
 ];
 
 export const ROUTE_MANAGER_NAV: NavItem[] = [

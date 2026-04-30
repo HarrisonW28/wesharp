@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\KnifeStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -83,5 +84,28 @@ class Knife extends Model
     public function uploadedFiles(): MorphMany
     {
         return $this->morphMany(UploadedFile::class, 'fileable');
+    }
+
+    /** Post-sharpening workshop states (counted as sharpened throughput). */
+    public function scopeSharpenedThroughput(Builder $query): Builder
+    {
+        return $query->whereIn('knife_status', [
+            KnifeStatus::Sharpened,
+            KnifeStatus::QualityChecked,
+            KnifeStatus::Returned,
+        ]);
+    }
+
+    /**
+     * @param  Builder<Knife>  $query
+     * @return Builder<Knife>
+     */
+    public function scopeWhereCompanyCity(Builder $query, ?string $city): Builder
+    {
+        if ($city === null || $city === '') {
+            return $query;
+        }
+
+        return $query->whereHas('company', fn (Builder $q): Builder => $q->where('city', $city));
     }
 }

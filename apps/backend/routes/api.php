@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\InvoiceController;
@@ -8,13 +9,36 @@ use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\RouteStopController;
-use App\Http\Controllers\Api\V1\InternalSmokeController;
+use App\Http\Controllers\Api\Account\AccountBookingController;
+use App\Http\Controllers\Api\Account\AccountDashboardController;
+use App\Http\Controllers\Api\Account\AccountInvoiceController;
+use App\Http\Controllers\Api\Account\AccountKnifeController;
+use App\Http\Controllers\Api\Account\AccountLocationController;
+use App\Http\Controllers\Api\Account\AccountOrderController;
+use App\Http\Controllers\Api\Account\AccountSettingsController;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\InternalSmokeController;
 use App\Http\Controllers\Api\V1\TenantSmokeController;
 use App\Http\Controllers\HealthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('health', HealthController::class)->name('api.health');
+
+Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (): void {
+    Route::get('dashboard', [AccountDashboardController::class, 'show'])->name('api.account.dashboard');
+    Route::get('bookings', [AccountBookingController::class, 'index'])->name('api.account.bookings.index');
+    Route::post('bookings', [AccountBookingController::class, 'store'])->name('api.account.bookings.store');
+    Route::get('bookings/{booking}', [AccountBookingController::class, 'show'])->whereUuid('booking')->name('api.account.bookings.show');
+    Route::get('orders', [AccountOrderController::class, 'index'])->name('api.account.orders.index');
+    Route::get('orders/{order}', [AccountOrderController::class, 'show'])->whereUuid('order')->name('api.account.orders.show');
+    Route::get('knives', [AccountKnifeController::class, 'index'])->name('api.account.knives.index');
+    Route::get('invoices', [AccountInvoiceController::class, 'index'])->name('api.account.invoices.index');
+    Route::get('locations', [AccountLocationController::class, 'index'])->name('api.account.locations.index');
+    Route::post('locations', [AccountLocationController::class, 'store'])->name('api.account.locations.store');
+    Route::put('locations/{location}', [AccountLocationController::class, 'update'])->whereUuid('location')->name('api.account.locations.update');
+    Route::get('settings', [AccountSettingsController::class, 'show'])->name('api.account.settings.show');
+    Route::put('settings', [AccountSettingsController::class, 'update'])->name('api.account.settings.update');
+});
 
 Route::prefix('v1')->group(function (): void {
     Route::middleware(['clerk.auth'])->group(function (): void {
@@ -31,6 +55,13 @@ Route::prefix('v1')->group(function (): void {
 });
 
 Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): void {
+    Route::middleware('permission:analytics.view')->prefix('analytics')->group(function (): void {
+        Route::get('overview', [AnalyticsController::class, 'overview'])->name('api.admin.analytics.overview');
+        Route::get('sales', [AnalyticsController::class, 'sales'])->name('api.admin.analytics.sales');
+        Route::get('routes', [AnalyticsController::class, 'routes'])->name('api.admin.analytics.routes');
+        Route::get('operations', [AnalyticsController::class, 'operations'])->name('api.admin.analytics.operations');
+    });
+
     Route::get('companies', [CompanyController::class, 'index'])->name('api.admin.companies.index');
     Route::post('companies', [CompanyController::class, 'store'])->name('api.admin.companies.store');
     Route::get('companies/{company}', [CompanyController::class, 'show'])->whereUuid('company')->name('api.admin.companies.show');
@@ -102,8 +133,12 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::post('payments/manual', [PaymentController::class, 'manual'])->name('api.admin.payments.manual');
 });
 
+Route::prefix('public')->middleware('throttle:booking-enquiries')->group(function (): void {
+    Route::post('booking-enquiries', [PublicBookingEnquiryController::class, 'store'])->name('api.public.booking_enquiries.store');
+});
+
 Route::prefix('public')->group(function (): void {
-    // Public API routes (pricing, catalogs, signup flows).
+    // Pricing / catalog stubs can land here without throttle.
 });
 
 Route::prefix('webhooks')->group(function (): void {

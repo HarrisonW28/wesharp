@@ -35,6 +35,8 @@ Legend:
 | `payments.manage`                | Capture manual payments/refunds surfaced to finance                    | ✅ finance + super_admin                                            |
 | `payments.override`              | Write-offs exceeding automated guardrails — **dual control** workflows | ✅ finance tiers + admins (explicit constant)                       |
 | `analytics.view`                 | BI tiles                                                               | ✅ staff leadership + finance                                       |
+| `account.locations.manage`       | Tenant self-service **`company_locations`** create/update/delete       | ✅ `customer_owner` + `customer_staff` (scoped)                     |
+| `account.settings.update`       | PATCH **`/api/account/settings`**                                      | ✅ `customer_owner` + `customer_staff`                               |
 
 `settings.view`/`settings.manage` pair controls internal admin surfaces (invite staff, integrations). **Changing another user's role** MUST flow through `**App\Services\UserRoleService::updateRoleForUser()`** (`settings.manage`) so `audit_logs.subject_user_id` captures before/after role transitions.
 

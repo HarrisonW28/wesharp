@@ -70,3 +70,29 @@ Users with **`invoices.view`** but **without** **`payments.manage`** should rece
 
 Automated PHPUnit / Playwright suites may not cover every **`POST`** — keep this doc updated when workflows land in CI. **Outbound invoice email / PSP webhooks** remain backlog (see **`docs/product/orders-invoices-payments.md`**).
 
+
+## Analytics (`/admin/analytics`)
+
+Prereqs: staff account with **`analytics.view`** (finance / route_manager / admin in seed).
+
+1. [ ] Smoke: **`curl -sS -H "Authorization: Bearer $TOKEN" "$API/api/admin/analytics/overview?date_from=2026-01-01&date_to=2026-12-31"`** → **200** + **`kpis`** object.
+2. [ ] Charts load without console errors (**Recharts ResponsiveContainer**) at desktop + narrow viewport resizing.
+3. [ ] **`city=Manchester`** (or seeded city) changes KPI / chart payloads vs unset filter (compare **`distinct_cities`** list + numbers).
+4. [ ] Removing **`analytics.view`** from test user ⇒ **403** on all **`/analytics/*`** endpoints and forbidden UI banner on **`/admin/analytics`**.
+5. [ ] Paid vs unpaid card matches **`paid_vs_open_invoices`** numbers from **`/sales`** (no totals computed purely in JSX beyond currency formatting strings).
+
+Known gap: **`route_value_by_city`** can be empty if orders lack **`route_id`** linkage in seed/demo data — document expected empty chart.
+
+
+## Customer portal (`/account/*`)
+
+Prereqs: Clerk **tenant** user with **`dashboard.view`** + portal permissions (`**/api/v1/me`** lists **`account.locations.manage`**, **`account.settings.update`**). **`NEXT_PUBLIC_API_ORIGIN`** set.
+
+1. [ ] Smoke: **`curl -sS -H "Authorization: Bearer $TOKEN" "$API/api/account/dashboard"`** → **200** with **`dashboard.kpis`**. Compare against **`curl … /api/account/orders?page=1&per_page=3`** (**403 should appear** if reused internal token — swap tenant token intentionally).
+2. [ ] SPA: visit **`/account/dashboard`** — KPI tiles populate without console errors ; **Monthly spend / Outstanding balance** derive from Laravel integers only.
+3. [ ] Bookings wizard **`/account/bookings/new`** submits after selecting location + ticking acknowledgements → redirects to **`/account/bookings/{uuid}`** detail.
+4. [ ] **`/account/locations`** — create a test site, edit label, confirm list refresh + duplicate query cache for booking wizard.
+5. [ ] **`/account/settings`** — update display name + AP email → **`PUT /api/account/settings`** reflected on reload ; Clerk email field stays read-only.
+6. [ ] Negative: internal staff JWT calling **`GET /api/account/dashboard`** should **403** (`EnsureTenantCustomer`).
+
+Known gap: invoice PDF download + Stripe pay links still backend/backlog (see **`docs/product/customer-portal.md`**).

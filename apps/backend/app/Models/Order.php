@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\KnifeStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -10,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Order extends Model
@@ -79,5 +79,24 @@ class Order extends Model
     public function uploadedFiles(): MorphMany
     {
         return $this->morphMany(UploadedFile::class, 'fileable');
+    }
+
+    /** @param  Builder<Order>  $query */
+    public function scopeCompleted(Builder $query): Builder
+    {
+        return $query->where('order_status', OrderStatus::Completed);
+    }
+
+    /**
+     * @param  Builder<Order>  $query
+     * @return Builder<Order>
+     */
+    public function scopeWhereCompanyCity(Builder $query, ?string $city): Builder
+    {
+        if ($city === null || $city === '') {
+            return $query;
+        }
+
+        return $query->whereHas('company', fn (Builder $q): Builder => $q->where('city', $city));
     }
 }

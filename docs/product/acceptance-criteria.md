@@ -82,3 +82,20 @@ Criteria below assume Clerk auth, internal **`staff`** middleware, and permissio
 
 - [ ] **`GET /api/admin/payments`** list renders (**`payments.view`**).
 
+
+## Analytics (`/admin/analytics`)
+
+- [ ] Parallels **`GET /api/admin/analytics/overview`**, **`/sales`**, **`/routes`**, **`/operations`** with URL **`date_from`**, **`date_to`**, optional **`city`** (defaults last 90 days when missing via client redirect).
+- [ ] KPI cards display **formatted GBP strings** derived only from **`kpis.*_pence`** fields — no client-side derivation of aggregates.
+- [ ] Recharts areas/bars respond to ResizeObserver breakpoints via **`ResponsiveContainer`**; **`loading`** + **retry error** banners render for failed queries.
+- [ ] Charts show **empty** copy when the returned series arrays are zero-length (**may occur for sparse route KPIs**).
+- [ ] **403** from API when JWT lacks **`analytics.view`** (**forbidden banner** gate).
+
+## Customer portal (`/account/*`)
+
+- [ ] **`TenantRouteGate`** + Laravel **`EnsureTenantCustomer`** symmetry — internal staff JWT cannot render tenant shell (redirect **`/forbidden`** / API **`403`**).
+- [ ] Dashboard KPI formatting pulls only from Laravel integers (`**/api/account/dashboard`**) via **`kpis`** — SPA never fabricates aggregates.
+- [ ] **`POST /api/account/bookings`** binds **`company_id`** from JWT (`location_id` must belong to tenant); acknowledgements (**`damage_acknowledged`**, **`terms_accepted`**) enforced.
+- [ ] Sanity curl: **`GET /api/admin/orders`** with tenant token stays **403** (proves **`staff`** fence).
+- [ ] Locations **`POST`/`PUT /api/account/locations`** cannot modify another company’s **`company_locations`** row (expect **404/403** on cross-tenant UUID guessing).
+- [ ] **`PUT /api/account/settings`** limited to **`user.name`** + **`company.{name,phone,billing_email}`** (slug / AR fields remain read-only in UI).

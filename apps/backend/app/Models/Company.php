@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CompanyStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -80,5 +81,28 @@ class Company extends Model
     public function damageReports(): HasMany
     {
         return $this->hasMany(DamageReport::class);
+    }
+
+    /** Companies considered active for CRM / analytics. */
+    public function scopeAnalyticsActive(Builder $query): Builder
+    {
+        return $query->whereIn('company_status', [
+            CompanyStatus::Active,
+            CompanyStatus::TrialCompleted,
+            CompanyStatus::AtRisk,
+        ]);
+    }
+
+    /**
+     * @param  Builder<Company>  $query
+     * @return Builder<Company>
+     */
+    public function scopeWhereCityIf(Builder $query, ?string $city): Builder
+    {
+        if ($city === null || $city === '') {
+            return $query;
+        }
+
+        return $query->where('city', $city);
     }
 }

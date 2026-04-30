@@ -35,9 +35,10 @@ Existing examples:
 GET /api/v1/me            → clerk.auth
 GET /api/v1/admin/smoke   → clerk.auth + staff
 GET /api/v1/account/smoke → clerk.auth + tenant
+GET /api/account/dashboard → clerk.auth + tenant
 ```
 
-Production controllers SHOULD stack `permission:{key}` for fine granularity.
+Internal-only collections stay under **`/api/admin/*`** with explicit **`staff`** — tenant identities **cannot** step into those controllers even with guessed UUIDs because policies + queries both require internal roles.
 
 ---
 
@@ -62,3 +63,4 @@ Production controllers SHOULD stack `permission:{key}` for fine granularity.
 1. Middleware `tenant` aborts tenant routes if `company_id` empty.
 2. Policies call `Permissions::userMayForCompany()` with model ids.
 3. Query builders should default `where company_id = $user->company_id` for controllers serving tenant dashboards (future scaffolding).
+4. **`/api/account/*`** controllers (`App\Http\Controllers\Api\Account\*`) inherit the same rules: every list endpoint duplicates `company_id` filters or reuses `OrderService`/`InvoiceService`/`KnifeService` with a scoped request, and `AccountStoreBookingRequest` injects the tenant `company_id` server-side.

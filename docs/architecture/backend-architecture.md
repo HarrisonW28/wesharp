@@ -67,13 +67,32 @@ Implementation files: `routes/api.php` (prefix **`/api/admin`**), controllers un
 | --- | --- | --- |
 | **`/api/admin/invoices*`** | `clerk.auth`, `staff` | Thin **`InvoiceController`**: **`index`/`show`** via **`InvoiceService`**, **`store`** (**`StoreInvoiceRequest`**) → **`CreateInvoiceFromOrderAction`** + **`OrderPolicy::invoiceFromOrder`**; **`update`** (**`UpdateInvoiceRequest`**) edits draft metadata; **`send`/`mark-paid`/`void`** delegate to **`SendInvoicePlaceholderAction`**, **`MarkInvoicePaidAction`**, **`VoidInvoiceAction`**. JSON via **`InvoiceJson`** (**`InvoiceRollup`** for **`payment_status`/`overdue`**). |
 | **`/api/admin/payments*`** | `clerk.auth`, `staff` | Thin **`PaymentController`**: **`index`** → **`PaymentService`** + **`PaymentJson::detail`**; **`POST …/payments/manual`** → **`RecordManualPaymentRequest`** → **`InvoicePolicy::recordManualPayment`** → **`RecordManualPaymentAction`** (DB transaction, audit **`payment.recorded.manual`**). |
-
 | Policy | Enforces |
-| --- | --- || **`InvoicePolicy`** | `invoices.view` / `create` / `update`; **`send`/`markPaid`/`voidInvoice`** combos; **`recordManualPayment`** = **`payments.manage`** + **`invoices.view`** for company. **`markPaid`** also requires **`payments.view`**. |
+| --- | --- |
+| **`InvoicePolicy`** | `invoices.view` / `create` / `update`; **`send`/`markPaid`/`voidInvoice`** combos; **`recordManualPayment`** = **`payments.manage`** + **`invoices.view`** for company. **`markPaid`** also requires **`payments.view`**. |
 
 Implementation: `App\Actions\Invoices\*`, `App\Actions\Payments\RecordManualPaymentAction`, `App\Services\Invoices\InvoiceService`, `App\Services\Payments\PaymentService`, `App\Support\Invoices\InvoiceRollup`.
 
 ---
+
+## Tenant account API (customer portal)
+
+| Route group | Middleware | Notes |
+| --- | --- | --- |
+| **`/api/account/*`** | `clerk.auth`, **`tenant`** | Thin controllers under **`App\Http\Controllers\Api\Account`**: **`AccountDashboardService`** KPI math; bookings via **`PortalBookingPayload`** sanitizer ; orders reuse **`OrderJson`** ; knives/invoices reuse services with duplicated `company_id` query injections ; locations gated by **`CompanyPolicy::manageAccountLocations`** ; settings gated by **`updateTenantProfile` + `UserPolicy::updateOwnBasicProfile`**. |
+
+Requests: **`AccountStoreBookingRequest`**, **`AccountStoreCompanyLocationRequest`**, **`AccountUpdateCompanyLocationRequest`**, **`AccountUpdateSettingsRequest`**.
+
+---
+
+## Analytics API (internal BI)
+
+| Route group | Middleware | Notes |
+| --- | --- | --- |
+| **`/api/admin/analytics*`** | `clerk.auth`, **`staff`**, **`permission:analytics.view`** | Thin **`AnalyticsController`** delegates to **`AnalyticsService`** (**`overview`**, **`sales`**, **`routes`**, **`operations`**). Validates filters via **`AnalyticsDashboardRequest`**; portable SQL snippets in **`AnalyticsSql`**. KPI + chart payloads document math in **`docs/product/analytics-reporting.md`**. |
+
+---
+
 ## Persistence & audit
 
 - `users.clerk_user_id` links Clerk JWT `sub`; nullable for legacy seeded accounts.

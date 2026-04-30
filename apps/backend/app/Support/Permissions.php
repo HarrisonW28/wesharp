@@ -57,6 +57,12 @@ final class Permissions
 
     public const ANALYTICS_VIEW = 'analytics.view';
 
+    /** Create/update/remove pick-up addresses for the signed-in company (tenant portal). */
+    public const ACCOUNT_LOCATIONS_MANAGE = 'account.locations.manage';
+
+    /** Safe profile fields on user + tenant company metadata (non-financial / non-admin fields). */
+    public const ACCOUNT_SETTINGS_UPDATE = 'account.settings.update';
+
     public const SETTINGS_VIEW = 'settings.view';
 
     public const SETTINGS_MANAGE = 'settings.manage';
@@ -90,6 +96,8 @@ final class Permissions
         self::PAYMENTS_MANAGE,
         self::PAYMENTS_OVERRIDE,
         self::ANALYTICS_VIEW,
+        self::ACCOUNT_LOCATIONS_MANAGE,
+        self::ACCOUNT_SETTINGS_UPDATE,
         self::SETTINGS_VIEW,
         self::SETTINGS_MANAGE,
     ];
@@ -147,6 +155,8 @@ final class Permissions
             self::KNIVES_UPDATE,
             self::INVOICES_VIEW,
             self::PAYMENTS_VIEW,
+            self::ACCOUNT_LOCATIONS_MANAGE,
+            self::ACCOUNT_SETTINGS_UPDATE,
         ],
 
         UserRole::CustomerStaff->value => [
@@ -158,6 +168,8 @@ final class Permissions
             self::KNIVES_VIEW,
             self::INVOICES_VIEW,
             self::PAYMENTS_VIEW,
+            self::ACCOUNT_LOCATIONS_MANAGE,
+            self::ACCOUNT_SETTINGS_UPDATE,
         ],
     ];
 

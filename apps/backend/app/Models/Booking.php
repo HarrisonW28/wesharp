@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\BookingStatus;
 use App\Enums\ServiceType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -85,5 +86,18 @@ class Booking extends Model
     public function uploadedFiles(): MorphMany
     {
         return $this->morphMany(UploadedFile::class, 'fileable');
+    }
+
+    /**
+     * @param  Builder<Booking>  $query
+     * @return Builder<Booking>
+     */
+    public function scopeWhereCompanyCity(Builder $query, ?string $city): Builder
+    {
+        if ($city === null || $city === '') {
+            return $query;
+        }
+
+        return $query->whereHas('company', fn (Builder $q): Builder => $q->where('city', $city));
     }
 }

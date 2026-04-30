@@ -12,8 +12,19 @@ Workspace: `**apps/frontend**` (Next.js **15**, App Router, React **19**, Tailwi
 | Layout     | `src/app/(admin)/admin/layout.tsx` wraps children in `**AdminShell`**; `**export const dynamic = 'force-dynamic'**` so Clerk-using routes are not statically prerendered without keys. |
 | Auth gate  | `**StaffRouteGate**` + Clerk session.                                                                                                                                                  |
 | Feedback   | `**sonner**` `**<Toaster />**` mounted in `**AdminShell**` (global toasts).                                                                                                            |
-| Navigation | `src/config/navigation.ts` — CRM (`companies.view`), Orders (`orders.view`), Knives (`knives.view`), **Invoices** (`invoices.view`), **Payments** (`payments.view`), routes (`routes.view`). |
+| Navigation | `src/config/navigation.ts` — CRM (`companies.view`), **Analytics** (`analytics.view`), Orders (`orders.view`), Knives (`knives.view`), **Invoices** (`invoices.view`), **Payments** (`payments.view`), routes (`routes.view`). |
 
+---
+
+## Tenant portal shell
+
+| Concern | Implementation |
+| --- | --- |
+| Layout | `src/app/(account)/account/layout.tsx` renders **`AccountShell`** with **`ACCOUNT_NAV`** filtered by Laravel permission strings from **`GET /api/v1/me`**. |
+| Auth gate | **`TenantRouteGate`** enforces Clerk customer roles + **`company_id`** before hydrating children. |
+| HTTP helper | `src/lib/api/use-account-api.ts` — Bearer **`/api/account/**`** transport (mirrors `useAdminApi`). |
+| Schemas | `src/lib/api/account-schema.ts` — Zod parsers for KPI dashboards + paginated list envelopes. |
+| Screens | **`/account/dashboard`** (`GET /api/account/dashboard` KPIs ); **`/account/bookings{,/new,/id}`** ; **`/account/orders`**, **`/account/knives`**, **`/account/invoices`** ; **`/account/locations`** ( **`account.locations.manage`** ); **`/account/settings`** ( **`account.settings.update`** ). |
 
 ---
 
@@ -65,6 +76,15 @@ Workspace: `**apps/frontend**` (Next.js **15**, App Router, React **19**, Tailwi
 | Payments index | `src/app/(admin)/admin/payments/page.tsx` — **`GET /api/admin/payments`** (**`PaymentsListResponseSchema`**). |
 | Schemas | `src/lib/api/admin-invoices-schema.ts`, `src/lib/api/admin-payments-schema.ts`. |
 
+
+
+## Analytics UI (staff BI)
+
+| Concern | Implementation |
+| --- | --- |
+| Analytics dashboard | `src/app/(admin)/admin/analytics/page.tsx` — parallel **`useQueries`** for **`/api/admin/analytics/{overview,sales,routes,operations}`**; KPI cards reuse server wording; filtering via URL (**`date_from`/`date_to`/`city`**). **`Recharts`** inside **`ResponsiveContainer`**; loaders + retry card for faults; **403 gate** UI when missing **`analytics.view`**. Monetary display via **`formatGbpFromPence`**. |
+| Schemas | `src/lib/api/admin-analytics-schema.ts` — Zod parsers for Laravel envelopes. |
+
 ## Route Manager UI (mobile technician)
 
 | Concern | Implementation |
@@ -79,5 +99,5 @@ Workspace: `**apps/frontend**` (Next.js **15**, App Router, React **19**, Tailwi
 
 ## References
 
-- Product: `docs/product/admin-crm.md`, `docs/product/booking-workflow.md`, `docs/product/route-manager.md`, `docs/product/knife-tracking.md`, `docs/product/orders-invoices-payments.md`
-- Backend: `docs/architecture/backend-architecture.md` § Admin CRM API, § Admin bookings API, § Orders & knives (operations), § Admin invoices & payments (AR), Route Manager controllers
+- Product: `docs/product/admin-crm.md`, `docs/product/booking-workflow.md`, `docs/product/route-manager.md`, `docs/product/knife-tracking.md`, `docs/product/orders-invoices-payments.md`, `docs/product/analytics-reporting.md`, `docs/product/customer-portal.md`
+- Backend: `docs/architecture/backend-architecture.md` § Admin CRM API, § Admin bookings API, § Orders & knives (operations), § Admin invoices & payments (AR), § Analytics API (internal BI), Route Manager controllers

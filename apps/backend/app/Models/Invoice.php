@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\InvoiceStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -54,5 +55,24 @@ class Invoice extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /** Open AR (not settled, not void). */
+    public function scopeOutstanding(Builder $query): Builder
+    {
+        return $query->whereNotIn('invoice_status', [InvoiceStatus::Paid, InvoiceStatus::Void]);
+    }
+
+    /**
+     * @param  Builder<Invoice>  $query
+     * @return Builder<Invoice>
+     */
+    public function scopeWhereCompanyCity(Builder $query, ?string $city): Builder
+    {
+        if ($city === null || $city === '') {
+            return $query;
+        }
+
+        return $query->whereHas('company', fn (Builder $q): Builder => $q->where('city', $city));
     }
 }
