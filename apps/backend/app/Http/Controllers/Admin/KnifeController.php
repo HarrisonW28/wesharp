@@ -9,6 +9,7 @@ use App\Actions\Knives\MarkKnifeSharpenedAction;
 use App\Actions\Knives\ReportKnifeIssueAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReportKnifeIssueRequest;
+use App\Http\Requests\StoreKnifePhotoRequest;
 use App\Http\Requests\StoreKnifeRequest;
 use App\Http\Requests\UpdateKnifeRequest;
 use App\Models\Booking;
@@ -24,6 +25,8 @@ use App\Support\Knives\KnifeJson;
 use App\Support\Permissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class KnifeController extends Controller
 {
@@ -175,14 +178,12 @@ final class KnifeController extends Controller
         return ApiResponses::success(KnifeJson::detail($knife));
     }
 
-    public function storePhoto(Request $request, Knife $knife): JsonResponse
+    public function storePhoto(StoreKnifePhotoRequest $request, Knife $knife): JsonResponse
     {
         $this->authorize('update', $knife);
 
-        $request->validate([
-            'photo' => ['required', 'file', 'image', 'max:12288'],
-            'caption' => ['nullable', 'string', 'max:500'],
-        ]);
+        /** @var array{photo: \Illuminate\Http\UploadedFile, caption?: ?string, photo_kind?: ?string, order_id?: ?string} $data */
+        $data = $request->validated();
 
         /** @phpstan-ignore-next-line */
         $file = $request->file('photo');
@@ -191,12 +192,15 @@ final class KnifeController extends Controller
 
         /** @phpstan-ignore-next-line */
         $uploaded = UploadedFile::query()->create([
+            'fileable_type' => Knife::class,
+            /** @phpstan-ignore-next-line */
+            'fileable_id' => $knife->id,
             'disk' => 'local',
             'path' => $path,
             /** @phpstan-ignore-next-line */
             'original_filename' => $file->getClientOriginalName(),
             /** @phpstan-ignore-next-line */
-            'mime_type' => (string) $file->getClientMimeType(),
+            'mime_type' => (string) $file->getMimeType(),
             /** @phpstan-ignore-next-line */
             'byte_size' => (int) $file->getSize(),
         ]);
@@ -205,25 +209,111 @@ final class KnifeController extends Controller
         $nextOrder = (int) (KnifePhoto::query()->where('knife_id', $knife->id)->max('sort_order') ?? 0) + 1;
 
         /** @phpstan-ignore-next-line */
+        $orderId = isset($data['order_id']) && $data['order_id'] !== null && $data['order_id'] !== ''
+            ? $data['order_id']
+            : $knife->order_id;
+
+        /** @phpstan-ignore-next-line */
+        $photoKind = isset($data['photo_kind']) && is_string($data['photo_kind']) && $data['photo_kind'] !== ''
+            ? $data['photo_kind']
+            : 'general';
+
+        /** @phpstan-ignore-next-line */
         KnifePhoto::query()->create([
             /** @phpstan-ignore-next-line */
             'knife_id' => $knife->id,
             /** @phpstan-ignore-next-line */
+            'order_id' => $orderId,
+            /** @phpstan-ignore-next-line */
             'uploaded_file_id' => $uploaded->id,
+            /** @phpstan-ignore-next-line */
+            'uploaded_by_user_id' => $request->user()?->getAuthIdentifier(),
             'sort_order' => $nextOrder,
-            'caption' => $request->input('caption'),
+            'caption' => $data['caption'] ?? null,
+            'photo_kind' => $photoKind,
         ]);
 
         AuditRecorder::record($request->user(), $knife, 'knife.photo_added', [
             /** @phpstan-ignore-next-line */
             'stored_path' => $path,
             'disk' => 'local',
+            'photo_kind' => $photoKind,
+            /** @phpstan-ignore-next-line */
+            'order_id' => $orderId !== null ? (string) $orderId : null,
+            /** @phpstan-ignore-next-line */
+            'uploaded_by_user_id' => $request->user()?->getAuthIdentifier(),
         ], $request);
 
         $knife->refresh();
         /** @phpstan-ignore-next-line */
-        $knife->load(['photos' => fn ($q) => $q->orderBy('sort_order')->with('uploadedFile')]);
+        $knife->load(['photos' => fn ($q) => $q->orderBy('sort_order')->with(['uploadedFile', 'uploadedBy:id,name'])]);
 
         return ApiResponses::success(KnifeJson::detail($knife), 201);
+    }
+
+    public function showPhotoFile(KnifePhoto $photo): StreamedResponse
+    {
+        $photo->loadMissing(['knife', 'uploadedFile']);
+
+        /** @phpstan-ignore-next-line */
+        $knife = $photo->knife;
+        /** @phpstan-ignore-next-line */
+        $uploaded = $photo->uploadedFile;
+
+        if ($knife === null || $uploaded === null) {
+            abort(404);
+        }
+
+        $this->authorize('view', $knife);
+
+        /** @phpstan-ignore-next-line */
+        if (! Storage::disk((string) $uploaded->disk)->exists((string) $uploaded->path)) {
+            abort(404);
+        }
+
+        /** @phpstan-ignore-next-line */
+        return Storage::disk((string) $uploaded->disk)->response(
+            (string) $uploaded->path,
+            (string) $uploaded->original_filename,
+            [
+                /** @phpstan-ignore-next-line */
+                'Content-Type' => (string) ($uploaded->mime_type ?? 'application/octet-stream'),
+                'Cache-Control' => 'private, max-age=0, must-revalidate',
+            ]
+        );
+    }
+
+    public function destroyPhoto(Request $request, Knife $knife, KnifePhoto $photo): JsonResponse
+    {
+        if ((string) $photo->knife_id !== (string) $knife->id) {
+            abort(404);
+        }
+
+        $this->authorize('update', $knife);
+
+        $photo->loadMissing('uploadedFile');
+
+        /** @phpstan-ignore-next-line */
+        $uploaded = $photo->uploadedFile;
+        /** @phpstan-ignore-next-line */
+        $photoId = (string) $photo->id;
+
+        $photo->delete();
+
+        if ($uploaded !== null) {
+            /** @phpstan-ignore-next-line */
+            Storage::disk((string) $uploaded->disk)->delete((string) $uploaded->path);
+            $uploaded->delete();
+        }
+
+        AuditRecorder::record($request->user(), $knife, 'knife.photo_removed', [
+            'knife_photo_id' => $photoId,
+        ], $request);
+
+        $knife->refresh();
+        /** @phpstan-ignore-next-line */
+        $knife->load(['photos' => fn ($q) => $q->orderBy('sort_order')->with(['uploadedFile', 'uploadedBy:id,name'])]);
+
+        return ApiResponses::success(KnifeJson::detail($knife));
     }
 }

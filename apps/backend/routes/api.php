@@ -140,6 +140,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:orders.view')->get('orders/{order}', [OrderController::class, 'show'])->whereUuid('order')->name('api.admin.orders.show');
     Route::middleware('permission:orders.update')->put('orders/{order}', [OrderController::class, 'update'])->whereUuid('order')->name('api.admin.orders.update');
     Route::middleware('permission:orders.update')->post('orders/{order}/complete', [OrderController::class, 'complete'])->whereUuid('order')->name('api.admin.orders.complete');
+    Route::middleware('permission:invoices.create')->post('orders/{order}/invoice-draft', [OrderController::class, 'storeInvoiceDraft'])->whereUuid('order')->name('api.admin.orders.invoice_draft');
     Route::middleware('permission:knives.update')->post('orders/{order}/attach-knife', [OrderController::class, 'attachKnife'])->whereUuid('order')->name('api.admin.orders.attach_knife');
     Route::middleware('permission:knives.update')->post('orders/{order}/add-knife', [OrderController::class, 'addKnife'])->whereUuid('order')->name('api.admin.orders.add_knife');
     Route::middleware('permission:knives.update')->post('orders/{order}/bulk-add-knives', [OrderController::class, 'bulkAddKnives'])->whereUuid('order')->name('api.admin.orders.bulk_add_knives');
@@ -155,6 +156,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:knives.update')->post('knives/{knife}/mark-returned', [KnifeController::class, 'markReturned'])->whereUuid('knife')->name('api.admin.knives.mark_returned');
     Route::middleware('permission:knives.update')->post('knives/{knife}/report-issue', [KnifeController::class, 'reportIssue'])->whereUuid('knife')->name('api.admin.knives.report_issue');
     Route::middleware('permission:knives.update')->post('knives/{knife}/photos', [KnifeController::class, 'storePhoto'])->whereUuid('knife')->name('api.admin.knives.photos.store');
+    Route::middleware('permission:knives.view')->get('knife-photos/{photo}/file', [KnifeController::class, 'showPhotoFile'])->whereUuid('photo')->name('api.admin.knife_photos.file');
+    Route::middleware('permission:knives.update')->delete('knives/{knife}/photos/{photo}', [KnifeController::class, 'destroyPhoto'])->whereUuid(['knife', 'photo'])->name('api.admin.knives.photos.destroy');
 
     Route::middleware('permission:invoices.view')->get('invoices', [InvoiceController::class, 'index'])->name('api.admin.invoices.index');
     Route::middleware('permission:invoices.create')->post('invoices', [InvoiceController::class, 'store'])->name('api.admin.invoices.store');

@@ -15,11 +15,20 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 final class CreateInvoiceFromOrderAction
 {
-    /** @throws HttpException */
-    public function execute(Order $order, ?Authenticatable $actor, Request $request, ?array $validatedDates = null): Invoice
-    {
+    /**
+     * @param  non-empty-string  $auditEvent
+     *
+     * @throws HttpException
+     */
+    public function execute(
+        Order $order,
+        ?Authenticatable $actor,
+        Request $request,
+        ?array $validatedDates = null,
+        string $auditEvent = 'invoice.created_from_order',
+    ): Invoice {
         /** @phpstan-ignore-next-line */
-        return DB::transaction(function () use ($order, $actor, $request, $validatedDates): Invoice {
+        return DB::transaction(function () use ($order, $actor, $request, $validatedDates, $auditEvent): Invoice {
             /** @phpstan-ignore-next-line */
             $blocked = Invoice::query()
                 ->where('order_id', $order->id)
@@ -102,7 +111,7 @@ final class CreateInvoiceFromOrderAction
                 ]);
             }
 
-            AuditRecorder::record($actor, $invoice, 'invoice.created_from_order', [
+            AuditRecorder::record($actor, $invoice, $auditEvent, [
                 /** @phpstan-ignore-next-line */
                 'order_id' => (string) $order->id,
                 'invoice_number' => $invoice->invoice_number,

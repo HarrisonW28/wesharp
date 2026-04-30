@@ -16,11 +16,21 @@ final class CompleteOrderAction
     {
         return DB::transaction(function () use ($order, $actor, $request): Order {
             $order->refresh();
+            $order->loadMissing(['items', 'knives']);
+
+            if ($order->order_status === OrderStatus::Completed) {
+                abort(422, 'This order is already completed.');
+            }
+
+            if ($order->items->isEmpty() && $order->knives->isEmpty()) {
+                abort(422, 'Add at least one order line or knife before completing this order.');
+            }
 
             OrderStatusTransitions::assertCan($order->order_status, OrderStatus::Completed);
 
             $from = $order->order_status;
             $order->order_status = OrderStatus::Completed;
+            $order->completed_at = now();
             $order->save();
 
             AuditRecorder::record($actor, $order, 'order.completed', [

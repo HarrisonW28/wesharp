@@ -386,7 +386,7 @@ final class OrderService
     public function complete(Order $order, Authenticatable $actor, Request $request): Order
     {
         /** @phpstan-ignore-next-line */
-        return $this->completeOrderAction->execute($order->fresh(), $actor, $request)
+        return $this->completeOrderAction->execute($order->fresh(['items', 'knives']), $actor, $request)
             ->load([
                 'company:id,name,city',
                 'booking:id,scheduled_date',

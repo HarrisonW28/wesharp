@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import { KnifeDetailResponseSchema } from "@/lib/api/admin-knives-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { availableWorkflowSteps, canReportIssue } from "@/lib/knife-status-workflow";
 
+import { KnifePhotoGalleryCard } from "@/components/admin/KnifePhotoGalleryCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,8 @@ function formatTimelineEntry(entry: Record<string, unknown>): string {
   return action;
 }
 
+const PHOTO_KINDS = ["general", "damage", "before", "after"] as const;
+
 export default function AdminKnifeDetailPage() {
   const params = useParams<{ knifeId: string }>();
   const knifeId = params.knifeId;
@@ -51,6 +54,12 @@ export default function AdminKnifeDetailPage() {
     condition_before: "",
     notes: "",
   });
+
+  const [photoCaption, setPhotoCaption] = useState("");
+  const [photoKind, setPhotoKind] = useState<string>("general");
+  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const invalidateKnifeLists = () => {
     void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
@@ -151,6 +160,11 @@ export default function AdminKnifeDetailPage() {
     mutationFn: async (file: File) => {
       const fd = new FormData();
       fd.append("photo", file);
+      fd.append("photo_kind", photoKind);
+      const c = photoCaption.trim();
+      if (c !== "") {
+        fd.append("caption", c);
+      }
       const res = await admin.json<unknown>(`/api/admin/knives/${knifeId}/photos`, {
         method: "POST",
         body: fd,
@@ -166,10 +180,15 @@ export default function AdminKnifeDetailPage() {
     },
     onSuccess: (data) => {
       toast.success("Photo uploaded.");
+      setPhotoUploadError(null);
+      setPhotoCaption("");
       queryClient.setQueryData(["admin-knife", knifeId], data);
       invalidateKnifeLists();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      setPhotoUploadError(e.message);
+      toast.error(e.message);
+    },
   });
 
   const issueMutation = useMutation({
@@ -363,46 +382,110 @@ export default function AdminKnifeDetailPage() {
           <Separator className="my-4" />
           <div className="text-xs font-semibold uppercase text-muted-foreground">Photos</div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Condition shots for the workshop file. Images stay on our servers; customer-facing download is not wired in this MVP.
+            Workshop images are stored privately. JPEG, PNG or WebP, up to about 8&nbsp;MB. Use the camera on supported phones; gallery upload works everywhere.
           </p>
-          <div className="mt-3">
-            <Label htmlFor="knife-photo">Upload or capture</Label>
-            <Input
-              id="knife-photo"
+          <div className="mt-3 space-y-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="photo-kind">Purpose</Label>
+                <select
+                  id="photo-kind"
+                  className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={photoKind}
+                  onChange={(e) => setPhotoKind(e.target.value)}
+                  disabled={photoMutation.isPending}
+                >
+                  {PHOTO_KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {k.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="photo-cap">Caption (optional)</Label>
+                <Input
+                  id="photo-cap"
+                  value={photoCaption}
+                  onChange={(e) => setPhotoCaption(e.target.value)}
+                  disabled={photoMutation.isPending}
+                  placeholder="Short note"
+                />
+              </div>
+            </div>
+            <input
+              ref={cameraInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               capture="environment"
-              className="mt-1 cursor-pointer"
+              className="sr-only"
               disabled={photoMutation.isPending}
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 e.target.value = "";
                 if (f) {
+                  setPhotoUploadError(null);
                   photoMutation.mutate(f);
                 }
               }}
             />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              disabled={photoMutation.isPending}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) {
+                  setPhotoUploadError(null);
+                  photoMutation.mutate(f);
+                }
+              }}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={photoMutation.isPending}
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                {photoMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+                Take photo
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={photoMutation.isPending}
+                onClick={() => galleryInputRef.current?.click()}
+              >
+                Choose file
+              </Button>
+            </div>
+            {photoUploadError !== null ? (
+              <p className="text-sm text-destructive" role="alert">
+                {photoUploadError}
+              </p>
+            ) : null}
             {photoMutation.isPending ? (
-              <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+              <p className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Uploading…
               </p>
             ) : null}
           </div>
-          <ul className="mt-4 space-y-2 text-sm">
+          <div className="mt-6">
+            <div className="text-sm font-medium">Gallery</div>
             {(k.photos ?? []).length === 0 ? (
-              <li className="text-muted-foreground">No photos yet.</li>
+              <p className="mt-2 text-sm text-muted-foreground">No photos yet — add one above.</p>
             ) : (
-              (k.photos ?? []).map((p) => (
-                <li key={p.id} className="rounded-md border bg-muted/30 px-3 py-2">
-                  <div className="font-medium">{p.file?.original_filename ?? "Image"}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {p.file?.byte_size != null ? `${Math.round(p.file.byte_size / 1024)} KB` : "—"}
-                    {p.caption ? ` · ${p.caption}` : ""}
-                  </div>
-                </li>
-              ))
+              <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {(k.photos ?? []).map((p) => (
+                  <KnifePhotoGalleryCard key={p.id} photo={p} knifeId={knifeId} admin={admin} />
+                ))}
+              </ul>
             )}
-          </ul>
+          </div>
           <Separator className="my-4" />
           <div className="text-xs font-semibold uppercase text-muted-foreground">Order link</div>
           <div className="mt-2 text-sm">{orderLink ?? "No order linked."}</div>

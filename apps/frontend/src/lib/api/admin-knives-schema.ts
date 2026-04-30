@@ -63,12 +63,22 @@ export const KnifeDetailSchema = z
         z.object({
           id: z.string(),
           caption: z.string().nullable().optional(),
+          photo_kind: z.string().optional(),
+          content_api_path: z.string().optional(),
+          order_id: z.string().nullable().optional(),
+          created_at: z.string().nullable().optional(),
           sort_order: z.number().optional(),
+          uploaded_by: z
+            .object({ id: z.string(), name: z.string().nullable().optional() })
+            .nullable()
+            .optional(),
           file: z
             .object({
+              id: z.string().optional(),
               original_filename: z.string().nullable().optional(),
               byte_size: z.number().optional(),
               mime_type: z.string().nullable().optional(),
+              created_at: z.string().nullable().optional(),
             })
             .nullable()
             .optional(),

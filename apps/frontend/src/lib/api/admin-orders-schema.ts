@@ -1,5 +1,22 @@
 import { z } from "zod";
 
+export const OrderInvoiceSummarySchema = z.object({
+  id: z.string(),
+  invoice_number: z.string().nullable().optional(),
+  status: z.string().nullable().optional(),
+  subtotal_pence: z.number(),
+  tax_pence: z.number(),
+  total_pence: z.number(),
+});
+
+export const OrderInvoiceDraftResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    invoice: OrderInvoiceSummarySchema,
+    already_existed: z.boolean(),
+  }),
+});
+
 export const OrderRowSchema = z.object({
   id: z.string(),
   company_id: z.string(),
@@ -56,14 +73,8 @@ export const OrderDetailSchema = OrderRowSchema.extend({
   knives: z.array(KnifeSummarySchema).optional(),
   items: z.array(OrderItemRowSchema).optional(),
   created_at: z.string().nullable().optional(),
-  draft_invoice: z
-    .object({
-      id: z.string(),
-      invoice_number: z.string().nullable().optional(),
-      already_existed: z.boolean().optional(),
-    })
-    .nullable()
-    .optional(),
+  completed_at: z.string().nullable().optional(),
+  invoice: OrderInvoiceSummarySchema.nullable().optional(),
 });
 
 export const OrderDetailResponseSchema = z.object({

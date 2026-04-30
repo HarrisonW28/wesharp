@@ -14,14 +14,6 @@ final class CompleteOrderRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return [
-            'invoice_draft' => ['sometimes', 'boolean'],
-        ];
-    }
-
-    /** Whether the client expects a duplicate-safe draft invoice stub after completion. */
-    public function wantsInvoiceDraft(): bool
-    {
-        return $this->boolean('invoice_draft');
+        return [];
     }
 }

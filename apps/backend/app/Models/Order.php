@@ -30,6 +30,7 @@ class Order extends Model
         'price_per_knife_pence',
         'discount_pence',
         'payment_status',
+        'completed_at',
     ];
 
     protected function casts(): array
@@ -38,6 +39,7 @@ class Order extends Model
             'order_status' => OrderStatus::class,
             'payment_status' => OrderPaymentStatus::class,
             'route_id' => 'string',
+            'completed_at' => 'datetime',
         ];
     }
 

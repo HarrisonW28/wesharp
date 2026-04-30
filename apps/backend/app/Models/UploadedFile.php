@@ -13,6 +13,8 @@ class UploadedFile extends Model
     use HasUuids;
 
     protected $fillable = [
+        'fileable_type',
+        'fileable_id',
         'disk',
         'path',
         'original_filename',

@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
-import { Copy, ListPlus, Loader2, Plus, PackagePlus } from "lucide-react";
+import { Copy, FileText, ListPlus, Loader2, Plus, PackagePlus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { OrderDetailResponseSchema } from "@/lib/api/admin-orders-schema";
+import { OrderDetailResponseSchema, OrderInvoiceDraftResponseSchema } from "@/lib/api/admin-orders-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGbpFromPence } from "@/lib/format/money";
 
@@ -16,6 +16,15 @@ import { KnifeLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -65,7 +74,7 @@ export default function AdminOrderDetailPage() {
   const [attachOpen, setAttachOpen] = useState(false);
   const [attachKnifeId, setAttachKnifeId] = useState<string | null>(null);
   const [addKnifeType, setAddKnifeType] = useState("chefs");
-  const [invoiceDraftOnComplete, setInvoiceDraftOnComplete] = useState(true);
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
 
   const setBulkLine = (key: string, patch: Partial<BulkLineRow>) => {
     setBulkLines((rows) =>
@@ -102,7 +111,7 @@ export default function AdminOrderDetailPage() {
     mutationFn: async () => {
       const res = await admin.json<unknown>(`/api/admin/orders/${orderId}/complete`, {
         method: "POST",
-        body: JSON.stringify({ invoice_draft: invoiceDraftOnComplete }),
+        body: JSON.stringify({}),
       });
       if (!res.ok) {
         throw new Error(res.message);
@@ -113,18 +122,36 @@ export default function AdminOrderDetailPage() {
       }
       return parsed.data.data;
     },
-    onSuccess: (order) => {
+    onSuccess: () => {
       toast.success("Order completed.");
-      if (order.draft_invoice?.id) {
-        const ref = order.draft_invoice.invoice_number ?? order.draft_invoice.id.slice(0, 8);
-        toast.info(
-          order.draft_invoice.already_existed
-            ? `Invoice already on file (${ref}).`
-            : `Draft invoice ${ref} created.`,
-        );
-      }
+      setCompleteDialogOpen(false);
       void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const invoiceDraftMutation = useMutation({
+    mutationFn: async () => {
+      const res = await admin.json<unknown>(`/api/admin/orders/${orderId}/invoice-draft`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = OrderInvoiceDraftResponseSchema.safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected invoice response.");
+      }
+      return parsed.data.data;
+    },
+    onSuccess: (data) => {
+      const ref = data.invoice.invoice_number ?? data.invoice.id.slice(0, 8);
+      toast.success(
+        data.already_existed ? `Invoice already on file (${ref}).` : `Draft invoice ${ref} created.`,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -280,6 +307,8 @@ export default function AdminOrderDetailPage() {
 
   const o = orderQuery.data;
   const hasBillableLines = (o.items?.length ?? 0) > 0;
+  const hasWorkForComplete = (o.items?.length ?? 0) > 0 || (o.knives?.length ?? 0) > 0;
+  const isCompleted = o.status === "completed";
 
   return (
     <>
@@ -291,10 +320,115 @@ export default function AdminOrderDetailPage() {
       />
       <PageHeader
         title={`Order · ${o.company?.name ?? "Account"}`}
-        description={`${o.status ?? ""} · Payment ${o.payment_status ?? "—"}`}
+        description={`Booking ${o.scheduled_date ?? "—"} · Payment ${o.payment_status ?? "—"}`}
       />
 
+      <AlertDialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Complete this order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This marks the order as completed and records the completion time. Generate an invoice draft as a separate
+              step when you are ready — drafts are never sent automatically.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <Button type="button" disabled={completeMutation.isPending} onClick={() => completeMutation.mutate()}>
+              {completeMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+              Confirm complete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="grid gap-4 md:grid-cols-3">
+        <Card className="p-4 md:col-span-2">
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Overview</div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <StatusBadge kind="order" status={o.status ?? ""} />
+            <span className="text-xs text-muted-foreground">Order status</span>
+          </div>
+          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">Company</dt>
+              <dd className="font-semibold">
+                {o.company?.name ?? "—"}
+                {o.company?.city ? (
+                  <span className="font-normal text-muted-foreground"> · {o.company.city}</span>
+                ) : null}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Route</dt>
+              <dd className="font-semibold">{o.route_name ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Booking</dt>
+              <dd>
+                {o.booking_id ? (
+                  <Link className="font-medium text-primary underline" href={`/admin/bookings/${o.booking_id}`}>
+                    Open booking
+                  </Link>
+                ) : (
+                  <span className="font-semibold">—</span>
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Completed</dt>
+              <dd className="font-semibold">
+                {o.completed_at ? new Date(o.completed_at).toLocaleString("en-GB") : "—"}
+              </dd>
+            </div>
+          </dl>
+        </Card>
+
+        <Card className="flex flex-col gap-3 p-4">
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Invoice</div>
+          {o.invoice ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" aria-hidden />
+                <span className="font-mono text-sm">{o.invoice.invoice_number ?? o.invoice.id.slice(0, 8)}</span>
+                <StatusBadge kind="invoice" status={o.invoice.status ?? ""} />
+              </div>
+              <dl className="grid gap-2 text-sm">
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">Subtotal (ex VAT)</dt>
+                  <dd className="font-medium tabular-nums">{formatGbpFromPence(o.invoice.subtotal_pence)}</dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">VAT</dt>
+                  <dd className="font-medium tabular-nums">{formatGbpFromPence(o.invoice.tax_pence)}</dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">Total</dt>
+                  <dd className="font-semibold tabular-nums">{formatGbpFromPence(o.invoice.total_pence)}</dd>
+                </div>
+              </dl>
+              <Button asChild variant="secondary" className="w-full">
+                <Link href={`/admin/invoices/${o.invoice.id}`}>Open invoice</Link>
+              </Button>
+            </>
+          ) : isCompleted ? (
+            <>
+              <p className="text-sm text-muted-foreground">No invoice yet. Generate a draft from this order (not sent).</p>
+              <Button
+                type="button"
+                className="w-full gap-2"
+                disabled={invoiceDraftMutation.isPending}
+                onClick={() => invoiceDraftMutation.mutate()}
+              >
+                {invoiceDraftMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+                Generate invoice draft
+              </Button>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Complete the order to create an invoice draft.</p>
+          )}
+        </Card>
+
         <Card className="p-4 md:col-span-2">
           <div className="text-xs font-semibold uppercase text-muted-foreground">Commercials</div>
           {hasBillableLines ? (
@@ -332,6 +466,7 @@ export default function AdminOrderDetailPage() {
         </Card>
 
         <Card className="flex flex-col gap-3 p-4">
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Manifest actions</div>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2" variant="outline" type="button">
@@ -591,25 +726,13 @@ export default function AdminOrderDetailPage() {
             </DialogContent>
           </Dialog>
 
-          <label className="flex cursor-pointer items-start gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-input"
-              checked={invoiceDraftOnComplete}
-              onChange={(e) => setInvoiceDraftOnComplete(e.target.checked)}
-            />
-            <span>
-              Create a <strong className="font-medium text-foreground">draft invoice</strong> when completing (requires
-              permission; reuses an existing invoice if already present).
-            </span>
-          </label>
-
           <Button
             type="button"
             variant="secondary"
-            disabled={completeMutation.isPending || o.status === "completed"}
-            onClick={() => completeMutation.mutate()}
+            disabled={completeMutation.isPending || o.status === "completed" || !hasWorkForComplete}
+            onClick={() => setCompleteDialogOpen(true)}
           >
+            {completeMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
             Complete order
           </Button>
 

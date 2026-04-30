@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Actions\Invoices\CreateInvoiceFromOrderAction;
+use App\Actions\Invoices\GenerateInvoiceDraftFromOrderAction;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
@@ -14,7 +14,6 @@ use App\Http\Requests\BulkAddKnivesRequest;
 use App\Http\Requests\CompleteOrderRequest;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
-use App\Models\Invoice;
 use App\Models\Order;
 use App\Services\Orders\OrderService;
 use App\Support\ApiResponses;
@@ -27,7 +26,7 @@ final class OrderController extends Controller
 {
     public function __construct(
         private readonly OrderService $orderService,
-        private readonly CreateInvoiceFromOrderAction $createInvoiceFromOrderAction,
+        private readonly GenerateInvoiceDraftFromOrderAction $generateInvoiceDraftFromOrderAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -71,6 +70,9 @@ final class OrderController extends Controller
 
         /** @phpstan-ignore-next-line */
         $order = $this->orderService->create($payload, $request->user(), $request);
+        $order->loadMissing([
+            'invoices' => fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value)->orderByDesc('created_at')->limit(1),
+        ]);
 
         return ApiResponses::success(OrderJson::detail($order), 201);
     }
@@ -86,6 +88,7 @@ final class OrderController extends Controller
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at'),
             'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+            'invoices' => fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value)->orderByDesc('created_at')->limit(1),
         ]);
 
         return ApiResponses::success(OrderJson::detail($order));
@@ -102,6 +105,7 @@ final class OrderController extends Controller
             'booking:id,scheduled_date',
             'operationalRoute:id,name',
             'knives' => fn ($q) => $q->orderBy('position')->limit(250),
+            'invoices' => fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value)->orderByDesc('created_at')->limit(1),
         ]);
 
         return ApiResponses::success(OrderJson::detail($order));
@@ -111,54 +115,34 @@ final class OrderController extends Controller
     {
         $this->authorize('complete', $order);
 
-        if ($request->wantsInvoiceDraft()) {
-            $this->authorize('invoiceFromOrder', $order);
-        }
-
         /** @phpstan-ignore-next-line */
-        $order = $this->orderService->complete($order->fresh(['knives']), $request->user(), $request)->loadMissing([
+        $order = $this->orderService->complete($order->fresh(['items', 'knives']), $request->user(), $request)->loadMissing([
             /** @phpstan-ignore-next-line */
             'knives' => fn ($q) => $q->latest()->limit(250),
+            'items' => fn ($q) => $q->orderBy('created_at'),
             'booking:id',
             'operationalRoute:id',
+            'invoices' => fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value)->orderByDesc('created_at')->limit(1),
         ]);
 
-        $draftInvoice = null;
+        return ApiResponses::success(OrderJson::detail($order));
+    }
 
-        if ($request->wantsInvoiceDraft()) {
-            /** @phpstan-ignore-next-line */
-            $existing = Invoice::query()
-                /** @phpstan-ignore-next-line */
-                ->where('order_id', $order->id)
-                ->where('invoice_status', '!=', InvoiceStatus::Void->value)
-                /** @phpstan-ignore-next-line */
-                ->first();
-
-            if ($existing !== null) {
-                /** @phpstan-ignore-next-line */
-                $draftInvoice = [
-                    'id' => (string) $existing->id,
-                    /** @phpstan-ignore-next-line */
-                    'invoice_number' => $existing->invoice_number,
-                    'already_existed' => true,
-                ];
-            } else {
-                /** @phpstan-ignore-next-line */
-                $inv = $this->createInvoiceFromOrderAction->execute($order, $request->user(), $request);
-                /** @phpstan-ignore-next-line */
-                $draftInvoice = [
-                    'id' => (string) $inv->id,
-                    /** @phpstan-ignore-next-line */
-                    'invoice_number' => $inv->invoice_number,
-                    'already_existed' => false,
-                ];
-            }
-        }
+    public function storeInvoiceDraft(Request $request, Order $order): JsonResponse
+    {
+        $this->authorize('invoiceFromOrder', $order);
 
         /** @phpstan-ignore-next-line */
-        return ApiResponses::success(array_merge(OrderJson::detail($order), [
-            'draft_invoice' => $draftInvoice,
-        ]));
+        $result = $this->generateInvoiceDraftFromOrderAction->execute(
+            $order->fresh(['items']),
+            $request->user(),
+            $request,
+        );
+
+        return ApiResponses::success([
+            'invoice' => OrderJson::invoiceEmbed($result['invoice']),
+            'already_existed' => $result['already_existed'],
+        ]);
     }
 
     public function addKnife(AddKnifeToOrderRequest $request, Order $order): JsonResponse
@@ -203,6 +187,7 @@ final class OrderController extends Controller
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at'),
             'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+            'invoices' => fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value)->orderByDesc('created_at')->limit(1),
         ]);
 
         return ApiResponses::success(OrderJson::detail($fresh));

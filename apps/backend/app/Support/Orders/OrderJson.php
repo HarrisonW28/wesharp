@@ -2,6 +2,7 @@
 
 namespace App\Support\Orders;
 
+use App\Models\Invoice;
 use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -9,6 +10,19 @@ use App\Support\Knives\KnifeJson;
 
 final class OrderJson
 {
+    /** @return array<string, mixed> */
+    public static function invoiceEmbed(Invoice $invoice): array
+    {
+        return [
+            'id' => (string) $invoice->id,
+            'invoice_number' => $invoice->invoice_number,
+            'status' => $invoice->invoice_status?->value,
+            'subtotal_pence' => (int) $invoice->subtotal_pence,
+            'tax_pence' => (int) $invoice->tax_pence,
+            'total_pence' => (int) $invoice->total_pence,
+        ];
+    }
+
     /** @return array<string, mixed> */
     public static function listRow(Order $order): array
     {
@@ -55,6 +69,16 @@ final class OrderJson
         ]);
 
         $payload['created_at'] = $order->created_at?->toIso8601String();
+        $payload['completed_at'] = $order->completed_at?->toIso8601String();
+
+        $activeInvoice = null;
+        if ($order->relationLoaded('invoices')) {
+            /** @phpstan-ignore-next-line */
+            $activeInvoice = $order->invoices->first();
+        }
+        $payload['invoice'] = $activeInvoice instanceof Invoice
+            ? self::invoiceEmbed($activeInvoice)
+            : null;
 
         return $payload;
     }

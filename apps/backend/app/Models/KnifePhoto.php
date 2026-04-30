@@ -14,9 +14,12 @@ class KnifePhoto extends Model
 
     protected $fillable = [
         'knife_id',
+        'order_id',
         'uploaded_file_id',
+        'uploaded_by_user_id',
         'sort_order',
         'caption',
+        'photo_kind',
     ];
 
     public function knife(): BelongsTo
@@ -24,8 +27,18 @@ class KnifePhoto extends Model
         return $this->belongsTo(Knife::class);
     }
 
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
     public function uploadedFile(): BelongsTo
     {
         return $this->belongsTo(UploadedFile::class);
+    }
+
+    public function uploadedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by_user_id');
     }
 }

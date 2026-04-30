@@ -15,9 +15,12 @@ class KnifePhotoFactory extends Factory
     {
         return [
             'knife_id' => Knife::factory(),
+            'order_id' => null,
             'uploaded_file_id' => null,
+            'uploaded_by_user_id' => null,
             'sort_order' => fake()->numberBetween(0, 5),
             'caption' => fake()->boolean(40) ? fake()->sentence() : null,
+            'photo_kind' => 'general',
         ];
     }
 }

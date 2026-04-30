@@ -258,9 +258,12 @@ final class WeSharpDemoSeeder extends Seeder
 
                         KnifePhoto::query()->create([
                             'knife_id' => $knifeRow->id,
+                            'order_id' => $order->id,
                             'uploaded_file_id' => $fileRow->id,
+                            'uploaded_by_user_id' => $operator->id,
                             'sort_order' => $spot,
                             'caption' => 'Pre-service capture',
+                            'photo_kind' => 'before',
                         ]);
                     }
 
