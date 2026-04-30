@@ -24,7 +24,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 md:h-16 md:px-6">
           <div className="flex min-w-0 items-center gap-2 md:gap-6">
             <Link href="/" className="inline-flex shrink-0 items-center" aria-label="WeSharp home">
-              <WeSharpLogo className="h-8 md:h-9" />
+              <WeSharpLogo className="h-11 w-auto sm:h-12 md:h-14" />
             </Link>
             <nav aria-label="Primary" className="hidden items-center gap-5 md:flex">
               {PUBLIC_SITE_NAV_LINKS.map((l) => (
