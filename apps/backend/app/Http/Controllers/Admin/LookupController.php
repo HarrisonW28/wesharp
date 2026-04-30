@@ -345,6 +345,8 @@ final class LookupController extends Controller
             $query->where('company_id', $companyId);
         }
 
+        $query->whereNull('archived_at');
+
         if ($q !== '') {
             $needle = '%'.$this->escapeLike($q).'%';
             $query->where(function ($sub) use ($q, $needle): void {
@@ -399,6 +401,8 @@ final class LookupController extends Controller
         if ($companyId !== '' && Str::isUuid($companyId)) {
             $query->where('company_id', $companyId);
         }
+
+        $query->whereNull('archived_at');
 
         if ($q !== '') {
             $needle = '%'.$this->escapeLike($q).'%';

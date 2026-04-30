@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
+
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -25,6 +27,8 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
 import { LocationLookup } from "@/components/admin/lookups/AsyncEntityLookup";
+import { CompanyContactsManager } from "@/components/crm/CompanyContactsManager";
+import { CompanyLocationsManager } from "@/components/crm/CompanyLocationsManager";
 import { CompanyStatusBadge } from "@/components/crm/CompanyStatusBadge";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -56,25 +60,24 @@ type OrderRow = z.infer<typeof OrderPreviewSchema>;
 type KnifeRow = z.infer<typeof KnifePreviewSchema>;
 type InvoiceRow = z.infer<typeof InvoicePreviewSchema>;
 
+const CRM_TABS = [
+  "overview",
+  "contacts",
+  "locations",
+  "users",
+  "bookings",
+  "orders",
+  "knives",
+  "invoices",
+  "subscription",
+  "notes",
+  "activity",
+] as const;
+
+type CrmTab = (typeof CRM_TABS)[number];
+
 const noteFormSchema = z.object({
   body: z.string().min(1, "Enter note text."),
-});
-
-const contactFormSchema = z.object({
-  first_name: z.string().min(1),
-  last_name: z.string().min(1),
-  email: z.union([z.string().email(), z.literal("")]),
-  phone: z.string().optional(),
-  billing_contact: z.boolean(),
-});
-
-const locationFormSchema = z.object({
-  label: z.string().min(1),
-  line_one: z.string().optional(),
-  line_two: z.string().optional(),
-  city: z.string().optional(),
-  postcode: z.string().optional(),
-  country: z.string().optional(),
 });
 
 const bookingFormSchema = z.object({
@@ -96,6 +99,7 @@ export default function AdminCrmCompanyPage() {
   const perms = useMemo(() => new Set(me?.data?.permissions ?? []), [me?.data?.permissions]);
   const canUpdate = perms.has("companies.update");
   const canCreateBooking = perms.has("bookings.create");
+  const [tab, setTab] = useState<CrmTab>("overview");
 
   const invalidateCompany = async () => {
     await qc.invalidateQueries({ queryKey: ["admin-company", companyId] });
@@ -198,79 +202,7 @@ export default function AdminCrmCompanyPage() {
     },
   });
 
-  const contactForm = useForm<z.infer<typeof contactFormSchema>>({
-    resolver: zodResolver(contactFormSchema),
-    defaultValues: {
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone: "",
-      billing_contact: false,
-    },
-  });
-
-  const [contactOpen, setContactOpen] = useState(false);
-  const [locationOpen, setLocationOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
-
-  const contactMutation = useMutation({
-    mutationFn: async (payload: z.infer<typeof contactFormSchema>) => {
-      const res = await admin.json(`/api/admin/companies/${companyId}/contacts`, {
-        method: "POST",
-        body: JSON.stringify({
-          ...payload,
-          email: payload.email === "" ? null : payload.email,
-        }),
-      });
-      if (!res.ok) {
-        throw new Error(res.message);
-      }
-      return res.data;
-    },
-    onSuccess: async () => {
-      toast.success("Contact added.");
-      contactForm.reset();
-      setContactOpen(false);
-      await invalidateCompany();
-    },
-    onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : "Contact failed.");
-    },
-  });
-
-  const locationForm = useForm<z.infer<typeof locationFormSchema>>({
-    resolver: zodResolver(locationFormSchema),
-    defaultValues: {
-      label: "",
-      line_one: "",
-      line_two: "",
-      city: "",
-      postcode: "",
-      country: "",
-    },
-  });
-
-  const locationMutation = useMutation({
-    mutationFn: async (payload: z.infer<typeof locationFormSchema>) => {
-      const res = await admin.json(`/api/admin/companies/${companyId}/locations`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        throw new Error(res.message);
-      }
-      return res.data;
-    },
-    onSuccess: async () => {
-      toast.success("Location added.");
-      locationForm.reset();
-      setLocationOpen(false);
-      await invalidateCompany();
-    },
-    onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : "Location failed.");
-    },
-  });
 
   const bookingForm = useForm<z.infer<typeof bookingFormSchema>>({
     resolver: zodResolver(bookingFormSchema),
@@ -311,9 +243,39 @@ export default function AdminCrmCompanyPage() {
 
   const bookingCols: ColumnDef<BookingRow>[] = useMemo(
     () => [
-      { accessorKey: "scheduled_date", header: "Date" },
-      { accessorKey: "service_type", header: "Service" },
-      { accessorKey: "booking_status", header: "Status" },
+      {
+        accessorKey: "scheduled_date",
+        header: "Date",
+        cell: ({ row }) => (
+          <Link className="font-medium text-primary hover:underline" href={`/admin/bookings/${row.original.id}`}>
+            {row.original.scheduled_date ?? "—"}
+          </Link>
+        ),
+      },
+      {
+        id: "site",
+        header: "Site",
+        cell: ({ row }) => (
+          <span className="text-sm">
+            {row.original.site_summary ?? row.original.site_label ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "contact_col",
+        header: "Contact",
+        cell: ({ row }) => <span className="text-sm">{row.original.contact_display ?? "—"}</span>,
+      },
+      {
+        accessorKey: "service_type_label",
+        header: "Service",
+        cell: ({ row }) => row.original.service_type_label ?? row.original.service_type ?? "—",
+      },
+      {
+        accessorKey: "booking_status_label",
+        header: "Status",
+        cell: ({ row }) => row.original.booking_status_label ?? row.original.booking_status ?? "—",
+      },
       { accessorKey: "internal_notes", header: "Notes", cell: ({ getValue }) => String(getValue() ?? "") || "—" },
     ],
     [],
@@ -322,11 +284,19 @@ export default function AdminCrmCompanyPage() {
   const orderCols: ColumnDef<OrderRow>[] = useMemo(
     () => [
       {
+        id: "order_ref",
+        header: "Order",
+        cell: ({ row }) => (
+          <Link className="font-medium text-primary hover:underline" href={`/admin/orders/${row.original.id}`}>
+            {row.original.order_status_label ?? row.original.order_status ?? "View"}
+          </Link>
+        ),
+      },
+      {
         accessorKey: "total_pence",
         header: "Total",
         cell: ({ row }) => formatGBP(row.original.total_pence),
       },
-      { accessorKey: "order_status", header: "Status" },
       { accessorKey: "currency", header: "CCY" },
     ],
     [],
@@ -334,8 +304,20 @@ export default function AdminCrmCompanyPage() {
 
   const knifeCols: ColumnDef<KnifeRow>[] = useMemo(
     () => [
-      { accessorKey: "label", header: "Label" },
-      { accessorKey: "knife_status", header: "Status" },
+      {
+        accessorKey: "label",
+        header: "Label",
+        cell: ({ row }) => (
+          <Link className="text-primary hover:underline" href={`/admin/knives/${row.original.id}`}>
+            {row.original.label ?? "Knife"}
+          </Link>
+        ),
+      },
+      {
+        accessorKey: "knife_status_label",
+        header: "Status",
+        cell: ({ row }) => row.original.knife_status_label ?? row.original.knife_status ?? "—",
+      },
       { accessorKey: "position", header: "Pos." },
     ],
     [],
@@ -343,13 +325,25 @@ export default function AdminCrmCompanyPage() {
 
   const invoiceCols: ColumnDef<InvoiceRow>[] = useMemo(
     () => [
-      { accessorKey: "invoice_number", header: "#" },
+      {
+        accessorKey: "invoice_number",
+        header: "Invoice",
+        cell: ({ row }) => (
+          <Link className="font-medium text-primary hover:underline" href={`/admin/invoices/${row.original.id}`}>
+            {row.original.invoice_number?.trim() ? row.original.invoice_number : "View"}
+          </Link>
+        ),
+      },
       {
         accessorKey: "total_pence",
         header: "Amount",
         cell: ({ row }) => formatGBP(row.original.total_pence),
       },
-      { accessorKey: "invoice_status", header: "Status" },
+      {
+        accessorKey: "invoice_status_label",
+        header: "Status",
+        cell: ({ row }) => row.original.invoice_status_label ?? row.original.invoice_status ?? "—",
+      },
       { accessorKey: "issued_on", header: "Issued" },
     ],
     [],
@@ -377,6 +371,21 @@ export default function AdminCrmCompanyPage() {
   }
 
   const summary = summaryQuery.data;
+  const ov = c.overview;
+
+  const tabLabels: Record<CrmTab, string> = {
+    overview: "Overview",
+    contacts: "Contacts",
+    locations: "Locations",
+    users: "Users",
+    bookings: "Bookings",
+    orders: "Orders",
+    knives: "Knives",
+    invoices: "Invoices",
+    subscription: "Subscription",
+    notes: "Notes",
+    activity: "Activity",
+  };
 
   return (
     <div className="space-y-8">
@@ -437,292 +446,426 @@ export default function AdminCrmCompanyPage() {
         </Button>
       </section>
 
-      {/* Summary KPIs */}
-      {summaryQuery.isError ? (
-        <p className="text-sm text-destructive">Could not load summary KPIs.</p>
-      ) : summary ? (
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <nav className="flex flex-wrap gap-1 border-b border-border pb-2" aria-label="Account sections">
+        {CRM_TABS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            className={cn(
+              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              tab === id
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+            onClick={() => setTab(id)}
+          >
+            {tabLabels[id]}
+          </button>
+        ))}
+      </nav>
+
+      <div className="space-y-6">
+        {tab === "overview" ? (
+          <div className="space-y-6">
+            {summaryQuery.isError ? (
+              <p className="text-sm text-destructive">Could not load summary KPIs.</p>
+            ) : summary ? (
+              <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Order revenue</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-2xl font-semibold tabular-nums">
+                    {formatGBP(summary.orders_total_pence)}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Open pipeline bookings</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-2xl font-semibold tabular-nums">
+                    {summary.bookings_pipeline_count}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Contacts / locations</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-2xl font-semibold tabular-nums">
+                    {summary.contacts_count} / {summary.locations_count}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Outstanding invoices</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-semibold tabular-nums">{summary.invoices_open_count}</div>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {formatGBP(summary.invoices_open_total_pence)} exposure
+                    </p>
+                  </CardContent>
+                </Card>
+              </section>
+            ) : null}
+
+            <section className="grid gap-3 md:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Account details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1 text-sm">
+                  <p>
+                    <span className="text-muted-foreground">Phone · </span>
+                    {c.phone ?? "—"}
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Billing email · </span>
+                    {c.billing_email ?? "—"}
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">City · </span>
+                    {c.city ?? "—"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Default location</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm">
+                  {ov.default_location ? (
+                    <div>
+                      <p className="font-medium">{ov.default_location.label}</p>
+                      <p className="text-muted-foreground">{ov.default_location.summary ?? "—"}</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No locations on file.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Primary billing contact</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm">
+                  {ov.primary_contact ? (
+                    <div>
+                      <p className="font-medium">
+                        {ov.primary_contact.name}
+                        {ov.primary_contact.billing_contact ? (
+                          <span className="ml-1 text-xs font-normal text-muted-foreground">(primary billing)</span>
+                        ) : null}
+                      </p>
+                      <p className="text-muted-foreground">{ov.primary_contact.email ?? "—"}</p>
+                      <p className="text-muted-foreground">{ov.primary_contact.phone ?? "—"}</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No contacts on file.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Latest booking</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm">
+                  {ov.latest_booking ? (
+                    <div className="space-y-1">
+                      <Link className="font-medium text-primary hover:underline" href={`/admin/bookings/${ov.latest_booking.id}`}>
+                        {ov.latest_booking.scheduled_date ?? "Open booking"}
+                      </Link>
+                      <p className="text-muted-foreground">
+                        {ov.latest_booking.booking_status_label ?? ov.latest_booking.booking_status ?? "—"}
+                        {ov.latest_booking.service_type_label ? ` · ${ov.latest_booking.service_type_label}` : null}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No bookings yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Active order</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm">
+                  {ov.active_order ? (
+                    <div className="space-y-1">
+                      <Link className="font-medium text-primary hover:underline" href={`/admin/orders/${ov.active_order.id}`}>
+                        {ov.active_order.order_status_label ?? ov.active_order.order_status ?? "View order"}
+                      </Link>
+                      <p className="tabular-nums text-muted-foreground">{formatGBP(ov.active_order.total_pence)}</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No draft or active order.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Unpaid balance</CardTitle>
+                </CardHeader>
+                <CardContent className="text-2xl font-semibold tabular-nums">{formatGBP(ov.unpaid_balance_pence)}</CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Subscription</CardTitle>
+                  {c.subscription ? (
+                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setTab("subscription")}>
+                      Full detail
+                    </Button>
+                  ) : null}
+                </CardHeader>
+                <CardContent className="text-sm">
+                  {ov.subscription ? (
+                    <div>
+                      <p className="font-medium">{ov.subscription.plan_name}</p>
+                      <p className="text-muted-foreground">
+                        {ov.subscription.status_label}
+                        {ov.subscription.current_period_end ? ` · renews ${ov.subscription.current_period_end}` : null}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No subscription on file.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
+                <CardTitle className="text-base">Recent activity</CardTitle>
+                <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setTab("activity")}>
+                  View all
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {ov.recent_activity.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No recent audit or note entries.</p>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {ov.recent_activity.map((row) => (
+                      <li key={`${row.type}-${row.id}`} className="rounded-md border px-3 py-2">
+                        <span className="text-xs text-muted-foreground">{row.at ?? ""}</span>{" "}
+                        <span className="font-medium">{row.summary ?? row.action ?? row.type}</span>
+                        <span className="text-muted-foreground"> · {row.actor_name ?? "—"}</span>
+                        {row.type === "note" && row.body_preview ? (
+                          <p className="mt-1 text-muted-foreground">{row.body_preview}</p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
+
+        {tab === "contacts" ? (
+          <CompanyContactsManager
+            companyId={companyId}
+            contacts={c.contacts}
+            canManage={canUpdate}
+            onInvalidate={invalidateCompany}
+          />
+        ) : null}
+
+        {tab === "locations" ? (
+          <CompanyLocationsManager
+            companyId={companyId}
+            locations={c.locations}
+            canManage={canUpdate}
+            onInvalidate={invalidateCompany}
+          />
+        ) : null}
+
+        {tab === "users" ? (
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Order revenue</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-semibold tabular-nums">{formatGBP(summary.orders_total_pence)}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Open pipeline bookings</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-semibold tabular-nums">{summary.bookings_pipeline_count}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Contacts / locations</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-semibold tabular-nums">
-              {summary.contacts_count} / {summary.locations_count}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Open invoices</CardTitle>
+            <CardHeader>
+              <CardTitle className="text-base">Portal users</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold tabular-nums">{summary.invoices_open_count}</div>
-              <p className="text-xs text-muted-foreground tabular-nums">{formatGBP(summary.invoices_open_total_pence)} outstanding</p>
+              {c.users.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No users linked to this company.</p>
+              ) : (
+                <ul className="space-y-3 text-sm">
+                  {c.users.map((u) => (
+                    <li key={u.id} className="rounded-lg border px-3 py-2">
+                      <div className="font-medium">{u.name}</div>
+                      <div className="text-muted-foreground">{u.email}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {u.role_label}
+                        {u.status_label ? ` · ${u.status_label}` : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
-        </section>
-      ) : null}
+        ) : null}
 
-      <Separator />
+        {tab === "bookings" ? (
+          <section className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">Bookings</h2>
+              <Button
+                type="button"
+                size="sm"
+                className="min-h-10"
+                disabled={!canCreateBooking || c.locations.filter((l) => !l.is_archived).length === 0}
+                onClick={() => setBookingOpen(true)}
+              >
+                Create booking
+              </Button>
+            </div>
+            <DataTable columns={bookingCols} data={c.bookings} emptyLabel="No bookings." />
+          </section>
+        ) : null}
 
-      {/* Contacts & locations */}
-      <section className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4">
-            <CardTitle className="text-base">Contacts</CardTitle>
-            <Button type="button" size="sm" variant="outline" disabled={!canUpdate} onClick={() => setContactOpen(true)}>
-              Add contact
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {c.contacts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No contacts recorded.</p>
-            ) : (
-              <ul className="space-y-3 text-sm">
-                {c.contacts.map((contact) => (
-                  <li key={contact.id} className="rounded-lg border px-3 py-2">
-                    <div className="font-medium">
-                      {contact.first_name} {contact.last_name}{" "}
-                      {contact.billing_contact ? <span className="text-xs text-muted-foreground">(billing)</span> : null}
+        {tab === "orders" ? (
+          <section className="space-y-2">
+            <h2 className="text-lg font-semibold">Orders</h2>
+            <DataTable columns={orderCols} data={c.orders} emptyLabel="No orders." />
+          </section>
+        ) : null}
+
+        {tab === "knives" ? (
+          <section className="space-y-2">
+            <h2 className="text-lg font-semibold">Knives</h2>
+            <DataTable columns={knifeCols} data={c.knives} emptyLabel="No knives recorded." />
+          </section>
+        ) : null}
+
+        {tab === "invoices" ? (
+          <section className="space-y-2">
+            <h2 className="text-lg font-semibold">Invoices</h2>
+            <DataTable columns={invoiceCols} data={c.invoices} emptyLabel="No invoices." />
+          </section>
+        ) : null}
+
+        {tab === "subscription" ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Subscription</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {c.subscription ? (
+                <>
+                  <p className="text-base font-semibold">{c.subscription.plan_name}</p>
+                  <p className="text-muted-foreground">
+                    Status · <span className="text-foreground">{c.subscription.status_label}</span>
+                  </p>
+                  {c.subscription.current_period_end ? (
+                    <p className="text-muted-foreground">
+                      Current period ends · <span className="text-foreground">{c.subscription.current_period_end}</span>
+                    </p>
+                  ) : null}
+                  {c.subscription.allowance_summary ? (
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Allowance</p>
+                      <p className="whitespace-pre-wrap">{c.subscription.allowance_summary}</p>
                     </div>
-                    <div className="text-muted-foreground">{contact.email ?? "—"}</div>
-                    <div className="text-muted-foreground">{contact.phone ?? "—"}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-4">
-            <CardTitle className="text-base">Locations</CardTitle>
-            <Button type="button" size="sm" variant="outline" disabled={!canUpdate} onClick={() => setLocationOpen(true)}>
-              Add location
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {c.locations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No locations — add one before scheduling bookings.</p>
-            ) : (
-              <ul className="space-y-3 text-sm">
-                {c.locations.map((loc) => (
-                  <li key={loc.id} className="rounded-lg border px-3 py-2">
-                    <div className="font-medium">{loc.label}</div>
-                    <div className="text-muted-foreground">
-                      {[loc.line_one, loc.line_two, loc.city, loc.postcode].filter(Boolean).join(", ") || "—"}
+                  ) : null}
+                  {c.subscription.included_services ? (
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Included services</p>
+                      <p className="whitespace-pre-wrap">{c.subscription.included_services}</p>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </section>
+                  ) : null}
+                </>
+              ) : (
+                <p className="text-muted-foreground">No subscription record for this company.</p>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
 
-      {/* Notes */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Notes</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {canUpdate ? (
-            <form
-              className="space-y-3"
-              onSubmit={noteForm.handleSubmit((v) => {
-                noteMutation.mutate(v.body.trim());
-              })}
-            >
-              <Textarea rows={4} placeholder="Add an internal note…" {...noteForm.register("body")} />
-              {noteForm.formState.errors.body ? (
-                <p className="text-xs text-destructive">{noteForm.formState.errors.body.message}</p>
-              ) : null}
-              <Button type="submit" size="sm" disabled={noteMutation.isPending}>
-                {noteMutation.isPending ? "Saving…" : "Add note"}
-              </Button>
-            </form>
-          ) : (
-            <p className="text-sm text-muted-foreground">You do not have permission to add notes.</p>
-          )}
-          <Separator />
-          {c.notes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No notes yet.</p>
-          ) : (
-            <ul className="space-y-3 text-sm">
-              {c.notes.map((n) => (
-                <li key={n.id} className="rounded-lg border px-3 py-2">
-                  <div className="text-xs text-muted-foreground">{n.created_at ?? "—"} · {n.author_name ?? "Unknown"}</div>
-                  <p className="whitespace-pre-wrap pt-1">{n.body}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+        {tab === "notes" ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Notes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {canUpdate ? (
+                <form
+                  className="space-y-3"
+                  onSubmit={noteForm.handleSubmit((v) => {
+                    noteMutation.mutate(v.body.trim());
+                  })}
+                >
+                  <Textarea rows={4} placeholder="Add an internal note…" {...noteForm.register("body")} />
+                  {noteForm.formState.errors.body ? (
+                    <p className="text-xs text-destructive">{noteForm.formState.errors.body.message}</p>
+                  ) : null}
+                  <Button type="submit" size="sm" disabled={noteMutation.isPending}>
+                    {noteMutation.isPending ? "Saving…" : "Add note"}
+                  </Button>
+                </form>
+              ) : (
+                <p className="text-sm text-muted-foreground">You do not have permission to add notes.</p>
+              )}
+              <Separator />
+              {c.notes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No notes yet.</p>
+              ) : (
+                <ul className="space-y-3 text-sm">
+                  {c.notes.map((n) => (
+                    <li key={n.id} className="rounded-lg border px-3 py-2">
+                      <div className="text-xs text-muted-foreground">
+                        {n.created_at ?? "—"} · {n.author_name ?? "Unknown"}
+                      </div>
+                      <p className="whitespace-pre-wrap pt-1">{n.body}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
 
-      {/* Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {activityQuery.isLoading ? (
-            <div className="flex gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading…
-            </div>
-          ) : activityQuery.isError ? (
-            <p className="text-sm text-destructive">Unable to load activity.</p>
-          ) : activityQuery.data?.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No audit or note timeline entries yet.</p>
-          ) : (
-            <ul className="max-h-[420px] space-y-2 overflow-auto text-sm">
-              {activityQuery.data?.map((row) => (
-                <li key={`${row.type}-${row.id}`} className="rounded-md border px-3 py-2">
-                  <span className="text-xs text-muted-foreground">{row.at ?? ""}</span>{" "}
-                  <span className="font-medium">{row.action ?? row.type}</span>
-                  <span className="text-muted-foreground"> · {row.actor_name ?? "—"}</span>
-                  {row.type === "note" && row.body ? <p className="mt-1 text-muted-foreground">{row.body}</p> : null}
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Operational tables */}
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Bookings</h2>
-          <Button type="button" size="sm" disabled={!canCreateBooking || c.locations.length === 0} onClick={() => setBookingOpen(true)}>
-            Create booking
-          </Button>
-        </div>
-        <DataTable columns={bookingCols} data={c.bookings} emptyLabel="No bookings." />
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Orders</h2>
-        <DataTable columns={orderCols} data={c.orders} emptyLabel="No orders." />
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Knives</h2>
-        <DataTable columns={knifeCols} data={c.knives} emptyLabel="No knives recorded." />
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Invoices</h2>
-        <DataTable columns={invoiceCols} data={c.invoices} emptyLabel="No invoices." />
-      </section>
-
-      <Dialog open={contactOpen} onOpenChange={setContactOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add contact</DialogTitle>
-          </DialogHeader>
-          <form
-            className="space-y-3"
-            onSubmit={contactForm.handleSubmit((v) =>
-              contactMutation.mutate({
-                ...v,
-                billing_contact: v.billing_contact,
-              }),
-            )}
-          >
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="fn">First name</Label>
-                <Input id="fn" {...contactForm.register("first_name")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ln">Last name</Label>
-                <Input id="ln" {...contactForm.register("last_name")} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="em">Email</Label>
-              <Input id="em" type="email" {...contactForm.register("email")} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ph">Phone</Label>
-              <Input id="ph" {...contactForm.register("phone")} />
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" {...contactForm.register("billing_contact")} />
-              Billing contact
-            </label>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setContactOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={contactMutation.isPending}>
-                {contactMutation.isPending ? "Saving…" : "Save"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={locationOpen} onOpenChange={setLocationOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add location</DialogTitle>
-          </DialogHeader>
-          <form
-            className="space-y-3"
-            onSubmit={locationForm.handleSubmit((v) => locationMutation.mutate(v))}
-          >
-            <div className="space-y-2">
-              <Label htmlFor="lbl">Label</Label>
-              <Input id="lbl" {...locationForm.register("label")} />
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Line one</Label>
-                <Input {...locationForm.register("line_one")} />
-              </div>
-              <div className="space-y-2">
-                <Label>Line two</Label>
-                <Input {...locationForm.register("line_two")} />
-              </div>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>City</Label>
-                <Input {...locationForm.register("city")} />
-              </div>
-              <div className="space-y-2">
-                <Label>Postcode</Label>
-                <Input {...locationForm.register("postcode")} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Country</Label>
-              <Input {...locationForm.register("country")} />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setLocationOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={locationMutation.isPending}>
-                {locationMutation.isPending ? "Saving…" : "Save"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        {tab === "activity" ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {activityQuery.isLoading ? (
+                <div className="flex gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading…
+                </div>
+              ) : activityQuery.isError ? (
+                <p className="text-sm text-destructive">Unable to load activity.</p>
+              ) : activityQuery.data?.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No audit or note timeline entries yet.</p>
+              ) : (
+                <ul className="max-h-[520px] space-y-2 overflow-auto text-sm">
+                  {activityQuery.data?.map((row) => (
+                    <li key={`${row.type}-${row.id}`} className="rounded-md border px-3 py-2">
+                      <span className="text-xs text-muted-foreground">{row.at ?? ""}</span>{" "}
+                      <span className="font-medium">
+                        {row.action
+                          ? row.action.replace(/\./g, " ").replace(/_/g, " ")
+                          : row.type}
+                      </span>
+                      <span className="text-muted-foreground"> · {row.actor_name ?? "—"}</span>
+                      {row.type === "note" && row.body ? <p className="mt-1 text-muted-foreground">{row.body}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
+      </div>
 
       <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
         <DialogContent className="max-w-md">

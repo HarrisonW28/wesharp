@@ -20,6 +20,7 @@ final class AccountLocationController extends TenantAccountController
         $this->authorize('view', $company);
 
         $items = $company->locations()
+            ->whereNull('archived_at')
             ->orderByDesc('is_default')
             ->orderBy('label')
             ->get()
@@ -46,7 +47,8 @@ final class AccountLocationController extends TenantAccountController
             'company_id' => (string) $company->getKey(),
         ]));
 
-        if ($makeDefault || $company->locations()->count() === 1) {
+        $activeCount = $company->locations()->whereNull('archived_at')->count();
+        if ($makeDefault || $activeCount === 1) {
             $this->setAsOnlyDefault($company, $location);
         }
 
@@ -60,6 +62,10 @@ final class AccountLocationController extends TenantAccountController
         $company = $this->tenantCompany($request);
 
         if ((string) $location->company_id !== $this->tenantCompanyId($request)) {
+            abort(404);
+        }
+
+        if ($location->archived_at !== null) {
             abort(404);
         }
 
@@ -104,6 +110,7 @@ final class AccountLocationController extends TenantAccountController
     {
         CompanyLocation::query()
             ->where('company_id', $company->id)
+            ->whereNull('archived_at')
             ->whereKeyNot($location->id)
             ->update(['is_default' => false]);
 

@@ -20,6 +20,7 @@ class StoreContactRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:48'],
             'billing_contact' => ['boolean'],
+            'notes' => ['nullable', 'string', 'max:10000'],
         ];
     }
 }

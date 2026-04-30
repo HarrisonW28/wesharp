@@ -42,7 +42,27 @@ const STATUS_FILTERS: { label: string; value: CompanyStatus | "all" }[] = [
   { label: "Active", value: "active" },
   { label: "At risk", value: "at_risk" },
   { label: "Lost", value: "lost" },
+  { label: "Do not contact", value: "do_not_contact" },
 ];
+
+const TRI_STATE_FILTERS = [
+  { label: "Any", value: "any" },
+  { label: "Yes", value: "yes" },
+  { label: "No", value: "no" },
+] as const;
+
+const SUBSCRIPTION_FILTERS = [
+  { label: "Any subscription", value: "all" },
+  { label: "No subscription", value: "none" },
+  { label: "Active", value: "active" },
+] as const;
+
+const SORT_LABELS: Record<(typeof SORTS)[number], string> = {
+  name: "Name",
+  total_spend: "Total spend",
+  last_booking: "Last booking",
+  city: "City",
+};
 
 const createCompanySchema = z.object({
   name: z.string().min(2, "Name is required."),
@@ -185,7 +205,7 @@ export default function AdminCrmPage() {
       />
 
       <section className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:p-6">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="q">
               Search
@@ -258,6 +278,93 @@ export default function AdminCrmPage() {
             </Select>
           </div>
           <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground" htmlFor="subscription_status">
+              Subscription
+            </label>
+            <Select
+              value={searchParams.get("subscription_status") ?? "all"}
+              onValueChange={(value) =>
+                updateParam((params) => {
+                  if (value === "all") {
+                    params.delete("subscription_status");
+                  } else {
+                    params.set("subscription_status", value);
+                  }
+                  params.set("page", "1");
+                })
+              }
+            >
+              <SelectTrigger id="subscription_status">
+                <SelectValue placeholder="Subscription" />
+              </SelectTrigger>
+              <SelectContent>
+                {SUBSCRIPTION_FILTERS.map((row) => (
+                  <SelectItem key={row.value} value={row.value}>
+                    {row.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground" htmlFor="has_unpaid_invoices">
+              Unpaid invoices
+            </label>
+            <Select
+              value={searchParams.get("has_unpaid_invoices") ?? "any"}
+              onValueChange={(value) =>
+                updateParam((params) => {
+                  if (value === "any") {
+                    params.delete("has_unpaid_invoices");
+                  } else {
+                    params.set("has_unpaid_invoices", value === "yes" ? "1" : "0");
+                  }
+                  params.set("page", "1");
+                })
+              }
+            >
+              <SelectTrigger id="has_unpaid_invoices">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TRI_STATE_FILTERS.map((row) => (
+                  <SelectItem key={row.value} value={row.value}>
+                    {row.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground" htmlFor="has_active_bookings">
+              Active bookings
+            </label>
+            <Select
+              value={searchParams.get("has_active_bookings") ?? "any"}
+              onValueChange={(value) =>
+                updateParam((params) => {
+                  if (value === "any") {
+                    params.delete("has_active_bookings");
+                  } else {
+                    params.set("has_active_bookings", value === "yes" ? "1" : "0");
+                  }
+                  params.set("page", "1");
+                })
+              }
+            >
+              <SelectTrigger id="has_active_bookings">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TRI_STATE_FILTERS.map((row) => (
+                  <SelectItem key={row.value} value={row.value}>
+                    {row.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="sort">
               Sort by
             </label>
@@ -276,7 +383,7 @@ export default function AdminCrmPage() {
               <SelectContent>
                 {SORTS.map((value) => (
                   <SelectItem key={value} value={value}>
-                    {value.replace(/_/g, " ")}
+                    {SORT_LABELS[value]}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -50,6 +50,9 @@ final class AdminCompaniesApiTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     'id',
+                    'overview',
+                    'subscription',
+                    'users',
                     'contacts',
                     'locations',
                     'bookings',

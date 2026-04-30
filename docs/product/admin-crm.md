@@ -2,72 +2,83 @@
 
 ## Purpose
 
-Operational CRM for internal staff: browse **companies (accounts)**, filter and sort the list, open a **customer profile**, and run day-to-day actions (notes, contacts, locations, status, booking requests) against the Laravel API. Data is sourced from the seeded domain model (`companies`, `contacts`, `company_locations`, `bookings`, `orders`, `knives`, `invoices`, `notes`, `audit_logs`).
+Operational CRM for internal staff: browse **companies (accounts)**, filter and sort the list, open a **customer profile**, and run day-to-day actions (notes, **contacts**, **service locations**, status, booking requests) against the Laravel API. Data is sourced from the domain model (`companies`, `contacts`, `company_locations`, `bookings`, `orders`, `knives`, `invoices`, `notes`, `audit_logs`).
 
 ## Screens built
 
 | Route | Description |
 | --- | --- |
-| `/admin/crm` | List: search, city + status filters, sort (name, total spend, last booking, city), pagination, DataTable, “New account” modal (POST create). Status badges. |
-| `/admin/crm/[companyId]` | Profile: summary KPIs (from `/summary`), contacts, locations, notes + add note, merged **activity** timeline (audits + notes), bookings/orders/knives/invoices tables, quick status buttons, dialogs for contact, location, booking; “Request review” placeholder toast. |
+| `/admin/crm` | List: search, city + status + subscription + unpaid/active booking filters, sort, pagination, DataTable, “New account” modal (POST create). Status and CRM signal badges. |
+| `/admin/crm/[companyId]` | Profile: tabbed CRM (**Overview**, **Contacts**, **Locations**, users, bookings, orders, knives, invoices, subscription, notes, activity). Overview uses summary KPIs + snapshot (default site, primary billing contact, etc.). **Contacts** and **Locations** support add, edit, archive/restore, primary billing / default site. Bookings table shows site and contact context when present. |
 
-## API endpoints built (backend)
+## API endpoints (backend)
 
 Base path: **`/api/admin`** (Laravel `routes/api.php`; full URL prefix **`/api/admin/...`**).
 
-| Method | Path | Role |
+| Method | Path | Permission |
 | --- | --- | --- |
-| GET | `/companies` | Index with search, filters, sort, pagination |
-| POST | `/companies` | Create company |
-| GET | `/companies/{company}` | Detail (`CompanyDetailResource`) |
-| PUT | `/companies/{company}` | Update |
-| DELETE | `/companies/{company}` | Soft delete flow + audit |
-| GET | `/companies/{company}/summary` | KPI blob (`CompanySummaryResource`) |
-| GET | `/companies/{company}/activity` | Audit + notes merged timeline |
-| POST | `/companies/{company}/notes` | Add note |
-| POST | `/companies/{company}/contacts` | Add contact |
-| POST | `/companies/{company}/locations` | Add location |
-| POST | `/companies/{company}/bookings` | Create booking (requires `bookings.create` in addition to company auth) |
-| PUT | `/companies/{company}/status` | Update `company_status` only |
+| GET | `/companies` | `companies.view` |
+| POST | `/companies` | `companies.create` |
+| GET | `/companies/{company}` | `companies.view` |
+| PUT | `/companies/{company}` | `companies.update` |
+| DELETE | `/companies/{company}` | `companies.delete` |
+| GET | `/companies/{company}/summary` | `companies.view` |
+| GET | `/companies/{company}/activity` | `companies.view` |
+| POST | `/companies/{company}/notes` | `companies.update` |
+| POST | `/companies/{company}/contacts` | `companies.update` |
+| PUT | `/companies/{company}/contacts/{contact}` | `companies.update` |
+| POST | `/companies/{company}/contacts/{contact}/archive` | `companies.update` |
+| POST | `/companies/{company}/contacts/{contact}/restore` | `companies.update` |
+| POST | `/companies/{company}/contacts/{contact}/set-primary` | `companies.update` |
+| POST | `/companies/{company}/locations` | `companies.update` |
+| PUT | `/companies/{company}/locations/{location}` | `companies.update` |
+| POST | `/companies/{company}/locations/{location}/archive` | `companies.update` |
+| POST | `/companies/{company}/locations/{location}/restore` | `companies.update` |
+| POST | `/companies/{company}/locations/{location}/set-default` | `companies.update` |
+| POST | `/companies/{company}/bookings` | `companies.view` + `bookings.create` |
+| PUT | `/companies/{company}/status` | `companies.update` |
 
 Middleware: **`clerk.auth`**, **`staff`**. Responses use **`App\Support\ApiResponses`**.
 
+### Contacts & locations behaviour
+
+- **`archived_at`**: soft archive (no hard delete). Archived rows remain for **historical FKs** (bookings, orders). **Lookups** (`/lookups/locations`, `/lookups/contacts`) only list non-archived rows for pickers; direct lookup by `id` still resolves archived rows when needed.
+- **Primary billing contact** maps to `contacts.billing_contact` (at most one active primary per company for new assignments).
+- **Default service location** maps to `company_locations.is_default`. Archiving a default promotes another active location when possible.
+- **Tenant portal** (`/api/account/locations`) only lists non-archived locations; updates to an archived location return **404**.
+
 ### Search / filter / sort (index)
 
-- **`q`** — search across name/slug/email (implemented in `App\Actions\Companies\BuildCompaniesIndexQuery`; align with backend for exact columns).
-- **`city`** — exact match on company city (when provided).
-- **`status`** / **`company_status`** — filter by `CompanyStatus` enum.
-- **`sort`** — `name`, `total_spend`, `last_booking`, `city` (per `BuildCompaniesIndexQuery`).
-- **`direction`** — `asc` / `desc`.
-- **`page`**, **`per_page`** — capped per controller (max 50).
+See `App\Actions\Companies\BuildCompaniesIndexQuery` for `q`, `city`, `status`, subscription and invoice/booking filters, `sort`, `direction`, `page`, `per_page`.
 
 ## Permissions required
 
-| Capability | Permission constant | Notes |
+| Capability | Permission | Notes |
 | --- | --- | --- |
-| List / view profile / summary / activity | `companies.view` | `CompanyPolicy::viewAny` / `view` (+ `userMayForCompany` for scoped view) |
-| Create account | `companies.create` | POST `/companies` |
-| Notes, contacts, locations, PUT company | `companies.update` | Mutations under `update` policy |
-| Delete company | `companies.delete` | DELETE |
-| Create booking | `bookings.create` | Extra check in `CompanyController::storeBooking` |
+| List / view profile / summary / activity / lookups | `companies.view` | **Route managers** and **finance** can view company + embedded contacts/locations (read-only CRM). |
+| Notes, contacts, locations, PUT company, archive/restore | `companies.update` | **Super admin / admin** only (per `Permissions` map). |
+| Delete company | `companies.delete` | |
+| Create booking from CRM | `bookings.create` | Extra check in `CompanyController::storeBooking`; **active** (non-archived) location required. |
 
-## Data model used
+Customer roles do not receive `companies.view` on **admin** routes; tenant APIs are separate under `/api/account/...`.
 
-Primary entity: **`companies`** (`App\Models\Company`) with **`company_status`**, aggregates for list (`total_spend_pence`, `last_booking_date` where implemented). Related collections on detail: **`contacts`**, **`company_locations`**, **`bookings`**, **`orders`**, **`knives`**, **`invoices`**, **`notes`** (polymorphic on company), **`audit_logs`** (polymorphic) for timeline.
+## Audit (company timeline)
 
-## Customer profile sections (UI)
+Contact and location mutations record **`AuditLog`** rows on the **company** (same pattern as `company.contact_added`) so they appear in **`GET /companies/{id}/activity`**:
 
-1. **Summary** — KPI cards from `/summary` (orders total, pipeline bookings, contacts/locations counts, open invoices).
-2. **Contacts** — list + add (modal).
-3. **Locations** — list + add (modal); required before creating a booking (location FK).
-4. **Notes** — inline form + chronological list from detail payload.
-5. **Activity** — `/activity` merged audit rows and note events.
-6. **Bookings / orders / knives / invoices** — `DataTable` per collection from GET detail embeds.
+- `company.contact_updated`, `company.contact_archived`, `company.contact_restored`, `company.contact_primary_set`
+- `company.location_updated`, `company.location_archived`, `company.location_restored`, `company.location_default_set`, `company.location_default_changed` (e.g. after archiving default site)
 
 ## Known gaps
 
-- **Review requests** — UI button only surfaces a toast; no outbound integration.
-- **Export** — DataTable footer “Export (soon)” placeholder.
-- **Edit/delete** for contacts, locations, individual bookings — not in MVP API surface on the profile.
-- **Real-time** — no WebSocket refresh; refetch via TanStack Query invalidation after mutations.
-- **E2E** — manual + `php artisan test` backend feature slice; Clerk-dependent Next.js build requires valid **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`** for production static verification.
+- **Review requests** — UI placeholder toast only.
+- **Export** — DataTable “Export (soon)” placeholder.
+- **E2E** — manual + `php artisan test`; Next.js build needs valid Clerk env for production checks.
+
+## QA checklist (Sprint 4.3)
+
+1. Create / edit / archive / restore **contact**; set **primary billing**; confirm overview and activity update.
+2. Create / edit / archive / restore **location**; set **default**; confirm overview and booking location picker exclude archived sites.
+3. Attempt **booking** with archived `company_location_id` → **422**.
+4. **Route manager**: can open company detail; **cannot** PUT contact/location (403).
+5. **Mobile**: contacts/locations tabs — actions stack, minimum button height respected.

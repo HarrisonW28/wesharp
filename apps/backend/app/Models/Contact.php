@@ -19,13 +19,27 @@ class Contact extends Model
         'email',
         'phone',
         'billing_contact',
+        'notes',
+        'archived_at',
     ];
 
     protected function casts(): array
     {
         return [
             'billing_contact' => 'boolean',
+            'archived_at' => 'datetime',
         ];
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    /** @param  \Illuminate\Database\Eloquent\Builder<static>  $query */
+    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereNull('archived_at');
     }
 
     public function company(): BelongsTo

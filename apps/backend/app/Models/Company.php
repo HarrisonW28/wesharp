@@ -46,6 +46,11 @@ class Company extends Model
         return $this->hasOne(CompanySubscription::class);
     }
 
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
     public function contacts(): HasMany
     {
         return $this->hasMany(Contact::class);

@@ -3,7 +3,10 @@
 namespace App\Actions\Companies;
 
 use App\Enums\CompanyStatus;
+use App\Enums\InvoiceStatus;
 use App\Models\Company;
+use App\Models\CompanySubscription;
+use App\Support\Crm\CompanyCrmOverview;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -31,6 +34,26 @@ final class BuildCompaniesIndexQuery
             ->selectRaw('(select MAX(bookings.scheduled_date) from bookings where bookings.company_id = companies.id) as last_booking_date')
             ->withCount(['contacts', 'locations']);
 
+        $query->selectRaw(
+            '(exists(select 1 from invoices i where i.company_id = companies.id and i.invoice_status not in (?, ?))) as crm_has_unpaid_invoice',
+            [InvoiceStatus::Paid->value, InvoiceStatus::Void->value]
+        );
+
+        $activeBookingValues = CompanyCrmOverview::activeBookingStatusValues();
+        $placeholders = implode(',', array_fill(0, count($activeBookingValues), '?'));
+        $query->selectRaw(
+            '(select CASE WHEN EXISTS (select 1 from bookings b where b.company_id = companies.id and b.booking_status in ('.$placeholders.')) THEN 1 ELSE 0 END) as crm_has_active_booking',
+            $activeBookingValues
+        );
+
+        $query->selectSub(
+            CompanySubscription::query()
+                ->select('status')
+                ->whereColumn('company_id', 'companies.id')
+                ->limit(1),
+            'crm_subscription_status'
+        );
+
         if ($search !== '') {
             $like = '%'.$search.'%';
             $query->where(function (Builder $q) use ($like): void {
@@ -52,6 +75,34 @@ final class BuildCompaniesIndexQuery
             }
         }
 
+        match (self::triState($request->query('has_unpaid_invoices'))) {
+            'yes' => $query->whereHas('invoices', fn (Builder $q): Builder => $q->outstanding()),
+            'no' => $query->whereDoesntHave('invoices', fn (Builder $q): Builder => $q->outstanding()),
+            default => null,
+        };
+
+        match (self::triState($request->query('has_active_bookings'))) {
+            'yes' => $query->whereHas(
+                'bookings',
+                fn (Builder $q) => $q->whereIn('booking_status', CompanyCrmOverview::activeBookingStatusValues())
+            ),
+            'no' => $query->whereDoesntHave(
+                'bookings',
+                fn (Builder $q) => $q->whereIn('booking_status', CompanyCrmOverview::activeBookingStatusValues())
+            ),
+            default => null,
+        };
+
+        $subscriptionStatus = trim((string) $request->query('subscription_status', ''));
+        if ($subscriptionStatus === 'none') {
+            $query->whereDoesntHave('subscription');
+        } elseif ($subscriptionStatus !== '') {
+            $query->whereHas(
+                'subscription',
+                fn (Builder $q) => $q->where('status', $subscriptionStatus)
+            );
+        }
+
         match ($sort) {
             'total_spend' => $query->orderByRaw('total_spend_pence '.$direction),
             'last_booking' => $query->orderByRaw('last_booking_date IS NULL, last_booking_date '.($direction === 'desc' ? 'desc' : 'asc')),
@@ -60,5 +111,34 @@ final class BuildCompaniesIndexQuery
         };
 
         return $query;
+    }
+
+    /**
+     * @return 'yes'|'no'|'any'
+     */
+    private static function triState(mixed $value): string
+    {
+        if ($value === null) {
+            return 'any';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'yes' : 'no';
+        }
+
+        $s = strtolower(trim((string) $value));
+        if ($s === '' || $s === 'any') {
+            return 'any';
+        }
+
+        if (in_array($s, ['1', 'true', 'yes', 'on'], true)) {
+            return 'yes';
+        }
+
+        if (in_array($s, ['0', 'false', 'no', 'off'], true)) {
+            return 'no';
+        }
+
+        return 'any';
     }
 }

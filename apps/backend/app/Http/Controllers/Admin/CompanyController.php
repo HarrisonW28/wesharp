@@ -17,6 +17,8 @@ use App\Http\Requests\UpdateCompanyStatusRequest;
 use App\Http\Resources\CompanyDetailResource;
 use App\Http\Resources\CompanyResource;
 use App\Http\Resources\CompanySummaryResource;
+use App\Http\Resources\CrmContactResource;
+use App\Http\Resources\CrmLocationResource;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
@@ -93,9 +95,21 @@ final class CompanyController extends Controller
         $this->authorize('view', $company);
 
         $company->load([
-            'contacts',
-            'locations',
-            'bookings' => fn ($q) => $q->latest('scheduled_date')->limit(75),
+            'subscription',
+            'users' => fn ($q) => $q->orderBy('name')->limit(100),
+            'contacts' => fn ($q) => $q
+                ->orderByRaw('CASE WHEN archived_at IS NULL THEN 0 ELSE 1 END')
+                ->orderByDesc('billing_contact')
+                ->orderBy('last_name')
+                ->orderBy('first_name'),
+            'locations' => fn ($q) => $q
+                ->orderByRaw('CASE WHEN archived_at IS NULL THEN 0 ELSE 1 END')
+                ->orderByDesc('is_default')
+                ->orderBy('label'),
+            'bookings' => fn ($q) => $q->with([
+                'location:id,label,line_one,city,postcode,archived_at',
+                'contact:id,first_name,last_name,email,archived_at',
+            ])->latest('scheduled_date')->limit(75),
             'notes' => fn ($q) => $q->with('author:id,name')->latest()->limit(75),
             'orders' => fn ($q) => $q->latest()->limit(50),
             'knives' => fn ($q) => $q->latest()->limit(60),
@@ -258,14 +272,7 @@ final class CompanyController extends Controller
             'contact_id' => $contact->id,
         ], $request);
 
-        return ApiResponses::success([
-            'id' => (string) $contact->id,
-            'first_name' => $contact->first_name,
-            'last_name' => $contact->last_name,
-            'email' => $contact->email,
-            'phone' => $contact->phone,
-            'billing_contact' => $contact->billing_contact,
-        ], 201);
+        return ApiResponses::success((new CrmContactResource($contact))->resolve(), 201);
     }
 
     public function storeLocation(StoreCompanyLocationRequest $request, Company $company): JsonResponse
@@ -281,13 +288,7 @@ final class CompanyController extends Controller
             'location_id' => $location->id,
         ], $request);
 
-        return ApiResponses::success([
-            'id' => (string) $location->id,
-            'label' => $location->label,
-            'city' => $location->city,
-            'postcode' => $location->postcode,
-            'country' => $location->country,
-        ], 201);
+        return ApiResponses::success((new CrmLocationResource($location))->resolve(), 201);
     }
 
     public function storeBooking(StoreCompanyBookingRequest $request, Company $company): JsonResponse

@@ -23,6 +23,7 @@ class StoreCompanyLocationRequest extends FormRequest
             'country' => ['nullable', 'string', 'max:64'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'notes' => ['nullable', 'string', 'max:10000'],
         ];
     }
 }

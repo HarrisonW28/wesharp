@@ -24,7 +24,9 @@ class StoreCompanyBookingRequest extends FormRequest
             'company_location_id' => [
                 'required',
                 'uuid',
-                Rule::exists('company_locations', 'id')->where('company_id', $company->id),
+                Rule::exists('company_locations', 'id')
+                    ->where('company_id', $company->id)
+                    ->whereNull('archived_at'),
             ],
             'scheduled_date' => ['required', 'date'],
             'service_type' => ['required', Rule::enum(ServiceType::class)],

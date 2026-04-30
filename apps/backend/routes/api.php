@@ -3,7 +3,9 @@
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\UserDirectoryController;
+use App\Http\Controllers\Admin\CompanyContactController;
 use App\Http\Controllers\Admin\CompanyController;
+use App\Http\Controllers\Admin\CompanyLocationController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\KnifeController;
 use App\Http\Controllers\Admin\LookupController;
@@ -106,7 +108,15 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:companies.view')->get('companies/{company}/activity', [CompanyController::class, 'activity'])->whereUuid('company')->name('api.admin.companies.activity');
     Route::middleware('permission:companies.update')->post('companies/{company}/notes', [CompanyController::class, 'storeNote'])->whereUuid('company')->name('api.admin.companies.notes.store');
     Route::middleware('permission:companies.update')->post('companies/{company}/contacts', [CompanyController::class, 'storeContact'])->whereUuid('company')->name('api.admin.companies.contacts.store');
+    Route::middleware('permission:companies.update')->put('companies/{company}/contacts/{contact}', [CompanyContactController::class, 'update'])->whereUuid('company')->whereUuid('contact')->name('api.admin.companies.contacts.update');
+    Route::middleware('permission:companies.update')->post('companies/{company}/contacts/{contact}/archive', [CompanyContactController::class, 'archive'])->whereUuid('company')->whereUuid('contact')->name('api.admin.companies.contacts.archive');
+    Route::middleware('permission:companies.update')->post('companies/{company}/contacts/{contact}/restore', [CompanyContactController::class, 'restore'])->whereUuid('company')->whereUuid('contact')->name('api.admin.companies.contacts.restore');
+    Route::middleware('permission:companies.update')->post('companies/{company}/contacts/{contact}/set-primary', [CompanyContactController::class, 'setPrimary'])->whereUuid('company')->whereUuid('contact')->name('api.admin.companies.contacts.set_primary');
     Route::middleware('permission:companies.update')->post('companies/{company}/locations', [CompanyController::class, 'storeLocation'])->whereUuid('company')->name('api.admin.companies.locations.store');
+    Route::middleware('permission:companies.update')->put('companies/{company}/locations/{location}', [CompanyLocationController::class, 'update'])->whereUuid('company')->whereUuid('location')->name('api.admin.companies.locations.update');
+    Route::middleware('permission:companies.update')->post('companies/{company}/locations/{location}/archive', [CompanyLocationController::class, 'archive'])->whereUuid('company')->whereUuid('location')->name('api.admin.companies.locations.archive');
+    Route::middleware('permission:companies.update')->post('companies/{company}/locations/{location}/restore', [CompanyLocationController::class, 'restore'])->whereUuid('company')->whereUuid('location')->name('api.admin.companies.locations.restore');
+    Route::middleware('permission:companies.update')->post('companies/{company}/locations/{location}/set-default', [CompanyLocationController::class, 'setDefault'])->whereUuid('company')->whereUuid('location')->name('api.admin.companies.locations.set_default');
     Route::middleware('permission:bookings.create')->post('companies/{company}/bookings', [CompanyController::class, 'storeBooking'])->whereUuid('company')->name('api.admin.companies.bookings.store');
     Route::middleware('permission:companies.update')->put('companies/{company}/status', [CompanyController::class, 'updateStatus'])->whereUuid('company')->name('api.admin.companies.status.update');
 

@@ -24,6 +24,9 @@ export const CompanyRowSchema = z.object({
   last_booking_date: z.string().nullable(),
   contacts_count: z.number().nullable().optional(),
   locations_count: z.number().nullable().optional(),
+  subscription_status: z.string().nullable().optional(),
+  has_unpaid_invoices: z.boolean().optional(),
+  has_active_bookings: z.boolean().optional(),
 });
 
 export const PaginatedCompaniesResponseSchema = z.object({
@@ -51,11 +54,16 @@ export const ContactSchema = z.object({
   email: z.string().nullable(),
   phone: z.string().nullable(),
   billing_contact: z.boolean(),
+  notes: z.string().nullable().optional(),
+  archived_at: z.string().nullable().optional(),
+  is_archived: z.boolean().optional(),
+  status_label: z.string().optional(),
 });
 
 export const LocationSchema = z.object({
   id: z.string(),
   label: z.string(),
+  is_default: z.boolean().optional(),
   line_one: z.string().nullable(),
   line_two: z.string().nullable(),
   city: z.string().nullable(),
@@ -63,6 +71,10 @@ export const LocationSchema = z.object({
   country: z.string().nullable(),
   latitude: z.number().nullable(),
   longitude: z.number().nullable(),
+  notes: z.string().nullable().optional(),
+  archived_at: z.string().nullable().optional(),
+  is_archived: z.boolean().optional(),
+  status_label: z.string().optional(),
 });
 
 export const NoteSchema = z.object({
@@ -75,15 +87,22 @@ export const NoteSchema = z.object({
 export const BookingPreviewSchema = z.object({
   id: z.string(),
   booking_status: z.string().nullable().optional(),
+  booking_status_label: z.string().nullable().optional(),
   service_type: z.string().nullable().optional(),
+  service_type_label: z.string().nullable().optional(),
   scheduled_date: z.string().nullable().optional(),
   internal_notes: z.string().nullable().optional(),
   company_location_id: z.string().nullable().optional(),
+  site_summary: z.string().nullable().optional(),
+  site_label: z.string().nullable().optional(),
+  contact_id: z.string().nullable().optional(),
+  contact_display: z.string().nullable().optional(),
 });
 
 export const OrderPreviewSchema = z.object({
   id: z.string(),
   order_status: z.string().nullable().optional(),
+  order_status_label: z.string().nullable().optional(),
   total_pence: z.number(),
   currency: z.string().nullable().optional(),
 });
@@ -92,6 +111,7 @@ export const KnifePreviewSchema = z.object({
   id: z.string(),
   label: z.string().nullable().optional(),
   knife_status: z.string().nullable().optional(),
+  knife_status_label: z.string().nullable().optional(),
   position: z.union([z.string(), z.number()]).nullable().optional(),
 });
 
@@ -99,33 +119,116 @@ export const InvoicePreviewSchema = z.object({
   id: z.string(),
   invoice_number: z.string().nullable().optional(),
   invoice_status: z.string().nullable().optional(),
+  invoice_status_label: z.string().nullable().optional(),
   total_pence: z.number(),
   currency: z.string().nullable().optional(),
   issued_on: z.string().nullable().optional(),
 });
 
-export const CompanyDetailResponseSchema = z.object({
-  success: z.literal(true),
-  data: z
+export const CompanyOverviewSnapshotSchema = z.object({
+  default_location: z
+    .object({
+      id: z.string(),
+      label: z.string(),
+      is_default: z.boolean().optional(),
+      summary: z.string().optional(),
+      city: z.string().nullable().optional(),
+      postcode: z.string().nullable().optional(),
+    })
+    .nullable(),
+  primary_contact: z
     .object({
       id: z.string(),
       name: z.string(),
-      slug: z.string(),
-      company_status: CompanyStatusEnum,
-      phone: z.string().nullable(),
-      billing_email: z.string().nullable(),
-      city: z.string().nullable(),
-      contacts: z.array(ContactSchema),
-      locations: z.array(LocationSchema),
-      notes: z.array(NoteSchema),
-      bookings: z.array(BookingPreviewSchema),
-      orders: z.array(OrderPreviewSchema),
-      knives: z.array(KnifePreviewSchema),
-      invoices: z.array(InvoicePreviewSchema),
-      created_at: z.string().optional(),
-      updated_at: z.string().optional(),
+      email: z.string().nullable().optional(),
+      phone: z.string().nullable().optional(),
+      billing_contact: z.boolean().optional(),
     })
-    .passthrough(),
+    .nullable(),
+  latest_booking: z
+    .object({
+      id: z.string(),
+      scheduled_date: z.string().nullable().optional(),
+      booking_status: z.string().nullable().optional(),
+      booking_status_label: z.string().nullable().optional(),
+      service_type_label: z.string().nullable().optional(),
+    })
+    .nullable(),
+  active_order: z
+    .object({
+      id: z.string(),
+      order_status: z.string().nullable().optional(),
+      order_status_label: z.string().nullable().optional(),
+      total_pence: z.number(),
+      currency: z.string().nullable().optional(),
+    })
+    .nullable(),
+  unpaid_balance_pence: z.number(),
+  subscription: z
+    .object({
+      id: z.string(),
+      plan_name: z.string(),
+      status: z.string(),
+      status_label: z.string(),
+      current_period_end: z.string().nullable().optional(),
+    })
+    .nullable(),
+  recent_activity: z.array(
+    z.object({
+      type: z.enum(["audit", "note"]),
+      id: z.union([z.string(), z.number()]),
+      at: z.string().nullable().optional(),
+      summary: z.string().optional(),
+      action: z.string().optional(),
+      actor_name: z.string().nullable().optional(),
+      body_preview: z.string().optional(),
+    }),
+  ),
+});
+
+export const CompanyUserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  role: z.string(),
+  role_label: z.string(),
+  status: z.string().nullable().optional(),
+  status_label: z.string().nullable().optional(),
+});
+
+export const CompanySubscriptionDetailSchema = z.object({
+  id: z.string(),
+  plan_name: z.string(),
+  status: z.string(),
+  status_label: z.string(),
+  current_period_end: z.string().nullable().optional(),
+  allowance_summary: z.string().nullable().optional(),
+  included_services: z.string().nullable().optional(),
+});
+
+export const CompanyDetailResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    company_status: CompanyStatusEnum,
+    phone: z.string().nullable(),
+    billing_email: z.string().nullable(),
+    city: z.string().nullable(),
+    overview: CompanyOverviewSnapshotSchema,
+    subscription: CompanySubscriptionDetailSchema.nullable(),
+    users: z.array(CompanyUserSchema),
+    contacts: z.array(ContactSchema),
+    locations: z.array(LocationSchema),
+    notes: z.array(NoteSchema),
+    bookings: z.array(BookingPreviewSchema),
+    orders: z.array(OrderPreviewSchema),
+    knives: z.array(KnifePreviewSchema),
+    invoices: z.array(InvoicePreviewSchema),
+    created_at: z.string().optional(),
+    updated_at: z.string().optional(),
+  }),
 });
 
 export type CompanyDetail = z.infer<(typeof CompanyDetailResponseSchema)["shape"]["data"]>;
@@ -141,6 +244,7 @@ export const CompanySummarySchema = z.object({
     knives_count: z.number(),
     invoices_open_count: z.number(),
     invoices_open_total_pence: z.number(),
+    overview: CompanyOverviewSnapshotSchema,
   }),
 });
 

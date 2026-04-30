@@ -3,8 +3,8 @@
 namespace App\Http\Resources;
 
 use App\Enums\BookingStatus;
-use App\Enums\InvoiceStatus;
 use App\Models\Company;
+use App\Support\Crm\CompanyCrmOverview;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,16 +32,9 @@ class CompanySummaryResource extends JsonResource
             'contacts_count' => $c->contacts()->count(),
             'locations_count' => $c->locations()->count(),
             'knives_count' => $c->knives()->count(),
-            'invoices_open_count' => $c->invoices()->whereIn('invoice_status', [
-                InvoiceStatus::Sent->value,
-                InvoiceStatus::Overdue->value,
-                InvoiceStatus::Draft->value,
-            ])->count(),
-            'invoices_open_total_pence' => (int) ($c->invoices()->whereIn('invoice_status', [
-                InvoiceStatus::Sent->value,
-                InvoiceStatus::Overdue->value,
-                InvoiceStatus::Draft->value,
-            ])->sum('total_pence')),
+            'invoices_open_count' => $c->invoices()->outstanding()->count(),
+            'invoices_open_total_pence' => (int) $c->invoices()->outstanding()->sum('total_pence'),
+            'overview' => CompanyCrmOverview::toArray($c),
         ];
     }
 }

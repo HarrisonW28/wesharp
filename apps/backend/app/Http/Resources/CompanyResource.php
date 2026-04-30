@@ -25,6 +25,11 @@ class CompanyResource extends JsonResource
             'last_booking_date' => $this->formatDateAttr($this->resource->last_booking_date ?? null),
             'contacts_count' => $this->resource->contacts_count ?? null,
             'locations_count' => $this->resource->locations_count ?? null,
+            'subscription_status' => $this->resource->crm_subscription_status !== null
+                ? (string) $this->resource->crm_subscription_status
+                : null,
+            'has_unpaid_invoices' => (bool) ((int) ($this->resource->crm_has_unpaid_invoice ?? 0)),
+            'has_active_bookings' => (bool) ((int) ($this->resource->crm_has_active_booking ?? 0)),
             'created_at' => $this->resource->created_at?->toIso8601String(),
             'updated_at' => $this->resource->updated_at?->toIso8601String(),
         ];

@@ -24,6 +24,8 @@ class CompanyLocation extends Model
         'country',
         'latitude',
         'longitude',
+        'notes',
+        'archived_at',
     ];
 
     protected function casts(): array
@@ -32,7 +34,19 @@ class CompanyLocation extends Model
             'is_default' => 'boolean',
             'latitude' => 'float',
             'longitude' => 'float',
+            'archived_at' => 'datetime',
         ];
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    /** @param  \Illuminate\Database\Eloquent\Builder<static>  $query */
+    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereNull('archived_at');
     }
 
     public function company(): BelongsTo
