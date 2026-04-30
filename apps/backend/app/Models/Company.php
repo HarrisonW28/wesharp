@@ -21,6 +21,7 @@ class Company extends Model
         'name',
         'slug',
         'company_status',
+        'is_sole_customer',
         'phone',
         'billing_email',
         'city',
@@ -30,6 +31,7 @@ class Company extends Model
     {
         return [
             'company_status' => CompanyStatus::class,
+            'is_sole_customer' => 'boolean',
         ];
     }
 

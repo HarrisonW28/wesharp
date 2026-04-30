@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\Account\AccountKnifeController;
 use App\Http\Controllers\Api\Account\AccountLocationController;
 use App\Http\Controllers\Api\Account\AccountOrderController;
 use App\Http\Controllers\Api\Account\AccountSettingsController;
+use App\Http\Controllers\Api\V1\BootstrapTenantOrganisationController;
 use App\Http\Controllers\Api\V1\InternalSmokeController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\TenantSmokeController;
@@ -54,6 +55,9 @@ Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (
 Route::prefix('v1')->group(function (): void {
     Route::middleware(['clerk.auth'])->group(function (): void {
         Route::get('me', [MeController::class, 'show'])->name('api.v1.me');
+        Route::post('account/bootstrap-organisation', [BootstrapTenantOrganisationController::class, 'store'])
+            ->middleware('throttle:12,1440')
+            ->name('api.v1.account.bootstrap_organisation');
     });
 
     Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): void {

@@ -6,6 +6,9 @@ export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/crm")) {
     return "companies.view";
   }
+  if (pathname.startsWith("/admin/users")) {
+    return "users.view";
+  }
   if (pathname.startsWith("/admin/bookings")) {
     return "bookings.view";
   }
