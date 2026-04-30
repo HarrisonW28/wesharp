@@ -15,6 +15,7 @@ use App\Enums\RouteStopStatus;
 use App\Enums\ServiceType;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Actions\Invoices\AllocateInvoiceNumber;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
@@ -197,8 +198,6 @@ final class WeSharpDemoSeeder extends Seeder
             $payload['booking']->update(['booking_status' => BookingStatus::AssignedToRoute]);
         }
 
-        $invoiceCursor = random_int(40, 80);
-
         foreach ($profiles as $entry) {
             $companyModel = $entry['company'];
 
@@ -277,12 +276,10 @@ final class WeSharpDemoSeeder extends Seeder
                     }
                 }
 
-                $invoiceCursor++;
-
                 $invoiceRow = Invoice::query()->create([
                     'company_id' => $companyModel->id,
                     'order_id' => $order->id,
-                    'invoice_number' => sprintf('INV-%s-%04d', now()->format('Ym'), (($invoiceCursor) % 10000)),
+                    'invoice_number' => AllocateInvoiceNumber::generate(),
                     'invoice_status' => (($scenario === 0) ? InvoiceStatus::Sent : InvoiceStatus::Paid),
                     'issued_on' => now()->subDays(8 - ($scenario * 2))->toDateString(),
                     'due_on' => now()->addDays(9)->toDateString(),
@@ -315,7 +312,7 @@ final class WeSharpDemoSeeder extends Seeder
                     'currency' => 'GBP',
                     'paid_at' => now()->subHours(9 - ($scenario * 3)),
                     'due_at' => (($paymentStatusFlag === PaymentStatus::PartPaid) ? now()->addDays(4) : null),
-                    'reference' => (($scenario === 0) ? 'STRIPE-'.Str::upper(Str::random(7)) : 'FPS-'.$invoiceCursor),
+                    'reference' => (($scenario === 0) ? 'STRIPE-'.Str::upper(Str::random(7)) : 'FPS-'.Str::upper(Str::random(14))),
                 ]);
 
                 if ($paymentStatusFlag === PaymentStatus::PartPaid) {
