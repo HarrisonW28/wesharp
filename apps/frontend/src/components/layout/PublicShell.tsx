@@ -24,13 +24,16 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
         <div className="relative mx-auto flex h-14 max-w-7xl flex-nowrap items-center justify-between gap-2 px-4 md:h-16 md:gap-3 md:px-6">
-          <Link
-            href="/"
-            className="group inline-flex shrink-0 items-center rounded-md text-foreground no-underline opacity-90 outline-none ring-offset-background transition-opacity duration-200 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            aria-label="WeSharp home"
-          >
-            <WeSharpLogo className="h-8 w-auto sm:h-9 lg:h-10" />
-          </Link>
+          <div className="flex shrink-0 items-center gap-3">
+            <Link
+              href="/"
+              className="group inline-flex shrink-0 items-center rounded-md text-foreground no-underline opacity-90 outline-none ring-offset-background transition-opacity duration-200 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label="WeSharp home"
+            >
+              <WeSharpLogo className="h-8 w-auto sm:h-9 lg:h-10" />
+            </Link>
+            <span className="hidden h-7 w-px bg-border/70 lg:block" aria-hidden />
+          </div>
 
           <nav
             aria-label="Primary"
@@ -109,13 +112,6 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </Button>
             </SignedIn>
-            <Button size="sm" asChild className="rounded-lg">
-              <Link href="/book">
-                <span className="hidden sm:inline">Book a collection</span>
-                <span className="sm:hidden">Book</span>{" "}
-                <ArrowRight className="ml-1 hidden h-4 w-4 sm:inline" aria-hidden />
-              </Link>
-            </Button>
           </div>
         </div>
       </header>
