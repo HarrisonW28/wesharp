@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('pricing_rules', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('service_area_id')->nullable()->constrained('service_areas')->nullOnDelete()->index();
+            $table->foreignUuid('service_area_id')->nullable()->constrained('service_areas')->nullOnDelete();
             $table->string('name');
             $table->string('service_type', 32)->nullable()->index();
             $table->string('rule_kind');

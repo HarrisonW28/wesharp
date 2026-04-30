@@ -7,6 +7,7 @@ import {
   orderStatusLabel,
   paymentAttemptLabel,
   routeStatusLabel,
+  routeStopStatusLabel,
 } from "@/lib/helpers/status-helpers";
 
 type Variant = NonNullable<BadgeProps["variant"]>;
@@ -83,6 +84,21 @@ function variantRoute(status: string): Variant {
   }
 }
 
+function variantRouteStop(status: string): Variant {
+  switch (status.trim()) {
+    case "completed":
+    case "returned":
+      return "success";
+    case "skipped":
+      return "warning";
+    case "not_started":
+    case "travelling":
+      return "secondary";
+    default:
+      return "default";
+  }
+}
+
 function variantPayment(status: string): Variant {
   const s = status.trim().toLowerCase();
   if (["succeeded", "paid"].includes(s)) return "success";
@@ -98,6 +114,7 @@ export type UnifiedStatusBadgeProps =
   | { kind: "invoice"; status?: string | null; className?: string }
   | { kind: "knife"; status?: string | null; className?: string }
   | { kind: "route"; status?: string | null; className?: string }
+  | { kind: "route_stop"; status?: string | null; className?: string }
   | { kind: "payment"; status?: string | null; className?: string };
 
 export function StatusBadge(props: UnifiedStatusBadgeProps) {
@@ -141,6 +158,12 @@ export function StatusBadge(props: UnifiedStatusBadgeProps) {
       return (
         <Badge variant={variantRoute(raw)} className={className}>
           {routeStatusLabel(raw)}
+        </Badge>
+      );
+    case "route_stop":
+      return (
+        <Badge variant={variantRouteStop(raw)} className={className}>
+          {routeStopStatusLabel(raw)}
         </Badge>
       );
     case "payment":

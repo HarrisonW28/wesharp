@@ -73,6 +73,21 @@ export function routeStatusLabel(status: string): string {
   return labels[key] ?? humanizeUnderscored(key);
 }
 
+export function routeStopStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    not_started: "Not started",
+    travelling: "Travelling",
+    arrived: "Arrived",
+    collected: "Collected",
+    in_sharpening: "In sharpening",
+    returned: "Returned",
+    completed: "Completed",
+    skipped: "Skipped",
+  };
+  const key = status.trim();
+  return labels[key] ?? humanizeUnderscored(key);
+}
+
 /** Payment gateway / PSP row statuses (Stripe-style). */
 export function paymentAttemptLabel(status: string): string {
   const key = status.trim().toLowerCase();

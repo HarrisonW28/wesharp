@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('refunds', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('payment_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignUuid('payment_id')->constrained()->cascadeOnDelete();
             $table->unsignedBigInteger('amount_pence');
             $table->text('reason')->nullable();
             $table->timestampTz('processed_at')->nullable();

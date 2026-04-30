@@ -11,6 +11,9 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/feedback/EmptyState";
+
+export default function AccountBookingsPage() {
   const api = useAccountApi();
 
   const listQuery = useQuery({

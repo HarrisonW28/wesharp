@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('company_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('invoice_id')->nullable()->constrained()->nullOnDelete()->index();
-            $table->foreignUuid('order_id')->nullable()->constrained()->nullOnDelete()->index();
+            $table->foreignUuid('invoice_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUuid('order_id')->nullable()->constrained()->nullOnDelete();
             $table->unsignedBigInteger('amount_pence');
             $table->string('payment_status', 32)->index();
             $table->string('payment_method', 32)->index();

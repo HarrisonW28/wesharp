@@ -65,11 +65,9 @@ export default function RoutesListPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-semibold leading-snug">{r.name}</div>
-                  <div className="mt-1 text-xs text-slate-400 md:text-muted-foreground">
-                    {r.scheduled_date ?? "—"} ·{" "}
-                    <span className="inline-flex items-center rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium uppercase md:bg-muted md:normal-case md:text-muted-foreground">
-                      <StatusBadge kind="route" status={r.route_status ?? ""} className="border-0 bg-transparent px-0 py-0 text-[10px] font-medium uppercase md:text-xs md:normal-case" />
-                    </span>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400 md:text-muted-foreground">
+                    <span>{r.scheduled_date ?? "—"}</span>
+                    <StatusBadge kind="route" status={r.route_status ?? ""} />
                   </div>
                   <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-400 md:text-muted-foreground">
                     <MapPin className="h-4 w-4 shrink-0 opacity-70" aria-hidden />

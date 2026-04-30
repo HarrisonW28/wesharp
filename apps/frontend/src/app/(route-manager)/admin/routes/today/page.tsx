@@ -17,6 +17,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGbpFromPence } from "@/lib/format/money";
 
 import { RouteManagerShell } from "@/components/layout/RouteManagerShell";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -200,9 +201,7 @@ export default function RouteTodayPage() {
                           <span className="font-medium">
                             {s.sequence}. {s.company_name ?? "Venue"}
                           </span>
-                          <span className="text-[11px] capitalize text-slate-400 md:text-muted-foreground">
-                            {s.route_stop_status?.replace(/_/g, " ") ?? ""}
-                          </span>
+                          <StatusBadge kind="route_stop" status={s.route_stop_status ?? ""} className="shrink-0 text-[10px] md:text-xs" />
                         </Link>
                       </li>
                     ))}
@@ -230,9 +229,7 @@ export default function RouteTodayPage() {
                     <div className="min-w-0">
                       <div className="font-semibold">{r.name}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300 md:text-muted-foreground">
-                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium uppercase md:bg-muted md:text-muted-foreground">
-                          {r.route_status?.replace(/_/g, " ") ?? "—"}
-                        </span>
+                        <StatusBadge kind="route" status={r.route_status ?? ""} />
                         {r.driver_name ? <span>{r.driver_name}</span> : <span className="text-amber-200/90">No driver</span>}
                       </div>
                       <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-400 md:text-muted-foreground">

@@ -45,6 +45,7 @@ const createBookingSchema = z.object({
 
 const SERVICE_TYPES = ["collection", "onsite"] as const;
 
+export default function AdminBookingsPage() {
   const admin = useAdminApi();
   const router = useRouter();
   const pathname = usePathname();

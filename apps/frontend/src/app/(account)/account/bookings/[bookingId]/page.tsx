@@ -61,7 +61,7 @@ export default function TenantBookingDetailPage() {
         <div className="grid gap-6 rounded-2xl border bg-card p-6 shadow-sm md:grid-cols-2">
           <div className="space-y-2 text-sm">
             <div className="text-xs font-semibold uppercase text-muted-foreground">Status</div>
-            <StatusBadge kind="booking" status={d.status ?? ""} />
+            <StatusBadge kind="booking" status={typeof d.status === "string" ? d.status : ""} />
             <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Requested day</div>
             <div>{String(d.requested_date ?? "—")}</div>
             <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Window</div>

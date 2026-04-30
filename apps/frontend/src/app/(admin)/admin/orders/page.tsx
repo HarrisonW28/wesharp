@@ -30,6 +30,7 @@ const createOrderSchema = z.object({
   booking_id: z.string().uuid("Booking must be a valid UUID."),
 });
 
+function parseOptionalPence(raw: string): number | undefined {
   const t = raw.trim();
   if (t === "") {
     return undefined;

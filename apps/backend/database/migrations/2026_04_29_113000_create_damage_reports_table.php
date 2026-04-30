@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('knife_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('company_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('order_id')->nullable()->constrained()->nullOnDelete()->index();
+            $table->foreignUuid('order_id')->nullable()->constrained()->nullOnDelete();
             $table->text('details');
             $table->string('severity', 32)->nullable()->index();
             $table->foreignId('reported_by_id')->nullable()->constrained('users')->nullOnDelete();

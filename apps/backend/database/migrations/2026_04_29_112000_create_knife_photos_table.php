@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('knife_photos', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('knife_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('uploaded_file_id')->nullable()->constrained('uploaded_files')->nullOnDelete()->index();
+            $table->foreignUuid('uploaded_file_id')->nullable()->constrained('uploaded_files')->nullOnDelete();
             $table->unsignedInteger('sort_order')->default(0)->index();
             $table->string('caption')->nullable();
             $table->timestampsTz();
