@@ -23,16 +23,19 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl flex-nowrap items-center justify-between gap-2 px-4 md:h-16 md:gap-3 md:px-6 lg:grid lg:grid-cols-[auto,1fr,auto] lg:justify-items-center">
+        <div className="relative mx-auto flex h-14 max-w-7xl flex-nowrap items-center justify-between gap-2 px-4 md:h-16 md:gap-3 md:px-6">
           <Link
             href="/"
-            className="group inline-flex shrink-0 items-center rounded-md text-foreground no-underline opacity-90 outline-none ring-offset-background transition-opacity duration-200 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:justify-self-start"
+            className="group inline-flex shrink-0 items-center rounded-md text-foreground no-underline opacity-90 outline-none ring-offset-background transition-opacity duration-200 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             aria-label="WeSharp home"
           >
             <WeSharpLogo className="h-8 w-auto sm:h-9 lg:h-10" />
           </Link>
 
-          <nav aria-label="Primary" className="hidden items-center justify-center gap-x-5 lg:flex">
+          <nav
+            aria-label="Primary"
+            className="hidden items-center justify-center gap-x-5 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2"
+          >
             {PUBLIC_SITE_NAV_LINKS.map((l) => (
               <Link key={l.href} href={l.href} className={navLinkDesktopClass}>
                 {l.label}
