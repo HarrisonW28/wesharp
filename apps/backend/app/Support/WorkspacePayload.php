@@ -35,14 +35,16 @@ final class WorkspacePayload
         return array_values(array_filter($spaces));
     }
 
+    /** @return list<array{id:string, name:string, city:?string}> */
+    public static function serviceAreas(): array
+    {
+        return ServiceArea::query()
             ->where('active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'city'])
-            /** @phpstan-ignore-next-line */
-            ->map(fn ($a): array => [
+            ->map(static fn (ServiceArea $a): array => [
                 'id' => (string) $a->id,
                 'name' => (string) $a->name,
-                /** @phpstan-ignore-next-line */
                 'city' => $a->city,
             ])
             ->all();
