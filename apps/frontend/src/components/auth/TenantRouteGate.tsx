@@ -3,6 +3,7 @@
 import type { PropsWithChildren } from "react";
 import { useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -10,9 +11,14 @@ import { useBackendMe } from "@/hooks/use-backend-me";
 
 export function TenantRouteGate({ children }: PropsWithChildren) {
   const router = useRouter();
+  const { isLoaded: clerkLoaded, userId } = useAuth();
   const { data, status, fetchStatus, error } = useBackendMe();
 
   useEffect(() => {
+    if (!clerkLoaded || userId === null) {
+      return;
+    }
+
     if (status !== "success" || !data?.data?.user) {
       return;
     }
@@ -30,9 +36,18 @@ export function TenantRouteGate({ children }: PropsWithChildren) {
     }
 
     if (!u.company_id) {
-      void router.replace("/forbidden");
+      void router.replace("/venue-pending");
     }
-  }, [data, router, status]);
+  }, [clerkLoaded, data, router, status, userId]);
+
+  if (!clerkLoaded || userId === null) {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+        <span className="text-sm">Initialising sign-in…</span>
+      </div>
+    );
+  }
 
   if (fetchStatus === "paused" || status === "pending") {
     return (

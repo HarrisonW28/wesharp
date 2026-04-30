@@ -29,6 +29,9 @@ final class Permissions
 
     public const BOOKINGS_CANCEL = 'bookings.cancel';
 
+    /** Rare hard-delete — administrator tooling only (see booking policy guards). */
+    public const BOOKINGS_DELETE = 'bookings.delete';
+
     public const ROUTES_VIEW = 'routes.view';
 
     public const ROUTES_MANAGE = 'routes.manage';
@@ -67,6 +70,11 @@ final class Permissions
 
     public const SETTINGS_MANAGE = 'settings.manage';
 
+    /** Admin user directory (super_admin / admin). */
+    public const USERS_VIEW = 'users.view';
+
+    public const USERS_MANAGE = 'users.manage';
+
     /** Payment overrides and sensitive adjustment flows (refunds, write-offs). */
     public const PAYMENTS_OVERRIDE = 'payments.override';
 
@@ -81,6 +89,7 @@ final class Permissions
         self::BOOKINGS_CREATE,
         self::BOOKINGS_UPDATE,
         self::BOOKINGS_CANCEL,
+        self::BOOKINGS_DELETE,
         self::ROUTES_VIEW,
         self::ROUTES_MANAGE,
         self::ROUTE_STOPS_UPDATE,
@@ -100,6 +109,8 @@ final class Permissions
         self::ACCOUNT_SETTINGS_UPDATE,
         self::SETTINGS_VIEW,
         self::SETTINGS_MANAGE,
+        self::USERS_VIEW,
+        self::USERS_MANAGE,
     ];
 
     /** @var array<string, list<string>> Role value => granted permission keys */
@@ -164,6 +175,7 @@ final class Permissions
             self::COMPANIES_VIEW,
             self::BOOKINGS_VIEW,
             self::BOOKINGS_CREATE,
+            self::BOOKINGS_CANCEL,
             self::ORDERS_VIEW,
             self::KNIVES_VIEW,
             self::INVOICES_VIEW,

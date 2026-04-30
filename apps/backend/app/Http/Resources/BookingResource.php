@@ -24,9 +24,16 @@ final class BookingResource extends JsonResource
             'contact_id' => $b->contact_id ? (string) $b->contact_id : null,
             'assigned_route_id' => $b->assigned_route_id ? (string) $b->assigned_route_id : null,
             'status' => $b->booking_status?->value,
-            'requested_date' => $b->scheduled_date?->format('Y-m-d'),
-            'time_window_start' => $this->formatTimeSlot($b->time_window_start),
-            'time_window_end' => $this->formatTimeSlot($b->time_window_end),
+            'cancellation_reason' => $b->cancellation_reason,
+            'requested_date' => ($b->requested_collection_date ?? $b->scheduled_date)?->format('Y-m-d'),
+            'time_window_start' => self::formatTimeSlot($b->requested_time_window_start ?? $b->time_window_start),
+            'time_window_end' => self::formatTimeSlot($b->requested_time_window_end ?? $b->time_window_end),
+            'requested_collection_date' => $b->requested_collection_date?->format('Y-m-d'),
+            'requested_time_window_start' => self::formatTimeSlot($b->requested_time_window_start),
+            'requested_time_window_end' => self::formatTimeSlot($b->requested_time_window_end),
+            'confirmed_collection_date' => $b->confirmed_collection_date?->format('Y-m-d'),
+            'confirmed_time_window_start' => self::formatTimeSlot($b->confirmed_time_window_start),
+            'confirmed_time_window_end' => self::formatTimeSlot($b->confirmed_time_window_end),
             'service_type' => $b->service_type?->value,
             'estimated_knife_count' => $b->estimated_knife_count,
             'actual_knife_count' => $b->actual_knife_count,
@@ -44,7 +51,7 @@ final class BookingResource extends JsonResource
         ];
     }
 
-    private function formatTimeSlot(mixed $raw): ?string
+    public static function formatTimeSlot(mixed $raw): ?string
     {
         if ($raw === null || $raw === '') {
             return null;

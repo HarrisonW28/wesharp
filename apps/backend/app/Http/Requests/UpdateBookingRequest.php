@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use App\Enums\ServiceType;
 use App\Models\Booking;
+use App\Support\Bookings\BookingWindowValidator;
+use Illuminate\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -33,6 +35,12 @@ class UpdateBookingRequest extends FormRequest
                 $contactRule,
             ],
             'requested_date' => ['sometimes', 'date'],
+            'requested_collection_date' => ['sometimes', 'date'],
+            'requested_time_window_start' => ['nullable', 'date_format:H:i'],
+            'requested_time_window_end' => ['nullable', 'date_format:H:i'],
+            'confirmed_collection_date' => ['nullable', 'date'],
+            'confirmed_time_window_start' => ['nullable', 'date_format:H:i'],
+            'confirmed_time_window_end' => ['nullable', 'date_format:H:i'],
             'time_window_start' => ['nullable', 'date_format:H:i'],
             'time_window_end' => ['nullable', 'date_format:H:i'],
             'service_type' => ['sometimes', Rule::enum(ServiceType::class)],
@@ -45,5 +53,16 @@ class UpdateBookingRequest extends FormRequest
             'status' => ['prohibited'],
             'booking_status' => ['prohibited'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v): void {
+            BookingWindowValidator::validatePairs($v, [
+                ['requested_time_window_start', 'requested_time_window_end', 'requested collection'],
+                ['confirmed_time_window_start', 'confirmed_time_window_end', 'confirmed collection'],
+                ['time_window_start', 'time_window_end', 'legacy time'],
+            ]);
+        });
     }
 }

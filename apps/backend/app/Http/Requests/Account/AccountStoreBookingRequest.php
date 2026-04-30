@@ -2,7 +2,8 @@
 
 namespace App\Http\Requests\Account;
 
-use App\Enums\ServiceType;
+use App\Support\Bookings\BookingWindowValidator;
+use Illuminate\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -34,6 +35,15 @@ class AccountStoreBookingRequest extends FormRequest
             'damage_acknowledged' => ['accepted'],
             'terms_accepted' => ['accepted'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v): void {
+            BookingWindowValidator::validatePairs($v, [
+                ['time_window_start', 'time_window_end', 'collection'],
+            ]);
+        });
     }
 
     protected function passedValidation(): void

@@ -24,7 +24,11 @@ final class AssignBookingToRouteAction
     ): Booking {
         return DB::transaction(function () use ($booking, $route, $actor, $request, $requestedSequence): Booking {
             $routeDateStr = optional($route->scheduled_date)?->format('Y-m-d');
-            $bookingDateStr = optional($booking->scheduled_date)?->format('Y-m-d');
+            $bookingDateStr = optional(
+                $booking->confirmed_collection_date
+                    ?? $booking->requested_collection_date
+                    ?? $booking->scheduled_date
+            )?->format('Y-m-d');
 
             if ($routeDateStr === null || $bookingDateStr === null) {
                 abort(422, 'Route and booking must have scheduled dates.');
@@ -49,14 +53,20 @@ final class AssignBookingToRouteAction
             }
 
             $existing = $booking->routeStop()->first();
+            $previousRouteId = null;
+            $stopChange = 'created';
 
             if ($existing !== null) {
+                $previousRouteId = (string) $existing->route_id;
+
                 if ($requestedSequence !== null && ctype_digit((string) $requestedSequence)) {
                     $existing->sequence = (int) $requestedSequence;
                 }
                 $existing->route_id = $route->id;
                 $existing->route_stop_status = RouteStopStatus::NotStarted;
                 $existing->save();
+
+                $stopChange = $previousRouteId !== (string) $route->id ? 'moved' : 'updated';
             } else {
                 $maxSeq = (int) (RouteStop::query()->where('route_id', $route->id)->max('sequence') ?? 0);
                 $sequence = $requestedSequence !== null && ctype_digit((string) $requestedSequence)
@@ -74,6 +84,8 @@ final class AssignBookingToRouteAction
             AuditRecorder::record($actor, $booking, 'booking.assigned_route', [
                 'route_id' => (string) $route->id,
                 'scheduled_date' => $routeDateStr,
+                'previous_route_id' => $previousRouteId,
+                'stop_change' => $stopChange,
             ], $request);
 
             return $booking->fresh(['assignedRoute']);

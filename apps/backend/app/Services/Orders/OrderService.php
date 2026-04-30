@@ -160,17 +160,38 @@ final class OrderService
             $target = max(1, min(500, $bulk['count']));
             $knifeIds = [];
 
+            if (isset($bulk['price_per_knife_pence']) && $bulk['price_per_knife_pence'] !== null && $bulk['price_per_knife_pence'] !== '') {
+                $ppp = max(0, (int) $bulk['price_per_knife_pence']);
+                $order->price_per_knife_pence = $ppp;
+                $order->save();
+                AuditRecorder::record($actor, $order, 'order.bulk_price_set', ['price_per_knife_pence' => $ppp], $request);
+            }
+
             $base = $order->knives()->count();
+            /** @phpstan-ignore-next-line */
+            $sharedNotes = isset($bulk['notes']) ? trim((string) $bulk['notes']) : '';
+            /** @phpstan-ignore-next-line */
+            $typeOrName = trim((string) ($bulk['type_or_name'] ?? $bulk['knife_type'] ?? ''));
 
             foreach (range(1, $target) as $i) {
                 $descPrefix = isset($bulk['description_prefix'])
                     ? trim((string) $bulk['description_prefix'])
                     : '';
 
+                $label = $typeOrName !== '' ? "{$typeOrName} ({$i}/{$target})" : 'Knife '.$i;
+
+                $descPieces = [$descPrefix !== '' ? $descPrefix.' '.$i : $label];
+                if ($sharedNotes !== '') {
+                    $descPieces[] = $sharedNotes;
+                }
+
+                /** @phpstan-ignore-next-line */
                 $knife = $this->knifeService->createForOrder($order->fresh(), [
-                    'knife_type' => $bulk['knife_type'] ?? null,
+                    /** @phpstan-ignore-next-line */
+                    'knife_type' => ($bulk['knife_type'] ?? ($typeOrName !== '' ? $typeOrName : null)),
                     'condition_before' => $bulk['condition_before'] ?? null,
-                    'description' => $descPrefix !== '' ? $descPrefix.' '.$i : 'Knife '.$i,
+                    'description' => implode(' · ', array_filter($descPieces)),
+                    'notes' => $sharedNotes !== '' ? $sharedNotes : null,
                     'position' => $base + $i,
                 ]);
 
@@ -187,6 +208,57 @@ final class OrderService
 
             /** @phpstan-ignore-next-line */
             return ['order' => $fresh->loadMissing(['knives']), 'knife_ids' => $knifeIds];
+        });
+    }
+
+    /** Link an unassigned workshop knife inventory row to this order without mutating historic orders. */
+    public function attachKnifeFromInventory(Order $order, string $knifeId, Authenticatable $actor, Request $request): Knife
+    {
+        return DB::transaction(function () use ($order, $knifeId, $actor, $request): Knife {
+            /** @phpstan-ignore-next-line */
+            $knife = Knife::query()->findOrFail($knifeId);
+
+            /** @phpstan-ignore-next-line */
+            if ((string) $knife->company_id !== (string) $order->company_id) {
+                abort(422, 'This knife belongs to a different customer company.');
+            }
+
+            if ($knife->order_id !== null) {
+                abort(422, 'This knife already belongs to an order.');
+            }
+
+            $before = [
+                'order_id' => null,
+                'booking_id' => $knife->booking_id,
+            ];
+
+            /** @phpstan-ignore-next-line */
+            $knife->order_id = $order->id;
+            /** @phpstan-ignore-next-line */
+            $knife->booking_id = $order->booking_id;
+            /** @phpstan-ignore-next-line */
+            $knife->save();
+
+            AuditRecorder::record($actor, $knife, 'knife.attached_to_order', [
+                'before' => $before,
+                'after' => [
+                    /** @phpstan-ignore-next-line */
+                    'order_id' => (string) $knife->order_id,
+                    /** @phpstan-ignore-next-line */
+                    'booking_id' => $knife->booking_id !== null ? (string) $knife->booking_id : null,
+                ],
+                /** @phpstan-ignore-next-line */
+                'tag_id' => $knife->tag_id,
+            ], $request);
+
+            $this->rebuildMonetaryTotals($order->fresh(['knives']));
+
+            /** @phpstan-ignore-next-line */
+            return $knife->fresh([
+                'sharpenedBy:id,name',
+                'qualityCheckedBy:id,name',
+                'returnedBy:id,name',
+            ]);
         });
     }
 

@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Enums\ServiceType;
+use App\Support\Bookings\BookingWindowValidator;
+use Illuminate\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -40,5 +42,14 @@ class StoreBookingRequest extends FormRequest
             'internal_notes' => ['nullable', 'string', 'max:20000'],
             'price_estimate' => ['nullable', 'integer', 'min:0'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v): void {
+            BookingWindowValidator::validatePairs($v, [
+                ['time_window_start', 'time_window_end', 'requested collection'],
+            ]);
+        });
     }
 }

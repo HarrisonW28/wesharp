@@ -19,6 +19,21 @@ final class ConfirmBookingAction
             BookingStatusTransitions::assertCanTransition($from, BookingStatus::Confirmed);
 
             $booking->booking_status = BookingStatus::Confirmed;
+
+            $reqDate = $booking->requested_collection_date ?? $booking->scheduled_date;
+            if ($booking->confirmed_collection_date === null && $reqDate !== null) {
+                $booking->confirmed_collection_date = $reqDate;
+            }
+
+            $reqStart = $booking->requested_time_window_start ?? $booking->time_window_start;
+            $reqEnd = $booking->requested_time_window_end ?? $booking->time_window_end;
+            if ($booking->confirmed_time_window_start === null && $reqStart !== null) {
+                $booking->confirmed_time_window_start = $reqStart;
+            }
+            if ($booking->confirmed_time_window_end === null && $reqEnd !== null) {
+                $booking->confirmed_time_window_end = $reqEnd;
+            }
+
             $booking->save();
 
             AuditRecorder::record($actor, $booking, 'booking.status_changed', [

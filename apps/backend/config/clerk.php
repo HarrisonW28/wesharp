@@ -30,7 +30,7 @@ return [
     /**
      * When a user signs in via Clerk for the first time, assign this role if not bootstrapped elsewhere.
      */
-    'default_role' => env('CLERK_DEFAULT_USER_ROLE', UserRole::CustomerStaff->value),
+    'default_role' => env('CLERK_DEFAULT_USER_ROLE', UserRole::CustomerOwner->value),
 
     'default_status' => env('CLERK_DEFAULT_USER_STATUS', UserStatus::Active->value),
 

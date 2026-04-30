@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api\Account;
 
+use App\Actions\Bookings\CancelBookingAction;
 use App\Enums\BookingStatus;
 use App\Http\Requests\Account\AccountStoreBookingRequest;
+use App\Http\Requests\CancelBookingRequest;
 use App\Models\Booking;
 use App\Services\Audit\AuditRecorder;
 use App\Support\ApiResponses;
@@ -44,13 +46,19 @@ final class AccountBookingController extends TenantAccountController
         $payload = $request->bookingPayload();
 
         /** @phpstan-ignore-next-line */
+        $day = Carbon::parse($payload['requested_date'])->timezone('UTC')->startOfDay();
+
+        /** @phpstan-ignore-next-line */
         $booking = Booking::query()->create([
             'company_id' => $this->tenantCompanyId($request),
             'company_location_id' => $payload['location_id'],
             'contact_id' => null,
             'booking_status' => BookingStatus::Requested,
             'service_type' => $payload['service_type'],
-            'scheduled_date' => Carbon::parse($payload['requested_date'])->timezone('UTC')->startOfDay(),
+            'scheduled_date' => $day,
+            'requested_collection_date' => $day,
+            'requested_time_window_start' => $payload['time_window_start'],
+            'requested_time_window_end' => $payload['time_window_end'],
             'time_window_start' => $payload['time_window_start'],
             'time_window_end' => $payload['time_window_end'],
             'estimated_knife_count' => $payload['estimated_knife_count'],
@@ -76,5 +84,28 @@ final class AccountBookingController extends TenantAccountController
         $this->authorize('view', $booking);
 
         return ApiResponses::success(PortalBookingPayload::detail($request, $booking));
+    }
+
+    public function cancel(CancelBookingRequest $request, Booking $booking, CancelBookingAction $cancelBookingAction): JsonResponse
+    {
+        $this->authorize('cancel', $booking);
+
+        if ((string) $booking->company_id !== $this->tenantCompanyId($request)) {
+            abort(403);
+        }
+
+        $validated = $request->validated();
+
+        /** @phpstan-ignore-next-line */
+        $booking = $cancelBookingAction->execute(
+            $booking,
+            $request->user(),
+            $request,
+            $validated['reason'] ?? null
+        );
+
+        $booking->load(['company:id,name,city', 'location:id,city,line_one']);
+
+        return ApiResponses::success(PortalBookingPayload::list($request, $booking));
     }
 }

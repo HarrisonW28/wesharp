@@ -29,6 +29,7 @@ final class KnifeService
     /**
      * @param  array{
      *   knife_type?: string|null,
+     *   brand?: string|null,
      *   description?: string|null,
      *   condition_before?: string|null,
      *   knife_status?: KnifeStatus,
@@ -48,6 +49,47 @@ final class KnifeService
             'knife_status' => $status,
             'tag_id' => $this->allocateTagId($order),
             'knife_type' => $payload['knife_type'] ?? null,
+            /** @phpstan-ignore-next-line */
+            'brand' => $payload['brand'] ?? null,
+            'description' => $payload['description'] ?? ($payload['label'] ?? null),
+            'condition_before' => $payload['condition_before'] ?? null,
+            'damage_notes' => $payload['damage_notes'] ?? null,
+            'label' => $payload['label'] ?? null,
+            'position' => $payload['position'] ?? null,
+            'notes' => $payload['notes'] ?? null,
+        ]);
+    }
+
+    /**
+     * Customer-owned knife tracked before any order/manifest linkage.
+     *
+     * @param  array{
+     *   knife_type?: string|null,
+     *   brand?: string|null,
+     *   description?: string|null,
+     *   condition_before?: string|null,
+     *   damage_notes?: string|null,
+     *   knife_status?: KnifeStatus,
+     *   label?: string|null,
+     *   notes?: string|null,
+     *   position?: int|null,
+     *   booking_id?: string|null,
+     * }  $payload
+     */
+    public function createStandalone(string $companyId, array $payload = []): Knife
+    {
+        $status = $payload['knife_status'] ?? KnifeStatus::Logged;
+
+        return Knife::query()->create([
+            'company_id' => $companyId,
+            /** @phpstan-ignore-next-line */
+            'booking_id' => isset($payload['booking_id']) && $payload['booking_id'] !== '' ? (string) $payload['booking_id'] : null,
+            'order_id' => null,
+            'knife_status' => $status,
+            'tag_id' => $this->allocateTagId(null),
+            'knife_type' => $payload['knife_type'] ?? null,
+            /** @phpstan-ignore-next-line */
+            'brand' => $payload['brand'] ?? null,
             'description' => $payload['description'] ?? ($payload['label'] ?? null),
             'condition_before' => $payload['condition_before'] ?? null,
             'damage_notes' => $payload['damage_notes'] ?? null,

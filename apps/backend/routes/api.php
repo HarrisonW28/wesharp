@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\UserDirectoryController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\KnifeController;
@@ -33,6 +34,7 @@ Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (
     Route::middleware('permission:bookings.view')->get('bookings', [AccountBookingController::class, 'index'])->name('api.account.bookings.index');
     Route::middleware('permission:bookings.create')->post('bookings', [AccountBookingController::class, 'store'])->name('api.account.bookings.store');
     Route::middleware('permission:bookings.view')->get('bookings/{booking}', [AccountBookingController::class, 'show'])->whereUuid('booking')->name('api.account.bookings.show');
+    Route::middleware('permission:bookings.cancel')->post('bookings/{booking}/cancel', [AccountBookingController::class, 'cancel'])->whereUuid('booking')->name('api.account.bookings.cancel');
 
     Route::middleware('permission:orders.view')->get('orders', [AccountOrderController::class, 'index'])->name('api.account.orders.index');
     Route::middleware('permission:orders.view')->get('orders/{order}', [AccountOrderController::class, 'show'])->whereUuid('order')->name('api.account.orders.show');
@@ -72,6 +74,12 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
         Route::get('operations', [AnalyticsController::class, 'operations'])->name('api.admin.analytics.operations');
     });
 
+    Route::middleware('permission:users.view')->get('users', [UserDirectoryController::class, 'index'])->name('api.admin.users.index');
+    Route::middleware('permission:users.view')->get('users/{target}', [UserDirectoryController::class, 'show'])->whereNumber('target')->name('api.admin.users.show');
+    Route::middleware('permission:users.manage')->put('users/{target}', [UserDirectoryController::class, 'update'])->whereNumber('target')->name('api.admin.users.update');
+    Route::middleware('permission:users.manage')->post('users/{target}/deactivate', [UserDirectoryController::class, 'deactivate'])->whereNumber('target')->name('api.admin.users.deactivate');
+    Route::middleware('permission:users.manage')->post('users/{target}/activate', [UserDirectoryController::class, 'activate'])->whereNumber('target')->name('api.admin.users.activate');
+
     Route::middleware('permission:companies.view')->get('companies', [CompanyController::class, 'index'])->name('api.admin.companies.index');
     Route::middleware('permission:companies.create')->post('companies', [CompanyController::class, 'store'])->name('api.admin.companies.store');
     Route::middleware('permission:companies.view')->get('companies/{company}', [CompanyController::class, 'show'])->whereUuid('company')->name('api.admin.companies.show');
@@ -107,7 +115,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:bookings.create')->post('bookings', [BookingController::class, 'store'])->name('api.admin.bookings.store');
     Route::middleware('permission:bookings.view')->get('bookings/{booking}', [BookingController::class, 'show'])->whereUuid('booking')->name('api.admin.bookings.show');
     Route::middleware('permission:bookings.update')->put('bookings/{booking}', [BookingController::class, 'update'])->whereUuid('booking')->name('api.admin.bookings.update');
-    Route::delete('bookings/{booking}', [BookingController::class, 'destroy'])->whereUuid('booking')->name('api.admin.bookings.destroy');
+    Route::middleware('permission:bookings.delete')->delete('bookings/{booking}', [BookingController::class, 'destroy'])->whereUuid('booking')->name('api.admin.bookings.destroy');
     Route::middleware('permission:bookings.update')->post('bookings/{booking}/confirm', [BookingController::class, 'confirm'])->whereUuid('booking')->name('api.admin.bookings.confirm');
     Route::middleware('permission:bookings.cancel')->post('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->whereUuid('booking')->name('api.admin.bookings.cancel');
     Route::middleware('permission:routes.manage')->post('bookings/{booking}/assign-route', [BookingController::class, 'assignRoute'])->whereUuid('booking')->name('api.admin.bookings.assign_route');
@@ -118,6 +126,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:orders.view')->get('orders/{order}', [OrderController::class, 'show'])->whereUuid('order')->name('api.admin.orders.show');
     Route::middleware('permission:orders.update')->put('orders/{order}', [OrderController::class, 'update'])->whereUuid('order')->name('api.admin.orders.update');
     Route::middleware('permission:orders.update')->post('orders/{order}/complete', [OrderController::class, 'complete'])->whereUuid('order')->name('api.admin.orders.complete');
+    Route::middleware('permission:knives.update')->post('orders/{order}/attach-knife', [OrderController::class, 'attachKnife'])->whereUuid('order')->name('api.admin.orders.attach_knife');
     Route::middleware('permission:knives.update')->post('orders/{order}/add-knife', [OrderController::class, 'addKnife'])->whereUuid('order')->name('api.admin.orders.add_knife');
     Route::middleware('permission:knives.update')->post('orders/{order}/bulk-add-knives', [OrderController::class, 'bulkAddKnives'])->whereUuid('order')->name('api.admin.orders.bulk_add_knives');
 
@@ -130,6 +139,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:knives.update')->post('knives/{knife}/mark-quality-checked', [KnifeController::class, 'markQualityChecked'])->whereUuid('knife')->name('api.admin.knives.mark_quality_checked');
     Route::middleware('permission:knives.update')->post('knives/{knife}/mark-returned', [KnifeController::class, 'markReturned'])->whereUuid('knife')->name('api.admin.knives.mark_returned');
     Route::middleware('permission:knives.update')->post('knives/{knife}/report-issue', [KnifeController::class, 'reportIssue'])->whereUuid('knife')->name('api.admin.knives.report_issue');
+    Route::middleware('permission:knives.update')->post('knives/{knife}/photos', [KnifeController::class, 'storePhoto'])->whereUuid('knife')->name('api.admin.knives.photos.store');
 
     Route::middleware('permission:invoices.view')->get('invoices', [InvoiceController::class, 'index'])->name('api.admin.invoices.index');
     Route::middleware('permission:invoices.create')->post('invoices', [InvoiceController::class, 'store'])->name('api.admin.invoices.store');

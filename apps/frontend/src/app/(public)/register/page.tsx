@@ -6,7 +6,7 @@ import { SignUp } from "@clerk/nextjs";
 export default function RegisterPage() {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center gap-8 px-4 py-16">
-      <SignUp routing="path" path="/register" signInUrl="/login" fallbackRedirectUrl="/account/dashboard" />
+      <SignUp routing="path" path="/register" signInUrl="/login" forceRedirectUrl="/auth/continue" />
       <p className="max-w-md text-center text-xs text-muted-foreground">
         Commercial kitchens only — WeSharp admins assign internal roles separately from customer portal access.
       </p>

@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\DB;
 
 final class CancelBookingAction
 {
-    public function execute(Booking $booking, ?Authenticatable $actor, ?Request $request): Booking
+    public function execute(Booking $booking, ?Authenticatable $actor, ?Request $request, ?string $reason = null): Booking
     {
-        return DB::transaction(function () use ($booking, $actor, $request): Booking {
+        return DB::transaction(function () use ($booking, $actor, $request, $reason): Booking {
             $from = $booking->booking_status;
             BookingStatusTransitions::assertCanTransition($from, BookingStatus::Cancelled);
 
@@ -22,12 +22,16 @@ final class CancelBookingAction
 
             $booking->assigned_route_id = null;
             $booking->booking_status = BookingStatus::Cancelled;
+            if ($reason !== null && $reason !== '') {
+                $booking->cancellation_reason = $reason;
+            }
             $booking->save();
 
             AuditRecorder::record($actor, $booking, 'booking.status_changed', [
                 'from' => $from->value,
                 'to' => BookingStatus::Cancelled->value,
                 'via' => 'cancel',
+                'reason' => $reason,
             ], $request);
 
             return $booking->fresh();

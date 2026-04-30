@@ -6,14 +6,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
 
 export function StaffRouteGate({ children }: PropsWithChildren) {
   const router = useRouter();
+  const { isLoaded: clerkLoaded, userId } = useAuth();
   const { data, status, fetchStatus, error } = useBackendMe();
 
   useEffect(() => {
+    if (!clerkLoaded || userId === null) {
+      return;
+    }
+
     if (status !== "success" || !data?.data?.user) {
       return;
     }
@@ -23,7 +29,16 @@ export function StaffRouteGate({ children }: PropsWithChildren) {
     if (bucket !== "internal") {
       void router.replace("/forbidden");
     }
-  }, [data, router, status]);
+  }, [clerkLoaded, data, router, status, userId]);
+
+  if (!clerkLoaded || userId === null) {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+        <span className="text-sm">Initialising sign-in…</span>
+      </div>
+    );
+  }
 
   if (fetchStatus === "paused" || status === "pending") {
     return (

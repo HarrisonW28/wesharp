@@ -23,6 +23,7 @@ class Knife extends Model
         'knife_status',
         'tag_id',
         'knife_type',
+        'brand',
         'description',
         'condition_before',
         'damage_notes',

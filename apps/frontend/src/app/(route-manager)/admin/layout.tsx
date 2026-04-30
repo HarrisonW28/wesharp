@@ -1,13 +1,9 @@
 "use client";
 
-import { StaffRouteGate } from "@/components/auth/StaffRouteGate";
-import { Toaster } from "sonner";
-
+/**
+ * Ops route-manager segment only — `{route-manager}/layout.tsx` already applies
+ * `StaffRouteGate` + permission boundary once. Duplicate gates caused double loaders.
+ */
 export default function RouteManagerAdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <StaffRouteGate>
-      <Toaster richColors closeButton position="top-center" />
-      {children}
-    </StaffRouteGate>
-  );
+  return children;
 }

@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Invoices\CreateInvoiceFromOrderAction;
+use App\Enums\InvoiceStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AddKnifeToOrderRequest;
+use App\Http\Requests\AttachKnifeToOrderRequest;
 use App\Http\Requests\BulkAddKnivesRequest;
+use App\Http\Requests\CompleteOrderRequest;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
+use App\Models\Invoice;
 use App\Models\Order;
 use App\Services\Orders\OrderService;
 use App\Support\ApiResponses;
@@ -21,6 +26,7 @@ final class OrderController extends Controller
 {
     public function __construct(
         private readonly OrderService $orderService,
+        private readonly CreateInvoiceFromOrderAction $createInvoiceFromOrderAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -99,9 +105,13 @@ final class OrderController extends Controller
         return ApiResponses::success(OrderJson::detail($order));
     }
 
-    public function complete(Request $request, Order $order): JsonResponse
+    public function complete(CompleteOrderRequest $request, Order $order): JsonResponse
     {
         $this->authorize('complete', $order);
+
+        if ($request->wantsInvoiceDraft()) {
+            $this->authorize('invoiceFromOrder', $order);
+        }
 
         /** @phpstan-ignore-next-line */
         $order = $this->orderService->complete($order->fresh(['knives']), $request->user(), $request)->loadMissing([
@@ -111,7 +121,42 @@ final class OrderController extends Controller
             'operationalRoute:id',
         ]);
 
-        return ApiResponses::success(OrderJson::detail($order));
+        $draftInvoice = null;
+
+        if ($request->wantsInvoiceDraft()) {
+            /** @phpstan-ignore-next-line */
+            $existing = Invoice::query()
+                /** @phpstan-ignore-next-line */
+                ->where('order_id', $order->id)
+                ->where('invoice_status', '!=', InvoiceStatus::Void->value)
+                /** @phpstan-ignore-next-line */
+                ->first();
+
+            if ($existing !== null) {
+                /** @phpstan-ignore-next-line */
+                $draftInvoice = [
+                    'id' => (string) $existing->id,
+                    /** @phpstan-ignore-next-line */
+                    'invoice_number' => $existing->invoice_number,
+                    'already_existed' => true,
+                ];
+            } else {
+                /** @phpstan-ignore-next-line */
+                $inv = $this->createInvoiceFromOrderAction->execute($order, $request->user(), $request);
+                /** @phpstan-ignore-next-line */
+                $draftInvoice = [
+                    'id' => (string) $inv->id,
+                    /** @phpstan-ignore-next-line */
+                    'invoice_number' => $inv->invoice_number,
+                    'already_existed' => false,
+                ];
+            }
+        }
+
+        /** @phpstan-ignore-next-line */
+        return ApiResponses::success(array_merge(OrderJson::detail($order), [
+            'draft_invoice' => $draftInvoice,
+        ]));
     }
 
     public function addKnife(AddKnifeToOrderRequest $request, Order $order): JsonResponse
@@ -119,6 +164,21 @@ final class OrderController extends Controller
         $this->authorize('manipulateKnives', $order);
 
         $knife = $this->orderService->addKnife($order->fresh(), $request->validated(), $request->user(), $request);
+
+        return ApiResponses::success(KnifeJson::detail($knife), 201);
+    }
+
+    public function attachKnife(AttachKnifeToOrderRequest $request, Order $order): JsonResponse
+    {
+        $this->authorize('manipulateKnives', $order);
+
+        /** @phpstan-ignore-next-line */
+        $knife = $this->orderService->attachKnifeFromInventory(
+            $order->fresh(),
+            $request->validated('knife_id'),
+            $request->user(),
+            $request
+        );
 
         return ApiResponses::success(KnifeJson::detail($knife), 201);
     }
