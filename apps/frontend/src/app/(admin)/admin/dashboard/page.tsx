@@ -196,7 +196,7 @@ export default function AdminDashboardPage() {
                 <CartesianGrid strokeDasharray="4 6" className="stroke-border/70" />
                 <XAxis dataKey="label" tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis
-                  tickFormatter={(v: number) => `£${Math.round(v / 100)}`}
+                  tickFormatter={(v: number) => formatCurrencyMinor(Number(v))}
                   tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}

@@ -37,9 +37,9 @@ export const ADMIN_NAV: NavItem[] = [
 ];
 
 export const ACCOUNT_NAV: NavItem[] = [
-  { title: "Dashboard", href: "/account/dashboard", icon: Gauge, permission: "dashboard.view" },
-  { title: "Bookings", href: "/account/bookings", icon: CalendarClock, permission: "bookings.view" },
-  { title: "Orders", href: "/account/orders", icon: ClipboardList, permission: "orders.view" },
+  { title: "Overview", href: "/account/dashboard", icon: Gauge, permission: "dashboard.view" },
+  { title: "My bookings", href: "/account/bookings", icon: CalendarClock, permission: "bookings.view" },
+  { title: "My orders", href: "/account/orders", icon: ClipboardList, permission: "orders.view" },
   { title: "Knives", href: "/account/knives", icon: Utensils, permission: "knives.view" },
   { title: "Invoices", href: "/account/invoices", icon: Receipt, permission: "invoices.view" },
   { title: "Locations", href: "/account/locations", icon: MapPinned, permission: "account.locations.manage" },

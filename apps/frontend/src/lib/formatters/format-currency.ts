@@ -1,6 +1,7 @@
 const GBP = new Intl.NumberFormat("en-GB", {
   style: "currency",
   currency: "GBP",
+  minimumFractionDigits: 2,
 });
 
 /** Format minor units (pence) to GBP string */

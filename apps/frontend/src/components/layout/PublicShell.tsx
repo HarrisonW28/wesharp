@@ -78,12 +78,12 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                       onClick={() => setOpen(false)}
                     >
                       <LayoutDashboard className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
-                      My workspace
+                      My account
                     </Link>
                   </SignedIn>
-                  <Button asChild className="mt-2">
+                  <Button asChild className="mt-2 rounded-lg">
                     <Link href="/book" onClick={() => setOpen(false)}>
-                      Request a pickup <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+                      Book a collection <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                     </Link>
                   </Button>
                 </nav>
@@ -99,14 +99,14 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
               <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
                 <Link href="/auth/continue" className="gap-2">
                   <LayoutDashboard className="h-4 w-4" aria-hidden />
-                  My workspace
+                  My account
                 </Link>
               </Button>
             </SignedIn>
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="rounded-lg">
               <Link href="/book">
-                <span className="hidden sm:inline">Request pickup</span>
-                <span className="sm:hidden">Pickup</span>{" "}
+                <span className="hidden sm:inline">Book a collection</span>
+                <span className="sm:hidden">Book</span>{" "}
                 <ArrowRight className="ml-1 hidden h-4 w-4 sm:inline" aria-hidden />
               </Link>
             </Button>

@@ -4,8 +4,8 @@ import { SERVICE_AREAS } from "@/config/service-areas";
 export default function ServiceAreasPage() {
   return (
     <MarketingArticle
-      title="Service areas"
-      lead="Regional coverage is seeded for demo geography — production rolls out postcode-driven routing on top of the same service-area backbone."
+      title="Areas we cover"
+      lead="We currently collect and deliver across Greater Manchester and Liverpool. Tell us your postcode when you book — we’ll confirm we can reach you."
     >
       <div className="flex flex-wrap gap-2">
         {SERVICE_AREAS.map((area) => (

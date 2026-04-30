@@ -56,3 +56,8 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## WeSharp notes
+
+- Product / workflow docs: repository `docs/product/` (e.g. `orders-invoices-payments.md`, `booking-workflow.md`, `sprint-2-qa.md`).
+- `GET /api/admin/knives` supports `unassigned_only=1` (with `company_id`) for inventory pickers when attaching blades to an order.

@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -80,6 +80,7 @@ type LifecycleGate =
 
 export default function AdminBookingDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const bookingId =
     typeof params.bookingId === "string"
       ? params.bookingId
@@ -116,11 +117,17 @@ export default function AdminBookingDetailPage() {
     },
   });
 
+  const collectionDateForRoute = useMemo(() => {
+    const row = bookingQuery.data;
+    if (!row) return null;
+    return row.confirmed_collection_date ?? row.requested_collection_date ?? row.requested_date ?? null;
+  }, [bookingQuery.data]);
+
   const routesQuery = useQuery({
-    enabled: Boolean(bookingQuery.data?.requested_date),
-    queryKey: ["admin-routes-pick", bookingQuery.data?.requested_date],
+    enabled: Boolean(collectionDateForRoute),
+    queryKey: ["admin-routes-pick", collectionDateForRoute],
     queryFn: async () => {
-      const d = bookingQuery.data?.requested_date;
+      const d = collectionDateForRoute;
       const qs = d ? `?date=${encodeURIComponent(d)}` : "";
       const res = await admin.json<unknown>(`/api/admin/routes${qs}`);
       if (!res.ok) {
@@ -213,8 +220,13 @@ export default function AdminBookingDetailPage() {
 
       return res.data;
     },
-    onSuccess: async () => {
+    onSuccess: async (payload: unknown) => {
       toast.success("Draft order created.");
+      const env = payload as { data?: { order_id?: string } };
+      const oid = env?.data?.order_id;
+      if (oid) {
+        router.push(`/admin/orders/${oid}`);
+      }
       await qc.invalidateQueries({ queryKey: ["admin-booking-detail", bookingId] });
       await qc.invalidateQueries({ queryKey: ["admin-bookings"] });
     },
@@ -264,11 +276,13 @@ export default function AdminBookingDetailPage() {
     canCancel &&
     ["requested", "confirmed", "assigned_to_route", "collected", "in_sharpening", "quality_checked"].includes(statusKey);
 
+  const routesForDate = routesQuery.data?.length ?? 0;
+
   const canAssignNow =
     assignRoute &&
     (statusKey === "confirmed" || statusKey === "assigned_to_route") &&
     routesQuery.isSuccess &&
-    (routesQuery.data?.length ?? 0) > 0;
+    routesForDate > 0;
 
   const canConvertNow =
     convertOrder &&
@@ -297,10 +311,10 @@ export default function AdminBookingDetailPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs items={[{ label: "Bookings", href: "/admin/bookings" }, { label: b.id.slice(0, 8) }]} />
+      <Breadcrumbs items={[{ label: "Bookings", href: "/admin/bookings" }, { label: b.company?.name ?? `Booking ${b.id.slice(0, 8)}` }]} />
       <PageHeader
-        title={`Booking`}
-        description={`Requested ${b.requested_date ?? "—"} · ${b.service_type}`}
+        title="Booking"
+        description={`${b.company?.name ?? "Account"} · collection ${collectionDateForRoute ?? b.requested_date ?? "—"} · ${b.service_type}`}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" asChild>
@@ -325,6 +339,16 @@ export default function AdminBookingDetailPage() {
           Convert to order
         </Button>
       </div>
+
+      {assignRoute && (statusKey === "confirmed" || statusKey === "assigned_to_route") && collectionDateForRoute && routesQuery.isSuccess && routesForDate === 0 ? (
+        <p className="rounded-lg border border-amber-500/35 bg-amber-500/5 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
+          No driver route exists for <strong>{collectionDateForRoute}</strong>. Add a run for that date in{" "}
+          <Link className="font-medium underline underline-offset-2" href="/admin/routes">
+            Routes
+          </Link>
+          , then assign this booking.
+        </p>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -379,9 +403,16 @@ export default function AdminBookingDetailPage() {
             <div className="capitalize">{b.service_type}</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground">Windows</div>
+            <div className="text-xs text-muted-foreground">Requested collection</div>
             <div>
-              {b.time_window_start ?? "—"} → {b.time_window_end ?? "—"}
+              {(b.requested_collection_date ?? b.requested_date) ?? "—"} · {(b.requested_time_window_start ?? b.time_window_start) ?? "—"} →{" "}
+              {(b.requested_time_window_end ?? b.time_window_end) ?? "—"}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Confirmed collection</div>
+            <div>
+              {b.confirmed_collection_date ?? "—"} · {b.confirmed_time_window_start ?? "—"} → {b.confirmed_time_window_end ?? "—"}
             </div>
           </div>
           <div>
@@ -452,8 +483,11 @@ export default function AdminBookingDetailPage() {
             ) : (
               <ul className="mt-1 space-y-1">
                 {b.orders.map((o) => (
-                  <li key={o.id} className="font-mono text-xs">
-                    {o.id.slice(0, 8)} · {o.order_status} · {formatGbpFromPence(o.total_pence)} {o.currency}
+                  <li key={o.id}>
+                    <Link href={`/admin/orders/${o.id}`} className="text-sm font-medium text-primary underline underline-offset-2">
+                      {o.order_status?.replace(/_/g, " ") ?? "Order"} · {formatGbpFromPence(o.total_pence)}
+                      {o.currency ? ` ${o.currency}` : ""}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -508,7 +542,7 @@ export default function AdminBookingDetailPage() {
       <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign to route ({b.requested_date})</DialogTitle>
+            <DialogTitle>Assign to route · {collectionDateForRoute ?? "—"}</DialogTitle>
           </DialogHeader>
           <form
             className="space-y-3"

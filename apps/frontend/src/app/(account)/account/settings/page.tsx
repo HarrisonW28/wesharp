@@ -91,7 +91,7 @@ export default function AccountSettingsPage() {
             <Label>Email</Label>
             <Input value={d?.user.email ?? ""} readOnly className="bg-muted/60" />
             <p className="text-xs text-muted-foreground">
-              Managed through Clerk SSO — ping ops when it needs correcting.
+              Managed through Clerk — email us if your name or email looks wrong.
             </p>
           </div>
           <div className="border-t pt-4">

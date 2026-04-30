@@ -9,8 +9,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-[28rem] [&_.cl-card]:shadow-md">
         <SignUp routing="path" path="/register" signInUrl="/login" forceRedirectUrl="/auth/continue" />
       </div>
-      <p className="max-w-md text-center text-xs text-muted-foreground">
-        Commercial kitchens only — WeSharp admins assign internal roles separately from customer portal access.
+      <p className="max-w-md text-center text-sm text-muted-foreground">
+        For kitchens and hospitality businesses. Create an account to book collections and track orders.
       </p>
       <Link className="text-sm text-muted-foreground underline" href="/">
         Back home

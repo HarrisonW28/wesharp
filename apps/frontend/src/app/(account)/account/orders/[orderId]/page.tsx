@@ -46,25 +46,28 @@ export default function TenantOrderDetailPage() {
     <div className="space-y-8">
       <Breadcrumbs
         homeHref="/account/dashboard"
-        items={[{ label: "Orders", href: "/account/orders" }, { label: orderId ?? "…" }]}
+        items={[{ label: "My orders", href: "/account/orders" }, { label: "Order details" }]}
       />
       <PageHeader
-        title={o ? `Order ${orderId?.slice(0, 8)}…` : "Order"}
-        description="Read-only totals — invoicing mirrors what finance posted for this fulfilment."
+        title="Order details"
+        description="Totals shown here match what we will invoice — read-only while we process your knives."
       />
 
       {orderQuery.status === "pending" ? (
-        <div className="flex min-h-[20vh] items-center justify-center text-muted-foreground">
+        <div className="flex min-h-[24vh] flex-col items-center justify-center gap-3 text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+          <p className="text-sm">Loading order…</p>
         </div>
       ) : orderQuery.isError ? (
-        <p className="text-sm text-destructive">{(orderQuery.error as Error).message}</p>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+          <p className="text-destructive">{(orderQuery.error as Error).message}</p>
+        </div>
       ) : o ? (
         <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
+          <Card className="rounded-xl lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-base">Charges</CardTitle>
-              <CardDescription>These fields are maintained by fulfilment tooling.</CardDescription>
+              <CardDescription>We update these figures as your order moves through sharpening.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm md:grid-cols-2">
               <div className="text-muted-foreground">Status</div>
@@ -84,14 +87,14 @@ export default function TenantOrderDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-xl">
             <CardHeader>
               <CardTitle className="text-base">Blades</CardTitle>
-              <CardDescription>Latest shop statuses flow here.</CardDescription>
+              <CardDescription>Each knife we logged for this order.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               {!o.knives || o.knives.length === 0 ? (
-                <p className="text-muted-foreground">No knives surfaced yet.</p>
+                <p className="text-muted-foreground">Blade list will appear once your knives are registered on this order.</p>
               ) : (
                 <ul className="space-y-2">
                   {o.knives.map((k) => (
@@ -106,8 +109,8 @@ export default function TenantOrderDetailPage() {
           </Card>
 
           <div className="lg:col-span-3">
-            <Link className="text-sm text-primary underline" href="/account/orders">
-              Back to history
+            <Link className="text-sm font-medium text-primary underline underline-offset-2" href="/account/orders">
+              Back to my orders
             </Link>
           </div>
         </div>

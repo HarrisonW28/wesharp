@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { ClipboardList, Loader2 } from "lucide-react";
 
 import { PaginatedTenantOrdersSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 import { formatGbpFromPence } from "@/lib/format/money";
 
+import { EmptyState } from "@/components/feedback/EmptyState";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
+import { Button } from "@/components/ui/button";
 
 export default function AccountOrdersPage() {
   const api = useAccountApi();
@@ -34,17 +36,34 @@ export default function AccountOrdersPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Orders" }]} />
-      <PageHeader title="Order history" description="Every fulfilment run tied to your venue account." />
+      <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "My orders" }]} />
+      <PageHeader
+        title="My orders"
+        description="Knife sharpening orders and charges for your business."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" className="rounded-lg" asChild>
+              <Link href="/account/bookings/new">Book a collection</Link>
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-lg" asChild>
+              <Link href="/pricing">View pricing</Link>
+            </Button>
+          </div>
+        }
+      />
 
       {listQuery.status === "pending" ? (
         <div className="flex min-h-[20vh] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         </div>
       ) : listQuery.isError ? (
-        <p className="text-sm text-destructive">{(listQuery.error as Error).message}</p>
+        <EmptyState
+          icon={ClipboardList}
+          title="Could not load orders"
+          description={(listQuery.error as Error)?.message ?? "Please try again."}
+        />
       ) : (
-        <div className="overflow-hidden rounded-md border bg-card shadow-sm">
+        <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-muted-foreground">
               <tr>
@@ -67,8 +86,8 @@ export default function AccountOrdersPage() {
                     {formatGbpFromPence(o.total_pence ?? null)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link className="text-primary underline" href={`/account/orders/${o.id}`}>
-                      View
+                    <Link className="font-medium text-primary underline underline-offset-2" href={`/account/orders/${o.id}`}>
+                      View order
                     </Link>
                   </td>
                 </tr>
@@ -76,7 +95,13 @@ export default function AccountOrdersPage() {
             </tbody>
           </table>
           {rows.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">No orders yet — book a collection to start.</p>
+            <div className="border-t px-4 py-10">
+              <EmptyState
+                icon={ClipboardList}
+                title="No orders yet"
+                description="Once we’ve collected and logged your knives, orders and totals will appear here."
+              />
+            </div>
           ) : null}
         </div>
       )}

@@ -4,24 +4,26 @@ export default function HowItWorksPage() {
   return (
     <MarketingArticle
       title="How it works"
-      lead="Pickup → workshop → sharpen → return — with tooling that keeps bookings, knives, invoices, and payments aligned."
+      lead="You book a collection. We route a driver. Knives go to our workshop, are sharpened and checked, then come home — with simple updates along the way."
     >
       <p>
-        Commercial kitchens submit a&nbsp;
+        Start with a&nbsp;
         <a href="/book" className="font-medium text-foreground underline underline-offset-4">
-          booking enquiry
+          pickup request
         </a>
-        &nbsp;(no account needed) or use the&nbsp;
+        &nbsp;— no account required. Already working with us?&nbsp;
         <a href="/login" className="font-medium text-foreground underline underline-offset-4">
-          tenant portal
+          Sign in
         </a>
-        &nbsp;if you’re already onboarded.
+        &nbsp;to manage bookings, orders, and invoices in your account.
       </p>
       <p>
-        Routes are scheduled around technician manifests: collections are pinned to booked windows, knives move through sharpening and QA checkpoints, and invoicing inherits what actually shipped.
+        We work in clear time windows so chefs know when to expect us. Every blade is tracked through sharpening and quality
+        check before return, and your paperwork reflects what we actually processed.
       </p>
-      <p>
-        Administrators use the Ops console (<code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">/admin</code>) — field teams use Route Manager on mobile widths for stops and completions.
+      <p className="text-sm text-muted-foreground">
+        Our team uses specialist tools behind the scenes for routing and workshop progress — you get the simple customer view
+        above.
       </p>
     </MarketingArticle>
   );

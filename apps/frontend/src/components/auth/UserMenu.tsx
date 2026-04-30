@@ -44,15 +44,20 @@ export function UserMenu({ variant }: UserMenuProps) {
           <DropdownMenuLabel className="space-y-1 font-normal">
             <div className="text-sm font-medium leading-none">{label}</div>
             <div className="text-xs text-muted-foreground">
-              {variant === "internal" ? "Operations" : "Venue portal"} · {role}
+              {variant === "internal" ? "Operations" : "Customer account"}
+              {variant === "internal" ? ` · ${role}` : ""}
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem disabled className="gap-2">
-            <Building2 className="h-4 w-4" aria-hidden />
-            Company context (Clerk orgs later)
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          {variant === "internal" ? (
+            <>
+              <DropdownMenuItem disabled className="gap-2">
+                <Building2 className="h-4 w-4" aria-hidden />
+                Company context (Clerk orgs later)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
           <SignOutButton signOutOptions={{ redirectUrl: "/" }}>
             <button
               type="button"

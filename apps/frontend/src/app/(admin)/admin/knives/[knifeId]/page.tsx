@@ -131,6 +131,31 @@ export default function AdminKnifeDetailPage() {
     "mark-returned": mutReturned,
   } as const;
 
+  const photoMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const fd = new FormData();
+      fd.append("photo", file);
+      const res = await admin.json<unknown>(`/api/admin/knives/${knifeId}/photos`, {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = KnifeDetailResponseSchema.safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected knife payload after upload.");
+      }
+      return parsed.data.data;
+    },
+    onSuccess: (data) => {
+      toast.success("Photo uploaded.");
+      queryClient.setQueryData(["admin-knife", knifeId], data);
+      invalidateKnifeLists();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const issueMutation = useMutation({
     mutationFn: async () => {
       const trimmed = issueNotes.trim();
@@ -264,6 +289,49 @@ export default function AdminKnifeDetailPage() {
               <dd>{k.description ?? "—"}</dd>
             </div>
           </dl>
+          <Separator className="my-4" />
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Photos</div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Condition shots for the workshop file. Images stay on our servers; customer-facing download is not wired in this MVP.
+          </p>
+          <div className="mt-3">
+            <Label htmlFor="knife-photo">Upload or capture</Label>
+            <Input
+              id="knife-photo"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="mt-1 cursor-pointer"
+              disabled={photoMutation.isPending}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) {
+                  photoMutation.mutate(f);
+                }
+              }}
+            />
+            {photoMutation.isPending ? (
+              <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Uploading…
+              </p>
+            ) : null}
+          </div>
+          <ul className="mt-4 space-y-2 text-sm">
+            {(k.photos ?? []).length === 0 ? (
+              <li className="text-muted-foreground">No photos yet.</li>
+            ) : (
+              (k.photos ?? []).map((p) => (
+                <li key={p.id} className="rounded-md border bg-muted/30 px-3 py-2">
+                  <div className="font-medium">{p.file?.original_filename ?? "Image"}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {p.file?.byte_size != null ? `${Math.round(p.file.byte_size / 1024)} KB` : "—"}
+                    {p.caption ? ` · ${p.caption}` : ""}
+                  </div>
+                </li>
+              ))
+            )}
+          </ul>
           <Separator className="my-4" />
           <div className="text-xs font-semibold uppercase text-muted-foreground">Order link</div>
           <div className="mt-2 text-sm">{orderLink ?? "No order linked."}</div>

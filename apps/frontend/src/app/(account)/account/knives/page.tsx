@@ -35,18 +35,19 @@ export default function AccountKnivesPage() {
     <div className="space-y-8">
       <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Knives" }]} />
       <PageHeader
-        title="Knife history"
-        description="Tag-level tracking through the workshop — editing happens on the operations console."
+        title="Your knives"
+        description="Each blade we track for you, with its current status in sharpening."
       />
 
       {listQuery.status === "pending" ? (
-        <div className="flex min-h-[20vh] items-center justify-center text-muted-foreground">
+        <div className="flex min-h-[24vh] flex-col items-center justify-center gap-3 text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+          <p className="text-sm">Loading knives…</p>
         </div>
       ) : listQuery.isError ? (
         <p className="text-sm text-destructive">{(listQuery.error as Error).message}</p>
       ) : (
-        <div className="overflow-hidden rounded-md border bg-card shadow-sm">
+        <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-muted-foreground">
               <tr>
@@ -68,12 +69,12 @@ export default function AccountKnivesPage() {
             </tbody>
           </table>
           {rows.length === 0 ? (
-            <p className="px-4 py-6 text-center text-muted-foreground">
-              No knives yet —{" "}
-              <Link className="text-primary underline" href="/account/bookings/new">
-                submit a pickup
-              </Link>
-              .
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+              No knives on your account yet —{" "}
+              <Link className="font-medium text-primary underline underline-offset-2" href="/account/bookings/new">
+                book a collection
+              </Link>{" "}
+              to get started.
             </p>
           ) : null}
         </div>

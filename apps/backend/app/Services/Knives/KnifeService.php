@@ -127,6 +127,10 @@ final class KnifeService
             $query->where('order_id', $oid);
         }
 
+        if ($request->boolean('unassigned_only')) {
+            $query->whereNull('order_id');
+        }
+
         if (($q = trim((string) $request->query('q', ''))) !== '') {
             $query->where(function ($qq) use ($q): void {
                 $qq->where('tag_id', 'like', '%'.$q.'%')

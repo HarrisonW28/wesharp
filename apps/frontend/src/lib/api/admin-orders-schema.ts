@@ -46,6 +46,14 @@ export const PaginatedOrdersResponseSchema = z.object({
 export const OrderDetailSchema = OrderRowSchema.extend({
   knives: z.array(KnifeSummarySchema).optional(),
   created_at: z.string().nullable().optional(),
+  draft_invoice: z
+    .object({
+      id: z.string(),
+      invoice_number: z.string().nullable().optional(),
+      already_existed: z.boolean().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export const OrderDetailResponseSchema = z.object({

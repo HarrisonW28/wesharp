@@ -45,11 +45,14 @@ export default function TenantBookingDetailPage() {
       <Breadcrumbs
         homeHref="/account/dashboard"
         items={[
-          { label: "Bookings", href: "/account/bookings" },
-          { label: "Detail" },
+          { label: "My bookings", href: "/account/bookings" },
+          { label: "Booking details" },
         ]}
       />
-      <PageHeader title="Booking status" description="Live route assignment happens on the operations side — this view is read-only." />
+      <PageHeader
+        title="Booking details"
+        description="Here’s what we have on file for this collection. We’ll update status as your booking is confirmed."
+      />
 
       {query.status === "pending" ? (
         <div className="flex min-h-[20vh] items-center justify-center text-muted-foreground">
@@ -58,7 +61,7 @@ export default function TenantBookingDetailPage() {
       ) : query.isError ? (
         <p className="text-sm text-destructive">{(query.error as Error).message}</p>
       ) : d ? (
-        <div className="grid gap-6 rounded-2xl border bg-card p-6 shadow-sm md:grid-cols-2">
+        <div className="grid gap-6 rounded-xl border bg-card p-6 shadow-sm md:grid-cols-2">
           <div className="space-y-2 text-sm">
             <div className="text-xs font-semibold uppercase text-muted-foreground">Status</div>
             <StatusBadge kind="booking" status={typeof d.status === "string" ? d.status : ""} />
@@ -76,8 +79,8 @@ export default function TenantBookingDetailPage() {
             <div className="whitespace-pre-wrap text-muted-foreground">{String(d.customer_notes ?? "—")}</div>
           </div>
           <div className="md:col-span-2 border-t pt-4 text-sm">
-            <Link className="text-primary underline" href="/account/bookings">
-              Back to bookings
+            <Link className="font-medium text-primary underline underline-offset-2" href="/account/bookings">
+              Back to my bookings
             </Link>
           </div>
         </div>

@@ -8,7 +8,7 @@ export default function FaqPage() {
     },
     {
       q: "How do invoices work?",
-      a: "Invoices originate from fulfilled orders with Stripe-aligned payments. Tenant users see balances in their portal alongside admin AR tooling.",
+      a: "Invoices are raised from your knife orders. In your account you can see what’s outstanding; our team handles payment setup.",
     },
     {
       q: "What is Route Manager?",

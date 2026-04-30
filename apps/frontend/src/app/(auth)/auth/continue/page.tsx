@@ -51,7 +51,7 @@ export default function AuthContinuePage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-muted-foreground">
         <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-        <span className="text-sm">Syncing workspace profile…</span>
+        <span className="text-sm">Syncing your account…</span>
       </div>
     );
   }

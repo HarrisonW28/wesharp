@@ -9,8 +9,8 @@ export default function LoginPage() {
       <div className="w-full max-w-[28rem] [&_.cl-card]:shadow-md">
         <SignIn routing="path" path="/login" signUpUrl="/register" forceRedirectUrl="/auth/continue" />
       </div>
-      <p className="max-w-md text-center text-xs text-muted-foreground">
-        Need the operations workspace? Continue after signing in — staff roles are enforced by Laravel, not Clerk metadata.
+      <p className="text-sm text-muted-foreground">
+        Already use WeSharp? Sign in to book collections and manage invoices from your account.
       </p>
       <Link className="text-sm text-muted-foreground underline" href="/">
         Back home

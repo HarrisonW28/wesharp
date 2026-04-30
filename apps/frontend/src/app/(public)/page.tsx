@@ -11,16 +11,16 @@ export default function HomePage() {
         <div className="grid gap-8 md:grid-cols-3">
           {[
             {
-              title: "Pickup scheduling",
-              body: "Align kitchens with technician routes — fewer surprises during service.",
+              title: "We come to you",
+              body: "Book a collection slot that fits prep and service — drivers follow clear day plans.",
             },
             {
-              title: "Custody visibility",
-              body: "Know exactly where knives are across sharpening and return logistics.",
+              title: "Know where your knives are",
+              body: "From collection to workshop to back on your rack — status stays visible in your account.",
             },
             {
-              title: "Billing integrity",
-              body: "Invoices that reconcile cleanly with Stripe — fewer month-end mysteries.",
+              title: "Straightforward billing",
+              body: "Invoices in GBP line up with what we sharpened — less back-and-forth at month-end.",
             },
           ].map((item) => (
             <div key={item.title} className="rounded-2xl border bg-card p-6 shadow-sm">
@@ -31,7 +31,7 @@ export default function HomePage() {
         </div>
         <div className="mt-10 flex justify-center">
           <Button variant="outline" asChild size="sm">
-            <Link href="/service-areas">View service areas →</Link>
+            <Link href="/service-areas">Areas we cover</Link>
           </Button>
         </div>
       </section>
@@ -49,12 +49,12 @@ export default function HomePage() {
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl border bg-background p-6">
               <div className="text-sm font-semibold">Pay-as-you-go</div>
-              <div className="mt-3 text-3xl font-semibold tracking-tight">From £8.50</div>
+          <div className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">From £8.50</div>
               <div className="text-xs text-muted-foreground">Per knife · illustrative tier</div>
             </div>
             <div className="rounded-2xl border bg-background p-6">
               <div className="text-sm font-semibold">Subscriptions</div>
-              <div className="mt-3 text-3xl font-semibold tracking-tight">£49</div>
+              <div className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">£49.00</div>
               <div className="text-xs text-muted-foreground">Monthly baseline · illustrative package</div>
             </div>
           </div>

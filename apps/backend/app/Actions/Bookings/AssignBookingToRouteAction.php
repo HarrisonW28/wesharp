@@ -35,7 +35,7 @@ final class AssignBookingToRouteAction
             }
 
             if ($routeDateStr !== $bookingDateStr) {
-                abort(422, 'Route scheduled date must match the booking requested date.');
+                abort(422, 'Route date must match the booking collection date (uses confirmed date when set, otherwise requested).');
             }
 
             $status = $booking->booking_status;

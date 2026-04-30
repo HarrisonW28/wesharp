@@ -538,8 +538,17 @@ export default function AdminBookingsPage() {
 
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Price estimate (£ pence)</Label>
-                <Input type="number" placeholder="Optional" {...form.register("price_estimate_pence")} />
+                <Label htmlFor="price-estimate-pence">Price estimate (optional)</Label>
+                <p id="price-estimate-hint" className="text-xs text-muted-foreground">
+                  Enter whole pence (e.g. 850 for £8.50).
+                </p>
+                <Input
+                  id="price-estimate-pence"
+                  type="number"
+                  aria-describedby="price-estimate-hint"
+                  placeholder="Optional"
+                  {...form.register("price_estimate_pence")}
+                />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>Internal notes</Label>

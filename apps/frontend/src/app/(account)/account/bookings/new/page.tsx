@@ -165,7 +165,7 @@ export default function NewAccountBookingPage() {
                 <option value="onsite">On-site sharpening</option>
               </select>
               <p className="text-xs text-muted-foreground">
-                On-site runs need ops coordination — ops may contact you before confirming.
+                On-site collections need a short coordination call — we may contact you before confirming.
               </p>
             </div>
 
@@ -182,7 +182,7 @@ export default function NewAccountBookingPage() {
             <label className="flex items-start gap-2">
               <input type="checkbox" name="damage_acknowledged" required className="mt-1 h-4 w-4 shrink-0" />
               <span className="text-sm leading-relaxed">
-                I confirm blade damage risks are flagged with ops before sharpening.
+                I confirm blade damage risks are discussed with WeSharp before sharpening.
               </span>
             </label>
 

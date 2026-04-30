@@ -13,7 +13,7 @@ export default function ContactPage() {
         </a>
         &nbsp;(placeholder inbox for the MVP brochure site).
       </p>
-      <p>Urgent pickups or multi-site introductions: outline timing, postcode, and headcount inside the enquiry so operations can prioritise routing.</p>
+      <p>Urgent pickups or new sites: share your postcode, rough knife count, and when you need us — we’ll prioritise getting you booked.</p>
       <div className="pt-2">
         <Button asChild>
           <Link href="/book">Submit booking enquiry</Link>

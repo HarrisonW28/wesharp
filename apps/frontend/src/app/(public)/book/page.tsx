@@ -199,11 +199,11 @@ export default function BookPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-10 px-4 py-16 md:py-20">
       <div className="space-y-3">
-        <p className="text-sm font-medium text-primary">Public booking enquiry</p>
+        <p className="text-sm font-medium text-primary">Request a collection</p>
         <h1 className="text-balance text-3xl font-semibold tracking-tight">Request a collection or on-site visit</h1>
         <p className="text-muted-foreground">
-          Commercial kitchens in our service area can request a pickup without signing in. Your details create a lead in
-          SharpFlow and a requested booking for operations to qualify and schedule.
+          Tell us about your kitchen and preferred date. We’ll review your request and get back to you to confirm a collection
+          slot — no account needed for this step.
         </p>
       </div>
 

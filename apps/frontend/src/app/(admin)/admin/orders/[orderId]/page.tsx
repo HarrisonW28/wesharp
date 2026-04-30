@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { OrderDetailResponseSchema } from "@/lib/api/admin-orders-schema";
+import { PaginatedKnivesResponseSchema } from "@/lib/api/admin-knives-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGbpFromPence } from "@/lib/format/money";
 
@@ -21,6 +22,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AdminOrderDetailPage() {
   const params = useParams<{ orderId: string }>();
@@ -30,7 +38,10 @@ export default function AdminOrderDetailPage() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkCount, setBulkCount] = useState(5);
   const [addOpen, setAddOpen] = useState(false);
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [attachKnifeId, setAttachKnifeId] = useState("");
   const [addKnifeType, setAddKnifeType] = useState("chefs");
+  const [invoiceDraftOnComplete, setInvoiceDraftOnComplete] = useState(true);
 
   const orderQuery = useQuery({
     queryKey: ["admin-order", orderId],
@@ -48,11 +59,30 @@ export default function AdminOrderDetailPage() {
     },
   });
 
+  const unassignedKnivesQuery = useQuery({
+    queryKey: ["admin-knives-unassigned", orderId, orderQuery.data?.company_id],
+    enabled: attachOpen && Boolean(orderQuery.data?.company_id),
+    queryFn: async () => {
+      const cid = orderQuery.data!.company_id!;
+      const res = await admin.json<unknown>(
+        `/api/admin/knives?company_id=${encodeURIComponent(cid)}&unassigned_only=1&per_page=100`,
+      );
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = PaginatedKnivesResponseSchema.safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected knives list.");
+      }
+      return parsed.data.data.items;
+    },
+  });
+
   const completeMutation = useMutation({
     mutationFn: async () => {
-      const res = await admin.json(`/api/admin/orders/${orderId}/complete`, {
+      const res = await admin.json<unknown>(`/api/admin/orders/${orderId}/complete`, {
         method: "POST",
-        body: "{}",
+        body: JSON.stringify({ invoice_draft: invoiceDraftOnComplete }),
       });
       if (!res.ok) {
         throw new Error(res.message);
@@ -63,10 +93,40 @@ export default function AdminOrderDetailPage() {
       }
       return parsed.data.data;
     },
-    onSuccess: () => {
+    onSuccess: (order) => {
       toast.success("Order completed.");
+      if (order.draft_invoice?.id) {
+        const ref = order.draft_invoice.invoice_number ?? order.draft_invoice.id.slice(0, 8);
+        toast.info(
+          order.draft_invoice.already_existed
+            ? `Invoice already on file (${ref}).`
+            : `Draft invoice ${ref} created.`,
+        );
+      }
       void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const attachMutation = useMutation({
+    mutationFn: async (knifeId: string) => {
+      const res = await admin.json(`/api/admin/orders/${orderId}/attach-knife`, {
+        method: "POST",
+        body: JSON.stringify({ knife_id: knifeId }),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("Existing knife attached to this order.");
+      setAttachOpen(false);
+      setAttachKnifeId("");
+      void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -254,6 +314,77 @@ export default function AdminOrderDetailPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={attachOpen} onOpenChange={setAttachOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" variant="outline" type="button">
+                Attach existing knife
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Link inventory knife</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                Pick a blade already on file for {o.company?.name ?? "this customer"} that is not tied to another order.
+              </p>
+              {unassignedKnivesQuery.isLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  Loading knives…
+                </div>
+              ) : unassignedKnivesQuery.isError ? (
+                <p className="text-sm text-destructive">Could not load knives for this account.</p>
+              ) : (unassignedKnivesQuery.data ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No spare blades in inventory — add new knives above or register standalone knives under Knives.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="attach-knife">Knife</Label>
+                  <Select value={attachKnifeId || undefined} onValueChange={(v) => setAttachKnifeId(v)}>
+                    <SelectTrigger id="attach-knife">
+                      <SelectValue placeholder="Choose by tag / type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(unassignedKnivesQuery.data ?? []).map((kn) => (
+                        <SelectItem key={kn.id} value={kn.id}>
+                          {(kn.tag_id ?? "").trim() !== "" ? kn.tag_id : `Knife ${kn.id.slice(0, 8)}`}
+                          {kn.knife_type ? ` · ${kn.knife_type}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <DialogFooter className="gap-2">
+                <Button type="button" variant="outline" onClick={() => setAttachOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  disabled={attachMutation.isPending || !attachKnifeId}
+                  onClick={() => attachMutation.mutate(attachKnifeId)}
+                >
+                  {attachMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+                  Attach to order
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <label className="flex cursor-pointer items-start gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-input"
+              checked={invoiceDraftOnComplete}
+              onChange={(e) => setInvoiceDraftOnComplete(e.target.checked)}
+            />
+            <span>
+              Create a <strong className="font-medium text-foreground">draft invoice</strong> when completing (requires
+              permission; reuses an existing invoice if already present).
+            </span>
+          </label>
 
           <Button
             type="button"

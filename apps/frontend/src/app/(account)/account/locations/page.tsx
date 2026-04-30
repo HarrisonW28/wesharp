@@ -77,12 +77,15 @@ export default function AccountLocationsPage() {
     <div className="space-y-8">
       <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Locations" }]} />
       <PageHeader
-        title="Venue locations"
-        description="Operational crews use these pins for routing pickups — postal accuracy matters."
+        title="Your locations"
+        description="Accurate addresses help us schedule collections and find you on the day."
       />
 
       {listQuery.status === "pending" ? (
-        <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex min-h-[20vh] flex-col items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+          <p className="text-sm">Loading locations…</p>
+        </div>
       ) : listQuery.error ? (
         <Alert variant="destructive">
           <AlertDescription>{(listQuery.error as Error).message}</AlertDescription>
@@ -90,7 +93,7 @@ export default function AccountLocationsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {rows.map((loc) => (
-            <Card key={loc.id}>
+            <Card key={loc.id} className="rounded-xl">
               <CardHeader className="space-y-1">
                 <CardTitle className="text-base">{loc.label}</CardTitle>
                 <p className="text-xs text-muted-foreground">

@@ -57,7 +57,7 @@ export function TenantRouteGate({ children }: PropsWithChildren) {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-        <span className="text-sm">Loading venue workspace…</span>
+        <span className="text-sm">Loading your account…</span>
       </div>
     );
   }
@@ -73,7 +73,7 @@ export function TenantRouteGate({ children }: PropsWithChildren) {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-        <span className="text-sm">Linking your workspace…</span>
+        <span className="text-sm">Linking your business to WeSharp…</span>
       </div>
     );
   }
@@ -82,8 +82,8 @@ export function TenantRouteGate({ children }: PropsWithChildren) {
     const detail = error instanceof Error ? error.message : String(error);
     return (
       <div className="mx-auto max-w-md space-y-3 rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
-        The tenant API profile could not be loaded. Confirm <code>NEXT_PUBLIC_API_ORIGIN</code>{" "}
-        reaches Laravel and you are signed in with Clerk.
+        Your account details could not be loaded. Confirm <code className="font-mono text-xs">NEXT_PUBLIC_API_ORIGIN</code>{" "}
+        reaches WeSharp and you are signed in.
         {detail !== "" ? (
           <p className="mt-2 rounded-md bg-muted/50 px-2 py-1.5 font-mono text-xs text-foreground/80">{detail}</p>
         ) : null}

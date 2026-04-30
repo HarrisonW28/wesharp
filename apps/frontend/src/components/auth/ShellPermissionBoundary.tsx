@@ -17,12 +17,12 @@ type ShellPermissionBoundaryProps = PropsWithChildren<{
 }>;
 
 /**
- * Ensures SPA navigation cannot render admin/tenant consoles without the matching Laravel permission.
+ * Ensures SPA navigation cannot render admin or customer consoles without the matching Laravel permission.
  */
 export function ShellPermissionBoundary({
   scope,
   children,
-  label = "Checking workspace permissions…",
+  label = scope === "account" ? "Checking your account access…" : "Checking permissions…",
 }: ShellPermissionBoundaryProps) {
   const pathname = usePathname();
   const router = useRouter();

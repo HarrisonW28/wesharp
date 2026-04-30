@@ -11,7 +11,7 @@ export default function AccountError({
 }) {
   return (
     <div className="space-y-6 px-4 py-6 md:px-8">
-      <ErrorState title="Portal view failed" message={error.message || "Unexpected error"} onRetry={reset} />
+      <ErrorState title="Something went wrong" message={error.message || "Unexpected error"} onRetry={reset} />
     </div>
   );
 }

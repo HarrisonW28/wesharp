@@ -56,6 +56,23 @@ export const KnifeDetailSchema = z
       .nullable()
       .optional(),
     damage_reports: z.array(z.record(z.string(), z.unknown())).optional(),
+    photos: z
+      .array(
+        z.object({
+          id: z.string(),
+          caption: z.string().nullable().optional(),
+          sort_order: z.number().optional(),
+          file: z
+            .object({
+              original_filename: z.string().nullable().optional(),
+              byte_size: z.number().optional(),
+              mime_type: z.string().nullable().optional(),
+            })
+            .nullable()
+            .optional(),
+        }),
+      )
+      .optional(),
     timeline: z.array(z.record(z.string(), z.unknown())).optional(),
     created_at: z.string().nullable().optional(),
     updated_at: z.string().nullable().optional(),

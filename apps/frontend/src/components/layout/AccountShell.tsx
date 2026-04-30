@@ -26,11 +26,11 @@ export function AccountShell({ children }: { children: ReactNode }) {
 
   return (
     <TenantRouteGate>
-      <ShellPermissionBoundary scope="account" label="Checking venue workspace permissions…">
+      <ShellPermissionBoundary scope="account" label="Checking your account access…">
         <div className="flex min-h-screen bg-muted/25">
           <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
             <div className="flex h-14 items-center border-b px-4">
-              <div className="text-sm font-semibold tracking-tight">WeSharp Portal</div>
+              <div className="text-sm font-semibold tracking-tight">WeSharp</div>
             </div>
             <SidebarNav items={navItems} />
           </aside>
@@ -39,7 +39,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
             <TopBar
               title="WeSharp"
               showMenu
-              subtitle="Venue workspace"
+              subtitle="Your account"
               onMenuClick={() => setDrawerOpen(true)}
               trailing={<UserMenu variant="tenant" />}
             />

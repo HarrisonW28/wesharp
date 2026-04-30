@@ -94,7 +94,7 @@ export default function VenuePendingPage() {
         const msg =
           res.error?.message ??
           (res.rawStatus === 422
-            ? "This account already has a linked workspace."
+            ? "This account already has a linked business on WeSharp."
             : `Could not finish setup (${res.rawStatus}).`);
         throw new Error(msg);
       }
@@ -121,7 +121,7 @@ export default function VenuePendingPage() {
   if (!userId) {
     return (
       <main className="mx-auto flex min-h-[50vh] max-w-lg flex-col items-center justify-center gap-4 px-4 py-16 text-center">
-        <p className="text-sm text-muted-foreground">Sign in first to attach or create your workspace.</p>
+        <p className="text-sm text-muted-foreground">Sign in first to finish setting up your business on WeSharp.</p>
         <Button type="button" asChild variant="outline">
           <Link href="/login">Sign in</Link>
         </Button>
@@ -138,7 +138,7 @@ export default function VenuePendingPage() {
       <div className="text-center">
         <h1 className="text-xl font-semibold tracking-tight">Finish your WeSharp profile</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Signed in as {primaryEmail}. We create a private workspace in our system for billing and collections — choose
+          Signed in as {primaryEmail}. We create your business profile for billing and collections — choose
           whether you are an individual or representing a business venue.
         </p>
       </div>

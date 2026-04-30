@@ -14,6 +14,10 @@ This document ties **kitchen orders** to **accounts receivable**: **`invoices`**
 
 Order line items (or order totals fallback) supply **`invoice_items`** lines inside **`CreateInvoiceFromOrderAction`**.
 
+### Draft invoice when completing an order
+
+**`POST /api/admin/orders/{order}/complete`** accepts optional **`invoice_draft: true`**. When the actor passes **`OrderPolicy::invoiceFromOrder`**, the server creates a draft (or returns the existing non-void invoice metadata) via **`CreateInvoiceFromOrderAction`**. The admin order detail screen defaults this option on; users without invoice permission should untick it before completing.
+
 ### Updating draft / open invoices
 
 **`PUT /api/admin/invoices/{invoice}`** accepts **`issue_date`** and **`due_date`** only (**`UpdateInvoiceRequest`**). Blocked when **`invoice_status`** is **`void`** or **`paid`**. Persisted columns remain **`issued_on`** / **`due_on`**.
