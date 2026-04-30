@@ -40,7 +40,7 @@ export default function HomePage() {
       <HomeHero />
 
       <section id="how-it-works" className="scroll-mt-20 border-b bg-background py-16 md:py-20">
-        <div className="mx-auto max-w-6xl px-4 md:px-8">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">How it works</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground md:text-base">
             Four simple steps from booking to blades back on your rack.
@@ -68,7 +68,7 @@ export default function HomePage() {
       </section>
 
       <section className="bg-muted/30 py-16 md:py-20">
-        <div className="mx-auto max-w-6xl px-4 md:px-8">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">Who it&apos;s for</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground md:text-base">
             From brigades to home cooks — if you rely on sharp knives, we can help.
@@ -87,7 +87,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-b py-16 md:py-20">
-        <div className="mx-auto max-w-6xl px-4 md:px-8">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">Why kitchens choose WeSharp</h2>
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {BENEFITS.map(({ title, body }) => (
@@ -104,7 +104,7 @@ export default function HomePage() {
       </section>
 
       <section id="areas" className="border-b bg-muted/25 py-14 md:py-16">
-        <div className="mx-auto max-w-6xl px-4 text-center md:px-8">
+        <div className="mx-auto max-w-7xl px-4 text-center md:px-8">
           <h2 className="text-xl font-semibold tracking-tight md:text-2xl">Areas we cover</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
             Tell us your postcode when you book — we&apos;ll confirm you&apos;re in range.
@@ -123,7 +123,7 @@ export default function HomePage() {
       </section>
 
       <section id="pricing" className="py-16 md:py-20">
-        <div className="mx-auto max-w-6xl px-4 md:px-8">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">Pricing preview</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground">
             Example figures — your quote depends on volume and how often we visit.{" "}

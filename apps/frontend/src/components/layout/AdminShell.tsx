@@ -36,9 +36,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <ShellPermissionBoundary scope="admin" label="Checking operations permissions…">
         <div className="flex min-h-screen bg-gradient-to-br from-muted/35 via-background to-muted/20">
           <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95 md:backdrop-blur">
-            <div className="flex h-14 items-center gap-2 border-b px-4">
-              <WeSharpLogo className="h-7" />
-              <span className="text-xs font-semibold text-muted-foreground">Ops</span>
+            <div className="flex h-14 items-center border-b px-4">
+              <WeSharpLogo className="h-10" />
             </div>
             <SidebarNav items={navItems} />
             <div className="mt-auto border-t p-4 text-xs text-muted-foreground">
@@ -48,16 +47,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
           <div className="flex min-w-0 flex-1 flex-col">
             <TopBar
-              title={<WeSharpLogo />}
+              title="Operations console"
               showMenu
-              subtitle="Operations console"
               onMenuClick={() => setDrawerOpen(true)}
               trailing={<UserMenu variant="internal" />}
             />
             <main className="flex-1 space-y-8 px-4 py-6 md:px-8">{children}</main>
           </div>
 
-          <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} items={navItems} brandSuffix="Ops" />
+          <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} items={navItems} />
         </div>
       </ShellPermissionBoundary>
     </StaffRouteGate>

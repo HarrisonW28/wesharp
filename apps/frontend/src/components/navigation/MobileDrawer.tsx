@@ -24,7 +24,7 @@ export function MobileDrawer({ open, onOpenChange, items, brandSuffix }: MobileD
           <SheetTitle className="text-lg font-normal leading-none">
             <span className="sr-only">{sheetLabel}</span>
             <span className="inline-flex items-center gap-2" aria-hidden>
-              <WeSharpLogo className="h-6" />
+              <WeSharpLogo className="h-8" />
               {brandSuffix ? <span className="text-xs font-medium text-muted-foreground">{brandSuffix}</span> : null}
             </span>
           </SheetTitle>

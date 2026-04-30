@@ -31,16 +31,15 @@ export function AccountShell({ children }: { children: ReactNode }) {
         <div className="flex min-h-screen bg-muted/25">
           <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
             <div className="flex h-14 items-center border-b px-4">
-              <WeSharpLogo className="h-7" />
+              <WeSharpLogo className="h-10" />
             </div>
             <SidebarNav items={navItems} />
           </aside>
 
           <div className="flex min-w-0 flex-1 flex-col">
             <TopBar
-              title={<WeSharpLogo />}
+              title="Your account"
               showMenu
-              subtitle="Your account"
               onMenuClick={() => setDrawerOpen(true)}
               trailing={<UserMenu variant="tenant" />}
             />
