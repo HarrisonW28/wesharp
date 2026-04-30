@@ -9,6 +9,7 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AddKnifeToOrderRequest;
 use App\Http\Requests\AttachKnifeToOrderRequest;
+use App\Http\Requests\BulkAddOrderItemsRequest;
 use App\Http\Requests\BulkAddKnivesRequest;
 use App\Http\Requests\CompleteOrderRequest;
 use App\Http\Requests\StoreOrderRequest;
@@ -83,6 +84,7 @@ final class OrderController extends Controller
             'company:id,name,city',
             'booking:id,scheduled_date',
             'operationalRoute:id,name,route_status,scheduled_date',
+            'items' => fn ($q) => $q->orderBy('created_at'),
             'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
         ]);
 
@@ -181,6 +183,29 @@ final class OrderController extends Controller
         );
 
         return ApiResponses::success(KnifeJson::detail($knife), 201);
+    }
+
+    public function bulkAddOrderItems(BulkAddOrderItemsRequest $request, Order $order): JsonResponse
+    {
+        $this->authorize('manipulateKnives', $order);
+
+        /** @phpstan-ignore-next-line */
+        $fresh = $this->orderService->bulkAddOrderItems(
+            $order->fresh(),
+            $request->validated(),
+            $request->user(),
+            $request
+        );
+
+        $fresh->loadMissing([
+            'company:id,name,city',
+            'booking:id,scheduled_date',
+            'operationalRoute:id,name,route_status,scheduled_date',
+            'items' => fn ($q) => $q->orderBy('created_at'),
+            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+        ]);
+
+        return ApiResponses::success(OrderJson::detail($fresh));
     }
 
     public function bulkAddKnives(BulkAddKnivesRequest $request, Order $order): JsonResponse

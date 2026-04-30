@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
-import { Loader2, Plus, PackagePlus } from "lucide-react";
+import { Copy, ListPlus, Loader2, Plus, PackagePlus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -23,6 +23,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
+type BulkLineRow = {
+  key: string;
+  knifeId: string | null;
+  label: string;
+  knifeType: string;
+  brand: string;
+  notes: string;
+  quantity: number;
+  unitPounds: string;
+};
+
+function makeEmptyBulkRow(): BulkLineRow {
+  return {
+    key: crypto.randomUUID(),
+    knifeId: null,
+    label: "",
+    knifeType: "",
+    brand: "",
+    notes: "",
+    quantity: 1,
+    unitPounds: "5.00",
+  };
+}
+
+function poundsInputToPence(s: string): number {
+  const n = Number.parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+  return Math.round(n * 100);
+}
+
 export default function AdminOrderDetailPage() {
   const params = useParams<{ orderId: string }>();
   const orderId = params.orderId;
@@ -30,11 +59,28 @@ export default function AdminOrderDetailPage() {
   const queryClient = useQueryClient();
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkCount, setBulkCount] = useState(5);
+  const [bulkLinesOpen, setBulkLinesOpen] = useState(false);
+  const [bulkLines, setBulkLines] = useState<BulkLineRow[]>([makeEmptyBulkRow()]);
   const [addOpen, setAddOpen] = useState(false);
   const [attachOpen, setAttachOpen] = useState(false);
   const [attachKnifeId, setAttachKnifeId] = useState<string | null>(null);
   const [addKnifeType, setAddKnifeType] = useState("chefs");
   const [invoiceDraftOnComplete, setInvoiceDraftOnComplete] = useState(true);
+
+  const setBulkLine = (key: string, patch: Partial<BulkLineRow>) => {
+    setBulkLines((rows) =>
+      rows.map((r) => {
+        if (r.key !== key) {
+          return r;
+        }
+        const next = { ...r, ...patch };
+        if (patch.knifeId !== undefined && patch.knifeId !== null) {
+          next.quantity = 1;
+        }
+        return next;
+      }),
+    );
+  };
 
   const orderQuery = useQuery({
     queryKey: ["admin-order", orderId],
@@ -125,6 +171,59 @@ export default function AdminOrderDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const bulkLinesMutation = useMutation({
+    mutationFn: async () => {
+      const items: Record<string, unknown>[] = [];
+      for (const row of bulkLines) {
+        const unit_amount_pence = poundsInputToPence(row.unitPounds);
+        if (row.knifeId) {
+          items.push({
+            knife_id: row.knifeId,
+            quantity: row.quantity,
+            unit_amount_pence,
+            notes: row.notes.trim() || undefined,
+          });
+          continue;
+        }
+        if (!row.label.trim() && !row.knifeType.trim()) {
+          continue;
+        }
+        items.push({
+          knife_type: row.knifeType.trim() || undefined,
+          label: row.label.trim() || undefined,
+          brand: row.brand.trim() || undefined,
+          notes: row.notes.trim() || undefined,
+          quantity: row.quantity,
+          unit_amount_pence,
+        });
+      }
+      if (items.length === 0) {
+        throw new Error("Add at least one row with an existing knife or a new name/type.");
+      }
+      const res = await admin.json<unknown>(`/api/admin/orders/${orderId}/bulk-order-items`, {
+        method: "POST",
+        body: JSON.stringify({ items }),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = OrderDetailResponseSchema.safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected order response.");
+      }
+      return parsed.data.data;
+    },
+    onSuccess: () => {
+      toast.success("Order lines added.");
+      setBulkLinesOpen(false);
+      setBulkLines([makeEmptyBulkRow()]);
+      void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const addKnifeMutation = useMutation({
     mutationFn: async () => {
       const res = await admin.json(`/api/admin/orders/${orderId}/add-knife`, {
@@ -180,6 +279,7 @@ export default function AdminOrderDetailPage() {
   }
 
   const o = orderQuery.data;
+  const hasBillableLines = (o.items?.length ?? 0) > 0;
 
   return (
     <>
@@ -197,6 +297,12 @@ export default function AdminOrderDetailPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="p-4 md:col-span-2">
           <div className="text-xs font-semibold uppercase text-muted-foreground">Commercials</div>
+          {hasBillableLines ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Totals follow <strong className="font-medium text-foreground">billable lines</strong> below. Price-per-knife
+              applies only when there are no lines.
+            </p>
+          ) : null}
           <dl className="mt-3 grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
             <div>
               <dt className="text-muted-foreground">Knives (rows)</dt>
@@ -254,6 +360,159 @@ export default function AdminOrderDetailPage() {
             </DialogContent>
           </Dialog>
 
+          <Dialog
+            open={bulkLinesOpen}
+            onOpenChange={(open) => {
+              setBulkLinesOpen(open);
+              if (open) {
+                setBulkLines([makeEmptyBulkRow()]);
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button className="gap-2" variant="secondary" type="button">
+                <ListPlus className="h-4 w-4" aria-hidden />
+                Bulk lines (priced)
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add multiple billable lines</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                Each row is one workshop line: pick an existing unassigned knife (quantity locked to 1) or enter a new
+                name/type (quantity creates that many blades and lines). Unit price is ex-VAT (GBP).
+              </p>
+              <div className="space-y-4">
+                {bulkLines.map((row, idx) => (
+                  <div key={row.key} className="rounded-lg border border-border p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-muted-foreground">Row {idx + 1}</span>
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() =>
+                            setBulkLines((r) => {
+                              const i = r.findIndex((x) => x.key === row.key);
+                              const clone: BulkLineRow = {
+                                ...row,
+                                key: crypto.randomUUID(),
+                                knifeId: null,
+                              };
+                              const next = [...r];
+                              next.splice(i + 1, 0, clone);
+                              return next;
+                            })
+                          }
+                        >
+                          <Copy className="h-4 w-4" aria-hidden />
+                          <span className="sr-only">Duplicate row</span>
+                        </Button>
+                        {bulkLines.length > 1 ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-destructive"
+                            onClick={() => setBulkLines((r) => r.filter((x) => x.key !== row.key))}
+                          >
+                            Remove
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                    <KnifeLookup
+                      label="Existing knife (optional)"
+                      value={row.knifeId}
+                      onChange={(id) => setBulkLine(row.key, { knifeId: id })}
+                      disabled={!o.company_id}
+                      nullable
+                      extraParams={
+                        o.company_id ? { company_id: o.company_id, unassigned_only: true } : undefined
+                      }
+                      placeholder="Search, or leave blank for new blades…"
+                    />
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <div>
+                        <Label>New label / name</Label>
+                        <Input
+                          value={row.label}
+                          onChange={(e) => setBulkLine(row.key, { label: e.target.value, knifeId: null })}
+                          disabled={!!row.knifeId}
+                          placeholder="e.g. Primary chef"
+                        />
+                      </div>
+                      <div>
+                        <Label>Type</Label>
+                        <Input
+                          value={row.knifeType}
+                          onChange={(e) => setBulkLine(row.key, { knifeType: e.target.value, knifeId: null })}
+                          disabled={!!row.knifeId}
+                          placeholder="e.g. chefs"
+                        />
+                      </div>
+                      <div>
+                        <Label>Brand (new only)</Label>
+                        <Input
+                          value={row.brand}
+                          onChange={(e) => setBulkLine(row.key, { brand: e.target.value })}
+                          disabled={!!row.knifeId}
+                        />
+                      </div>
+                      <div>
+                        <Label>Qty</Label>
+                        <Input
+                          inputMode="numeric"
+                          type="number"
+                          min={1}
+                          max={500}
+                          value={row.quantity}
+                          onChange={(e) =>
+                            setBulkLine(row.key, { quantity: Number.parseInt(e.target.value, 10) || 1 })
+                          }
+                          disabled={!!row.knifeId}
+                        />
+                      </div>
+                      <div>
+                        <Label>Unit £ (ex VAT)</Label>
+                        <Input
+                          inputMode="decimal"
+                          value={row.unitPounds}
+                          onChange={(e) => setBulkLine(row.key, { unitPounds: e.target.value })}
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label>Line notes</Label>
+                        <Input value={row.notes} onChange={(e) => setBulkLine(row.key, { notes: e.target.value })} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setBulkLines((r) => [...r, makeEmptyBulkRow()])}
+              >
+                + Add another row
+              </Button>
+              <DialogFooter className="gap-2">
+                <Button type="button" variant="outline" onClick={() => setBulkLinesOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="button" disabled={bulkLinesMutation.isPending} onClick={() => bulkLinesMutation.mutate()}>
+                  {bulkLinesMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+                  Submit lines
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2" type="button">
@@ -276,6 +535,7 @@ export default function AdminOrderDetailPage() {
                   max={500}
                   type="number"
                 />
+                <p className="text-xs text-muted-foreground">Quick register without per-line pricing (uses price/knife if set).</p>
               </div>
               <DialogFooter className="gap-2">
                 <Button type="button" variant="outline" onClick={() => setBulkOpen(false)}>
@@ -301,7 +561,7 @@ export default function AdminOrderDetailPage() {
               </DialogHeader>
               <p className="text-sm text-muted-foreground">
                 Search unassigned blades already on file for {o.company?.name ?? "this customer"} (not on another
-                order).
+                order). Audit history is preserved; this only sets the current order on the blade.
               </p>
               <KnifeLookup
                 label="Knife"
@@ -322,7 +582,7 @@ export default function AdminOrderDetailPage() {
                 <Button
                   type="button"
                   disabled={attachMutation.isPending || !attachKnifeId}
-                  onClick={() => attachKnifeId && attachMutation.mutate(attachKnifeId)}
+                  onClick={() => attachKnifeId && !attachMutation.isPending && attachMutation.mutate(attachKnifeId)}
                 >
                   {attachMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
                   Attach to order
@@ -365,6 +625,36 @@ export default function AdminOrderDetailPage() {
 
       <Separator className="my-6" />
 
+      <div className="text-sm font-semibold">Billable lines</div>
+      {(o.items ?? []).length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          No priced lines yet — use <strong className="font-medium text-foreground">Bulk lines (priced)</strong> to add
+          blades with unit rates (and optional inventory link per row).
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {(o.items ?? []).map((line) => (
+            <li key={line.id} className="rounded-md border bg-muted/20 px-3 py-2 text-sm">
+              <div className="font-medium">{line.description}</div>
+              <div className="text-xs text-muted-foreground">
+                {line.quantity} × {formatGbpFromPence(line.unit_amount_pence)} ex VAT
+                {line.knife_id ? (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <Link className="text-primary underline" href={`/admin/knives/${line.knife_id}`}>
+                      Knife
+                    </Link>
+                  </>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <Separator className="my-6" />
+
       <div className="text-sm font-semibold">Knives on this order</div>
       {(o.knives ?? []).length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">No blades registered yet — use bulk or single add above.</p>
@@ -375,7 +665,7 @@ export default function AdminOrderDetailPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="font-mono text-xs text-muted-foreground">{k.tag_id}</div>
-                <div className="font-semibold">{k.knife_type ?? "Blade"}</div>
+                <div className="font-semibold">{("label" in k && typeof k.label === "string" && k.label) || k.knife_type || "Blade"}</div>
               </div>
               <StatusBadge kind="knife" status={k.status ?? ""} />
             </div>

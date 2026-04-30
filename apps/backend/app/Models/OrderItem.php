@@ -14,6 +14,7 @@ class OrderItem extends Model
 
     protected $fillable = [
         'order_id',
+        'knife_id',
         'sku',
         'description',
         'quantity',
@@ -23,5 +24,10 @@ class OrderItem extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function knife(): BelongsTo
+    {
+        return $this->belongsTo(Knife::class);
     }
 }

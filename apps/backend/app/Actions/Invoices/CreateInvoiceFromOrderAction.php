@@ -71,7 +71,7 @@ final class CreateInvoiceFromOrderAction
                 /** @phpstan-ignore-next-line */
                 $qty = max(1, (int) $line->quantity);
                 /** @phpstan-ignore-next-line */
-                $unit = max(1, (int) $line->unit_amount_pence);
+                $unit = max(0, (int) $line->unit_amount_pence);
 
                 InvoiceItem::query()->create([
                     /** @phpstan-ignore-next-line */

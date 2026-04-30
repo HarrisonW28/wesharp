@@ -4,6 +4,7 @@ namespace App\Support\Orders;
 
 use App\Models\Knife;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Support\Knives\KnifeJson;
 
 final class OrderJson
@@ -41,6 +42,15 @@ final class OrderJson
         $payload = array_merge(self::listRow($order), [
             'knives' => $order->relationLoaded('knives')
                 ? $order->knives->map(fn (Knife $k) => KnifeJson::summary($k))->values()->all()
+                : [],
+            'items' => $order->relationLoaded('items')
+                ? $order->items->map(fn (OrderItem $i): array => [
+                    'id' => (string) $i->id,
+                    'knife_id' => $i->knife_id !== null ? (string) $i->knife_id : null,
+                    'description' => $i->description,
+                    'quantity' => (int) $i->quantity,
+                    'unit_amount_pence' => (int) $i->unit_amount_pence,
+                ])->values()->all()
                 : [],
         ]);
 

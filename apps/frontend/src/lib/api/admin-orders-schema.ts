@@ -30,10 +30,19 @@ export const KnifeSummarySchema = z
   .object({
     id: z.string(),
     tag_id: z.string().nullable().optional(),
+    label: z.string().nullable().optional(),
     knife_type: z.string().nullable().optional(),
     status: z.string().nullable().optional(),
   })
   .passthrough();
+
+export const OrderItemRowSchema = z.object({
+  id: z.string(),
+  knife_id: z.string().nullable().optional(),
+  description: z.string(),
+  quantity: z.number(),
+  unit_amount_pence: z.number(),
+});
 
 export const PaginatedOrdersResponseSchema = z.object({
   success: z.literal(true),
@@ -45,6 +54,7 @@ export const PaginatedOrdersResponseSchema = z.object({
 
 export const OrderDetailSchema = OrderRowSchema.extend({
   knives: z.array(KnifeSummarySchema).optional(),
+  items: z.array(OrderItemRowSchema).optional(),
   created_at: z.string().nullable().optional(),
   draft_invoice: z
     .object({

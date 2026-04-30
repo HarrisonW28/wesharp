@@ -506,11 +506,13 @@ final class LookupController extends Controller
     {
         $tag = ($k->tag_id ?? '') !== '' ? $k->tag_id : 'Blade '.substr((string) $k->id, 0, 8);
         $account = $k->company?->name;
+        $readable = trim((string) ($k->label ?? ''));
+        $primaryLabel = $readable !== '' ? $readable : $tag;
 
         return [
             'id' => (string) $k->id,
-            'label' => $tag,
-            'description' => trim(implode(' · ', array_filter([$k->knife_type, $k->label, $account]))),
+            'label' => $primaryLabel,
+            'description' => trim(implode(' · ', array_filter([$tag, $k->knife_type, $account]))),
             'meta' => ['knife_status' => $k->knife_status?->value],
         ];
     }

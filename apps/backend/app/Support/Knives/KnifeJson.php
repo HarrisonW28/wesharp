@@ -13,6 +13,7 @@ final class KnifeJson
         return [
             'id' => (string) $knife->id,
             'tag_id' => $knife->tag_id,
+            'label' => $knife->label,
             'knife_type' => $knife->knife_type,
             'brand' => $knife->brand,
             'status' => $knife->knife_status?->value,

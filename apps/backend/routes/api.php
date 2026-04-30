@@ -143,6 +143,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:knives.update')->post('orders/{order}/attach-knife', [OrderController::class, 'attachKnife'])->whereUuid('order')->name('api.admin.orders.attach_knife');
     Route::middleware('permission:knives.update')->post('orders/{order}/add-knife', [OrderController::class, 'addKnife'])->whereUuid('order')->name('api.admin.orders.add_knife');
     Route::middleware('permission:knives.update')->post('orders/{order}/bulk-add-knives', [OrderController::class, 'bulkAddKnives'])->whereUuid('order')->name('api.admin.orders.bulk_add_knives');
+    Route::middleware('permission:knives.update')->post('orders/{order}/bulk-order-items', [OrderController::class, 'bulkAddOrderItems'])->whereUuid('order')->name('api.admin.orders.bulk_order_items');
 
     Route::middleware('permission:knives.view')->get('knives', [KnifeController::class, 'index'])->name('api.admin.knives.index');
     Route::middleware('permission:knives.update')->post('knives', [KnifeController::class, 'store'])->name('api.admin.knives.store');

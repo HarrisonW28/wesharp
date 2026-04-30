@@ -43,7 +43,14 @@ export default function AdminKnifeDetailPage() {
   const queryClient = useQueryClient();
   const [issueOpen, setIssueOpen] = useState(false);
   const [issueNotes, setIssueNotes] = useState("");
-  const [knifeTypeDraft, setKnifeTypeDraft] = useState("");
+  const [attrDraft, setAttrDraft] = useState({
+    knife_type: "",
+    label: "",
+    brand: "",
+    description: "",
+    condition_before: "",
+    notes: "",
+  });
 
   const invalidateKnifeLists = () => {
     void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
@@ -73,9 +80,18 @@ export default function AdminKnifeDetailPage() {
   });
 
   useEffect(() => {
-    const t = knifeQuery.data?.knife_type;
-
-    setKnifeTypeDraft(typeof t === "string" ? t : "");
+    if (!knifeQuery.data) {
+      return;
+    }
+    const d = knifeQuery.data;
+    setAttrDraft({
+      knife_type: typeof d.knife_type === "string" ? d.knife_type : "",
+      label: typeof d.label === "string" ? d.label : "",
+      brand: typeof d.brand === "string" ? d.brand : "",
+      description: typeof d.description === "string" ? d.description : "",
+      condition_before: typeof d.condition_before === "string" ? d.condition_before : "",
+      notes: typeof d.notes === "string" ? d.notes : "",
+    });
   }, [knifeQuery.data]);
 
   const mutateTransition = async (pathSegment: string) => {
@@ -187,7 +203,12 @@ export default function AdminKnifeDetailPage() {
       const res = await admin.json(`/api/admin/knives/${knifeId}`, {
         method: "PUT",
         body: JSON.stringify({
-          knife_type: knifeTypeDraft || undefined,
+          knife_type: attrDraft.knife_type.trim() || undefined,
+          label: attrDraft.label.trim() || undefined,
+          brand: attrDraft.brand.trim() || undefined,
+          description: attrDraft.description.trim() || undefined,
+          condition_before: attrDraft.condition_before.trim() || undefined,
+          notes: attrDraft.notes.trim() || undefined,
         }),
       });
 
@@ -271,22 +292,72 @@ export default function AdminKnifeDetailPage() {
             </div>
             <div>
               <dt className="text-muted-foreground">Type</dt>
-              <dd>
+              <dd className="mt-1">
                 <Input
-                  value={knifeTypeDraft}
-                  onChange={(e) => setKnifeTypeDraft(e.target.value)}
-                  className="mt-1"
+                  value={attrDraft.knife_type}
+                  onChange={(e) => setAttrDraft((a) => ({ ...a, knife_type: e.target.value }))}
                   placeholder="e.g. chefs, paring"
                 />
-                <Button size="sm" className="mt-2" type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-                  {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-                  Save attributes
-                </Button>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Label</dt>
+              <dd className="mt-1">
+                <Input
+                  value={attrDraft.label}
+                  onChange={(e) => setAttrDraft((a) => ({ ...a, label: e.target.value }))}
+                  placeholder="Readable name"
+                />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Brand</dt>
+              <dd className="mt-1">
+                <Input
+                  value={attrDraft.brand}
+                  onChange={(e) => setAttrDraft((a) => ({ ...a, brand: e.target.value }))}
+                  placeholder="Optional"
+                />
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-muted-foreground">Description</dt>
-              <dd>{k.description ?? "—"}</dd>
+              <dd className="mt-1">
+                <Textarea
+                  value={attrDraft.description}
+                  onChange={(e) => setAttrDraft((a) => ({ ...a, description: e.target.value }))}
+                  rows={2}
+                  className="resize-y"
+                />
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-muted-foreground">Condition (before)</dt>
+              <dd className="mt-1">
+                <Textarea
+                  value={attrDraft.condition_before}
+                  onChange={(e) => setAttrDraft((a) => ({ ...a, condition_before: e.target.value }))}
+                  rows={2}
+                  className="resize-y"
+                />
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-muted-foreground">Notes</dt>
+              <dd className="mt-1">
+                <Textarea
+                  value={attrDraft.notes}
+                  onChange={(e) => setAttrDraft((a) => ({ ...a, notes: e.target.value }))}
+                  rows={2}
+                  className="resize-y"
+                />
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <Button size="sm" type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+                Save attributes
+              </Button>
             </div>
           </dl>
           <Separator className="my-4" />

@@ -4,6 +4,7 @@ export const KnifeRowSchema = z
   .object({
     id: z.string(),
     tag_id: z.string().nullable().optional(),
+    label: z.string().nullable().optional(),
     knife_type: z.string().nullable().optional(),
     status: z.string().nullable().optional(),
     company_id: z.string().nullable().optional(),
@@ -28,6 +29,7 @@ export const KnifeDetailSchema = z
       .optional(),
     tag_id: z.string().nullable().optional(),
     knife_type: z.string().nullable().optional(),
+    brand: z.string().nullable().optional(),
     description: z.string().nullable().optional(),
     condition_before: z.string().nullable().optional(),
     damage_notes: z.string().nullable().optional(),

@@ -57,6 +57,11 @@ class Knife extends Model
         return $this->belongsTo(Order::class);
     }
 
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
     public function sharpenedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sharpened_by_user_id');

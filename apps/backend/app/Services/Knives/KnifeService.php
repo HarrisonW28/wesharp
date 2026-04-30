@@ -119,6 +119,10 @@ final class KnifeService
             $query->where('knife_status', $st);
         }
 
+        if (($kt = trim((string) $request->query('knife_type', ''))) !== '') {
+            $query->where('knife_type', $kt);
+        }
+
         if (($cid = trim((string) $request->query('company_id', ''))) !== '') {
             $query->where('company_id', $cid);
         }
