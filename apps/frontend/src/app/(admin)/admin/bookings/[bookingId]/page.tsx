@@ -16,6 +16,7 @@ import { formatGbpFromPence } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -310,7 +311,7 @@ export default function AdminBookingDetailPage() {
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-md border px-3 py-1 text-sm capitalize">{b.status.replace(/_/g, " ")}</span>
+        <StatusBadge kind="booking" status={b.status} className="text-xs" />
         <Button type="button" variant="outline" disabled={!canConfirm || !canUpdateBooking || confirmMutation.isPending} onClick={() => confirmMutation.mutate()}>
           Confirm
         </Button>

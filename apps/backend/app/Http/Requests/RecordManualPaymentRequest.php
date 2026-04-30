@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\PaymentMethod;
-use Illuminate\Foundation\FormRequest;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 final class RecordManualPaymentRequest extends FormRequest

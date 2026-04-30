@@ -15,6 +15,8 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -76,5 +78,31 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return ApiResponses::forbidden();
+        });
+
+        /** Never leak stack traces for unexpected failures on `/api/*` when debug is disabled. */
+        $exceptions->renderable(function (Throwable $e, Request $request) {
+            if (! $request->is(['api', 'api/*'])) {
+                return null;
+            }
+
+            if (
+                $e instanceof ValidationException
+                || $e instanceof AuthenticationException
+                || $e instanceof AuthorizationException
+                || $e instanceof HttpExceptionInterface
+            ) {
+                return null;
+            }
+
+            if (config('app.debug')) {
+                return null;
+            }
+
+            return ApiResponses::error(
+                'Something went wrong.',
+                'server_error',
+                SymfonyResponse::HTTP_INTERNAL_SERVER_ERROR,
+            );
         });
     })->create();

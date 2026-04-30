@@ -41,5 +41,4 @@ class StoreBookingRequest extends FormRequest
             'price_estimate' => ['nullable', 'integer', 'min:0'],
         ];
     }
-
 }

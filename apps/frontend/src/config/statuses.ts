@@ -1,4 +1,4 @@
-/** Canonical workflow statuses — mirror Laravel enums later */
+/** Canonical workflow statuses — mirror Laravel string enums */
 export const BOOKING_STATUS = {
   DRAFT: "draft",
   REQUESTED: "requested",
@@ -26,9 +26,9 @@ export const INVOICE_STATUS = {
 } as const;
 
 export const ORDER_STATUS = {
-  PENDING: "pending",
-  PAID: "paid",
-  FULFILLED: "fulfilled",
+  DRAFT: "draft",
+  ACTIVE: "active",
+  COMPLETED: "completed",
   CANCELLED: "cancelled",
 } as const;
 

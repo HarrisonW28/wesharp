@@ -5,12 +5,14 @@ import { useMemo, useState, type ReactNode } from "react";
 import { ACCOUNT_NAV, type NavItem } from "@/config/navigation";
 
 import { TenantRouteGate } from "@/components/auth/TenantRouteGate";
+import { ShellPermissionBoundary } from "@/components/auth/ShellPermissionBoundary";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { MobileDrawer } from "@/components/navigation/MobileDrawer";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
 import { TopBar } from "@/components/navigation/TopBar";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
+import { accountPermissionForPath } from "@/lib/route-permissions";
 
 function filterNav(items: NavItem[], permissions: Set<string>): NavItem[] {
   return items.filter((item) => !item.permission || permissions.has(item.permission));
@@ -25,27 +27,29 @@ export function AccountShell({ children }: { children: ReactNode }) {
 
   return (
     <TenantRouteGate>
-      <div className="flex min-h-screen bg-muted/25">
-        <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
-          <div className="flex h-14 items-center border-b px-4">
-            <div className="text-sm font-semibold tracking-tight">WeSharp Portal</div>
+      <ShellPermissionBoundary resolver={accountPermissionForPath} label="Checking venue workspace permissions…">
+        <div className="flex min-h-screen bg-muted/25">
+          <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
+            <div className="flex h-14 items-center border-b px-4">
+              <div className="text-sm font-semibold tracking-tight">WeSharp Portal</div>
+            </div>
+            <SidebarNav items={navItems} />
+          </aside>
+
+          <div className="flex min-w-0 flex-1 flex-col">
+            <TopBar
+              title="WeSharp"
+              showMenu
+              subtitle="Venue workspace"
+              onMenuClick={() => setDrawerOpen(true)}
+              trailing={<UserMenu variant="tenant" />}
+            />
+            <main className="flex-1 space-y-8 px-4 py-6 md:px-8">{children}</main>
           </div>
-          <SidebarNav items={navItems} />
-        </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar
-            title="WeSharp"
-            showMenu
-            subtitle="Venue workspace"
-            onMenuClick={() => setDrawerOpen(true)}
-            trailing={<UserMenu variant="tenant" />}
-          />
-          <main className="flex-1 space-y-8 px-4 py-6 md:px-8">{children}</main>
+          <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} items={navItems} />
         </div>
-
-        <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} items={navItems} />
-      </div>
+      </ShellPermissionBoundary>
     </TenantRouteGate>
   );
 }

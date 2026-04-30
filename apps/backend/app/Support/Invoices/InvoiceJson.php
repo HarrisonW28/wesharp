@@ -3,6 +3,7 @@
 namespace App\Support\Invoices;
 
 use App\Models\Invoice;
+use App\Support\Payments\PaymentJson;
 
 final class InvoiceJson
 {
@@ -48,7 +49,7 @@ final class InvoiceJson
             'line_total' => $i->line_total_pence,
         ])->values()->all();
 
-        $row['payments'] = $invoice->payments->map(fn ($p): array => \App\Support\Payments\PaymentJson::summary($p))->values()->all();
+        $row['payments'] = $invoice->payments->map(fn ($p): array => PaymentJson::summary($p))->values()->all();
 
         return $row;
     }

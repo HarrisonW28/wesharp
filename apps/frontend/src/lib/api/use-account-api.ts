@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useMemo } from "react";
 
 import { apiOrigin } from "@/lib/env";
+import { safeApiErrorMessage } from "@/lib/api/safe-api-error-message";
 
 export type AccountFetchJsonResult<T> =
   | { ok: true; data: T; status: number }
@@ -62,15 +63,12 @@ export function useAccountApi() {
         const raw = parseJson ? await res.json().catch(() => null) : null;
 
         if (!res.ok) {
-          const message =
-            raw &&
-            typeof raw === "object" &&
-            raw !== null &&
-            "error" in raw &&
-            typeof (raw as { error?: unknown }).error === "object"
-              ? String((raw as { error?: { message?: unknown } }).error?.message ?? "Request failed.")
-              : "Request failed.";
-          return { ok: false, status: res.status, message, payload: raw };
+          return {
+            ok: false,
+            status: res.status,
+            message: safeApiErrorMessage(raw, "Request failed."),
+            payload: raw,
+          };
         }
 
         return { ok: true, status: res.status, data: raw as T };

@@ -11,7 +11,7 @@ import { formatGbpFromPence } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import {
   Card,
   CardContent,
@@ -69,12 +69,14 @@ export default function TenantOrderDetailPage() {
             <CardContent className="grid gap-2 text-sm md:grid-cols-2">
               <div className="text-muted-foreground">Status</div>
               <div>
-                <Badge>{o.status ?? "—"}</Badge>
+                <StatusBadge kind="order" status={o.status} />
               </div>
               <div className="text-muted-foreground">Total</div>
               <div>{formatGbpFromPence(o.total_pence ?? null)}</div>
               <div className="text-muted-foreground">Payment</div>
-              <div>{o.payment_status ?? "—"}</div>
+              <div>
+                <StatusBadge kind="payment" status={o.payment_status} />
+              </div>
               <div className="text-muted-foreground">Knives</div>
               <div>{String(o.knife_count ?? "—")}</div>
               <div className="text-muted-foreground">Scheduled day</div>
@@ -95,7 +97,7 @@ export default function TenantOrderDetailPage() {
                   {o.knives.map((k) => (
                     <li key={k.id} className="flex justify-between gap-4 border-b border-dashed pb-2">
                       <span>{k.tag_id ?? k.id}</span>
-                      <Badge variant="outline">{k.status ?? "?"}</Badge>
+                      <StatusBadge kind="knife" status={k.status} />
                     </li>
                   ))}
                 </ul>

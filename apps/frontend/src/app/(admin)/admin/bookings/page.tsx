@@ -12,13 +12,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import type { BookingRow } from "@/lib/api/admin-bookings-schema";
-import { PaginatedBookingsResponseSchema } from "@/lib/api/admin-bookings-schema";
-import { BOOKING_STATUS_VALUES } from "@/lib/api/admin-bookings-schema";
+import { BOOKING_STATUS_VALUES, PaginatedBookingsResponseSchema } from "@/lib/api/admin-bookings-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
+import { bookingStatusLabel } from "@/lib/helpers/status-helpers";
 import { formatGbpFromPence } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/tables/DataTable";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -44,11 +45,6 @@ const createBookingSchema = z.object({
 
 const SERVICE_TYPES = ["collection", "onsite"] as const;
 
-function bookingStatusLabel(s: string): string {
-  return s.replace(/_/g, " ");
-}
-
-export default function AdminBookingsPage() {
   const admin = useAdminApi();
   const router = useRouter();
   const pathname = usePathname();
@@ -233,9 +229,7 @@ export default function AdminBookingsPage() {
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }) => (
-          <span className="rounded-md border px-2 py-0.5 text-xs capitalize">{bookingStatusLabel(row.original.status)}</span>
-        ),
+        cell: ({ row }) => <StatusBadge kind="booking" status={row.original.status ?? ""} />,
       },
       {
         id: "estimate",

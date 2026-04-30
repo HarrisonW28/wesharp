@@ -41,3 +41,15 @@ Legend:
 `settings.view`/`settings.manage` pair controls internal admin surfaces (invite staff, integrations). **Changing another user's role** MUST flow through `**App\Services\UserRoleService::updateRoleForUser()`** (`settings.manage`) so `audit_logs.subject_user_id` captures before/after role transitions.
 
 Manual **`POST /api/admin/payments/manual`** enforces **`InvoicePolicy::recordManualPayment`** (**`payments.manage`** + company-scoped **`invoices.view`**); **`payments.override`** applies when **`amount_pence`** exceeds the invoice remainder (**`RecordManualPaymentAction`**).
+
+---
+
+## Route-level enforcement (belt + suspenders)
+
+- **`/api/account/*`** — each verb adds **`EnsurePermission`** ( **`dashboard.view`**, **`bookings.view`**, **`bookings.create`**, **`orders.view`**, **`knives.view`**, **`invoices.view`**, **`account.locations.manage`**, **`account.settings.update`**) atop **`tenant`** middleware.
+- **`/api/admin/invoices*`** — grouped by **`permission:invoices.view|create|update`** per route definition in **`routes/api.php`**.
+- **`/api/admin/payments*`** — **`GET`** requires **`payments.view`**; **`POST /payments/manual`** requires **`payments.manage`**.
+- **`/api/admin/routes*`** — create / **`PUT`** / reorder / add-stop use **`routes.manage`**; **`POST …/start`** and **`POST …/complete`** remain **middleware-free** beyond **`staff`** so **`OperationalRoutePolicy::manage`** can authorise assigned drivers without **`routes.manage`**.
+- **`route-stops/*`** mutations — **`RouteStopPolicy::manage`** enforces **`ROUTE_STOPS_UPDATE`** with planner/driver carve-outs.
+
+Automated regression: **`StaffPermissionSeparationTest`**, **`TenantCompanyIsolationTest`**, **`PublicBookingEnquiryApiTest`**, **`StripeWebhookSecurityTest`**.

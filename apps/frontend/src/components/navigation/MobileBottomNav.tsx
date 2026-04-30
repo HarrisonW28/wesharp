@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import type { NavItem } from "@/config/navigation";
+import { navHrefIsActive } from "@/lib/nav-href-active";
 import { cn } from "@/lib/utils";
 
 type MobileBottomNavProps = {
@@ -21,7 +22,7 @@ export function MobileBottomNav({ items }: MobileBottomNavProps) {
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2">
         {items.map((item) => {
           const Icon = item.icon;
-          const active = pathname === item.href;
+          const active = navHrefIsActive(pathname, item.href);
           return (
             <Link
               key={item.href}

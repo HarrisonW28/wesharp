@@ -7,13 +7,15 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
+use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 final class CreateInvoiceFromOrderAction
 {
-    /** @throws \Symfony\Component\HttpKernel\Exception\HttpException */
+    /** @throws HttpException */
     public function execute(Order $order, ?Authenticatable $actor, Request $request, ?array $validatedDates = null): Invoice
     {
         /** @phpstan-ignore-next-line */
@@ -35,12 +37,12 @@ final class CreateInvoiceFromOrderAction
 
             $issued = isset($validatedDates['issue_date'])
                 /** @phpstan-ignore-next-line */
-                ? \Carbon\Carbon::parse((string) $validatedDates['issue_date'])->toDateString()
+                ? Carbon::parse((string) $validatedDates['issue_date'])->toDateString()
                 : now()->toDateString();
 
             $due = isset($validatedDates['due_date'])
                 /** @phpstan-ignore-next-line */
-                ? \Carbon\Carbon::parse((string) $validatedDates['due_date'])->toDateString()
+                ? Carbon::parse((string) $validatedDates['due_date'])->toDateString()
                 : now()->addDays(30)->toDateString();
 
             $invoice = Invoice::query()->create([

@@ -11,7 +11,7 @@ import { useAccountApi } from "@/lib/api/use-account-api";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status/StatusBadge";
 
 const BookingEnvelope = z.object({
   success: z.literal(true),
@@ -61,7 +61,7 @@ export default function TenantBookingDetailPage() {
         <div className="grid gap-6 rounded-2xl border bg-card p-6 shadow-sm md:grid-cols-2">
           <div className="space-y-2 text-sm">
             <div className="text-xs font-semibold uppercase text-muted-foreground">Status</div>
-            <Badge>{String(d.status ?? "—").replace(/_/g, " ")}</Badge>
+            <StatusBadge kind="booking" status={d.status ?? ""} />
             <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Requested day</div>
             <div>{String(d.requested_date ?? "—")}</div>
             <div className="pt-2 text-xs font-semibold uppercase text-muted-foreground">Window</div>

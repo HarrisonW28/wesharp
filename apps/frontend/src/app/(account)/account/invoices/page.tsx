@@ -9,7 +9,7 @@ import { formatGbpFromPence } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status/StatusBadge";
 
 export default function AccountInvoicesPage() {
   const api = useAccountApi();
@@ -62,7 +62,7 @@ export default function AccountInvoicesPage() {
                   <td className="px-4 py-3">{inv.due_date ?? "—"}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{formatGbpFromPence(inv.total ?? null)}</td>
                   <td className="px-4 py-3 text-right">
-                    <Badge variant="secondary">{inv.status ?? "—"}</Badge>
+                    <StatusBadge kind="invoice" status={inv.status} />
                   </td>
                 </tr>
               ))}

@@ -1,6 +1,6 @@
 # QA checklist — Orders, knives, invoices & payments (MVP)
 
-Prereqs: **`apps/backend`** running with **`php artisan migrate --seed`** ( **`WeSharpDemoSeeder`** ), Clerk **staff** user with **`orders.view` + `knives.view` + `orders.update` + `knives.update`** plus AR permissions **`invoices.view`**, **`invoices.create`**, **`payments.view`**, **`payments.manage`** (add **`payments.override`** only when testing excess manual amounts).
+Prereqs: **`apps/backend`** running with **`php artisan migrate --seed`** ( **`WeSharpDemoSeeder`** — includes **`finance@demo.wesharp.test`** / **`driver@demo.wesharp.test`** for role-matrix checks ). Clerk **staff** user with **`orders.view` + `knives.view` + `orders.update` + `knives.update`** plus AR permissions **`invoices.view`**, **`invoices.create`**, **`payments.view`**, **`payments.manage`** (add **`payments.override`** only when testing excess manual amounts).
 
 Environment: **`NEXT_PUBLIC_API_ORIGIN`** points at Laravel (**`/api`** prefix). Browser session signed in (**Clerk**).
 
@@ -111,3 +111,19 @@ Prereqs: **`NEXT_PUBLIC_API_ORIGIN`**; Laravel reachable from the browser (**COR
 6. [ ] **`NEXT_PUBLIC_API_ORIGIN`** unset locally → destructive alert and disabled submit.
 
 Known gap: no Playwright/E2E for **`/book`** yet — complement API tests with manual UI checks.
+
+---
+
+## Security pass (routes, UI belts, PSP)
+
+Automated regression: **`php artisan test`** (includes **`tests/Feature/Security/*`**, **`PublicBookingEnquiryApiTest`**).
+
+Manual:
+
+1. [ ] **Finance vs route ops** — as **`finance@demo.wesharp.test`** (local bypass header **`X-WeSharp-Test-User-Id`**), **`POST /api/admin/routes`** → **403**; **`GET /api/admin/payments`** → **200**.
+2. [ ] **Route vs finance AR** — as **`driver@demo.wesharp.test`**, **`POST /api/admin/payments/manual`** → **403**; **`POST /api/admin/routes`** with minimal JSON → **201** (same user id used in PHPUnit **`StaffPermissionSeparationTest`**).
+3. [ ] **Tenant isolation** — two portal users on different seeded companies (**or** scripted factories) ⇒ **`GET /api/account/orders/{peer}`** ⇒ **403** (`TenantCompanyIsolationTest` models the curl expectation).
+4. [ ] **`POST /api/webhooks/stripe`** without **`STRIPE_WEBHOOK_SECRET`** ⇒ **503** safe JSON; valid signature ⇒ **200** **`received: true`** (see **`stripe-security.md`**).
+5. [ ] SPA **deep link fence** — open **`/admin/payments`** as route_manager profile ⇒ redirect **`/forbidden`** ( **`ShellPermissionBoundary`** ). Public marketing header has **no** signed-in **`/account`** shortcuts without auth.
+6. [ ] **`APP_DEBUG=false`** on staging — trigger synthetic **500** (optional) ⇒ JSON omits **`trace`** keys ( **`server_error`** envelope ).
+7. [ ] Invoice detail — **Void** / **Mark paid** require confirmation dialogs before mutation.

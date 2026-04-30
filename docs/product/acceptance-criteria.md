@@ -106,3 +106,12 @@ Criteria below assume Clerk auth, internal **`staff`** middleware, and permissio
 - [ ] **`POST /api/public/booking-enquiries`** succeeds without Bearer token when payload is valid and **`terms_accepted`** is accepted; **`201`** returns **`data.accepted`** + **`message`** only (no internal IDs).
 - [ ] Repeated rapid submits from one IP exceed limit → **`429`** (throttle **`booking-enquiries`**).
 - [ ] Laravel creates **`CompanyStatus::Lead`** when email does not match an existing **`billing_email`** / contact email; **`CompanyLocation`**, **`Contact`**, **`BookingStatus::Requested`**, CRM **note**, and **audit** rows (`public.booking_enquiry`, `booking.created_from_public_enquiry`) are recorded (see **`docs/product/public-website.md`**).
+
+## Security & permissions MVP
+
+- [ ] **`routes/api.php`** exposes **no** unauthenticated **`/api/admin/*`** or **`/api/account/*`** routes (beyond **`health`**, **`/api/public/booking-enquiries`**, **`/api/webhooks/stripe`**).
+- [ ] Internal role separation: **`StaffPermissionSeparationTest`** asserts route_manager ⇒ **payments/manual** forbidden, finance ⇒ **POST /routes** forbidden.
+- [ ] Tenant scoping: **`TenantCompanyIsolationTest`** covers cross-company **`GET /api/account/orders/{id}`**.
+- [ ] Frontend gates: **`StaffRouteGate`**, **`TenantRouteGate`**, **`ShellPermissionBoundary`**, **`/forbidden`** for unknown roles; **`safeApiErrorMessage`** surfaces **`error.message`** / first **`error.errors`** field only — no dumping raw payloads into banners.
+- [ ] Stripe webhook rejects unsigned calls when **`STRIPE_WEBHOOK_SECRET`** set — **`StripeWebhookSecurityTest`**.
+- [ ] Destructive finance UI (invoice **void**, **mark paid**) uses **`AlertDialog`** acknowledgement.

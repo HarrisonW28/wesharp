@@ -14,7 +14,7 @@ import { formatGbpFromPence } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -288,7 +288,7 @@ export default function AdminOrderDetailPage() {
                 <div className="font-mono text-xs text-muted-foreground">{k.tag_id}</div>
                 <div className="font-semibold">{k.knife_type ?? "Blade"}</div>
               </div>
-              <Badge>{(k.status ?? "").replace(/_/g, " ")}</Badge>
+              <StatusBadge kind="knife" status={k.status ?? ""} />
             </div>
             <Button asChild variant="link" className="mt-2 h-auto px-0">
               <Link href={`/admin/knives/${k.id}`}>Open lifecycle</Link>

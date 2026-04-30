@@ -15,7 +15,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/tables/DataTable";
 import { Input } from "@/components/ui/input";
@@ -115,7 +115,7 @@ export default function AdminKnivesPage() {
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }) => <Badge variant="secondary">{(row.original.status ?? "").replace(/_/g, " ")}</Badge>,
+        cell: ({ row }) => <StatusBadge kind="knife" status={row.original.status} />,
       },
       {
         accessorKey: "knife_type",

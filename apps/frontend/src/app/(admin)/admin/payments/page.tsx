@@ -16,7 +16,7 @@ import { formatGbpFromPence } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { DataTable } from "@/components/tables/DataTable";
 
 type PaymentRow = z.infer<typeof PaymentRowSchema>;
@@ -90,9 +90,7 @@ export default function AdminPaymentsPage() {
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }) => (
-          <Badge variant="secondary">{(row.original.status ?? "").replace(/_/g, " ")}</Badge>
-        ),
+        cell: ({ row }) => <StatusBadge kind="payment" status={row.original.status} />,
       },
       { accessorKey: "reference", header: "Ref.", cell: ({ row }) => <span className="font-mono text-xs">{row.original.reference ?? "—"}</span> },
     ],

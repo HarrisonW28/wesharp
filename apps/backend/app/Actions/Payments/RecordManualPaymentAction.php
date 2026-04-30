@@ -2,16 +2,17 @@
 
 namespace App\Actions\Payments;
 
-use App\Enums\PaymentMethod;
-use App\Enums\PaymentStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderPaymentStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\User;
 use App\Services\Audit\AuditRecorder;
 use App\Support\Permissions;
-use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,7 +63,7 @@ final class RecordManualPaymentAction
             $method = PaymentMethod::from($validated['payment_method']);
 
             $paidAt = isset($validated['paid_at'])
-                ? \Carbon\Carbon::parse((string) $validated['paid_at'])
+                ? Carbon::parse((string) $validated['paid_at'])
                 : now();
 
             $statusPayment = PaymentStatus::PartPaid;

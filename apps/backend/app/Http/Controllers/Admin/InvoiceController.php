@@ -16,6 +16,7 @@ use App\Services\Audit\AuditRecorder;
 use App\Services\Invoices\InvoiceService;
 use App\Support\ApiResponses;
 use App\Support\Invoices\InvoiceJson;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -79,11 +80,11 @@ final class InvoiceController extends Controller
 
         if (isset($validated['due_date'])) {
             /** @phpstan-ignore-next-line */
-            $invoice->due_on = new \Carbon\Carbon($validated['due_date']);
+            $invoice->due_on = new Carbon($validated['due_date']);
         }
         if (isset($validated['issue_date'])) {
             /** @phpstan-ignore-next-line */
-            $invoice->issued_on = new \Carbon\Carbon($validated['issue_date']);
+            $invoice->issued_on = new Carbon($validated['issue_date']);
         }
 
         $invoice->save();

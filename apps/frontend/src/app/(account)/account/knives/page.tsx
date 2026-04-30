@@ -9,7 +9,7 @@ import { useAccountApi } from "@/lib/api/use-account-api";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status/StatusBadge";
 
 export default function AccountKnivesPage() {
   const api = useAccountApi();
@@ -60,7 +60,7 @@ export default function AccountKnivesPage() {
                 <tr key={k.id} className="border-t hover:bg-muted/30">
                   <td className="px-4 py-3 font-mono text-xs">{k.tag_id ?? k.id}</td>
                   <td className="px-4 py-3">
-                    <Badge variant="outline">{k.status ?? "—"}</Badge>
+                    <StatusBadge kind="knife" status={k.status} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{k.updated_at ? new Date(k.updated_at).toLocaleString() : "—"}</td>
                 </tr>

@@ -2,10 +2,10 @@
 
 namespace App\Support\Routes;
 
+use App\Enums\RouteStopStatus;
 use App\Models\Booking;
 use App\Models\OperationalRoute;
 use App\Models\RouteStop;
-use App\Enums\RouteStopStatus;
 
 final class RouteFormatting
 {

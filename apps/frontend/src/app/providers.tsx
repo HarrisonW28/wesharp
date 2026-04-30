@@ -6,14 +6,15 @@ import { ThemeProvider } from "next-themes";
 import { type ReactNode, useState } from "react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { resolvedClerkPublishableKey } from "@/lib/clerk-publishable-key";
 
-const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const publishableKey = resolvedClerkPublishableKey(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <ClerkProvider publishableKey={publishableKey ?? ""}>
+    <ClerkProvider publishableKey={publishableKey}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <TooltipProvider delayDuration={200}>{children}</TooltipProvider>

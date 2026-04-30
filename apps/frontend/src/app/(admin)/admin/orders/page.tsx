@@ -16,7 +16,7 @@ import { formatGbpFromPence } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/tables/DataTable";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -30,14 +30,6 @@ const createOrderSchema = z.object({
   booking_id: z.string().uuid("Booking must be a valid UUID."),
 });
 
-function statusBadge(s?: string | null) {
-  if (!s) {
-    return "—";
-  }
-  return s.replace(/_/g, " ");
-}
-
-function parseOptionalPence(raw: string): number | undefined {
   const t = raw.trim();
   if (t === "") {
     return undefined;
@@ -175,7 +167,7 @@ export default function AdminOrdersPage() {
         header: "Order",
         cell: ({ row }) => (
           <div className="space-y-1">
-            <Badge variant="secondary">{statusBadge(row.original.status)}</Badge>
+            <StatusBadge kind="order" status={row.original.status} />
             <div className="text-xs text-muted-foreground">{row.original.scheduled_date ?? "—"}</div>
           </div>
         ),

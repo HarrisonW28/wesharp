@@ -16,6 +16,7 @@ import { formatGbpFromPence } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/tables/DataTable";
@@ -106,7 +107,7 @@ export default function AdminInvoicesPage() {
         header: "Status",
         cell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-1">
-            <Badge variant="secondary">{(row.original.status ?? "").replace(/_/g, " ")}</Badge>
+            <StatusBadge kind="invoice" status={row.original.status} />
             {row.original.overdue ? <Badge variant="destructive">Overdue</Badge> : null}
           </div>
         ),
@@ -114,7 +115,9 @@ export default function AdminInvoicesPage() {
       {
         accessorKey: "payment_status",
         header: "Settlement",
-        cell: ({ row }) => <span className="capitalize">{row.original.payment_status ?? "—"}</span>,
+        cell: ({ row }) => (
+          <StatusBadge kind="payment" status={(row.original.payment_status as string | null | undefined) ?? ""} />
+        ),
       },
       {
         accessorKey: "due_date",

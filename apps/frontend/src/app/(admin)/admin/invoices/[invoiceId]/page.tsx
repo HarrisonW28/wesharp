@@ -14,9 +14,19 @@ import { formatGbpFromPence } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +48,8 @@ export default function AdminInvoiceDetailPage() {
   const admin = useAdminApi();
   const queryClient = useQueryClient();
   const [manualOpen, setManualOpen] = useState(false);
+  const [markPaidOpen, setMarkPaidOpen] = useState(false);
+  const [voidOpen, setVoidOpen] = useState(false);
   const [amountPence, setAmountPence] = useState("");
   const [reference, setReference] = useState("");
 
@@ -80,6 +92,7 @@ export default function AdminInvoiceDetailPage() {
     },
     onSuccess: () => {
       toast.success("Marked paid.");
+      setMarkPaidOpen(false);
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -93,6 +106,7 @@ export default function AdminInvoiceDetailPage() {
     },
     onSuccess: () => {
       toast.success("Invoice voided.");
+      setVoidOpen(false);
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -187,13 +201,13 @@ export default function AdminInvoiceDetailPage() {
           </Button>
         ) : null}
         {payable ? (
-          <Button type="button" disabled={markPaidMut.isPending} onClick={() => markPaidMut.mutate()}>
+          <Button type="button" disabled={markPaidMut.isPending} onClick={() => setMarkPaidOpen(true)}>
             {markPaidMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
             Mark paid
           </Button>
         ) : null}
         {payable ? (
-          <Button type="button" variant="destructive" disabled={voidMut.isPending} onClick={() => voidMut.mutate()}>
+          <Button type="button" variant="destructive" disabled={voidMut.isPending} onClick={() => setVoidOpen(true)}>
             Void
           </Button>
         ) : null}
@@ -245,8 +259,9 @@ export default function AdminInvoiceDetailPage() {
             </div>
           </dl>
           <Separator className="my-4" />
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Badge variant={inv.overdue ? "destructive" : "secondary"}>{inv.payment_status ?? "—"}</Badge>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <StatusBadge kind="payment" status={inv.payment_status ?? ""} />
+            {inv.overdue ? <Badge variant="destructive">Overdue</Badge> : null}
             <span className="text-muted-foreground">Due {inv.due_date ?? "—"}</span>
           </div>
           {inv.order_id ? (
@@ -281,6 +296,55 @@ export default function AdminInvoiceDetailPage() {
       <div className="mt-4">
         <DataTable<InvoiceLine> columns={lineColumns} data={(inv.items ?? []) as InvoiceLine[]} />
       </div>
+
+      <AlertDialog open={markPaidOpen} onOpenChange={setMarkPaidOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark this invoice paid?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This posts a settlement state in SharpFlow. Use only when cash or card capture already cleared outside the
+              automated PSP flow.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              disabled={markPaidMut.isPending}
+              onClick={() => {
+                markPaidMut.mutate();
+              }}
+            >
+              {markPaidMut.isPending ? "Saving…" : "Confirm mark paid"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={voidOpen} onOpenChange={setVoidOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Void this invoice?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Voiding is irreversible in the MVP UI. Finance should ensure no payments remain attached or plan a
+              compensating credit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={voidMut.isPending}
+              onClick={() => {
+                voidMut.mutate();
+              }}
+            >
+              {voidMut.isPending ? "Voiding…" : "Confirm void"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

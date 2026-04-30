@@ -71,6 +71,16 @@ final class WeSharpDemoSeeder extends Seeder
             ],
         );
 
+        User::query()->firstOrCreate(
+            ['email' => 'finance@demo.wesharp.test'],
+            [
+                'name' => 'Riley Ledger',
+                'password' => Hash::make('password'),
+                'role' => UserRole::Finance,
+                'status' => UserStatus::Active,
+            ],
+        );
+
         $manchesterArea = ServiceArea::query()->create([
             'name' => 'Manchester metropolitan',
             'city' => 'Manchester',

@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Api\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 abstract class TenantAccountController extends Controller
 {
     /** @throws HttpException */
-    protected function tenantCompanyId(\Illuminate\Http\Request $request): string
+    protected function tenantCompanyId(Request $request): string
     {
         $user = $request->user();
         if ($user === null) {
@@ -25,7 +26,7 @@ abstract class TenantAccountController extends Controller
     }
 
     /** @throws HttpException */
-    protected function tenantCompany(\Illuminate\Http\Request $request): Company
+    protected function tenantCompany(Request $request): Company
     {
         $id = $this->tenantCompanyId($request);
 

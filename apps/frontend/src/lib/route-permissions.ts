@@ -1,0 +1,53 @@
+/** Map portal URL segments to Laravel permission strings (belt with API + route gates). */
+export function adminPermissionForPath(pathname: string): string {
+  if (pathname.startsWith("/admin/analytics")) {
+    return "analytics.view";
+  }
+  if (pathname.startsWith("/admin/crm")) {
+    return "companies.view";
+  }
+  if (pathname.startsWith("/admin/bookings")) {
+    return "bookings.view";
+  }
+  if (pathname.startsWith("/admin/orders")) {
+    return "orders.view";
+  }
+  if (pathname.startsWith("/admin/knives")) {
+    return "knives.view";
+  }
+  if (pathname.startsWith("/admin/invoices")) {
+    return "invoices.view";
+  }
+  if (pathname.startsWith("/admin/payments")) {
+    return "payments.view";
+  }
+  if (pathname.startsWith("/admin/routes")) {
+    return "routes.view";
+  }
+  return "dashboard.view";
+}
+
+export function accountPermissionForPath(pathname: string): string {
+  if (pathname.startsWith("/account/dashboard")) {
+    return "dashboard.view";
+  }
+  if (pathname.startsWith("/account/bookings")) {
+    return "bookings.view";
+  }
+  if (pathname.startsWith("/account/orders")) {
+    return "orders.view";
+  }
+  if (pathname.startsWith("/account/knives")) {
+    return "knives.view";
+  }
+  if (pathname.startsWith("/account/invoices")) {
+    return "invoices.view";
+  }
+  if (pathname.startsWith("/account/locations")) {
+    return "account.locations.manage";
+  }
+  if (pathname.startsWith("/account/settings")) {
+    return "account.settings.update";
+  }
+  return "dashboard.view";
+}

@@ -1,15 +1,27 @@
-import { BOOKING_STATUS, INVOICE_STATUS, KNIFE_CUSTODY_STATUS, ORDER_STATUS } from "@/config/statuses";
+import { BOOKING_STATUS, INVOICE_STATUS, ORDER_STATUS } from "@/config/statuses";
+
+export function humanizeUnderscored(value: string | null | undefined): string {
+  const s = (value ?? "").trim();
+  return s === "" ? "—" : s.replace(/_/g, " ");
+}
 
 export function bookingStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     [BOOKING_STATUS.DRAFT]: "Draft",
     [BOOKING_STATUS.REQUESTED]: "Requested",
     [BOOKING_STATUS.CONFIRMED]: "Confirmed",
+    assigned_to_route: "On route",
+    collected: "Collected",
+    in_sharpening: "In sharpening",
+    quality_checked: "Quality checked",
+    returned: "Returned",
     [BOOKING_STATUS.IN_PROGRESS]: "In progress",
     [BOOKING_STATUS.COMPLETED]: "Completed",
     [BOOKING_STATUS.CANCELLED]: "Cancelled",
+    no_show: "No show",
   };
-  return labels[status] ?? status;
+  const key = status.trim();
+  return labels[key] ?? humanizeUnderscored(key);
 }
 
 export function invoiceStatusLabel(status: string): string {
@@ -20,27 +32,64 @@ export function invoiceStatusLabel(status: string): string {
     [INVOICE_STATUS.OVERDUE]: "Overdue",
     [INVOICE_STATUS.VOID]: "Void",
   };
-  return labels[status] ?? status;
+  const key = status.trim();
+  return labels[key] ?? humanizeUnderscored(key);
 }
 
-export function custodyStatusLabel(status: string): string {
+export function knifeStatusLabel(status: string): string {
   const labels: Record<string, string> = {
-    [KNIFE_CUSTODY_STATUS.WITH_CUSTOMER]: "At venue",
-    [KNIFE_CUSTODY_STATUS.IN_TRANSIT_TO_FACILITY]: "Collecting",
-    [KNIFE_CUSTODY_STATUS.AT_FACILITY]: "At facility",
-    [KNIFE_CUSTODY_STATUS.SHARPENING]: "Sharpening",
-    [KNIFE_CUSTODY_STATUS.IN_TRANSIT_TO_CUSTOMER]: "Returning",
-    [KNIFE_CUSTODY_STATUS.RETURNED]: "Returned",
+    logged: "Logged",
+    collected: "Collected",
+    inspected: "Inspected",
+    sharpened: "Sharpened",
+    quality_checked: "Quality checked",
+    returned: "Returned",
+    issue_reported: "Issue reported",
   };
-  return labels[status] ?? status;
+  const key = status.trim();
+  return labels[key] ?? humanizeUnderscored(key);
 }
 
 export function orderStatusLabel(status: string): string {
   const labels: Record<string, string> = {
-    [ORDER_STATUS.PENDING]: "Pending",
-    [ORDER_STATUS.PAID]: "Paid",
-    [ORDER_STATUS.FULFILLED]: "Fulfilled",
+    [ORDER_STATUS.DRAFT]: "Draft",
+    [ORDER_STATUS.ACTIVE]: "Active",
+    [ORDER_STATUS.COMPLETED]: "Completed",
     [ORDER_STATUS.CANCELLED]: "Cancelled",
   };
-  return labels[status] ?? status;
+  const key = status.trim();
+  return labels[key] ?? humanizeUnderscored(key);
+}
+
+export function routeStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    draft: "Draft",
+    scheduled: "Scheduled",
+    in_progress: "In progress",
+    completed: "Completed",
+    cancelled: "Cancelled",
+  };
+  const key = status.trim();
+  return labels[key] ?? humanizeUnderscored(key);
+}
+
+/** Payment gateway / PSP row statuses (Stripe-style). */
+export function paymentAttemptLabel(status: string): string {
+  const key = status.trim().toLowerCase();
+  const labels: Record<string, string> = {
+    succeeded: "Succeeded",
+    paid: "Paid",
+    unpaid: "Unpaid",
+    part_paid: "Part paid",
+    overdue: "Overdue",
+    written_off: "Written off",
+    processing: "Processing",
+    pending: "Pending",
+    failed: "Failed",
+    canceled: "Cancelled",
+    cancelled: "Cancelled",
+    refunded: "Refunded",
+    requires_action: "Action required",
+  };
+  return labels[key] ?? humanizeUnderscored(key);
 }

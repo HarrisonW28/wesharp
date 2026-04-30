@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\CompanyLocation;
 use App\Models\OperationalRoute;
 use App\Models\User;
+use Database\Seeders\WeSharpDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,7 +20,7 @@ final class AdminBookingsApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(\Database\Seeders\WeSharpDemoSeeder::class);
+        $this->seed(WeSharpDemoSeeder::class);
     }
 
     public function test_index_returns_bookings_for_internal_user(): void

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { CalendarClock, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { PaginatedBookingsResponseSchema } from "@/lib/api/account-schema";
@@ -9,24 +9,8 @@ import { useAccountApi } from "@/lib/api/use-account-api";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/feedback/EmptyState";
-import { CalendarClock } from "lucide-react";
-
-function statusTone(s?: string | null): "default" | "secondary" | "outline" {
-  switch (s) {
-    case "completed":
-      return "default";
-    case "cancelled":
-    case "no_show":
-      return "outline";
-    default:
-      return "secondary";
-  }
-}
-
-export default function AccountBookingsPage() {
   const api = useAccountApi();
 
   const listQuery = useQuery({
@@ -83,9 +67,7 @@ export default function AccountBookingsPage() {
                 <tr key={b.id} className="border-t hover:bg-muted/30">
                   <td className="px-4 py-3">{b.requested_date ?? "—"}</td>
                   <td className="px-4 py-3">
-                    <Badge variant={statusTone(b.status)}>
-                      {b.status ? b.status.replace(/_/g, " ") : "—"}
-                    </Badge>
+                    <StatusBadge kind="booking" status={b.status} />
                   </td>
                   <td className="px-4 py-3">{b.service_type?.replace("_", " ") ?? "—"}</td>
                   <td className="px-4 py-3 text-right">

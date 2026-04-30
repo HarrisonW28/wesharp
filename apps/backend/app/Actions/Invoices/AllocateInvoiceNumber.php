@@ -12,7 +12,7 @@ final class AllocateInvoiceNumber
         $prefix = 'INV-'.now()->format('Ym').'-';
 
         return DB::transaction(function () use ($prefix): string {
-            for ($n = 1; $n < 1_000_000; ++$n) {
+            for ($n = 1; $n < 1_000_000; $n++) {
                 /** @phpstan-ignore-next-line */
                 $candidate = sprintf('%s%06d', $prefix, $n);
                 /** @phpstan-ignore-next-line */

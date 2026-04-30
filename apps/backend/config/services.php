@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    /*
+    | Stripe (PSP webhooks — verify STRIPE_WEBHOOK_SECRET matches the Dashboard signing secret).
+    */
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
 ];

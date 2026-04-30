@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Models\Booking;
-
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -60,3 +59,5 @@ class StoreOrderRequest extends FormRequest
         ) {
             abort(422, 'Route does not match the booking assignment.');
         }
+    }
+}

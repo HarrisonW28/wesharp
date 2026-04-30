@@ -32,7 +32,7 @@ export function HomeHero() {
           <p className="max-w-xl text-lg text-muted-foreground">
             Route-ready pickups, custody visibility, and billing clarity across Greater Manchester & Liverpool — without spreadsheets or guesswork.
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Button size="lg" asChild>
               <Link href="/account/dashboard">
                 Open customer portal <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
@@ -74,7 +74,7 @@ export function HomeHero() {
             </div>
           </div>
           <div className="mt-6 rounded-xl bg-muted/40 p-4 text-xs text-muted-foreground">
-            Demo UI · Authentication wiring arrives with Clerk + Laravel JWT verification.
+            Auth: Clerk powers sign-in · Laravel verifies JWT on <code className="font-mono">/api</code> endpoints.
           </div>
         </motion.div>
       </div>

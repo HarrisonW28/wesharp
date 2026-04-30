@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { HomeHero } from "@/components/marketing/HomeHero";
+import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   return (
@@ -26,13 +29,22 @@ export default function HomePage() {
             </div>
           ))}
         </div>
+        <div className="mt-10 flex justify-center">
+          <Button variant="outline" asChild size="sm">
+            <Link href="/service-areas">View service areas →</Link>
+          </Button>
+        </div>
       </section>
 
       <section id="pricing" className="border-t bg-muted/25 py-16">
         <div className="mx-auto max-w-6xl px-4 md:px-8">
           <h2 className="text-2xl font-semibold tracking-tight">Pricing snapshot</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Commercial programmes vary by cadence and knife volumes — mock figures shown until catalogue APIs ship.
+            Commercial programmes vary by cadence and knife volumes — see the full&nbsp;
+            <Link href="/pricing" className="font-medium text-foreground underline underline-offset-4 hover:no-underline">
+              pricing overview
+            </Link>
+            &nbsp;for programme types.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl border bg-background p-6">
