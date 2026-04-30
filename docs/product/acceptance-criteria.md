@@ -1,5 +1,11 @@
 # Acceptance criteria — Admin CRM & bookings MVP
 
+## Automated acceptance signals
+
+- **`cd apps/backend && php artisan test`** validates API contracts behind several sections below (CRM, bookings, routes, orders, knives, invoices, tenant scoping). See **`docs/testing/testing-strategy.md`** for the PHPUnit map.
+- **`cd apps/frontend && npm run test`** exercises shared Zod schemas and label helpers underpinning CRM / bookings / route manager workflows.
+- **`cd apps/frontend && npm run test:e2e`** covers public **`/`** render and optional Laravel **`GET /api/health`**; Clerk-driven UI remains manual until **`PLAYWRIGHT_RUN_CLERK_FLOWS`** helpers land (**`docs/testing/e2e-critical-flows.md`**).
+
 Criteria below assume Clerk auth, internal **`staff`** middleware, and permissions seeded for the tester.
 
 ## Accounts list (`/admin/crm`)

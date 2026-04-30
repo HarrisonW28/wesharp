@@ -16,7 +16,12 @@ test.describe("Public marketing shell", () => {
 });
 
 test.describe("@auth Critical multi-role flow (skipped by default)", () => {
-  test.skip(() => process.env.PLAYWRIGHT_RUN_CLERK_FLOWS !== "true", "Set PLAYWRIGHT_RUN_CLERK_FLOWS=true with working Clerk credentials to enable.");
+  test.beforeEach(({}, testInfo) => {
+    testInfo.skip(
+      process.env.PLAYWRIGHT_RUN_CLERK_FLOWS !== "true",
+      "Set PLAYWRIGHT_RUN_CLERK_FLOWS=true with deterministic Clerk/session fixtures.",
+    );
+  });
 
   /** Placeholder chaining the 13 human QA steps documented in `/docs/testing/e2e-critical-flows.md`. */
   test("staff → ops → tenant journey", async () => {
