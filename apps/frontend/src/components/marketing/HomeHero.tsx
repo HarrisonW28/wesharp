@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 
 export function HomeHero() {
   return (
-    <section className="relative overflow-hidden border-b bg-gradient-to-b from-amber-500/12 via-background to-background">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.14),transparent_55%)]" />
+    <section className="relative overflow-hidden border-b bg-gradient-to-b from-primary/12 via-background to-background">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgb(59_130_246_/_0.14),transparent_55%)]" />
       <div className="relative mx-auto max-w-7xl px-4 py-16 md:py-24 md:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
             <div className="inline-flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5 text-amber-600" aria-hidden />
+              <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
               Greater Manchester &amp; Liverpool
             </div>
           </motion.div>

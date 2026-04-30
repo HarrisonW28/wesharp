@@ -230,7 +230,7 @@ export default function RouteTodayPage() {
                       <div className="font-semibold">{r.name}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300 md:text-muted-foreground">
                         <StatusBadge kind="route" status={r.route_status ?? ""} />
-                        {r.driver_name ? <span>{r.driver_name}</span> : <span className="text-amber-200/90">No driver</span>}
+                        {r.driver_name ? <span>{r.driver_name}</span> : <span className="text-blue-200/90">No driver</span>}
                       </div>
                       <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-400 md:text-muted-foreground">
                         <MapPin className="h-4 w-4 shrink-0 opacity-70" aria-hidden />

@@ -220,8 +220,8 @@ export default function RouteStopDetailPage() {
         </Card>
 
         {stop.booking?.internal_notes ?? stop.booking?.customer_notes ? (
-          <Card className="border-amber-500/30 bg-amber-950/40 p-3 text-xs text-amber-100 md:bg-amber-500/10 md:text-amber-950">
-            <div className="font-semibold text-amber-200 md:text-amber-900">Notes</div>
+          <Card className="border-primary/30 bg-primary/10 p-3 text-xs text-foreground">
+            <div className="font-semibold text-foreground">Notes</div>
             <p className="mt-1 whitespace-pre-wrap">{stop.booking?.internal_notes ?? stop.booking?.customer_notes}</p>
           </Card>
         ) : null}

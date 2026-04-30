@@ -152,7 +152,7 @@ export default function RouteDetailPage() {
             <span className="font-medium">{route.assigned_staff.name}</span>
           </div>
         ) : (
-          <p className="text-xs text-amber-200/90 md:text-amber-600">No driver assigned.</p>
+          <p className="text-xs text-blue-200/90 md:text-primary">No driver assigned.</p>
         )}
 
         <Separator className="bg-white/10 md:bg-border" />
@@ -191,7 +191,7 @@ export default function RouteDetailPage() {
                         </p>
                       ) : null}
                       {s.damage_notes ? (
-                        <p className="mt-1 line-clamp-2 text-xs text-amber-200/90 md:text-amber-800">
+                        <p className="mt-1 line-clamp-2 text-xs text-blue-200/90 md:text-blue-900 dark:md:text-blue-100">
                           Stop: {s.damage_notes}
                         </p>
                       ) : null}

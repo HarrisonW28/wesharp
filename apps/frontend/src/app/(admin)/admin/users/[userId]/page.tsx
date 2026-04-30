@@ -390,8 +390,8 @@ function ManageUserPanels({ user, userId }: { user: UserDetail; userId: string }
                 </div>
 
                 {needsSelfDemotionBanner ? (
-                  <div className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3">
-                    <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
+                  <div className="space-y-2 rounded-lg border border-primary/40 bg-primary/10 p-3">
+                    <p className="text-sm font-medium text-foreground">
                       You are lowering your own super admin access
                     </p>
                     <p className="text-xs text-muted-foreground">

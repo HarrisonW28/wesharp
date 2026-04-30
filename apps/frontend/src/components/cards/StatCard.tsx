@@ -27,7 +27,7 @@ export function StatCard({ title, value, hint, trend, trendPositive = true, icon
         <CardContent className="space-y-2">
           <div className="text-3xl font-semibold tracking-tight">{value}</div>
           {trend ? (
-            <p className={cn("text-xs", trendPositive ? "text-emerald-600 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400")}>
+            <p className={cn("text-xs", trendPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
               {trend}
             </p>
           ) : null}

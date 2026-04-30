@@ -92,7 +92,7 @@ export default function HomePage() {
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {BENEFITS.map(({ title, body }) => (
               <div key={title} className="flex gap-4 rounded-2xl border bg-card p-6 shadow-sm">
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-amber-600" aria-hidden />
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                 <div>
                   <h3 className="font-semibold">{title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
@@ -158,7 +158,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t bg-gradient-to-b from-amber-500/10 to-background py-20 md:py-24">
+      <section className="border-t bg-gradient-to-b from-primary/10 to-background py-20 md:py-24">
         <div className="mx-auto max-w-2xl px-4 text-center md:px-8">
           <h2 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl">Ready to sharpen your knives?</h2>
           <p className="mt-4 text-muted-foreground">

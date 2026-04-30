@@ -9,6 +9,7 @@ import { ArrowRight, LayoutDashboard, Menu } from "lucide-react";
 import { PUBLIC_SITE_NAV_LINKS } from "@/config/public-site-nav";
 
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
@@ -52,7 +53,8 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
             </Link>
           </nav>
 
-          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
+            <ThemeToggle />
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button size="icon" variant="outline" type="button" className="lg:hidden" aria-label="Open menu">
@@ -95,6 +97,10 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                       Book a collection <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                     </Link>
                   </Button>
+                  <div className="mt-6 flex items-center justify-between border-t pt-4">
+                    <span className="text-sm text-muted-foreground">Theme</span>
+                    <ThemeToggle />
+                  </div>
                 </nav>
               </SheetContent>
             </Sheet>
