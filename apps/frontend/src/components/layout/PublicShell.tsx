@@ -23,8 +23,8 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 md:h-16 md:px-6">
           <div className="flex min-w-0 items-center gap-2 md:gap-6">
-            <Link href="/" className="inline-flex shrink-0 items-center text-3xl leading-none md:text-4xl" aria-label="WeSharp home">
-              <WeSharpLogo />
+            <Link href="/" className="inline-flex shrink-0 items-center" aria-label="WeSharp home">
+              <WeSharpLogo className="h-8 md:h-9" />
             </Link>
             <nav aria-label="Primary" className="hidden items-center gap-5 md:flex">
               {PUBLIC_SITE_NAV_LINKS.map((l) => (

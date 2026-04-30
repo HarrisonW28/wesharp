@@ -31,9 +31,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
         <div className="flex min-h-screen bg-muted/25">
           <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
             <div className="flex h-14 items-center border-b px-4">
-              <span className="inline-flex text-xl leading-none">
-                <WeSharpLogo />
-              </span>
+              <WeSharpLogo className="h-7" />
             </div>
             <SidebarNav items={navItems} />
           </aside>

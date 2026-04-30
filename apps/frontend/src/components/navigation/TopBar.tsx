@@ -30,7 +30,7 @@ export function TopBar({ title, subtitle, onMenuClick, showMenu, trailing }: Top
           ) : (
             <>
               <span className="sr-only">WeSharp</span>
-              <div className="flex min-w-0 items-center text-xl leading-none [&_img]:max-h-7">{title}</div>
+              <div className="flex min-w-0 items-center [&>span]:h-7">{title}</div>
             </>
           )
         ) : null}

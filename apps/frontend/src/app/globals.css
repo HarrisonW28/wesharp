@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Match next-themes (`attribute="class"`) so `dark:` tracks `.dark` on html, not only prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

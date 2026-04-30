@@ -37,9 +37,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <div className="flex min-h-screen bg-gradient-to-br from-muted/35 via-background to-muted/20">
           <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95 md:backdrop-blur">
             <div className="flex h-14 items-center gap-2 border-b px-4">
-              <span className="inline-flex text-xl leading-none">
-                <WeSharpLogo />
-              </span>
+              <WeSharpLogo className="h-7" />
               <span className="text-xs font-semibold text-muted-foreground">Ops</span>
             </div>
             <SidebarNav items={navItems} />
