@@ -19,6 +19,11 @@ export function TenantRouteGate({ children }: PropsWithChildren) {
 
     const u = data.data.user;
 
+    if (u.role_bucket === "internal") {
+      void router.replace("/admin/dashboard");
+      return;
+    }
+
     if (u.role_bucket !== "customer") {
       void router.replace("/forbidden");
       return;

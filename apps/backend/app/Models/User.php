@@ -42,11 +42,23 @@ class User extends Authenticatable
     }
 
     /**
-     * When legacy rows omit `role`, treat safely as tenant staff (least privilege for internals).
+     * Resolve a backed enum role from persisted attributes (trim / case-normalise) so minor DB drift
+     * still maps to {@see UserRole}. When missing or unrecognised, default to least-privilege tenant.
      */
     public function resolvedRole(): UserRole
     {
-        return $this->role ?? UserRole::CustomerStaff;
+        if ($this->role instanceof UserRole) {
+            return $this->role;
+        }
+
+        $raw = $this->getAttributes()['role'] ?? null;
+        if (is_string($raw) && $raw !== '') {
+            $normalised = strtolower(trim($raw));
+
+            return UserRole::tryFrom($normalised) ?? UserRole::CustomerStaff;
+        }
+
+        return UserRole::CustomerStaff;
     }
 
     public function company(): BelongsTo

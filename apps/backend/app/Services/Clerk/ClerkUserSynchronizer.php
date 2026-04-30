@@ -99,6 +99,10 @@ final class ClerkUserSynchronizer
         ];
     }
 
+    /**
+     * Sync identity fields only. Role, company_id, and status are database-authoritative — never overwrite
+     * an existing staff assignment (e.g. super_admin) from Clerk on subsequent logins.
+     */
     private function mergeProfile(User $user, array $incoming): User
     {
         $dirty = [];
