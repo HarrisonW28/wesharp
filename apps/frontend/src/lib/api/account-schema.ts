@@ -23,6 +23,23 @@ export const TenantSubscriptionSummarySchema = z.object({
   summary: z.string().nullable().optional(),
 });
 
+export const TenantSubscriptionInvoiceRowSchema = z.object({
+  id: z.string(),
+  invoice_number: z.string().nullable().optional(),
+  status: z.string().nullable().optional(),
+  issue_date: z.string().nullable().optional(),
+  due_date: z.string().nullable().optional(),
+  total_pence: z.number(),
+  formatted_total: z.string(),
+});
+
+/** Full portal subscription payload (dashboard, settings, subscription page). */
+export const TenantSubscriptionDetailSchema = TenantSubscriptionSummarySchema.extend({
+  included_services: z.string().nullable().optional(),
+  allowance_summary: z.string().nullable().optional(),
+  recent_invoices: z.array(TenantSubscriptionInvoiceRowSchema).optional(),
+}).passthrough();
+
 export const DashboardResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({
@@ -60,7 +77,7 @@ export const DashboardResponseSchema = z.object({
           updated_at: z.string().nullable(),
         })
         .nullable(),
-      subscription: TenantSubscriptionSummarySchema.nullable().optional(),
+      subscription: TenantSubscriptionDetailSchema.nullable().optional(),
     }),
     basis: z.record(z.string(), z.string()).optional(),
   }),
@@ -360,5 +377,23 @@ export const SettingsResponseSchema = z.object({
       billing_email: z.string().nullable().optional(),
       company_status: z.string().nullable().optional(),
     }),
+    primary_contact: z
+      .object({
+        first_name: z.string().nullable().optional(),
+        last_name: z.string().nullable().optional(),
+        email: z.string().nullable().optional(),
+        phone: z.string().nullable().optional(),
+        billing_contact: z.boolean().optional(),
+      })
+      .nullable()
+      .optional(),
+    subscription: TenantSubscriptionDetailSchema.nullable().optional(),
+  }),
+});
+
+export const AccountSubscriptionResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    subscription: TenantSubscriptionDetailSchema.nullable(),
   }),
 });

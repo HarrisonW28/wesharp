@@ -11,6 +11,7 @@ use App\Models\Knife;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\Account\CustomerSubscriptionPayload;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 
@@ -84,6 +85,7 @@ final class AccountDashboardService
                 'updated_at' => $lastOrder->updated_at?->toIso8601String(),
                 'scheduled_date' => $lastOrder->booking?->scheduled_date?->format('Y-m-d'),
             ] : null,
+            'subscription' => CustomerSubscriptionPayload::forCompany($companyId),
         ];
     }
 

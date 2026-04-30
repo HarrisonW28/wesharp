@@ -34,6 +34,9 @@ export function accountPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/account/dashboard")) {
     return "dashboard.view";
   }
+  if (pathname.startsWith("/account/subscription")) {
+    return "dashboard.view";
+  }
   if (pathname.startsWith("/account/bookings")) {
     return "bookings.view";
   }

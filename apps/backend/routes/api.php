@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Account\AccountKnifeController;
 use App\Http\Controllers\Api\Account\AccountLocationController;
 use App\Http\Controllers\Api\Account\AccountOrderController;
 use App\Http\Controllers\Api\Account\AccountSettingsController;
+use App\Http\Controllers\Api\Account\AccountSubscriptionController;
 use App\Http\Controllers\Api\V1\BootstrapTenantOrganisationController;
 use App\Http\Controllers\Api\V1\InternalSmokeController;
 use App\Http\Controllers\Api\V1\MeController;
@@ -32,6 +33,7 @@ Route::get('health', HealthController::class)->name('api.health');
 /** Tenant portal — Bearer + EnsureTenantCustomer + per-route permission belt (policies retain company scope). */
 Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (): void {
     Route::middleware('permission:dashboard.view')->get('dashboard', [AccountDashboardController::class, 'show'])->name('api.account.dashboard');
+    Route::middleware('permission:dashboard.view')->get('subscription', [AccountSubscriptionController::class, 'show'])->name('api.account.subscription.show');
 
     Route::middleware('permission:bookings.view')->get('bookings', [AccountBookingController::class, 'index'])->name('api.account.bookings.index');
     Route::middleware('permission:bookings.create')->post('bookings', [AccountBookingController::class, 'store'])->name('api.account.bookings.store');

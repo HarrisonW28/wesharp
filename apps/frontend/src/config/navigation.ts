@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   MapPinned,
   Receipt,
+  Repeat,
   Settings,
   UserCog,
   Users,
@@ -38,6 +39,7 @@ export const ADMIN_NAV: NavItem[] = [
 
 export const ACCOUNT_NAV: NavItem[] = [
   { title: "Overview", href: "/account/dashboard", icon: Gauge, permission: "dashboard.view" },
+  { title: "Your plan", href: "/account/subscription", icon: Repeat, permission: "dashboard.view" },
   { title: "My bookings", href: "/account/bookings", icon: CalendarClock, permission: "bookings.view" },
   { title: "My orders", href: "/account/orders", icon: ClipboardList, permission: "orders.view" },
   { title: "Knives", href: "/account/knives", icon: Utensils, permission: "knives.view" },

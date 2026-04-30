@@ -26,6 +26,7 @@ import {
   SettingsResponseSchema,
 } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
+import { customerKnifeListLabel } from "@/lib/helpers/customer-display";
 import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -47,17 +48,6 @@ function isActiveOrderStatus(status: string | null | undefined): boolean {
 function isUnpaidInvoiceStatus(status: string | null | undefined): boolean {
   const s = (status ?? "").toLowerCase();
   return s !== "paid" && s !== "void" && s !== "";
-}
-
-function looksLikeUuid(s: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
-}
-
-function knifeCustomerLabel(tag: string | null | undefined, index: number): string {
-  if (tag && tag.trim() !== "" && !looksLikeUuid(tag)) {
-    return `Tag ${tag}`;
-  }
-  return `Knife ${index + 1}`;
 }
 
 function orderSubtitle(o: {
@@ -619,7 +609,7 @@ export default function AccountDashboardPage() {
               <ul className="space-y-3">
                 {(knivesPreview.data ?? []).map((k, i) => (
                   <li key={k.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2 last:border-0 last:pb-0">
-                    <span className="font-medium">{knifeCustomerLabel(k.tag_id, i)}</span>
+                    <span className="font-medium">{customerKnifeListLabel(k.tag_id, i)}</span>
                     {k.status ? <StatusBadge kind="knife" status={k.status} /> : null}
                   </li>
                 ))}
@@ -635,27 +625,48 @@ export default function AccountDashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Repeat className="h-4 w-4 text-primary" aria-hidden />
-              Plan &amp; programmes
+              Your plan
             </CardTitle>
-            <CardDescription>Subscription or regular service, when you have one with us.</CardDescription>
+            <CardDescription>Active programme with WeSharp, when one is on your account.</CardDescription>
           </CardHeader>
           <CardContent className="text-sm">
             {d.subscription ? (
-              <div className="space-y-2">
-                <div className="text-base font-semibold">{d.subscription.plan_name}</div>
+              <div className="space-y-3">
+                <div className="text-base font-semibold leading-snug">{d.subscription.plan_name}</div>
                 {d.subscription.status ? (
                   <Badge variant="secondary" className="w-fit capitalize">
                     {d.subscription.status.replace(/_/g, " ")}
                   </Badge>
                 ) : null}
                 {d.subscription.current_period_end ? (
-                  <p className="text-muted-foreground">Renews or ends {d.subscription.current_period_end}</p>
+                  <p className="text-muted-foreground">
+                    Renewal date{" "}
+                    {new Date(d.subscription.current_period_end + "T12:00:00").toLocaleDateString("en-GB")}
+                  </p>
                 ) : null}
-                {d.subscription.summary ? <p className="text-muted-foreground">{d.subscription.summary}</p> : null}
+                {d.subscription.allowance_summary ? (
+                  <p className="text-muted-foreground">{d.subscription.allowance_summary}</p>
+                ) : d.subscription.summary ? (
+                  <p className="text-muted-foreground">{d.subscription.summary}</p>
+                ) : null}
+                {d.subscription.recent_invoices && d.subscription.recent_invoices.length > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {d.subscription.recent_invoices.length} subscription invoice
+                    {d.subscription.recent_invoices.length === 1 ? "" : "s"} on file — see your plan page for details.
+                  </p>
+                ) : null}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button type="button" variant="secondary" size="sm" className="rounded-lg" asChild>
+                    <Link href="/account/subscription">View plan details</Link>
+                  </Button>
+                  <Button type="button" variant="link" className="h-auto px-0" asChild>
+                    <Link href="/pricing">Pricing</Link>
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-6 text-center text-muted-foreground">
-                No subscription or programme is linked to this account in our system yet.
+                No active plan yet.
                 <Button type="button" className="mt-4 rounded-lg" variant="secondary" size="sm" asChild>
                   <Link href="/pricing">View pricing</Link>
                 </Button>

@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 
 import { PaginatedTenantKnivesSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
+import { customerKnifeListLabel } from "@/lib/helpers/customer-display";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -57,9 +58,9 @@ export default function AccountKnivesPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((k) => (
+              {rows.map((k, i) => (
                 <tr key={k.id} className="border-t hover:bg-muted/30">
-                  <td className="px-4 py-3 font-mono text-xs">{k.tag_id ?? k.id}</td>
+                  <td className="px-4 py-3 tabular-nums text-sm">{customerKnifeListLabel(k.tag_id, i)}</td>
                   <td className="px-4 py-3">
                     <StatusBadge kind="knife" status={k.status} />
                   </td>
