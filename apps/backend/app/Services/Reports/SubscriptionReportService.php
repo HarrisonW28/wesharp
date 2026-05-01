@@ -17,7 +17,9 @@ final class SubscriptionReportService
     public function build(AdminReportFilters $f): array
     {
         $base = CompanySubscription::query()
-            ->when($f->companyId !== null, fn ($q) => $q->where('company_subscriptions.company_id', $f->companyId));
+            ->when($f->companyId !== null, fn ($q) => $q->where('company_subscriptions.company_id', $f->companyId))
+            ->when($f->subscriptionPlanId !== null, fn ($q) => $q->where('company_subscriptions.subscription_plan_id', $f->subscriptionPlanId))
+            ->when($f->subscriptionStatus !== null, fn ($q) => $q->where('company_subscriptions.status', $f->subscriptionStatus));
 
         $total = (int) (clone $base)->count();
 

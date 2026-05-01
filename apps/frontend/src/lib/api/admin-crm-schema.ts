@@ -246,6 +246,14 @@ export const SubscriptionPlansListResponseSchema = z.object({
   }),
 });
 
+export const SubscriptionInvoiceDraftResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    invoice: z.record(z.string(), z.unknown()),
+    already_existed: z.boolean(),
+  }),
+});
+
 /** Admin company detail subscription panel — `state: none` until a `company_subscriptions` row exists. */
 export const CompanySubscriptionCrmSchema = z.discriminatedUnion("state", [
   z.object({

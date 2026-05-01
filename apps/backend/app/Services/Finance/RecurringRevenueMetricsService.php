@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Services\Finance;
 
 use App\Enums\BillingInterval;
+use App\Enums\InvoiceLineItemType;
 use App\Enums\InvoiceStatus;
 use App\Enums\SubscriptionStatus;
 use App\Models\Company;
 use App\Models\CompanySubscription;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Support\Money\MoneyFormatting;
 use Carbon\CarbonImmutable;
@@ -24,13 +26,20 @@ final class RecurringRevenueMetricsService
     private const PLACEHOLDER = 'Subscription reporting uses catalogue plans and company snapshots. MRR sums active monthly subscriptions only (see mrr.reason when empty).';
 
     /** @return array<string, mixed> */
-    public function build(CarbonImmutable $periodStart, CarbonImmutable $periodEnd, ?string $companyId): array
-    {
+    public function build(
+        CarbonImmutable $periodStart,
+        CarbonImmutable $periodEnd,
+        ?string $companyId,
+        ?string $planId = null,
+        ?string $subscriptionStatus = null,
+    ): array {
         $tz = $periodStart->timezone->getName();
         $asOfDate = $periodEnd->toDateString();
 
         $subBase = CompanySubscription::query()
-            ->when($companyId !== null, fn (Builder $q) => $q->where('company_id', $companyId));
+            ->when($companyId !== null, fn (Builder $q) => $q->where('company_id', $companyId))
+            ->when($planId !== null, fn (Builder $q) => $q->where('subscription_plan_id', $planId))
+            ->when($subscriptionStatus !== null, fn (Builder $q) => $q->where('status', $subscriptionStatus));
 
         $hasSubscriptionRows = (clone $subBase)->exists();
 
@@ -82,6 +91,7 @@ final class RecurringRevenueMetricsService
         $mrrMonthlyPence = (int) CompanySubscription::query()
             ->where('status', SubscriptionStatus::Active->value)
             ->when($companyId !== null, fn (Builder $q) => $q->where('company_id', $companyId))
+            ->when($planId !== null, fn (Builder $q) => $q->where('subscription_plan_id', $planId))
             ->whereHas('plan', fn (Builder $q) => $q->where('billing_interval', BillingInterval::Monthly->value))
             ->sum('price_amount_minor_snapshot');
 
@@ -91,6 +101,8 @@ final class RecurringRevenueMetricsService
         $upcomingRenewals = CompanySubscription::query()
             ->with(['company:id,name', 'plan:id,name'])
             ->when($companyId !== null, fn (Builder $q) => $q->where('company_id', $companyId))
+            ->when($planId !== null, fn (Builder $q) => $q->where('subscription_plan_id', $planId))
+            ->when($subscriptionStatus !== null, fn (Builder $q) => $q->where('status', $subscriptionStatus))
             ->whereNotNull('renews_at')
             ->whereBetween('renews_at', [$periodStart->toDateString(), $periodEnd->toDateString()])
             ->orderBy('renews_at')
@@ -114,6 +126,17 @@ final class RecurringRevenueMetricsService
             $companyId,
             10
         );
+
+        $activeByPlan = $this->activeSubscriptionsByPlan($companyId, $planId);
+
+        $subscriptionLineRevenue = $this->subscriptionLineRevenueByCompany($periodStart, $periodEnd, $companyId, $planId);
+        $overageLineRevenue = $this->overageLineRevenueByCompany($periodStart, $periodEnd, $companyId, $planId);
+
+        $mrrTrend = $this->mrrTrendMonthly($periodStart, $periodEnd, $companyId, $planId);
+        $arrTrend = array_map(static fn (array $r): array => [
+            'month' => $r['month'],
+            'arr_pence' => $r['mrr_pence'] * 12,
+        ], $mrrTrend);
 
         $hasTaggedInvoices = Invoice::query()
             ->when($companyId !== null, fn (Builder $q) => $q->where('company_id', $companyId))
@@ -174,6 +197,11 @@ final class RecurringRevenueMetricsService
             'overdue_subscription_invoices_count' => $overdueSubscriptionInvoices,
             'upcoming_renewals' => $upcomingRenewals,
             'top_subscription_customers' => $topSubscriptionCustomers,
+            'active_subscriptions_by_plan' => $activeByPlan,
+            'revenue_subscription_lines_by_company' => $subscriptionLineRevenue,
+            'revenue_overage_lines_by_company' => $overageLineRevenue,
+            'mrr_trend' => $mrrTrend,
+            'arr_trend' => $arrTrend,
             'definitions' => [
                 'mrr' => 'Sum of price_amount_minor_snapshot for active company_subscriptions whose plan billing_interval is monthly.',
                 'arr' => '12 × MRR when MRR is computable (monthly plans only; not a substitute for audited revenue recognition).',
@@ -188,6 +216,10 @@ final class RecurringRevenueMetricsService
                 'overdue_subscription_invoices' => 'Open subscription-flagged invoices past due_on (date) as of end of selected period.',
                 'upcoming_renewals' => 'Subscriptions with renews_at falling in the selected date range (inclusive).',
                 'top_subscription_customers' => 'Companies ranked by subscription-tagged invoiced total in the period.',
+                'active_by_plan' => 'Active subscription rows grouped by subscription plan name (snapshot).',
+                'subscription_revenue' => 'Sum of invoice line totals where line_item_type = subscription on invoices issued in period and is_subscription_billing = true (ex void).',
+                'overage_revenue' => 'Sum of invoice line totals where line_item_type = overage on invoices issued in period and is_subscription_billing = true (ex void).',
+                'mrr_trend' => 'Month-by-month MRR snapshot at each month end (active monthly subscriptions only).',
             ],
             'meta' => [
                 'timezone' => $tz,
@@ -262,6 +294,168 @@ final class RecurringRevenueMetricsService
                 'subscription_invoiced_pence' => $pence,
                 'formatted' => MoneyFormatting::formatGbpFromPence($pence),
             ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return list<array{plan_id: string, plan_name: string, active_subscriptions_count: int, mrr_pence: int, formatted_mrr: string}>
+     */
+    private function activeSubscriptionsByPlan(?string $companyId, ?string $planId): array
+    {
+        $q = CompanySubscription::query()
+            ->join('subscription_plans', 'company_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
+            ->where('company_subscriptions.status', SubscriptionStatus::Active->value)
+            ->when($companyId !== null, fn (Builder $b) => $b->where('company_subscriptions.company_id', $companyId))
+            ->when($planId !== null, fn (Builder $b) => $b->where('company_subscriptions.subscription_plan_id', $planId))
+            ->selectRaw('subscription_plans.id AS plan_id, subscription_plans.name AS plan_name, COUNT(*) AS c, SUM(company_subscriptions.price_amount_minor_snapshot) AS s')
+            ->groupBy('subscription_plans.id', 'subscription_plans.name')
+            ->orderByDesc('c');
+
+        return $q->get()->map(static function ($r): array {
+            $pence = (int) ($r->s ?? 0);
+
+            return [
+                'plan_id' => (string) $r->plan_id,
+                'plan_name' => (string) $r->plan_name,
+                'active_subscriptions_count' => (int) $r->c,
+                'mrr_pence' => $pence,
+                'formatted_mrr' => MoneyFormatting::formatGbpFromPence($pence),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * @return list<array{company_id: string, company_name: string|null, subscription_revenue_pence: int, formatted: string}>
+     */
+    private function subscriptionLineRevenueByCompany(
+        CarbonImmutable $periodStart,
+        CarbonImmutable $periodEnd,
+        ?string $companyId,
+        ?string $planId,
+    ): array {
+        $q = InvoiceItem::query()
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->whereBetween('invoices.issued_on', [$periodStart->toDateString(), $periodEnd->toDateString()])
+            ->where('invoices.invoice_status', '!=', InvoiceStatus::Void->value)
+            ->where('invoices.is_subscription_billing', true)
+            ->where('invoice_items.line_item_type', InvoiceLineItemType::Subscription->value)
+            ->when($companyId !== null, fn (Builder $b) => $b->where('invoices.company_id', $companyId))
+            ->when($planId !== null, fn (Builder $b) => $b->whereExists(function ($sq) use ($planId): void {
+                $sq->selectRaw('1')
+                    ->from('company_subscriptions')
+                    ->whereColumn('company_subscriptions.id', 'invoices.source_id')
+                    ->where('company_subscriptions.subscription_plan_id', $planId);
+            }))
+            ->selectRaw('invoices.company_id AS company_id, SUM(invoice_items.line_total_pence) AS s')
+            ->groupBy('invoices.company_id')
+            ->orderByDesc('s')
+            ->limit(50)
+            ->get();
+
+        if ($q->isEmpty()) {
+            return [];
+        }
+
+        $ids = $q->pluck('company_id')->map(static fn ($id): string => (string) $id)->all();
+        $names = Company::query()->whereIn('id', $ids)->pluck('name', 'id');
+
+        return $q->map(static function ($r) use ($names): array {
+            $cid = (string) $r->company_id;
+            $pence = (int) $r->s;
+
+            return [
+                'company_id' => $cid,
+                'company_name' => $names[$cid] ?? null,
+                'subscription_revenue_pence' => $pence,
+                'formatted' => MoneyFormatting::formatGbpFromPence($pence),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * @return list<array{company_id: string, company_name: string|null, overage_revenue_pence: int, formatted: string}>
+     */
+    private function overageLineRevenueByCompany(
+        CarbonImmutable $periodStart,
+        CarbonImmutable $periodEnd,
+        ?string $companyId,
+        ?string $planId,
+    ): array {
+        $q = InvoiceItem::query()
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->whereBetween('invoices.issued_on', [$periodStart->toDateString(), $periodEnd->toDateString()])
+            ->where('invoices.invoice_status', '!=', InvoiceStatus::Void->value)
+            ->where('invoices.is_subscription_billing', true)
+            ->where('invoice_items.line_item_type', InvoiceLineItemType::Overage->value)
+            ->when($companyId !== null, fn (Builder $b) => $b->where('invoices.company_id', $companyId))
+            ->when($planId !== null, fn (Builder $b) => $b->whereExists(function ($sq) use ($planId): void {
+                $sq->selectRaw('1')
+                    ->from('company_subscriptions')
+                    ->whereColumn('company_subscriptions.id', 'invoices.source_id')
+                    ->where('company_subscriptions.subscription_plan_id', $planId);
+            }))
+            ->selectRaw('invoices.company_id AS company_id, SUM(invoice_items.line_total_pence) AS s')
+            ->groupBy('invoices.company_id')
+            ->orderByDesc('s')
+            ->limit(50)
+            ->get();
+
+        if ($q->isEmpty()) {
+            return [];
+        }
+
+        $ids = $q->pluck('company_id')->map(static fn ($id): string => (string) $id)->all();
+        $names = Company::query()->whereIn('id', $ids)->pluck('name', 'id');
+
+        return $q->map(static function ($r) use ($names): array {
+            $cid = (string) $r->company_id;
+            $pence = (int) $r->s;
+
+            return [
+                'company_id' => $cid,
+                'company_name' => $names[$cid] ?? null,
+                'overage_revenue_pence' => $pence,
+                'formatted' => MoneyFormatting::formatGbpFromPence($pence),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * @return list<array{month: string, mrr_pence: int}>
+     */
+    private function mrrTrendMonthly(
+        CarbonImmutable $periodStart,
+        CarbonImmutable $periodEnd,
+        ?string $companyId,
+        ?string $planId,
+    ): array {
+        $startMonth = $periodStart->startOfMonth();
+        $endMonth = $periodEnd->startOfMonth();
+
+        $out = [];
+        $cursor = $startMonth;
+        while ($cursor->lte($endMonth)) {
+            $monthEnd = $cursor->endOfMonth()->endOfDay();
+
+            $q = CompanySubscription::query()
+                ->where('status', SubscriptionStatus::Active->value)
+                ->when($companyId !== null, fn (Builder $b) => $b->where('company_id', $companyId))
+                ->when($planId !== null, fn (Builder $b) => $b->where('subscription_plan_id', $planId))
+                ->whereNotNull('starts_at')
+                ->whereDate('starts_at', '<=', $monthEnd->toDateString())
+                ->where(function (Builder $b) use ($monthEnd): void {
+                    $b->whereNull('cancelled_at')->orWhereDate('cancelled_at', '>', $monthEnd->toDateString());
+                })
+                ->whereHas('plan', fn (Builder $b) => $b->where('billing_interval', BillingInterval::Monthly->value));
+
+            $out[] = [
+                'month' => $cursor->format('Y-m'),
+                'mrr_pence' => (int) $q->sum('price_amount_minor_snapshot'),
+            ];
+
+            $cursor = $cursor->addMonthNoOverflow()->startOfMonth();
         }
 
         return $out;

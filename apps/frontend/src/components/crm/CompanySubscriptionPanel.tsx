@@ -9,6 +9,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { CompanySubscriptionCrm } from "@/lib/api/admin-crm-schema";
 import {
   ContactSchema,
+  SubscriptionInvoiceDraftResponseSchema,
   SubscriptionHistoryRowSchema,
   SubscriptionPlansListResponseSchema,
 } from "@/lib/api/admin-crm-schema";
@@ -103,6 +104,10 @@ export function CompanySubscriptionPanel({
   const [cancelNotes, setCancelNotes] = useState("");
 
   const [billingPick, setBillingPick] = useState("");
+
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [invPeriodStart, setInvPeriodStart] = useState("");
+  const [invPeriodEnd, setInvPeriodEnd] = useState("");
 
   const activeContacts = useMemo(
     () => contacts.filter((c) => !c.archived_at && !c.is_archived),
@@ -280,6 +285,48 @@ export function CompanySubscriptionPanel({
     },
   });
 
+  const invoiceDraftMutation = useMutation({
+    mutationFn: async () => {
+      if (sub.state !== "record") {
+        throw new Error("No active subscription.");
+      }
+      if (!invPeriodStart || !invPeriodEnd) {
+        throw new Error("Select a billing period start and end.");
+      }
+
+      const res = await admin.json<unknown>(
+        `/api/admin/companies/${companyId}/subscriptions/${sub.id}/invoice-draft`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            billing_period_start: invPeriodStart,
+            billing_period_end: invPeriodEnd,
+          }),
+        },
+      );
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = SubscriptionInvoiceDraftResponseSchema.safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected invoice draft response.");
+      }
+      return parsed.data.data;
+    },
+    onSuccess: async (data) => {
+      const id = String((data.invoice as Record<string, unknown>)["id"] ?? "");
+      toast.success(data.already_existed ? "Invoice already existed for this period." : "Invoice draft generated.");
+      setInvoiceOpen(false);
+      await onRefresh();
+      if (id) {
+        window.open(`/admin/invoices/${id}`, "_blank", "noopener,noreferrer");
+      }
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Could not generate invoice.");
+    },
+  });
+
   const historyCols: ColumnDef<HistoryRow>[] = useMemo(
     () => [
       { accessorKey: "plan_name", header: "Plan" },
@@ -342,6 +389,13 @@ export function CompanySubscriptionPanel({
     }
     setBillingPick(sub.billing_contact_id ?? "");
     setBillingOpen(true);
+  };
+
+  const openInvoiceDraft = () => {
+    if (sub.state !== "record") return;
+    setInvPeriodStart(sub.starts_at ?? "");
+    setInvPeriodEnd(sub.renews_at ?? "");
+    setInvoiceOpen(true);
   };
 
   const planSelectItems = (includeInactive: boolean) => {
@@ -534,6 +588,11 @@ export function CompanySubscriptionPanel({
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Actions</p>
               <div className="mt-2 flex flex-wrap gap-2">
+                {canViewInvoices && sub.state === "record" ? (
+                  <Button type="button" size="sm" variant="outline" onClick={openInvoiceDraft}>
+                    Generate subscription invoice draft
+                  </Button>
+                ) : null}
                 {sub.crm_actions.map((action) =>
                   action.id === "view_subscription_invoices" ? (
                     <Button key={action.id} type="button" size="sm" variant="outline" asChild>
@@ -921,6 +980,50 @@ export function CompanySubscriptionPanel({
               onClick={() => billingMutation.mutate(billingPick)}
             >
               Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={invoiceOpen} onOpenChange={setInvoiceOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Generate subscription invoice draft</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Creates a <span className="font-mono">draft</span> invoice for the selected subscription billing period. If
+              one already exists, it will be returned instead.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="inv-start">Billing period start</Label>
+              <Input
+                id="inv-start"
+                type="date"
+                value={invPeriodStart}
+                onChange={(e) => setInvPeriodStart(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="inv-end">Billing period end</Label>
+              <Input
+                id="inv-end"
+                type="date"
+                value={invPeriodEnd}
+                onChange={(e) => setInvPeriodEnd(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setInvoiceOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={invoiceDraftMutation.isPending || !invPeriodStart || !invPeriodEnd}
+              onClick={() => invoiceDraftMutation.mutate()}
+            >
+              Generate draft
             </Button>
           </DialogFooter>
         </DialogContent>

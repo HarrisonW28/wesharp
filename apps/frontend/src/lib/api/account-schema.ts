@@ -15,22 +15,58 @@ const MetaSchema = z
   })
   .passthrough();
 
+const TenantSubscriptionBillingPeriodSchema = z
+  .object({
+    start: z.string().nullable().optional(),
+    end: z.string().nullable().optional(),
+  })
+  .nullable()
+  .optional();
+
 /** Present only when the backend has a real subscription / programme record (never fabricated). */
 export const TenantSubscriptionSummarySchema = z.object({
   plan_name: z.string(),
   status: z.string().nullable().optional(),
+  status_label: z.string().nullable().optional(),
   current_period_end: z.string().nullable().optional(),
+  renews_at: z.string().nullable().optional(),
   summary: z.string().nullable().optional(),
+  usage_summary_line: z.string().nullable().optional(),
+  overage_warning: z.string().nullable().optional(),
+});
+
+export const TenantSubscriptionPeriodUsageSchema = z.object({
+  billing_period: TenantSubscriptionBillingPeriodSchema,
+  billing_period_label: z.string().nullable().optional(),
+  included_collections: z.number().nullable().optional(),
+  included_knife_allowance: z.number().nullable().optional(),
+  collections_used: z.number(),
+  knives_used: z.number(),
+  collections_overage_units: z.number().optional(),
+  knives_overage_units: z.number().optional(),
+  estimated_overage_pence: z.number().optional(),
+  formatted_estimated_overage_gbp: z.string().optional(),
+  has_activity: z.boolean().optional(),
+});
+
+export const TenantSubscriptionBillingContactSchema = z.object({
+  name: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
 });
 
 export const TenantSubscriptionInvoiceRowSchema = z.object({
   id: z.string(),
   invoice_number: z.string().nullable().optional(),
+  display_reference: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
   customer_status_label: z.string().nullable().optional(),
   customer_status_hint: z.string().nullable().optional(),
   issue_date: z.string().nullable().optional(),
   due_date: z.string().nullable().optional(),
+  billing_period_start: z.string().nullable().optional(),
+  billing_period_end: z.string().nullable().optional(),
+  billing_period_label: z.string().nullable().optional(),
   total_pence: z.number(),
   formatted_total: z.string(),
 });
@@ -39,6 +75,10 @@ export const TenantSubscriptionInvoiceRowSchema = z.object({
 export const TenantSubscriptionDetailSchema = TenantSubscriptionSummarySchema.extend({
   included_services: z.string().nullable().optional(),
   allowance_summary: z.string().nullable().optional(),
+  formatted_price_snapshot_gbp: z.string().nullable().optional(),
+  price_amount_minor_snapshot: z.number().optional(),
+  billing_contact: TenantSubscriptionBillingContactSchema.nullable().optional(),
+  period_usage: TenantSubscriptionPeriodUsageSchema.optional(),
   recent_invoices: z.array(TenantSubscriptionInvoiceRowSchema).optional(),
 }).passthrough();
 

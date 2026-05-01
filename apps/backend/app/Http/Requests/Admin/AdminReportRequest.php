@@ -6,7 +6,6 @@ namespace App\Http\Requests\Admin;
 
 use App\Data\Reports\AdminReportFilters;
 use Carbon\Carbon;
-use Carbon\CarbonInterface;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class AdminReportRequest extends FormRequest
@@ -44,6 +43,8 @@ final class AdminReportRequest extends FormRequest
             'ar_age_bucket' => ['sometimes', 'nullable', 'string', 'in:current,1_30,31_60,61_90,90_plus'],
             'unpaid_page' => ['sometimes', 'integer', 'min:1'],
             'overdue_page' => ['sometimes', 'integer', 'min:1'],
+            'subscription_plan_id' => ['sometimes', 'nullable', 'uuid'],
+            'subscription_status' => ['sometimes', 'nullable', 'string', 'max:64'],
         ];
     }
 
@@ -122,6 +123,8 @@ final class AdminReportRequest extends FormRequest
             $s('ar_age_bucket'),
             $unpaidPage,
             $overduePage,
+            isset($v['subscription_plan_id']) && is_string($v['subscription_plan_id']) ? $v['subscription_plan_id'] : null,
+            $s('subscription_status'),
         );
     }
 }

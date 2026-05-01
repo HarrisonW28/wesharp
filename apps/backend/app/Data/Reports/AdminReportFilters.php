@@ -56,6 +56,10 @@ final readonly class AdminReportFilters
         public ?int $unpaidPage = null,
         /** Billing report: overdue invoices table page override. */
         public ?int $overduePage = null,
+        /** Subscription reporting: filter `company_subscriptions.subscription_plan_id`. */
+        public ?string $subscriptionPlanId = null,
+        /** Subscription reporting: filter `company_subscriptions.status` value. */
+        public ?string $subscriptionStatus = null,
     ) {}
 
     /**
@@ -86,6 +90,8 @@ final readonly class AdminReportFilters
             'ar_age_bucket' => $this->arAgeBucket,
             'unpaid_page' => $this->unpaidPage,
             'overdue_page' => $this->overduePage,
+            'subscription_plan_id' => $this->subscriptionPlanId,
+            'subscription_status' => $this->subscriptionStatus,
         ];
     }
 }

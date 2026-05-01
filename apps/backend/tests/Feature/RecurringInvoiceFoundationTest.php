@@ -8,9 +8,9 @@ use App\Actions\Invoices\AllocateInvoiceNumber;
 use App\Actions\Invoices\GenerateSubscriptionInvoiceAction;
 use App\Enums\InvoiceSourceType;
 use App\Enums\InvoiceStatus;
+use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\CompanySubscription;
-use App\Enums\UserRole;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\User;
@@ -98,7 +98,7 @@ final class RecurringInvoiceFoundationTest extends TestCase
         self::assertSame(2, (int) Invoice::query()->where('source_id', $sub->id)->count());
     }
 
-    public function test_generate_subscription_invoice_action_is_disabled_by_default(): void
+    public function test_generate_subscription_invoice_action_rejects_when_disabled_by_config(): void
     {
         Config::set('invoices.subscription_invoice_generation_enabled', false);
         $sub = CompanySubscription::factory()->create();
@@ -137,13 +137,8 @@ final class RecurringInvoiceFoundationTest extends TestCase
         ]);
 
         $action = new GenerateSubscriptionInvoiceAction;
-
-        try {
-            $action->execute($sub, now()->parse('2026-06-01'), now()->parse('2026-06-30'));
-            self::fail('Expected HttpException');
-        } catch (HttpException $e) {
-            self::assertSame(422, $e->getStatusCode());
-        }
+        $out = $action->execute($sub, now()->parse('2026-06-01'), now()->parse('2026-06-30'));
+        self::assertTrue($out['already_existed']);
     }
 
     public function test_subscription_idempotency_service_detects_blocking_invoice(): void

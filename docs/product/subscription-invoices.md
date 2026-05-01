@@ -39,11 +39,24 @@ Order-originated lines default to **`one_off_service`**. Draft line edits may se
 
 Planned capabilities (not in 7.7):
 
-- **`GenerateSubscriptionInvoiceAction`** fully implemented when **`INVOICE_SUBSCRIPTION_GENERATION_ENABLED=true`** and commercial rules are defined.
+- **`GenerateSubscriptionInvoiceAction`** can generate **draft** subscription invoices when **`INVOICE_SUBSCRIPTION_GENERATION_ENABLED=true`**.
 - Proration, plan changes, and **CRM subscription** UI tied to **`company_subscriptions`**.
 - Optional: scheduled generation at period boundaries using the **same idempotency keys** above.
 
-Until then, **`GenerateSubscriptionInvoiceAction`** returns **HTTP 501** (disabled) or **422** if a duplicate non-void period invoice exists when generation is enabled.
+Manual generation workflow (Sprint 9.5):
+
+1. Open a company in **Admin CRM** → **Subscription** tab.
+2. Click **Generate subscription invoice draft**.
+3. Confirm the **billing period start/end** (defaults to the active subscription `starts_at` / `renews_at`).
+4. The API will either:
+   - Create a new **draft** invoice (201), or
+   - Return the existing non-void invoice for that same subscription + period (200).
+
+Notes:
+
+- Invoices are **never auto-sent** by this flow.
+- Duplicate prevention uses both the **application guard** (`SubscriptionInvoiceIdempotency`) and a **DB unique index**.
+- Safe retries are supported: call the endpoint again and it will return the existing invoice.
 
 ---
 

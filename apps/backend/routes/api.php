@@ -133,6 +133,9 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:companies.view')->get('companies/{company}', [CompanyController::class, 'show'])->whereUuid('company')->name('api.admin.companies.show');
     Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscriptions', [CompanySubscriptionController::class, 'index'])->whereUuid('company')->name('api.admin.companies.subscriptions.index');
     Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscription-usage', [CompanySubscriptionController::class, 'usage'])->whereUuid('company')->name('api.admin.companies.subscription_usage');
+    Route::middleware('permission:invoices.create')->post('companies/{company}/subscriptions/{subscription}/invoice-draft', [CompanySubscriptionController::class, 'generateInvoiceDraft'])
+        ->whereUuid(['company', 'subscription'])
+        ->name('api.admin.companies.subscriptions.invoice_draft');
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions', [CompanySubscriptionController::class, 'store'])->whereUuid('company')->name('api.admin.companies.subscriptions.store');
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions/change-plan', [CompanySubscriptionController::class, 'changePlan'])->whereUuid('company')->name('api.admin.companies.subscriptions.change_plan');
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions/cancel', [CompanySubscriptionController::class, 'cancel'])->whereUuid('company')->name('api.admin.companies.subscriptions.cancel');

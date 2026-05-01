@@ -23,7 +23,7 @@ final class RecurringRevenueReportService
     {
         $start = CarbonImmutable::createFromInterface($f->from)->startOfDay();
         $end = CarbonImmutable::createFromInterface($f->to)->endOfDay();
-        $d = $this->metrics->build($start, $end, $f->companyId);
+        $d = $this->metrics->build($start, $end, $f->companyId, $f->subscriptionPlanId, $f->subscriptionStatus);
 
         $counts = $d['subscription_counts'];
         $inv = $d['revenue_invoiced_period_pence'];

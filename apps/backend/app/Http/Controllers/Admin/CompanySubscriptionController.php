@@ -4,21 +4,26 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Invoices\GenerateSubscriptionInvoiceAction;
+use App\Enums\SubscriptionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignCompanySubscriptionRequest;
 use App\Http\Requests\Admin\CancelCompanySubscriptionRequest;
 use App\Http\Requests\Admin\ChangeCompanySubscriptionPlanRequest;
+use App\Http\Requests\Admin\GenerateSubscriptionInvoiceDraftRequest;
 use App\Http\Requests\Admin\ReactivateCompanySubscriptionRequest;
 use App\Http\Requests\Admin\UpdateCompanySubscriptionBillingContactRequest;
 use App\Http\Resources\CompanySubscriptionResource;
 use App\Models\Company;
 use App\Models\CompanySubscription;
+use App\Models\Invoice;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Subscriptions\CompanySubscriptionProvisioningService;
 use App\Services\Subscriptions\OrderSubscriptionCoverageService;
 use App\Support\ApiResponses;
+use App\Support\Invoices\InvoiceJson;
 use App\Support\Permissions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -285,5 +290,66 @@ final class CompanySubscriptionController extends Controller
             ],
             'usage' => $usage,
         ]);
+    }
+
+    public function generateInvoiceDraft(
+        GenerateSubscriptionInvoiceDraftRequest $request,
+        Company $company,
+        CompanySubscription $subscription,
+        GenerateSubscriptionInvoiceAction $generateSubscriptionInvoiceAction,
+    ): JsonResponse {
+        $this->authorize('view', $company);
+        $this->authorize('create', Invoice::class);
+
+        if ((string) $subscription->company_id !== (string) $company->id) {
+            abort(404);
+        }
+
+        if ($subscription->status !== SubscriptionStatus::Active) {
+            abort(422, 'Subscription must be active to generate a billing invoice draft.');
+        }
+
+        $v = $request->validated();
+
+        $periodStart = isset($v['billing_period_start']) && $v['billing_period_start'] !== null
+            ? CarbonImmutable::parse((string) $v['billing_period_start'])
+            : ($subscription->starts_at !== null ? CarbonImmutable::parse($subscription->starts_at->toDateString()) : now()->startOfMonth());
+
+        $periodEnd = isset($v['billing_period_end']) && $v['billing_period_end'] !== null
+            ? CarbonImmutable::parse((string) $v['billing_period_end'])
+            : ($subscription->renews_at !== null ? CarbonImmutable::parse($subscription->renews_at->toDateString()) : now()->endOfMonth());
+
+        try {
+            $result = $generateSubscriptionInvoiceAction->execute($subscription, $periodStart, $periodEnd);
+        } catch (\Throwable $e) {
+            AuditRecorder::record($request->user(), $subscription, 'invoice.subscription_generation_failed', [
+                'subscription_id' => (string) $subscription->id,
+                'billing_period_start' => $periodStart->toDateString(),
+                'billing_period_end' => $periodEnd->toDateString(),
+                'error' => $e->getMessage(),
+            ], $request);
+            throw $e;
+        }
+
+        $invoice = $result['invoice'];
+
+        if ($result['already_existed']) {
+            AuditRecorder::record($request->user(), $invoice, 'invoice.subscription_duplicate_prevented', [
+                'subscription_id' => (string) $subscription->id,
+                'billing_period_start' => $periodStart->toDateString(),
+                'billing_period_end' => $periodEnd->toDateString(),
+            ], $request);
+        } else {
+            AuditRecorder::record($request->user(), $invoice, 'invoice.subscription_draft_generated', [
+                'subscription_id' => (string) $subscription->id,
+                'billing_period_start' => $periodStart->toDateString(),
+                'billing_period_end' => $periodEnd->toDateString(),
+            ], $request);
+        }
+
+        return ApiResponses::success([
+            'invoice' => InvoiceJson::detail($invoice),
+            'already_existed' => (bool) $result['already_existed'],
+        ], $result['already_existed'] ? 200 : 201);
     }
 }

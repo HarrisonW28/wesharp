@@ -639,49 +639,75 @@ export default function AccountDashboardPage() {
               <Repeat className="h-4 w-4 text-primary" aria-hidden />
               Your plan
             </CardTitle>
-            <CardDescription>Active programme with WeSharp, when one is on your account.</CardDescription>
+            <CardDescription>Your WeSharp programme, allowance, and usage at a glance.</CardDescription>
           </CardHeader>
-          <CardContent className="text-sm">
+          <CardContent className="text-base">
             {d.subscription ? (
               <div className="space-y-3">
-                <div className="text-base font-semibold leading-snug">{d.subscription.plan_name}</div>
-                {d.subscription.status ? (
-                  <Badge variant="secondary" className="w-fit capitalize">
-                    {d.subscription.status.replace(/_/g, " ")}
+                <div className="text-lg font-semibold leading-snug">{d.subscription.plan_name}</div>
+                {d.subscription.status_label || d.subscription.status ? (
+                  <Badge variant="secondary" className="w-fit text-sm capitalize">
+                    {(d.subscription.status_label ?? d.subscription.status ?? "")
+                      .replace(/_/g, " ")
+                      .trim() || "Active"}
                   </Badge>
                 ) : null}
                 {d.subscription.current_period_end ? (
-                  <p className="text-muted-foreground">
-                    Renewal date{" "}
-                    {new Date(d.subscription.current_period_end + "T12:00:00").toLocaleDateString("en-GB")}
+                  <p className="leading-relaxed text-muted-foreground">
+                    Renews on{" "}
+                    {new Date(d.subscription.current_period_end + "T12:00:00").toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
                   </p>
+                ) : null}
+                {d.subscription.usage_summary_line ? (
+                  <p className="leading-relaxed text-foreground">{d.subscription.usage_summary_line}</p>
+                ) : d.subscription.period_usage?.has_activity === false ? (
+                  <p className="leading-relaxed text-muted-foreground">No completed usage recorded this period yet.</p>
                 ) : null}
                 {d.subscription.allowance_summary ? (
-                  <p className="text-muted-foreground">{d.subscription.allowance_summary}</p>
+                  <p className="leading-relaxed text-muted-foreground">{d.subscription.allowance_summary}</p>
                 ) : d.subscription.summary ? (
-                  <p className="text-muted-foreground">{d.subscription.summary}</p>
+                  <p className="leading-relaxed text-muted-foreground">{d.subscription.summary}</p>
                 ) : null}
-                {d.subscription.recent_invoices && d.subscription.recent_invoices.length > 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    {d.subscription.recent_invoices.length} subscription invoice
-                    {d.subscription.recent_invoices.length === 1 ? "" : "s"} on file — see your plan page for details.
+                {d.subscription.overage_warning ? (
+                  <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm leading-relaxed text-muted-foreground">
+                    {d.subscription.overage_warning}
                   </p>
                 ) : null}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Button type="button" variant="secondary" size="sm" className="rounded-lg" asChild>
-                    <Link href="/account/subscription">View plan details</Link>
+                {d.subscription.recent_invoices && d.subscription.recent_invoices.length > 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {d.subscription.recent_invoices.length} programme invoice
+                    {d.subscription.recent_invoices.length === 1 ? "" : "s"} — open your plan page for the full list.
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No programme invoices showing yet.</p>
+                )}
+                <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
+                  <Button type="button" variant="default" size="default" className="h-11 w-full rounded-lg sm:w-auto" asChild>
+                    <Link href="/account/subscription">View plan &amp; usage</Link>
                   </Button>
-                  <Button type="button" variant="link" className="h-auto px-0" asChild>
+                  <Button type="button" variant="outline" size="default" className="h-11 w-full rounded-lg sm:w-auto" asChild>
+                    <Link href="/account/invoices">View invoices</Link>
+                  </Button>
+                  <Button type="button" variant="link" className="h-auto px-0 text-base" asChild>
                     <Link href="/pricing">Pricing</Link>
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-6 text-center text-muted-foreground">
-                No active plan yet.
-                <Button type="button" className="mt-4 rounded-lg" variant="secondary" size="sm" asChild>
-                  <Link href="/pricing">View pricing</Link>
-                </Button>
+              <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-8 text-center">
+                <p className="text-muted-foreground">No active plan on this account yet.</p>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  <Button type="button" className="h-11 rounded-lg" variant="secondary" asChild>
+                    <Link href="/pricing">View pricing</Link>
+                  </Button>
+                  <Button type="button" className="h-11 rounded-lg" variant="outline" asChild>
+                    <Link href="/account/invoices">Invoices</Link>
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
