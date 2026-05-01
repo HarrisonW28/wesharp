@@ -307,13 +307,13 @@ export default function AccountDashboardPage() {
               <p className="text-sm text-muted-foreground">Choose a date and site — we&apos;ll confirm by email.</p>
             </div>
           </div>
-          <Button type="button" size="sm" className="w-full shrink-0 rounded-lg sm:w-auto" asChild>
+          <Button type="button" size="sm" className="w-full shrink-0 rounded-lg md:w-auto" asChild>
             <Link href="/account/bookings/new">Book a collection</Link>
           </Button>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+      <div className="grid grid-cols-1 gap-2 md:flex md:flex-wrap">
         <Button type="button" variant="secondary" size="sm" className="rounded-lg justify-center" asChild>
           <Link href="/account/bookings">My bookings</Link>
         </Button>

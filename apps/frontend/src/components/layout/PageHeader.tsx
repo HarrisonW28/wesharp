@@ -15,11 +15,11 @@ export function PageHeader({ title, description, actions, className }: PageHeade
       <div className="space-y-1">
         <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
         {description ? (
-          <div className="max-w-2xl text-base text-muted-foreground sm:text-sm">{description}</div>
+          <div className="max-w-2xl text-base text-muted-foreground md:text-sm">{description}</div>
         ) : null}
       </div>
       {actions ? (
-        <div className="flex w-full shrink-0 flex-col gap-2 [&>*]:w-full sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:[&>*]:w-auto">
+        <div className="flex w-full shrink-0 flex-col gap-2 [&>*]:w-full md:w-auto md:flex-row md:flex-wrap md:items-center md:[&>*]:w-auto">
           {actions}
         </div>
       ) : null}
