@@ -73,6 +73,31 @@ export function useAccountApi() {
 
         return { ok: true, status: res.status, data: raw as T };
       },
+
+      /** Authenticated binary fetch (e.g. private evidence photos). Use blob URLs, not raw paths in <img src>. */
+      async fetchBlob(path: string): Promise<Blob> {
+        const origin = apiOrigin();
+        const token = await getToken();
+
+        if (!origin) {
+          throw new Error("Set NEXT_PUBLIC_API_ORIGIN.");
+        }
+        if (!token) {
+          throw new Error("Not signed in.");
+        }
+
+        const res = await fetch(`${origin}${path}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          const raw = await res.json().catch(() => null);
+          throw new Error(safeApiErrorMessage(raw, `Download failed (${res.status}).`));
+        }
+
+        return res.blob();
+      },
     }),
     [getToken],
   );

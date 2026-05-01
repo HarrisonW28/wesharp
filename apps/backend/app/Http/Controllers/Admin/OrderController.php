@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Invoices\GenerateInvoiceDraftFromOrderAction;
-use App\Actions\Orders\ActivateOrderAction;
 use App\Actions\Orders\CancelOrderAction;
+use App\Actions\Orders\TransitionOrderStatusAction;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
@@ -30,8 +30,8 @@ final class OrderController extends Controller
     public function __construct(
         private readonly OrderService $orderService,
         private readonly GenerateInvoiceDraftFromOrderAction $generateInvoiceDraftFromOrderAction,
-        private readonly ActivateOrderAction $activateOrderAction,
         private readonly CancelOrderAction $cancelOrderAction,
+        private readonly TransitionOrderStatusAction $transitionOrderStatusAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -114,14 +114,14 @@ final class OrderController extends Controller
 
         $target = OrderStatus::from($request->validated('target_status'));
 
-        if ($target === OrderStatus::Active) {
-            $order = $this->activateOrderAction->execute($order, $request->user(), $request);
+        if ($target === OrderStatus::Completed) {
+            $order = $this->orderService->complete($order->fresh(['items', 'knives']), $request->user(), $request);
         } elseif ($target === OrderStatus::Cancelled) {
             /** @var string|null $reason */
             $reason = $request->validated('reason');
             $order = $this->cancelOrderAction->execute($order, $request->user(), $request, $reason);
         } else {
-            abort(422, 'Unsupported status target.');
+            $order = $this->transitionOrderStatusAction->execute($order, $target, $request->user(), $request);
         }
 
         $order->loadMissing([

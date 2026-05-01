@@ -7,6 +7,8 @@ namespace App\Support\Audit;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
+use App\Models\CustomerPortalUpdate;
+use App\Models\EvidencePhoto;
 use App\Models\Invoice;
 use App\Models\Knife;
 use App\Models\OperationalRoute;
@@ -52,6 +54,8 @@ final class AuditLogCompanyResolver
                 Knife::class => self::mergeKnifeCompanies($companyByEntity, $ids),
                 User::class => self::mergeUserCompanies($companyByEntity, $ids),
                 RouteStop::class => self::mergeRouteStopCompanies($companyByEntity, $ids),
+                EvidencePhoto::class => self::mergeEvidencePhotoCompanies($companyByEntity, $ids),
+                CustomerPortalUpdate::class => self::mergeCustomerPortalUpdateCompanies($companyByEntity, $ids),
                 OperationalRoute::class => null,
                 default => null,
             };
@@ -168,6 +172,62 @@ final class AuditLogCompanyResolver
      * @param  array<string, array{id: string}|null>  $target
      * @param  list<string>  $ids
      */
+    /**
+     * @param  array<string, array{id: string}|null>  $target
+     * @param  list<string>  $ids
+     */
+    /**
+     * @param  array<string, array{id: string}|null>  $target
+     * @param  list<string>  $ids
+     */
+    private static function mergeCustomerPortalUpdateCompanies(array &$target, array $ids): void
+    {
+        $rows = CustomerPortalUpdate::query()->whereIn('id', $ids)->get(['id', 'company_id']);
+        foreach ($rows as $row) {
+            $target[CustomerPortalUpdate::class.'|'.$row->id] = ['id' => (string) $row->company_id];
+        }
+    }
+
+    private static function mergeEvidencePhotoCompanies(array &$target, array $ids): void
+    {
+        $rows = EvidencePhoto::query()->whereIn('id', $ids)->get(['id', 'order_id', 'route_stop_id']);
+        $orderIds = $rows->pluck('order_id')->filter()->unique()->values()->all();
+        $stopIds = $rows->pluck('route_stop_id')->filter()->unique()->values()->all();
+
+        $orders = $orderIds !== []
+            ? Order::query()->whereIn('id', $orderIds)->get(['id', 'company_id'])->keyBy('id')
+            : collect();
+
+        $stops = $stopIds !== []
+            ? RouteStop::query()->whereIn('id', $stopIds)->get(['id', 'booking_id'])->keyBy('id')
+            : collect();
+
+        $bookingIds = $stops->pluck('booking_id')->filter()->unique()->values()->all();
+        $bookings = $bookingIds !== []
+            ? Booking::query()->whereIn('id', $bookingIds)->get(['id', 'company_id'])->keyBy('id')
+            : collect();
+
+        foreach ($rows as $row) {
+            $key = EvidencePhoto::class.'|'.$row->id;
+            if ($row->order_id !== null && isset($orders[(string) $row->order_id])) {
+                $target[$key] = ['id' => (string) $orders[(string) $row->order_id]->company_id];
+
+                continue;
+            }
+            if ($row->route_stop_id !== null && isset($stops[(string) $row->route_stop_id])) {
+                $bid = $stops[(string) $row->route_stop_id]->booking_id;
+                if ($bid !== null && isset($bookings[(string) $bid])) {
+                    $target[$key] = ['id' => (string) $bookings[(string) $bid]->company_id];
+                } else {
+                    $target[$key] = null;
+                }
+
+                continue;
+            }
+            $target[$key] = null;
+        }
+    }
+
     private static function mergeRouteStopCompanies(array &$target, array $ids): void
     {
         $stops = RouteStop::query()->whereIn('id', $ids)->get(['id', 'booking_id']);

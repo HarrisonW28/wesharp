@@ -92,6 +92,12 @@ class Booking extends Model
         return $this->hasOne(RouteStop::class);
     }
 
+    /** @return HasMany<CustomerPortalUpdate, Booking> */
+    public function customerPortalUpdates(): HasMany
+    {
+        return $this->hasMany(CustomerPortalUpdate::class, 'booking_id');
+    }
+
     public function uploadedFiles(): MorphMany
     {
         return $this->morphMany(UploadedFile::class, 'fileable');

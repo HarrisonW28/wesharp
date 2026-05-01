@@ -162,7 +162,14 @@ export default function VenuePendingPage() {
             onClick={() => setRegistrationType("business")}
           >
             <span className="block text-sm font-semibold">Business / venue</span>
-            <span className="block text-xs font-normal text-muted-foreground">Kitchen, brasserie, collective, etc.</span>
+            <span
+              className={cn(
+                "block text-xs font-normal",
+                sole ? "text-muted-foreground" : "text-primary-foreground/85",
+              )}
+            >
+              Kitchen, brasserie, collective, etc.
+            </span>
           </Button>
           <Button
             type="button"
@@ -176,7 +183,14 @@ export default function VenuePendingPage() {
             onClick={() => setRegistrationType("sole_customer")}
           >
             <span className="block text-sm font-semibold">Sole trader / individual</span>
-            <span className="block text-xs font-normal text-muted-foreground">Not a registered company — billed to you.</span>
+            <span
+              className={cn(
+                "block text-xs font-normal",
+                sole ? "text-primary-foreground/85" : "text-muted-foreground",
+              )}
+            >
+              Not a registered company — billed to you.
+            </span>
           </Button>
         </div>
       </div>

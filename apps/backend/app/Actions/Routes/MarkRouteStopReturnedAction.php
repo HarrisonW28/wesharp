@@ -16,6 +16,14 @@ final class MarkRouteStopReturnedAction
     {
         EvidencePhotoRequirements::assertForReturned($stop);
 
-        return $this->transitionStop($stop, RouteStopStatus::Returned, 'route_stop.returned', $actor, $request);
+        return $this->transitionStop(
+            $stop,
+            RouteStopStatus::Returned,
+            'route_stop.returned',
+            $actor,
+            $request,
+            [],
+            ['return_completed_at' => now()],
+        );
     }
 }

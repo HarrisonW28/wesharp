@@ -36,6 +36,9 @@ final class Permissions
 
     public const ROUTES_MANAGE = 'routes.manage';
 
+    /** Complete a route despite open stops or missing required evidence (administrator only). */
+    public const ROUTES_COMPLETE_OVERRIDE = 'routes.complete_override';
+
     public const ROUTE_STOPS_UPDATE = 'route_stops.update';
 
     public const ORDERS_VIEW = 'orders.view';
@@ -101,6 +104,7 @@ final class Permissions
         self::BOOKINGS_DELETE,
         self::ROUTES_VIEW,
         self::ROUTES_MANAGE,
+        self::ROUTES_COMPLETE_OVERRIDE,
         self::ROUTE_STOPS_UPDATE,
         self::ORDERS_VIEW,
         self::ORDERS_CREATE,

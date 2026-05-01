@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
+use App\Models\CustomerPortalUpdate;
+use App\Models\EvidencePhoto;
 use App\Models\Invoice;
 use App\Models\Knife;
 use App\Models\OperationalRoute;
@@ -15,6 +17,8 @@ use App\Models\User;
 use App\Policies\AuditLogPolicy;
 use App\Policies\BookingPolicy;
 use App\Policies\CompanyPolicy;
+use App\Policies\CustomerPortalUpdatePolicy;
+use App\Policies\EvidencePhotoPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\KnifePolicy;
 use App\Policies\OperationalRoutePolicy;
@@ -52,6 +56,8 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);
+        Gate::policy(EvidencePhoto::class, EvidencePhotoPolicy::class);
+        Gate::policy(CustomerPortalUpdate::class, CustomerPortalUpdatePolicy::class);
         Gate::policy(Booking::class, BookingPolicy::class);
         Gate::policy(OperationalRoute::class, OperationalRoutePolicy::class);
         Gate::policy(RouteStop::class, RouteStopPolicy::class);

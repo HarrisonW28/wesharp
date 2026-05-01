@@ -17,6 +17,7 @@ import {
 } from "@/lib/bookings/customer-booking-ui";
 
 import { CustomerBookingStatusBadge } from "@/components/bookings/CustomerBookingStatusBadge";
+import { TenantFulfilmentUpdatesCard } from "@/components/orders/TenantFulfilmentUpdatesCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
@@ -84,6 +85,7 @@ export default function TenantBookingDetailPage() {
 
   const d = query.data ?? null;
   const timeline = d ? buildCustomerBookingTimeline(d.status) : null;
+  const useServerFulfilment = Boolean(d?.fulfilment?.timeline && d.fulfilment.timeline.length > 0);
 
   const requestedDay = d?.requested_collection_date ?? d?.requested_date ?? null;
   const requestedWin = d
@@ -195,7 +197,13 @@ export default function TenantBookingDetailPage() {
             ) : null}
           </div>
 
-          {timeline.variant === "cancelled" ? (
+          {useServerFulfilment ? (
+            <TenantFulfilmentUpdatesCard
+              fulfilment={d.fulfilment}
+              customerMessages={d.customer_messages}
+              photos={[]}
+            />
+          ) : timeline.variant === "cancelled" ? (
             <Card className="border shadow-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">{timeline.headline}</CardTitle>

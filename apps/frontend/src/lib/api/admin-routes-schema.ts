@@ -47,11 +47,78 @@ export const RouteProgressSchema = z.object({
   pending: z.number().optional(),
 });
 
+export const RouteCompletionStopRowSchema = z
+  .object({
+    sequence: z.number(),
+    route_stop_status: z.string().nullable().optional(),
+    route_stop_status_label: z.string().nullable().optional(),
+    company_name: z.string().nullable().optional(),
+    failure_reason: z.string().nullable().optional(),
+    failure_notes: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+export const RouteCompletionPhotoGapSchema = z
+  .object({
+    stop_sequence: z.number(),
+    company_name: z.string().nullable().optional(),
+    missing: z.array(
+      z.object({
+        category: z.string(),
+        label: z.string(),
+      }),
+    ),
+  })
+  .passthrough();
+
+export const RouteCompletionSummarySchema = z
+  .object({
+    stops_total: z.number(),
+    stops_completed_success: z.number(),
+    stops_failed: z.number(),
+    stops_outstanding: z.number(),
+    stops_collected: z.number(),
+    stops_returned: z.number(),
+    items_estimate_collected: z.number(),
+    orders_collected: z.number(),
+    orders_returned: z.number(),
+    outstanding_stops: z.array(RouteCompletionStopRowSchema),
+    failed_stops: z.array(RouteCompletionStopRowSchema),
+    photo_gaps: z.array(RouteCompletionPhotoGapSchema),
+    notes_and_issues: z.array(
+      z.object({
+        stop_sequence: z.number(),
+        company_name: z.string().nullable().optional(),
+        lines: z.array(z.string()),
+      }),
+    ),
+    route_notes: z.string().nullable().optional(),
+    evidence_requirements: z
+      .object({
+        require_collection_photo: z.boolean().optional(),
+        require_return_photo: z.boolean().optional(),
+        require_failed_collection_photo: z.boolean().optional(),
+      })
+      .passthrough()
+      .optional(),
+    blocks_completion: z.boolean(),
+    blockers: z.array(z.string()),
+    completion_rules: z.array(z.string()).optional(),
+    can_force_complete: z.boolean(),
+  })
+  .passthrough();
+
+export const RouteCompletionSummaryResponseSchema = z.object({
+  success: z.literal(true),
+  data: RouteCompletionSummarySchema,
+});
+
 export const RouteDetailDataSchema = z
   .object({
     id: z.string(),
     name: z.string(),
     route_status: z.string().nullable().optional(),
+    completed_at: z.string().nullable().optional(),
     scheduled_date: z.string().nullable().optional(),
     coverage_city: z.string().nullable().optional(),
     notes: z.string().nullable().optional(),
@@ -69,6 +136,7 @@ export const RouteRowSchema = z.object({
   route_status_label: z.string().nullable().optional(),
   scheduled_date: z.string().nullable().optional(),
   coverage_city: z.string().nullable().optional(),
+  completed_at: z.string().nullable().optional(),
   driver_user_id: z.string().nullable().optional(),
   driver_name: z.string().nullable().optional(),
   stops_count: z.number().optional(),
@@ -146,6 +214,58 @@ export const StopOrderSummarySchema = z.object({
   currency: z.string().nullable().optional(),
 });
 
+export const EvidencePhotoAdminRowSchema = z
+  .object({
+    id: z.string(),
+    captured_at: z.string().nullable().optional(),
+    category: z.string().nullable().optional(),
+    category_label: z.string().nullable().optional(),
+    visibility: z.string().nullable().optional(),
+    caption: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
+    archived_at: z.string().nullable().optional(),
+    knife_id: z.string().nullable().optional(),
+    order_id: z.string().nullable().optional(),
+    route_stop_id: z.string().nullable().optional(),
+    uploaded_by: z
+      .object({
+        id: z.string(),
+        name: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
+    file_fetch_path: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+export const CustomerPortalUpdateAdminRowSchema = z
+  .object({
+    id: z.string(),
+    body: z.string(),
+    visibility: z.string().nullable().optional(),
+    archived_at: z.string().nullable().optional(),
+    created_at: z.string().nullable().optional(),
+    created_by: z
+      .object({
+        id: z.string(),
+        name: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
+  })
+  .passthrough();
+
+export const EvidenceSettingsSchema = z
+  .object({
+    require_collection_photo: z.boolean().optional(),
+    require_return_photo: z.boolean().optional(),
+    require_failed_collection_photo: z.boolean().optional(),
+    default_visibility: z.string().optional(),
+    allow_customer_visible_photos: z.boolean().optional(),
+    show_in_customer_portal: z.boolean().optional(),
+  })
+  .passthrough();
+
 export const StopDetailDataSchema = z
   .object({
     id: z.string(),
@@ -222,6 +342,9 @@ export const StopDetailDataSchema = z
       })
       .nullable()
       .optional(),
+    evidence_photos: z.array(EvidencePhotoAdminRowSchema).optional(),
+    evidence_settings: EvidenceSettingsSchema.optional(),
+    customer_portal_updates: z.array(CustomerPortalUpdateAdminRowSchema).optional(),
   })
   .passthrough();
 

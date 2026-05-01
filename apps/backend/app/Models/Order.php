@@ -74,6 +74,12 @@ class Order extends Model
         return $this->hasMany(EvidencePhoto::class, 'order_id');
     }
 
+    /** @return HasMany<CustomerPortalUpdate, Order> */
+    public function customerPortalUpdates(): HasMany
+    {
+        return $this->hasMany(CustomerPortalUpdate::class, 'order_id');
+    }
+
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);

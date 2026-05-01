@@ -101,6 +101,35 @@ export const PaginatedBookingsResponseSchema = z.object({
   meta: MetaSchema.optional(),
 });
 
+export const AccountFulfilmentTimelineStepSchema = z.object({
+  step_key: z.string(),
+  label: z.string(),
+  description: z.string().optional(),
+  at: z.string().optional(),
+  state: z.string(),
+});
+
+export const AccountFulfilmentRouteSchema = z
+  .object({
+    collection_date: z.string().nullable().optional(),
+    collection_window_start: z.string().nullable().optional(),
+    collection_window_end: z.string().nullable().optional(),
+    collected_at: z.string().nullable().optional(),
+    returned_at: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+export const AccountFulfilmentSchema = z.object({
+  timeline: z.array(AccountFulfilmentTimelineStepSchema),
+  route: AccountFulfilmentRouteSchema.nullable().optional(),
+});
+
+export const AccountCustomerMessageSchema = z.object({
+  body: z.string(),
+  posted_at: z.string().nullable().optional(),
+  posted_at_label: z.string().nullable().optional(),
+});
+
 export const BookingDetailEnvelopeSchema = z.object({
   success: z.literal(true),
   data: z.record(z.string(), z.unknown()),
@@ -160,6 +189,8 @@ export const AccountBookingDetailDataSchema = BookingRowSchema.extend({
       }),
     )
     .optional(),
+  fulfilment: AccountFulfilmentSchema.optional(),
+  customer_messages: z.array(AccountCustomerMessageSchema).optional(),
 }).passthrough();
 
 export const AccountBookingDetailResponseSchema = z.object({
@@ -237,12 +268,28 @@ export const AccountPortalOrderInvoiceSchema = z.object({
   formatted_total: z.string(),
 });
 
+export const AccountPortalOrderPhotoSchema = z
+  .object({
+    id: z.string(),
+    captured_at: z.string().nullable().optional(),
+    captured_at_label: z.string().nullable().optional(),
+    category: z.string().nullable().optional(),
+    category_label: z.string().nullable().optional(),
+    caption: z.string().nullable().optional(),
+    status_line: z.string().nullable().optional(),
+    file_fetch_path: z.string().nullable().optional(),
+  })
+  .passthrough();
+
 /** Tenant order detail (`GET /api/account/orders/{id}`) — customer-safe payload. */
 export const AccountOrderDetailDataSchema = OrderRowTenantSchema.extend({
   completed_at: z.string().nullable().optional(),
   knives: z.array(AccountPortalOrderKnifeSchema).optional(),
   items: z.array(AccountPortalOrderItemSchema).optional(),
   invoice: AccountPortalOrderInvoiceSchema.nullable().optional(),
+  photos: z.array(AccountPortalOrderPhotoSchema).optional(),
+  fulfilment: AccountFulfilmentSchema.optional(),
+  customer_messages: z.array(AccountCustomerMessageSchema).optional(),
 }).passthrough();
 
 export const AccountOrderDetailResponseSchema = z.object({

@@ -19,6 +19,7 @@ class OperationalRoute extends Model
     protected $fillable = [
         'name',
         'route_status',
+        'completed_at',
         'scheduled_date',
         'coverage_city',
         'driver_user_id',
@@ -30,6 +31,7 @@ class OperationalRoute extends Model
     {
         return [
             'route_status' => OperationalRouteStatus::class,
+            'completed_at' => 'datetime',
             'scheduled_date' => 'date',
             'meta' => 'array',
         ];

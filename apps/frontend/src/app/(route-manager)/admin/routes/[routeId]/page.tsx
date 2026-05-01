@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { ArrowDown, ArrowUp, CheckCircle2, ExternalLink, Loader2, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, ExternalLink, Loader2, Search, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import {
+  RouteCompletionSummaryResponseSchema,
   RouteDetailResponseSchema,
   RouteDriversLookupResponseSchema,
 } from "@/lib/api/admin-routes-schema";
@@ -26,6 +27,7 @@ import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -105,6 +107,8 @@ export default function RouteDetailPage() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [bookingSearch, setBookingSearch] = useState("");
+  const [completeOpen, setCompleteOpen] = useState(false);
+  const [forceOverride, setForceOverride] = useState(false);
 
   const route = detailQuery.data;
 
@@ -149,10 +153,10 @@ export default function RouteDetailPage() {
   });
 
   const completeMutation = useMutation({
-    mutationFn: async () => {
-      const res = await admin.json(`/api/admin/routes/${routeId}/complete`, {
+    mutationFn: async (forceComplete: boolean) => {
+      const res = await admin.json<unknown>(`/api/admin/routes/${routeId}/complete`, {
         method: "POST",
-        body: "{}",
+        body: JSON.stringify({ force_complete: forceComplete }),
       });
       if (!res.ok) {
         throw new Error(res.message);
@@ -165,11 +169,29 @@ export default function RouteDetailPage() {
     },
     onSuccess: () => {
       toast.success("Route marked completed.");
+      setCompleteOpen(false);
+      setForceOverride(false);
       void queryClient.invalidateQueries({ queryKey: ["admin-route-detail", routeId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-routes-today"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-routes-list"] });
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const completionSummaryQuery = useQuery({
+    queryKey: ["admin-route-completion-summary", routeId],
+    enabled: Boolean(routeId) && completeOpen,
+    queryFn: async () => {
+      const res = await admin.json<unknown>(`/api/admin/routes/${routeId}/completion-summary`);
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = RouteCompletionSummaryResponseSchema.safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected completion summary.");
+      }
+      return parsed.data.data;
+    },
   });
 
   const saveRouteMutation = useMutation({
@@ -300,25 +322,23 @@ export default function RouteDetailPage() {
   const stopIdsOrdered = route.stops.map((s) => s.id);
   const nextStop = firstOpenStop(route.stops);
 
+  const summary = completionSummaryQuery.data;
+  const canSubmitComplete =
+    summary &&
+    (!summary.blocks_completion || (summary.can_force_complete && forceOverride));
+
   const stickyFooter = canComplete ? (
     <Button
       type="button"
       className="h-14 w-full rounded-xl text-base font-semibold"
       disabled={completeMutation.isPending}
-      variant="destructive"
-      onClick={() => completeMutation.mutate()}
+      onClick={() => {
+        setForceOverride(false);
+        setCompleteOpen(true);
+      }}
     >
-      {completeMutation.isPending ? (
-        <>
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden />
-          Completing…
-        </>
-      ) : (
-        <>
-          <CheckCircle2 className="mr-2 h-6 w-6" aria-hidden />
-          Complete route
-        </>
-      )}
+      <CheckCircle2 className="mr-2 h-6 w-6" aria-hidden />
+      Complete route
     </Button>
   ) : null;
 
@@ -666,6 +686,269 @@ export default function RouteDetailPage() {
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setAddOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={completeOpen}
+        onOpenChange={(open) => {
+          setCompleteOpen(open);
+          if (!open) {
+            setForceOverride(false);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto border-white/10 bg-slate-950 text-slate-50 md:border-border md:bg-background md:text-foreground">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Complete route</DialogTitle>
+            <DialogDescription className="text-base text-slate-300 md:text-muted-foreground">
+              Review the run summary before closing <span className="font-medium text-slate-100 md:text-foreground">{route.name}</span>. Open stops or
+              missing required photos block drivers until resolved.
+            </DialogDescription>
+          </DialogHeader>
+
+          {completionSummaryQuery.isLoading ? (
+            <div className="flex justify-center py-10 text-slate-400">
+              <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+            </div>
+          ) : completionSummaryQuery.isError ? (
+            <p className="text-sm text-red-300 md:text-destructive">{(completionSummaryQuery.error as Error).message}</p>
+          ) : summary ? (
+            <div className="space-y-5 text-base">
+              {summary.blocks_completion ? (
+                <div
+                  className="flex gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 text-amber-50 md:border-amber-600/60 md:bg-amber-500/15 md:text-amber-950 dark:md:text-amber-100"
+                  role="alert"
+                >
+                  <AlertTriangle className="mt-0.5 h-6 w-6 shrink-0" aria-hidden />
+                  <div className="space-y-1">
+                    <p className="font-semibold leading-snug">This route cannot be completed yet</p>
+                    <p className="text-sm leading-relaxed opacity-95 md:opacity-100">
+                      {[
+                        summary.blockers.includes("outstanding_stops")
+                          ? "There are stops still in progress. Finish each visit or mark a failed collection."
+                          : null,
+                        summary.blockers.includes("missing_required_photos")
+                          ? "Required evidence photos are missing for at least one stop."
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-50 md:text-emerald-950 dark:md:text-emerald-100">
+                  All stops are closed out and evidence checks pass. You can complete this route.
+                </p>
+              )}
+
+              <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 md:border-border md:bg-muted/30">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 md:text-muted-foreground">Full visits done</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.stops_completed_success}</dd>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 md:border-border md:bg-muted/30">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 md:text-muted-foreground">Failed visits</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.stops_failed}</dd>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 md:border-border md:bg-muted/30">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 md:text-muted-foreground">Open stops</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums text-amber-200 md:text-amber-700 dark:md:text-amber-200">
+                    {summary.stops_outstanding}
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 md:border-border md:bg-muted/30">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 md:text-muted-foreground">Collected (stops)</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.stops_collected}</dd>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 md:border-border md:bg-muted/30">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 md:text-muted-foreground">Returned (stops)</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.stops_returned}</dd>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 md:border-border md:bg-muted/30">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 md:text-muted-foreground">Items (est.)</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.items_estimate_collected}</dd>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 md:border-border md:bg-muted/30">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 md:text-muted-foreground">Orders · collected phase</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.orders_collected}</dd>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 md:border-border md:bg-muted/30">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 md:text-muted-foreground">Orders · returned</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums">{summary.orders_returned}</dd>
+                </div>
+              </dl>
+
+              {summary.evidence_requirements &&
+              (summary.evidence_requirements.require_collection_photo ||
+                summary.evidence_requirements.require_return_photo ||
+                summary.evidence_requirements.require_failed_collection_photo) ? (
+                <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm md:border-border md:bg-muted/20">
+                  <span className="font-medium text-slate-200 md:text-foreground">Photo requirements: </span>
+                  <span className="text-slate-300 md:text-muted-foreground">
+                    {[
+                      summary.evidence_requirements.require_collection_photo ? "collection" : null,
+                      summary.evidence_requirements.require_return_photo ? "return" : null,
+                      summary.evidence_requirements.require_failed_collection_photo ? "failed visit" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </span>
+                </div>
+              ) : null}
+
+              {summary.outstanding_stops.length > 0 ? (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Outstanding stops</p>
+                  <ul className="mt-2 space-y-2">
+                    {summary.outstanding_stops.map((s) => (
+                      <li
+                        key={`out-${s.sequence}-${s.company_name ?? ""}`}
+                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm md:border-border md:bg-muted/20"
+                      >
+                        <span className="font-medium">#{s.sequence}</span>
+                        {s.company_name ? <span className="text-slate-200 md:text-foreground"> · {s.company_name}</span> : null}
+                        <span className="block text-slate-400 md:text-muted-foreground">
+                          {s.route_stop_status_label ?? s.route_stop_status ?? "—"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {summary.failed_stops.length > 0 ? (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Failed visits</p>
+                  <ul className="mt-2 space-y-2">
+                    {summary.failed_stops.map((s) => (
+                      <li
+                        key={`fail-${s.sequence}-${s.company_name ?? ""}`}
+                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm md:border-border md:bg-muted/20"
+                      >
+                        <span className="font-medium">#{s.sequence}</span>
+                        {s.company_name ? <span> · {s.company_name}</span> : null}
+                        {s.failure_reason ? (
+                          <span className="mt-1 block text-slate-300 md:text-muted-foreground">{s.failure_reason}</span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {summary.photo_gaps.length > 0 ? (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Missing photos</p>
+                  <ul className="mt-2 space-y-2">
+                    {summary.photo_gaps.map((g) => (
+                      <li
+                        key={`photo-${g.stop_sequence}`}
+                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm md:border-border md:bg-muted/20"
+                      >
+                        Stop #{g.stop_sequence}
+                        {g.company_name ? ` · ${g.company_name}` : null}: {g.missing.map((m) => m.label).join(", ")}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {summary.notes_and_issues.length > 0 ? (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Notes &amp; issues</p>
+                  <ul className="mt-2 space-y-2">
+                    {summary.notes_and_issues.map((n) => (
+                      <li
+                        key={`note-${n.stop_sequence}`}
+                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm md:border-border md:bg-muted/20"
+                      >
+                        #{n.stop_sequence}
+                        {n.company_name ? ` · ${n.company_name}` : null}
+                        <ul className="mt-1 list-disc pl-4 text-slate-300 md:text-muted-foreground">
+                          {n.lines.map((line, li) => (
+                            <li key={`${n.stop_sequence}-${li}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {route.notes ? (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Route notes</p>
+                  <p className="mt-2 whitespace-pre-wrap rounded-lg border border-white/10 bg-white/5 p-3 text-sm md:border-border md:bg-muted/20">
+                    {route.notes}
+                  </p>
+                </div>
+              ) : null}
+
+              {summary.completion_rules && summary.completion_rules.length > 0 ? (
+                <div className="text-sm text-slate-400 md:text-muted-foreground">
+                  <p className="font-medium text-slate-200 md:text-foreground">Rules</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {summary.completion_rules.map((rule, ri) => (
+                      <li key={ri}>{rule}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {summary.blocks_completion && summary.can_force_complete ? (
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/15 bg-white/5 p-4 md:border-border md:bg-muted/30">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-5 w-5 shrink-0 rounded border-white/20 md:border-input"
+                    checked={forceOverride}
+                    onChange={(e) => setForceOverride(e.target.checked)}
+                  />
+                  <span className="text-sm leading-relaxed">
+                    <span className="font-semibold text-slate-100 md:text-foreground">Override and complete anyway</span>
+                    <span className="mt-1 block text-slate-400 md:text-muted-foreground">
+                      Only for administrators. This records a forced completion in the audit log.
+                    </span>
+                  </span>
+                </label>
+              ) : null}
+            </div>
+          ) : null}
+
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-12 w-full text-base sm:w-auto"
+              onClick={() => setCompleteOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="h-12 w-full text-base sm:min-w-[200px]"
+              disabled={
+                completeMutation.isPending ||
+                completionSummaryQuery.isLoading ||
+                completionSummaryQuery.isError ||
+                !canSubmitComplete
+              }
+              onClick={() => completeMutation.mutate(forceOverride)}
+            >
+              {completeMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden />
+                  Completing…
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-5 w-5" aria-hidden />
+                  Complete route
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -19,7 +19,7 @@ final class MarkRouteStopSkippedRequest extends FormRequest
         return [
             'failure_reason' => ['required', 'string', 'min:3', 'max:2000'],
             'failure_notes' => ['nullable', 'string', 'max:20000'],
-            /** Ack only — real photo upload is Sprint 5.4. */
+            /** Legacy ack — prefer route-stop evidence photos when settings require them. */
             'evidence_placeholder_acknowledged' => ['sometimes', 'boolean'],
         ];
     }

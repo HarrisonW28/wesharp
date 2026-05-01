@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { Camera, ExternalLink, ImageIcon, Loader2, MapPinned, PhoneCall, Truck } from "lucide-react";
+import { ExternalLink, Loader2, MapPinned, PhoneCall, Truck } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -16,6 +16,8 @@ import { formatGBP } from "@/lib/format/money";
 import { visibleRouteStopActions, visibleRouteStopFailureAction } from "@/lib/route-manager/route-stop-workflow";
 
 import { RouteManagerShell } from "@/components/layout/RouteManagerShell";
+import { RouteStopCustomerPortalSection } from "@/components/route-manager/RouteStopCustomerPortalSection";
+import { RouteStopEvidenceSection } from "@/components/route-manager/RouteStopEvidenceSection";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -64,7 +66,6 @@ export default function RouteStopDetailPage() {
   const [failOpen, setFailOpen] = useState(false);
   const [failReason, setFailReason] = useState("");
   const [failNotes, setFailNotes] = useState("");
-  const [failPhotoAck, setFailPhotoAck] = useState(false);
 
   useEffect(() => {
     if (!stop) {
@@ -138,7 +139,6 @@ export default function RouteStopDetailPage() {
     mutationFn: async (payload: {
       failure_reason: string;
       failure_notes?: string;
-      evidence_placeholder_acknowledged?: boolean;
     }) => {
       const res = await admin.json(`/api/admin/route-stops/${stopId}/mark-skipped`, {
         method: "POST",
@@ -158,7 +158,6 @@ export default function RouteStopDetailPage() {
       setFailOpen(false);
       setFailReason("");
       setFailNotes("");
-      setFailPhotoAck(false);
       queryClient.setQueryData(["admin-route-stop", stopId], data);
       void queryClient.invalidateQueries({ queryKey: ["admin-route-detail", routeId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-routes-today"] });
@@ -302,9 +301,6 @@ export default function RouteStopDetailPage() {
             {stop.failure_notes ? (
               <p className="mt-2 whitespace-pre-wrap text-base text-slate-200 md:text-muted-foreground">{stop.failure_notes}</p>
             ) : null}
-            {stop.failure_meta && typeof stop.failure_meta === "object" && stop.failure_meta !== null && "target_sprint" in stop.failure_meta ? (
-              <p className="mt-2 text-sm text-slate-400 md:text-muted-foreground">Photo evidence flagged for a future release.</p>
-            ) : null}
           </Card>
         ) : null}
 
@@ -341,15 +337,10 @@ export default function RouteStopDetailPage() {
                   onChange={(e) => setFailNotes(e.target.value)}
                 />
               </div>
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-base md:border-border md:bg-muted/30">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-5 w-5 shrink-0 rounded border-white/20"
-                  checked={failPhotoAck}
-                  onChange={(e) => setFailPhotoAck(e.target.checked)}
-                />
-                <span>We will attach photo evidence in Sprint 5.4 (acknowledge placeholder).</span>
-              </label>
+              <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300 md:border-border md:bg-muted/30 md:text-muted-foreground">
+                Add timestamped photos from the “Photos & evidence” section when you can. If ops require a failed-collection
+                photo, upload it before submitting.
+              </p>
             </div>
             <SheetFooter className="flex-col gap-2 sm:flex-col">
               <Button
@@ -360,13 +351,9 @@ export default function RouteStopDetailPage() {
                   const payload: {
                     failure_reason: string;
                     failure_notes?: string;
-                    evidence_placeholder_acknowledged?: boolean;
                   } = { failure_reason: failReason.trim() };
                   if (failNotes.trim() !== "") {
                     payload.failure_notes = failNotes.trim();
-                  }
-                  if (failPhotoAck) {
-                    payload.evidence_placeholder_acknowledged = true;
                   }
                   skipMutation.mutate(payload);
                 }}
@@ -460,17 +447,19 @@ export default function RouteStopDetailPage() {
           </Card>
         ) : null}
 
-        <Card className="border-dashed border-white/20 bg-white/[0.03] p-4 md:border-border md:bg-muted/30">
-          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">
-            <Camera className="h-5 w-5" aria-hidden />
-            Photos
-          </div>
-          <p className="mt-2 text-base text-slate-300 md:text-muted-foreground">Photo capture is planned for Sprint 5.4.</p>
-          <Button type="button" variant="secondary" className="mt-3 h-12 w-full rounded-xl text-base" disabled>
-            <ImageIcon className="mr-2 h-5 w-5 opacity-50" aria-hidden />
-            Add photo (soon)
-          </Button>
-        </Card>
+        <RouteStopEvidenceSection
+          stopId={stopId}
+          routeId={routeId}
+          photos={stop.evidence_photos ?? []}
+          settings={stop.evidence_settings}
+        />
+
+        <RouteStopCustomerPortalSection
+          stopId={stopId}
+          routeId={routeId}
+          updates={stop.customer_portal_updates ?? []}
+          settings={stop.evidence_settings}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <div>

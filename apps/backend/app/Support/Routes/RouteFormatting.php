@@ -5,9 +5,11 @@ namespace App\Support\Routes;
 use App\Enums\RouteStopStatus;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
+use App\Models\CustomerPortalUpdate;
 use App\Models\OperationalRoute;
 use App\Models\RouteStop;
 use App\Support\Evidence\EvidencePhotoJson;
+use App\Support\Portal\PortalCustomerUpdateJson;
 use Illuminate\Support\Str;
 
 final class RouteFormatting
@@ -45,6 +47,7 @@ final class RouteFormatting
                 : null,
             'scheduled_date' => $r->scheduled_date?->format('Y-m-d'),
             'coverage_city' => $r->coverage_city,
+            'completed_at' => $r->completed_at?->toIso8601String(),
             'driver_user_id' => $r->driver_user_id !== null ? (string) $r->driver_user_id : null,
             'driver_name' => $r->relationLoaded('driver') ? $r->driver?->name : null,
             'stops_count' => $total,
@@ -112,6 +115,7 @@ final class RouteFormatting
             'id' => (string) $route->id,
             'name' => $route->name,
             'route_status' => $route->route_status?->value,
+            'completed_at' => $route->completed_at?->toIso8601String(),
             'scheduled_date' => $route->scheduled_date?->format('Y-m-d'),
             'coverage_city' => $route->coverage_city,
             'notes' => $route->notes,
@@ -192,7 +196,19 @@ final class RouteFormatting
             'booking.location',
             'booking.contact',
             'booking.orders:id,booking_id,total_pence,currency',
+            'evidencePhotos' => fn ($q) => $q->with(['uploadedBy:id,name'])->orderByDesc('captured_at'),
         ]);
+
+        $portalUpdates = CustomerPortalUpdate::query()
+            ->where(function ($q) use ($stop): void {
+                $q->where('route_stop_id', $stop->id);
+                if ($stop->booking_id !== null) {
+                    $q->orWhere('booking_id', $stop->booking_id);
+                }
+            })
+            ->with(['createdBy:id,name'])
+            ->orderByDesc('created_at')
+            ->get();
 
         $booking = $stop->booking;
         $order = $booking?->orders->first();
@@ -267,6 +283,9 @@ final class RouteFormatting
                 'allow_customer_visible_photos' => (bool) config('wesharp_evidence.allow_customer_visible_photos', true),
                 'show_in_customer_portal' => (bool) config('wesharp_evidence.show_in_customer_portal', true),
             ],
+            'customer_portal_updates' => $portalUpdates->map(
+                static fn ($u): array => PortalCustomerUpdateJson::adminRow($u)
+            )->values()->all(),
         ];
     }
 

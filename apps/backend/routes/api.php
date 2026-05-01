@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\CompanyContactController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\CompanyLocationController;
+use App\Http\Controllers\Admin\CustomerPortalUpdateController;
+use App\Http\Controllers\Admin\EvidencePhotoController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\KnifeController;
 use App\Http\Controllers\Admin\LookupController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\Api\Account\AccountDashboardController;
 use App\Http\Controllers\Api\Account\AccountInvoiceController;
 use App\Http\Controllers\Api\Account\AccountKnifeController;
 use App\Http\Controllers\Api\Account\AccountLocationController;
+use App\Http\Controllers\Api\Account\AccountOrderEvidencePhotoController;
 use App\Http\Controllers\Api\Account\AccountOrderController;
 use App\Http\Controllers\Api\Account\AccountSettingsController;
 use App\Http\Controllers\Api\Account\AccountSubscriptionController;
@@ -45,6 +48,7 @@ Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (
 
     Route::middleware('permission:orders.view')->get('orders', [AccountOrderController::class, 'index'])->name('api.account.orders.index');
     Route::middleware('permission:orders.view')->get('orders/{order}', [AccountOrderController::class, 'show'])->whereUuid('order')->name('api.account.orders.show');
+    Route::middleware('permission:orders.view')->get('orders/{order}/evidence-photos/{photo}/file', [AccountOrderEvidencePhotoController::class, 'showFile'])->whereUuid(['order', 'photo'])->name('api.account.orders.evidence_photos.file');
 
     Route::middleware('permission:knives.view')->get('knives', [AccountKnifeController::class, 'index'])->name('api.account.knives.index');
 
@@ -130,6 +134,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:routes.view')->get('routes', [RouteController::class, 'index'])->name('api.admin.routes.index');
     Route::middleware('permission:routes.view')->get('routes/{route}', [RouteController::class, 'show'])->whereUuid('route')->name('api.admin.routes.show');
     Route::middleware('permission:routes.manage')->put('routes/{route}', [RouteController::class, 'update'])->whereUuid('route')->name('api.admin.routes.update');
+    Route::middleware('permission:routes.view')->get('routes/{route}/completion-summary', [RouteController::class, 'completionSummary'])->whereUuid('route')->name('api.admin.routes.completion_summary');
     Route::post('routes/{route}/start', [RouteController::class, 'start'])->whereUuid('route')->name('api.admin.routes.start');
     Route::post('routes/{route}/complete', [RouteController::class, 'complete'])->whereUuid('route')->name('api.admin.routes.complete');
     Route::middleware('permission:routes.manage')->post('routes/{route}/stops', [RouteController::class, 'storeStop'])->whereUuid('route')->name('api.admin.routes.stops.store');
@@ -144,6 +149,15 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::post('route-stops/{stop}/mark-returned', [RouteStopController::class, 'markReturned'])->whereUuid('stop')->name('api.admin.route_stops.mark_returned');
     Route::post('route-stops/{stop}/mark-skipped', [RouteStopController::class, 'markSkipped'])->whereUuid('stop')->name('api.admin.route_stops.mark_skipped');
     Route::post('route-stops/{stop}/complete', [RouteStopController::class, 'complete'])->whereUuid('stop')->name('api.admin.route_stops.complete');
+
+    Route::post('route-stops/{stop}/evidence-photos', [EvidencePhotoController::class, 'storeForRouteStop'])->whereUuid('stop')->name('api.admin.route_stops.evidence_photos.store');
+    Route::middleware('permission:orders.update')->post('orders/{order}/evidence-photos', [EvidencePhotoController::class, 'storeForOrder'])->whereUuid('order')->name('api.admin.orders.evidence_photos.store');
+    Route::patch('evidence-photos/{photo}', [EvidencePhotoController::class, 'update'])->whereUuid('photo')->name('api.admin.evidence_photos.update');
+    Route::middleware('permission:routes.view')->get('evidence-photos/{photo}/file', [EvidencePhotoController::class, 'showFile'])->whereUuid('photo')->name('api.admin.evidence_photos.file');
+
+    Route::post('route-stops/{stop}/customer-portal-updates', [CustomerPortalUpdateController::class, 'storeForRouteStop'])->whereUuid('stop')->name('api.admin.route_stops.customer_portal_updates.store');
+    Route::middleware('permission:orders.update')->post('orders/{order}/customer-portal-updates', [CustomerPortalUpdateController::class, 'storeForOrder'])->whereUuid('order')->name('api.admin.orders.customer_portal_updates.store');
+    Route::patch('customer-portal-updates/{update}', [CustomerPortalUpdateController::class, 'update'])->whereUuid('update')->name('api.admin.customer_portal_updates.update');
 
     Route::middleware('permission:bookings.view')->get('bookings', [BookingController::class, 'index'])->name('api.admin.bookings.index');
     Route::middleware('permission:bookings.create')->post('bookings', [BookingController::class, 'store'])->name('api.admin.bookings.store');

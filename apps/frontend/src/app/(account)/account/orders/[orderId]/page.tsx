@@ -13,6 +13,7 @@ import { formatGBP } from "@/lib/format/money";
 import { cn } from "@/lib/utils";
 
 import { CustomerOrderStatusBadge } from "@/components/orders/CustomerOrderStatusBadge";
+import { TenantFulfilmentUpdatesCard } from "@/components/orders/TenantFulfilmentUpdatesCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CustomerInvoiceStatusBadge } from "@/components/invoices/CustomerInvoiceStatusBadge";
@@ -63,7 +64,12 @@ export default function TenantOrderDetailPage() {
   });
 
   const o = orderQuery.data;
-  const timeline = o ? buildCustomerOrderTimeline({ status: o.status, created_at: o.created_at, completed_at: o.completed_at }) : null;
+  const useServerFulfilment = Boolean(o?.fulfilment?.timeline && o.fulfilment.timeline.length > 0);
+  const timeline = o
+    ? useServerFulfilment
+      ? null
+      : buildCustomerOrderTimeline({ status: o.status, created_at: o.created_at, completed_at: o.completed_at })
+    : null;
   const nextSteps = o ? customerOrderNextSteps(o.status) : [];
 
   return (
@@ -99,6 +105,11 @@ export default function TenantOrderDetailPage() {
                 <span className="text-sm text-muted-foreground">Payment</span>
                 <StatusBadge kind="payment" status={o.payment_status} />
               </div>
+              {useServerFulfilment ? (
+                <p className="text-sm text-muted-foreground">
+                  Live collection and workshop milestones are in the <strong>Updates</strong> section below.
+                </p>
+              ) : null}
               {timeline ? (
                 <ol className="space-y-0">
                   {timeline.steps.map((step) => (
@@ -230,6 +241,12 @@ export default function TenantOrderDetailPage() {
               </CardContent>
             </Card>
           ) : null}
+
+          <TenantFulfilmentUpdatesCard
+            fulfilment={o.fulfilment}
+            customerMessages={o.customer_messages}
+            photos={o.photos}
+          />
 
           <Card className="rounded-xl lg:col-span-3">
             <CardHeader>

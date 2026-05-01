@@ -38,15 +38,18 @@ final class EvidencePhotoRequirements
         self::assertCategoryPresent($stop, EvidencePhotoCategory::FailedCollection, 'Upload a failed collection photo before recording this failure.');
     }
 
-    private static function assertCategoryPresent(RouteStop $stop, EvidencePhotoCategory $category, string $message): void
+    public static function hasActivePhoto(RouteStop $stop, EvidencePhotoCategory $category): bool
     {
-        $exists = EvidencePhoto::query()
+        return EvidencePhoto::query()
             ->where('route_stop_id', $stop->id)
             ->where('category', $category->value)
             ->whereNull('archived_at')
             ->exists();
+    }
 
-        if (! $exists) {
+    private static function assertCategoryPresent(RouteStop $stop, EvidencePhotoCategory $category, string $message): void
+    {
+        if (! self::hasActivePhoto($stop, $category)) {
             throw ValidationException::withMessages([
                 'evidence_photo' => $message,
             ]);

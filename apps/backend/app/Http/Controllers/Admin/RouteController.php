@@ -21,6 +21,7 @@ use App\Models\RouteStop;
 use App\Models\User;
 use App\Services\Audit\AuditRecorder;
 use App\Support\ApiResponses;
+use App\Support\Routes\RouteCompletionSummary;
 use App\Support\Routes\RouteFormatting;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -256,11 +257,25 @@ final class RouteController extends Controller
         return ApiResponses::success(RouteFormatting::routeDetail($route));
     }
 
+    public function completionSummary(Request $request, OperationalRoute $route): JsonResponse
+    {
+        $this->authorize('view', $route);
+
+        $route->load(['stops.booking.orders', 'stops.booking.company:id,name']);
+
+        /** @var User|null $viewer */
+        $viewer = $request->user();
+
+        return ApiResponses::success(RouteCompletionSummary::build($route, $viewer));
+    }
+
     public function complete(Request $request, OperationalRoute $route): JsonResponse
     {
         $this->authorize('manage', $route);
 
-        $route = $this->completeRouteAction->execute($route, $request->user(), $request);
+        $force = $request->boolean('force_complete');
+
+        $route = $this->completeRouteAction->execute($route, $request->user(), $request, $force);
 
         return ApiResponses::success(RouteFormatting::routeDetail($route));
     }

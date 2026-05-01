@@ -27,6 +27,7 @@ class RouteStop extends Model
         'failure_reason',
         'failure_notes',
         'failure_meta',
+        'return_completed_at',
     ];
 
     protected function casts(): array
@@ -36,6 +37,7 @@ class RouteStop extends Model
             'expected_arrival_at' => 'datetime',
             'arrived_at' => 'datetime',
             'departed_at' => 'datetime',
+            'return_completed_at' => 'datetime',
             'actual_knife_count' => 'integer',
             'failure_meta' => 'array',
         ];

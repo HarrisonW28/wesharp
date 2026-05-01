@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Enums\OrderStatus;
+use App\Enums\EvidencePhotoVisibility;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-final class TransitionOrderRequest extends FormRequest
+final class StoreCustomerPortalUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -19,8 +19,8 @@ final class TransitionOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'target_status' => ['required', Rule::enum(OrderStatus::class)],
-            'reason' => ['nullable', 'string', 'max:2000'],
+            'body' => ['required', 'string', 'min:1', 'max:10000'],
+            'visibility' => ['sometimes', 'string', Rule::enum(EvidencePhotoVisibility::class)],
         ];
     }
 }

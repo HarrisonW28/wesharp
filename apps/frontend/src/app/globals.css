@@ -73,7 +73,8 @@
   --popover: oklch(0.19 0.03 264);
   --popover-foreground: oklch(0.96 0.01 247);
   --primary: oklch(0.62 0.2 252);
-  --primary-foreground: oklch(0.16 0.03 264);
+  /* Light text on saturated primary (dark theme uses a bright accent blue) */
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.26 0.03 264);
   --secondary-foreground: oklch(0.96 0.01 247);
   --muted: oklch(0.26 0.03 264);

@@ -2,14 +2,20 @@
 
 namespace App\Support\Orders;
 
+use App\Enums\EvidencePhotoVisibility;
 use App\Http\Resources\BookingResource;
 use App\Models\AuditLog;
+use App\Models\CustomerPortalUpdate;
 use App\Models\Invoice;
 use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Support\Audit\AuditLogPresenter;
+use App\Enums\OrderStatus;
+use App\Support\Evidence\EvidencePhotoJson;
 use App\Support\Knives\KnifeJson;
+use App\Support\Portal\PortalCustomerUpdateJson;
+use App\Support\Portal\PortalFulfilmentPresenter;
 use App\Support\Money\MoneyFormatting;
 use Illuminate\Support\Collection;
 
@@ -60,6 +66,7 @@ final class OrderJson
             'id' => (string) $order->id,
             'display_reference' => self::displayReference($order),
             'status' => $order->order_status?->value,
+            'status_label' => OrderStatusPresentation::customerLabel($order->order_status),
             'payment_status' => $order->payment_status?->value,
             'knife_count' => $order->knife_count,
             'subtotal_pence' => (int) $order->subtotal_pence,
@@ -124,6 +131,49 @@ final class OrderJson
             ? self::portalInvoice($activeInvoice)
             : null;
 
+        if (config('wesharp_evidence.show_in_customer_portal', true)) {
+            if (! $order->relationLoaded('evidencePhotos')) {
+                $order->load([
+                    'evidencePhotos' => fn ($q) => $q
+                        ->where('visibility', EvidencePhotoVisibility::CustomerVisible->value)
+                        ->whereNull('archived_at')
+                        ->orderByDesc('captured_at'),
+                ]);
+            }
+            $payload['photos'] = $order->evidencePhotos
+                ->filter(
+                    static fn ($p) => $p->visibility === EvidencePhotoVisibility::CustomerVisible
+                        && $p->archived_at === null
+                )
+                ->map(static fn ($p): array => EvidencePhotoJson::portalRow($p, $order))
+                ->values()
+                ->all();
+        } else {
+            $payload['photos'] = [];
+        }
+
+        $payload['fulfilment'] = PortalFulfilmentPresenter::forOrder($order);
+
+        if (config('wesharp_evidence.show_in_customer_portal', true)) {
+            $payload['customer_messages'] = CustomerPortalUpdate::query()
+                ->where('company_id', $order->company_id)
+                ->where(function ($q) use ($order): void {
+                    $q->where('order_id', $order->id);
+                    if ($order->booking_id !== null) {
+                        $q->orWhere('booking_id', $order->booking_id);
+                    }
+                })
+                ->active()
+                ->where('visibility', EvidencePhotoVisibility::CustomerVisible->value)
+                ->orderBy('created_at')
+                ->get()
+                ->map(static fn (CustomerPortalUpdate $u): array => PortalCustomerUpdateJson::portalRow($u))
+                ->values()
+                ->all();
+        } else {
+            $payload['customer_messages'] = [];
+        }
+
         return $payload;
     }
 
@@ -183,23 +233,58 @@ final class OrderJson
             ],
         ];
 
-        $activated = $auditRows->first(fn (AuditLog $r) => $r->action === 'order.activated');
-        if ($activated !== null) {
-            $milestones[] = [
-                'key' => 'active',
-                'label' => 'Marked active',
-                'at' => $activated->created_at?->toIso8601String(),
-            ];
+        $events = $auditRows
+            ->filter(static fn (AuditLog $r): bool => in_array($r->action, [
+                'order.status_changed',
+                'order.activated',
+                'order.completed',
+                'order.cancelled',
+            ], true))
+            ->sortBy(static fn (AuditLog $r) => $r->created_at?->timestamp ?? 0)
+            ->values();
+
+        foreach ($events as $log) {
+            /** @var array<string, mixed> $payload */
+            $payload = is_array($log->payload) ? $log->payload : [];
+
+            if ($log->action === 'order.status_changed') {
+                $to = isset($payload['to']) && is_string($payload['to']) ? $payload['to'] : '';
+                if ($to === '') {
+                    continue;
+                }
+                try {
+                    $toEnum = OrderStatus::from($to);
+                } catch (\ValueError) {
+                    continue;
+                }
+                $milestones[] = [
+                    'key' => 'status_'.$to,
+                    'label' => OrderStatusPresentation::adminLabel($toEnum),
+                    'at' => $log->created_at?->toIso8601String(),
+                ];
+            } elseif ($log->action === 'order.activated') {
+                $milestones[] = [
+                    'key' => 'legacy_activated',
+                    'label' => 'Marked active (legacy)',
+                    'at' => $log->created_at?->toIso8601String(),
+                ];
+            } elseif ($log->action === 'order.completed') {
+                $milestones[] = [
+                    'key' => 'completed',
+                    'label' => 'Completed',
+                    'at' => $log->created_at?->toIso8601String(),
+                ];
+            } elseif ($log->action === 'order.cancelled') {
+                $milestones[] = [
+                    'key' => 'cancelled',
+                    'label' => 'Cancelled',
+                    'at' => $log->created_at?->toIso8601String(),
+                ];
+            }
         }
 
-        $completed = $auditRows->first(fn (AuditLog $r) => $r->action === 'order.completed');
-        if ($completed !== null) {
-            $milestones[] = [
-                'key' => 'completed',
-                'label' => 'Completed',
-                'at' => $completed->created_at?->toIso8601String(),
-            ];
-        } elseif ($order->completed_at !== null) {
+        $hasCompletedAudit = $auditRows->contains(static fn (AuditLog $r) => $r->action === 'order.completed');
+        if (! $hasCompletedAudit && $order->completed_at !== null && $order->order_status === OrderStatus::Completed) {
             $milestones[] = [
                 'key' => 'completed',
                 'label' => 'Completed',
@@ -207,16 +292,36 @@ final class OrderJson
             ];
         }
 
-        $cancelled = $auditRows->first(fn (AuditLog $r) => $r->action === 'order.cancelled');
-        if ($cancelled !== null) {
-            $milestones[] = [
-                'key' => 'cancelled',
-                'label' => 'Cancelled',
-                'at' => $cancelled->created_at?->toIso8601String(),
+        return $milestones;
+    }
+
+    /**
+     * @return list<array{value: string, label: string, risky: bool}>
+     */
+    public static function allowedNextStatusesForDetail(Order $order): array
+    {
+        $order->loadMissing(['items', 'knives']);
+
+        $next = OrderStatusTransitions::nextStatuses($order->order_status);
+        $out = [];
+
+        foreach ($next as $status) {
+            if ($status === OrderStatus::Completed && $order->items->isEmpty() && $order->knives->isEmpty()) {
+                continue;
+            }
+
+            $out[] = [
+                'value' => $status->value,
+                'label' => OrderStatusPresentation::adminLabel($status),
+                'risky' => in_array($status, [
+                    OrderStatus::Cancelled,
+                    OrderStatus::Completed,
+                    OrderStatus::Returned,
+                ], true),
             ];
         }
 
-        return $milestones;
+        return $out;
     }
 
     /** @return array<string, mixed>|null */

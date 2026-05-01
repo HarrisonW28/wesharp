@@ -3,8 +3,10 @@
 namespace App\Support\Portal;
 
 use App\Enums\BookingStatus;
+use App\Enums\EvidencePhotoVisibility;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
+use App\Models\CustomerPortalUpdate;
 use App\Policies\BookingPolicy;
 use Illuminate\Http\Request;
 
@@ -65,10 +67,28 @@ final class PortalBookingPayload
             'company:id,name,city,phone,billing_email',
             'location',
             'contact',
+            'routeStop',
+            'assignedRoute:id,route_status,scheduled_date',
             'orders' => fn ($q) => $q->select('id', 'company_id', 'booking_id', 'order_status', 'total_pence', 'currency', 'knife_count')->limit(50),
         ]);
 
         $compact = PortalBookingPayload::list($request, $booking);
+
+        $fulfilment = PortalFulfilmentPresenter::forBooking($booking);
+
+        $customerMessages = [];
+        if (config('wesharp_evidence.show_in_customer_portal', true)) {
+            $customerMessages = CustomerPortalUpdate::query()
+                ->where('booking_id', $booking->id)
+                ->where('company_id', $booking->company_id)
+                ->active()
+                ->where('visibility', EvidencePhotoVisibility::CustomerVisible->value)
+                ->orderBy('created_at')
+                ->get()
+                ->map(static fn (CustomerPortalUpdate $u): array => PortalCustomerUpdateJson::portalRow($u))
+                ->values()
+                ->all();
+        }
 
         return array_merge($compact, [
             'company' => $booking->company ? [
@@ -101,6 +121,8 @@ final class PortalBookingPayload
                 'total_pence' => (int) $o->total_pence,
                 'currency' => $o->currency,
             ]) : [],
+            'fulfilment' => $fulfilment,
+            'customer_messages' => $customerMessages,
         ]);
     }
 }
