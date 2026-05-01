@@ -208,6 +208,8 @@ final class ReportExportService
             $q = CompanySubscription::query()
                 ->select('company_subscriptions.*')
                 ->when($f->companyId !== null, fn ($q2) => $q2->where('company_subscriptions.company_id', $f->companyId))
+                ->when($f->subscriptionPlanId !== null, fn ($q2) => $q2->where('company_subscriptions.subscription_plan_id', $f->subscriptionPlanId))
+                ->when($f->subscriptionStatus !== null, fn ($q2) => $q2->where('company_subscriptions.status', $f->subscriptionStatus))
                 ->with(['company:id,name', 'plan:id,name'])
                 ->join('subscription_plans', 'company_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
                 ->orderBy('subscription_plans.name')

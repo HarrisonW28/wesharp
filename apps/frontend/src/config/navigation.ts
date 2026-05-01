@@ -47,6 +47,7 @@ export const ADMIN_NAV: NavItem[] = [
     icon: CircleDollarSign,
     permission: "reports.finance",
   },
+  { title: "Recurring revenue", href: "/admin/reports/recurring-revenue", icon: Repeat, permission: "reports.finance" },
   {
     title: "Operations reports",
     href: "/admin/reports/operations",

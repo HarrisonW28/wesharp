@@ -18,6 +18,7 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CustomerInvoiceStatusBadge } from "@/components/invoices/CustomerInvoiceStatusBadge";
 import { StatusBadge } from "@/components/status/StatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -258,6 +259,15 @@ export default function TenantOrderDetailPage() {
               <CardDescription>What you’re being charged for on this order.</CardDescription>
             </CardHeader>
             <CardContent>
+              {o.subscription_coverage?.mode === "subscription" ? (
+                <div className="mb-4 rounded-lg border bg-muted/20 p-4 text-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Subscription coverage</p>
+                  <p className="mt-2 text-muted-foreground">
+                    {o.subscription_coverage.included_summary ??
+                      "Some line items may be included in your subscription allowance for this billing period."}
+                  </p>
+                </div>
+              ) : null}
               {!o.items || o.items.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Detailed lines will appear once billable items are added. Totals above may still reflect your batch.
@@ -268,6 +278,7 @@ export default function TenantOrderDetailPage() {
                     <thead className="bg-muted/50 text-muted-foreground">
                       <tr>
                         <th className="px-3 py-2 text-left font-medium">Description</th>
+                        <th className="px-3 py-2 text-left font-medium">Subscription</th>
                         <th className="px-3 py-2 text-right font-medium">Qty</th>
                         <th className="px-3 py-2 text-right font-medium">Unit</th>
                         <th className="px-3 py-2 text-right font-medium">Line</th>
@@ -277,6 +288,25 @@ export default function TenantOrderDetailPage() {
                       {o.items.map((row, idx) => (
                         <tr key={`${idx}-${row.description.slice(0, 24)}`} className="border-t">
                           <td className="px-3 py-2">{row.description}</td>
+                          <td className="px-3 py-2">
+                            {row.subscription_billing_kind === "included" ? (
+                              <div className="space-y-1">
+                                <Badge variant="success">Included</Badge>
+                                {row.subscription_billing_note ? (
+                                  <p className="text-xs text-muted-foreground">{row.subscription_billing_note}</p>
+                                ) : null}
+                              </div>
+                            ) : row.subscription_billing_kind === "overage" ? (
+                              <div className="space-y-1">
+                                <Badge variant="warning">Overage</Badge>
+                                {row.subscription_billing_note ? (
+                                  <p className="text-xs text-muted-foreground">{row.subscription_billing_note}</p>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
                           <td className="px-3 py-2 text-right tabular-nums">{row.quantity}</td>
                           <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{row.formatted_unit_amount}</td>
                           <td className="px-3 py-2 text-right tabular-nums font-medium">{row.formatted_line_total}</td>

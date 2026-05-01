@@ -318,6 +318,8 @@ export const AccountPortalOrderItemSchema = z.object({
   formatted_line_total: z.string(),
   status: z.string().nullable().optional(),
   status_label: z.string().nullable().optional(),
+  subscription_billing_kind: z.string().nullable().optional(),
+  subscription_billing_note: z.string().nullable().optional(),
 });
 
 export const AccountPortalOrderInvoiceSchema = z.object({
@@ -356,6 +358,15 @@ export const AccountOrderDetailDataSchema = OrderRowTenantSchema.extend({
   photos: z.array(AccountPortalOrderPhotoSchema).optional(),
   fulfilment: AccountFulfilmentSchema.optional(),
   customer_messages: z.array(AccountCustomerMessageSchema).optional(),
+  subscription_coverage: z
+    .object({
+      mode: z.string().nullable().optional(),
+      included_summary: z.string().nullable().optional(),
+      collections_overage_for_order: z.number().optional(),
+      knives_overage_for_order: z.number().optional(),
+    })
+    .nullable()
+    .optional(),
 }).passthrough();
 
 export const AccountOrderDetailResponseSchema = z.object({
