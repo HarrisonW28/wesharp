@@ -345,6 +345,92 @@ final class AdminReportingApiTest extends TestCase
         self::assertSame(1, (int) $filtered->json('data.kpis.knives_activity_count'));
     }
 
+    public function test_finance_can_access_billing_report_empty(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Finance]);
+
+        $res = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/reports/billing');
+
+        $res->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.report', 'billing')
+            ->assertJsonPath('data.kpis.invoices_sent_count', 0)
+            ->assertJsonPath('data.kpis.total_outstanding_pence', 0)
+            ->assertJsonPath('data.series.ageing', fn ($v) => is_array($v) && count($v) === 5);
+    }
+
+    public function test_super_admin_can_access_billing_report(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::SuperAdmin]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/reports/billing')
+            ->assertOk()
+            ->assertJsonPath('data.report', 'billing');
+    }
+
+    public function test_route_manager_cannot_access_billing_report(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::RouteManager]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/reports/billing')
+            ->assertForbidden();
+    }
+
+    public function test_billing_report_computes_outstanding_ageing_and_payments(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Finance]);
+        $company = Company::factory()->create();
+        $booking = Booking::factory()->create(['company_id' => $company->id]);
+        $order = Order::factory()->create(['company_id' => $company->id, 'booking_id' => $booking->id]);
+
+        $inv = Invoice::factory()->create([
+            'company_id' => $company->id,
+            'order_id' => $order->id,
+            'invoice_status' => InvoiceStatus::Sent,
+            'issued_on' => '2026-03-01',
+            'due_on' => '2026-03-05',
+            'total_pence' => 10_000,
+        ]);
+
+        Payment::query()->create([
+            'company_id' => $company->id,
+            'invoice_id' => $inv->id,
+            'order_id' => null,
+            'amount_pence' => 3_000,
+            'payment_status' => PaymentStatus::PartPaid,
+            'payment_method' => PaymentMethod::BankTransfer,
+            'currency' => 'GBP',
+            'paid_at' => Carbon::parse('2026-03-02 12:00:00', 'UTC'),
+        ]);
+
+        $qs = 'date_from=2026-03-01&date_to=2026-03-20&company_id='.$company->id;
+
+        $res = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/reports/billing?'.$qs);
+
+        $res->assertOk();
+        self::assertSame(1, (int) $res->json('data.kpis.invoices_sent_count'));
+        self::assertSame(7_000, (int) $res->json('data.kpis.total_outstanding_pence'));
+        self::assertSame(1, (int) $res->json('data.kpis.unpaid_invoices_snapshot_count'));
+        self::assertSame(3_000, (int) $res->json('data.kpis.total_paid_pence'));
+        self::assertSame(1, (int) $res->json('data.kpis.payments_received_count'));
+
+        $ageing = $res->json('data.series.ageing');
+        self::assertIsArray($ageing);
+        $bucket = collect($ageing)->firstWhere('bucket', '1_30');
+        self::assertNotNull($bucket);
+        self::assertSame(1, (int) $bucket['invoice_count']);
+        self::assertSame(7_000, (int) $bucket['outstanding_pence']);
+
+        $methods = $res->json('data.series.payment_method_breakdown');
+        self::assertIsArray($methods);
+        self::assertSame('bank_transfer', $methods[0]['payment_method'] ?? null);
+        self::assertSame(3_000, (int) ($methods[0]['amount_pence'] ?? 0));
+    }
+
     public function test_export_placeholder_requires_finance_reports(): void
     {
         $finance = User::factory()->create(['role' => UserRole::Finance]);

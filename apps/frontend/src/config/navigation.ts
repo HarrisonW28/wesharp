@@ -4,6 +4,7 @@ import {
   BarChart3,
   Boxes,
   CalendarClock,
+  CircleDollarSign,
   ClipboardList,
   Gauge,
   Landmark,
@@ -39,6 +40,12 @@ export const ADMIN_NAV: NavItem[] = [
   { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
   { title: "Finance", href: "/admin/finance", icon: Landmark, permission: "payments.view" },
   { title: "Sales report", href: "/admin/reports/sales", icon: LineChart, permission: "reports.finance" },
+  {
+    title: "Billing report",
+    href: "/admin/reports/billing",
+    icon: CircleDollarSign,
+    permission: "reports.finance",
+  },
   {
     title: "Operations reports",
     href: "/admin/reports/operations",

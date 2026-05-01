@@ -133,6 +133,8 @@ final class Permissions
         self::USERS_VIEW,
         self::USERS_MANAGE,
         self::AUDIT_LOGS_VIEW,
+        self::REPORTS_FINANCE,
+        self::REPORTS_OPERATIONS,
     ];
 
     /** @var array<string, list<string>> Role value => granted permission keys */

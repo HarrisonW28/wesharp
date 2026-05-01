@@ -224,6 +224,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:reports.finance')->prefix('reports')->group(function (): void {
         Route::get('sales', [ReportingController::class, 'sales'])->name('api.admin.reports.sales');
         Route::get('invoices', [ReportingController::class, 'invoices'])->name('api.admin.reports.invoices');
+        Route::get('billing', [ReportingController::class, 'billing'])->name('api.admin.reports.billing');
         Route::get('subscriptions', [ReportingController::class, 'subscriptions'])->name('api.admin.reports.subscriptions');
         Route::get('export', [ReportingController::class, 'exportPlaceholder'])->name('api.admin.reports.export');
     });

@@ -40,6 +40,10 @@ final class AdminReportRequest extends FormRequest
             'page' => ['sometimes', 'integer', 'min:1'],
             'bookings_page' => ['sometimes', 'integer', 'min:1'],
             'orders_page' => ['sometimes', 'integer', 'min:1'],
+            'payment_method' => ['sometimes', 'nullable', 'string', 'max:32'],
+            'ar_age_bucket' => ['sometimes', 'nullable', 'string', 'in:current,1_30,31_60,61_90,90_plus'],
+            'unpaid_page' => ['sometimes', 'integer', 'min:1'],
+            'overdue_page' => ['sometimes', 'integer', 'min:1'],
         ];
     }
 
@@ -90,6 +94,9 @@ final class AdminReportRequest extends FormRequest
         $bookingsPage = isset($v['bookings_page']) ? max(1, (int) $v['bookings_page']) : null;
         $ordersPage = isset($v['orders_page']) ? max(1, (int) $v['orders_page']) : null;
 
+        $unpaidPage = isset($v['unpaid_page']) ? max(1, (int) $v['unpaid_page']) : null;
+        $overduePage = isset($v['overdue_page']) ? max(1, (int) $v['overdue_page']) : null;
+
         return new AdminReportFilters(
             $from,
             $to,
@@ -111,6 +118,10 @@ final class AdminReportRequest extends FormRequest
             $page,
             $bookingsPage,
             $ordersPage,
+            $s('payment_method'),
+            $s('ar_age_bucket'),
+            $unpaidPage,
+            $overduePage,
         );
     }
 }

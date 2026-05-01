@@ -46,6 +46,16 @@ final readonly class AdminReportFilters
         public ?int $bookingsPage = null,
         /** When set, overrides `page` for the orders report detail table only. */
         public ?int $ordersPage = null,
+        /** Billing report: filter payments by `payments.payment_method`. */
+        public ?string $paymentMethod = null,
+        /**
+         * Billing report AR snapshot filter: current | 1_30 | 31_60 | 61_90 | 90_plus
+         */
+        public ?string $arAgeBucket = null,
+        /** Billing report: unpaid invoices table page override. */
+        public ?int $unpaidPage = null,
+        /** Billing report: overdue invoices table page override. */
+        public ?int $overduePage = null,
     ) {}
 
     /**
@@ -72,6 +82,10 @@ final readonly class AdminReportFilters
             'driver_user_id' => $this->driverUserId,
             'bookings_page' => $this->bookingsPage,
             'orders_page' => $this->ordersPage,
+            'payment_method' => $this->paymentMethod,
+            'ar_age_bucket' => $this->arAgeBucket,
+            'unpaid_page' => $this->unpaidPage,
+            'overdue_page' => $this->overduePage,
         ];
     }
 }

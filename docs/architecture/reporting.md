@@ -6,7 +6,7 @@ Customers never hit these routes (admin API requires **`staff`** middleware). Pe
 
 | Permission | Role(s) | Endpoints |
 | --- | --- | --- |
-| **`reports.finance`** | `super_admin`, `admin`, `finance` | `sales`, `invoices`, `subscriptions`, `export` |
+| **`reports.finance`** | `super_admin`, `admin`, `finance` | `sales`, `invoices`, `billing`, `subscriptions`, `export` |
 | **`reports.operations`** | `super_admin`, `admin`, `route_manager` | `bookings`, `orders`, `routes`, `knives` |
 
 **`analytics.view`** remains separate (existing **`/api/admin/analytics/*`** city-scoped dashboards). Reports add **company_id**, **status**, and **route/driver** filters where relevant.
@@ -54,6 +54,7 @@ Every report returns:
 | --- | --- | --- |
 | GET | **`/api/admin/reports/sales`** | `reports.finance` |
 | GET | **`/api/admin/reports/invoices`** | `reports.finance` |
+| GET | **`/api/admin/reports/billing`** | `reports.finance` |
 | GET | **`/api/admin/reports/subscriptions`** | `reports.finance` |
 | GET | **`/api/admin/reports/export`** | `reports.finance` |
 | GET | **`/api/admin/reports/bookings`** | `reports.operations` |
@@ -72,6 +73,7 @@ Every report returns:
 - **Orders (`orders`)** — Sprint **8.3**. Primary cohort: **`created_at`** in range. **KPIs:** **`orders_created_count`**; **`active_workshop_orders_count`** (draft → quality_check — **snapshot**, date range **not** applied); **`completed_orders_count`** (**`completed_at`** in range, else **`updated_at`** if **`completed_at`** null); **`cancelled_orders_count`**; **`total_pence_created_cohort`**; **`average_order_value_pence`**; **`average_completion_hours`** (mean **`completed_at` − `created_at`** in hours for completed rows with **`completed_at`** in range; **`null`** if none). **Series:** **`orders_by_day`**, **`order_status_breakdown`**. **`recent_activity`** + paginated **`table`**. Same UI as bookings.
 - **Routes (`routes`)** — Sprint **8.4** performance. **Cohort:** **`routes.scheduled_date`** between **`date_from`** and **`date_to`** (inclusive), plus **`route_status`**, **`driver_user_id`**, **`area`/`coverage_city`**, **`failure_reason`** (exists skipped stop), optional **`route_id`**. **KPIs:** **`routes_count`**; **`routes_completed_count`** (**`route_status = completed`**); **`total_stops`** / **`completed_stops`** / **`failed_collections`** ( **`skipped`** = failed collection in this report); **`completion_rate`** (**`completed_stops ÷ total_stops`**, **`null`** if no stops); **`average_stops_per_route`**; **`photos_captured_count`** (non-archived **`evidence_photos`** linked to **`route_stops`** in cohort). **Series:** **`routes_by_day`**, **`route_status_breakdown`**, **`stop_status_breakdown`**, **`failed_collection_reasons`** (top **50** **`failure_reason`** on skipped stops), **`driver_performance`** (rollup by **`driver_user_id`**, including unassigned). **Table:** per-route **`stops_count`**, completed/failed counts, per-route completion rate, photo count. UI: **`/admin/reports/routes`**.
 - **Knives (`knives`)** — Sprint **8.5** service volume. **Cohort:** **`knives.updated_at`** in range (+ **`whereCompanyCity`**, **`company_id`**, **`knife_status`**, **`knife_type`**, booking **`service_type`**). **KPIs:** **`knives_activity_count`**; **`knives_completed_workshop_count`** (sharpened / quality_checked / returned); **`knives_in_progress_snapshot_count`** (received / inspected / sharpening / issue_reported — **snapshot**, date **not** applied); **`knives_inspected_count`**; **`sharpened_throughput_count`** (same three output states as existing scope); **`average_knives_per_order`** (cohort rows with **`order_id`** ÷ distinct orders); **`reservice_assignments_count`** (**`knife_service_assignments`** with **`service_kind = reservice`**, **`linked_at`** in range, knife matches filters); **`damage_reports_created_count`** (non-archived, **`created_at`** in range, knife matches filters). **Series:** **`knives_by_day`**, **`knife_type_breakdown`**, **`service_type_breakdown`** (from booking; **`none`** if unlinked), **`knife_status_breakdown`**, **`service_kind_breakdown`** (all assignment kinds by **`linked_at`**), **`top_companies_by_knife_volume`** (max **50**), **`damage_by_severity`**, **`damage_by_status`**. UI: **`/admin/reports/knives`**.
+- **Billing (`billing`)** — Sprint **8.6** invoice / payment / AR ageing. **Period cohort:** **`issued_on`** between **`date_from`** and **`date_to`** for KPIs **`invoices_sent_count`** (excludes draft/void), **`invoices_paid_count`**, **`overdue_invoices_period_count`** (status = overdue). **Payments in period:** **`paid_at`** in range, invoice-linked; **`total_paid_pence`**, **`payments_received_count`**, **`series.payment_method_breakdown`**, **`series.payments_by_day`**; optional **`payment_method`** and **`payment_status`** filters. **AR snapshot as of end of `date_to`:** invoices **`issued_on ≤ date_to`**, not draft/void; residual = **`total_pence − SUM(payments.amount_pence)`** for payments with **`paid_at ≤ end of date_to`**. **`unpaid_invoices_snapshot_count`**, **`total_outstanding_pence`**, **`series.ageing`** (outstanding only, buckets vs **`COALESCE(due_on, issued_on)`**), **`series.outstanding_by_customer`** (top **50**), paginated **`unpaid_invoices`** and **`overdue_invoices`** (overdue = due date strictly before as-of calendar day). **`average_days_to_pay`:** mean days from **`issued_on`** to last payment **`paid_at`** for invoices marked paid with **`issued_on`** in range; **`null`** if none. UI: **`/admin/reports/billing`**.
 
 ---
 
@@ -91,6 +93,7 @@ Every report returns:
 - Driver performance uses **`routes.driver_user_id`** only (no multi-driver attribution per stop).
 - Knife **activity cohort** is **`updated_at`**-based (not “created” volume); **`service_type`** requires a linked **booking**.
 - **`knife_type`** filter and breakdown use stored free-text / categorical **`knives.knife_type`** (exact match on filter).
+- **Billing** AR residual ignores payments with **`paid_at`** after the as-of instant; partial payments are reflected. **`invoice_status`** on an invoice row may lag manual bookkeeping (e.g. still **`sent`** while mathematically paid).
 - **`analytics`** and **`reports`** may overlap conceptually; keep **city-wide analytics** on **`/analytics/*`** and **filter-rich tabular reports** on **`/reports/*`** until consolidated in a later sprint.
 
 ---

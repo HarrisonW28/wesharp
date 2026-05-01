@@ -129,9 +129,14 @@ export default function AdminFinanceDashboardPage() {
         title="Finance dashboard"
         description="Billing KPIs, overdue AR, and recent cash — amounts in GBP from the server."
         actions={
-          <Button asChild variant="outline" className="text-base">
-            <Link href="/admin/reports/sales">Sales &amp; revenue report</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="text-base">
+              <Link href="/admin/reports/sales">Sales &amp; revenue report</Link>
+            </Button>
+            <Button asChild variant="outline" className="text-base">
+              <Link href="/admin/reports/billing">Invoice &amp; payment report</Link>
+            </Button>
+          </div>
         }
       />
 

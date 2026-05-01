@@ -55,4 +55,9 @@ final class ReportingController extends Controller
     {
         return ApiResponses::success($this->reporting->knives($request->filters()));
     }
+
+    public function billing(AdminReportRequest $request): JsonResponse
+    {
+        return ApiResponses::success($this->reporting->billing($request->filters()));
+    }
 }

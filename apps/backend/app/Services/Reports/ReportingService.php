@@ -20,6 +20,7 @@ final class ReportingService
         private readonly OrderReportService $orderReportService,
         private readonly RouteReportService $routeReportService,
         private readonly KnifeReportService $knifeReportService,
+        private readonly BillingReportService $billingReportService,
     ) {}
 
     /** @return array<string, mixed> */
@@ -62,6 +63,12 @@ final class ReportingService
     public function knives(AdminReportFilters $f): array
     {
         return $this->knifeReportService->build($f);
+    }
+
+    /** @return array<string, mixed> */
+    public function billing(AdminReportFilters $f): array
+    {
+        return $this->billingReportService->build($f);
     }
 
     /** @return array<string, mixed> */
