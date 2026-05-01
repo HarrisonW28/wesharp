@@ -18,6 +18,7 @@ import { InvoiceDocument } from "@/components/invoices/InvoiceDocument";
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { NotificationHistoryPlaceholder } from "@/components/notifications/NotificationHistoryPlaceholder";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -720,6 +721,10 @@ export default function AdminInvoiceDetailPage() {
         <div className="mt-2">
           <AuditTimeline items={(inv.audit_timeline ?? []) as AuditTimelineRow[]} showPayload />
         </div>
+
+        <Separator />
+
+        <NotificationHistoryPlaceholder scopeLabel="this invoice" />
       </div>
 
       <AlertDialog open={markPaidOpen} onOpenChange={setMarkPaidOpen}>
