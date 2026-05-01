@@ -69,6 +69,12 @@ final class Permissions
     /** Operational reporting (bookings, orders, routes, knives) — admin API `/api/admin/reports/…`. */
     public const REPORTS_OPERATIONS = 'reports.operations';
 
+    /** Read subscription plans and company subscription rows (admin). */
+    public const SUBSCRIPTIONS_VIEW = 'subscriptions.view';
+
+    /** Create/update subscription plans and assign company subscriptions (admin). */
+    public const SUBSCRIPTIONS_MANAGE = 'subscriptions.manage';
+
     /** Create/update/remove pick-up addresses for the signed-in company (tenant portal). */
     public const ACCOUNT_LOCATIONS_MANAGE = 'account.locations.manage';
 
@@ -135,6 +141,8 @@ final class Permissions
         self::AUDIT_LOGS_VIEW,
         self::REPORTS_FINANCE,
         self::REPORTS_OPERATIONS,
+        self::SUBSCRIPTIONS_VIEW,
+        self::SUBSCRIPTIONS_MANAGE,
     ];
 
     /** @var array<string, list<string>> Role value => granted permission keys */
@@ -179,6 +187,8 @@ final class Permissions
             self::PAYMENTS_MANAGE,
             self::ANALYTICS_VIEW,
             self::REPORTS_FINANCE,
+            self::SUBSCRIPTIONS_VIEW,
+            self::SUBSCRIPTIONS_MANAGE,
             self::SETTINGS_VIEW,
             self::AUDIT_LOGS_VIEW,
         ],

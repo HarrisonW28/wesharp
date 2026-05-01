@@ -4,6 +4,7 @@ namespace App\Actions\Companies;
 
 use App\Enums\CompanyStatus;
 use App\Enums\InvoiceStatus;
+use App\Enums\SubscriptionStatus;
 use App\Models\Company;
 use App\Models\CompanySubscription;
 use App\Support\Crm\CompanyCrmOverview;
@@ -50,6 +51,7 @@ final class BuildCompaniesIndexQuery
             CompanySubscription::query()
                 ->select('status')
                 ->whereColumn('company_id', 'companies.id')
+                ->where('status', SubscriptionStatus::Active->value)
                 ->limit(1),
             'crm_subscription_status'
         );
@@ -98,7 +100,7 @@ final class BuildCompaniesIndexQuery
             $query->whereDoesntHave('subscription');
         } elseif ($subscriptionStatus !== '') {
             $query->whereHas(
-                'subscription',
+                'subscriptions',
                 fn (Builder $q) => $q->where('status', $subscriptionStatus)
             );
         }

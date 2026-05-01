@@ -27,6 +27,7 @@ import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -195,6 +196,28 @@ export default function AdminOperationsReportsPage() {
     [companyId, dateFrom, dateTo, orderStatus, ordersPage],
   );
 
+  const bookingsExportQs = useMemo(
+    () =>
+      buildQs({
+        date_from: dateFrom,
+        date_to: dateTo,
+        company_id: companyId,
+        booking_status: bookingStatus,
+      }),
+    [bookingStatus, companyId, dateFrom, dateTo],
+  );
+
+  const ordersExportQs = useMemo(
+    () =>
+      buildQs({
+        date_from: dateFrom,
+        date_to: dateTo,
+        company_id: companyId,
+        order_status: orderStatus,
+      }),
+    [companyId, dateFrom, dateTo, orderStatus],
+  );
+
   const bookingsQuery = useQuery({
     queryKey: ["admin-bookings-report", bookingsQs],
     queryFn: async () => {
@@ -256,6 +279,29 @@ export default function AdminOperationsReportsPage() {
       <PageHeader
         title="Booking & order throughput"
         description="Operational KPIs from live bookings and orders. Date range applies to cohorts noted in each card; pipeline snapshots ignore dates (see definitions)."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <ReportCsvExportButton
+              admin={admin}
+              exportPath={`/api/admin/reports/exports/bookings.csv${bookingsExportQs}`}
+              label="Export bookings (CSV)"
+              disabled={
+                bookingsQuery.isPending ||
+                bookingsQuery.isError ||
+                !b ||
+                b.kpis.bookings_created_count <= 0
+              }
+            />
+            <ReportCsvExportButton
+              admin={admin}
+              exportPath={`/api/admin/reports/exports/orders.csv${ordersExportQs}`}
+              label="Export orders (CSV)"
+              disabled={
+                ordersQuery.isPending || ordersQuery.isError || !o || o.kpis.orders_created_count <= 0
+              }
+            />
+          </div>
+        }
       />
 
       <Card className="border-dashed">

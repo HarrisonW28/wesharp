@@ -21,6 +21,7 @@ final class ReportingService
         private readonly RouteReportService $routeReportService,
         private readonly KnifeReportService $knifeReportService,
         private readonly BillingReportService $billingReportService,
+        private readonly RecurringRevenueReportService $recurringRevenueReportService,
     ) {}
 
     /** @return array<string, mixed> */
@@ -72,6 +73,12 @@ final class ReportingService
     }
 
     /** @return array<string, mixed> */
+    public function recurringRevenue(AdminReportFilters $f): array
+    {
+        return $this->recurringRevenueReportService->build($f);
+    }
+
+    /** @return array<string, mixed> */
     public function exportPlaceholder(): array
     {
         return ReportEnvelope::make(
@@ -82,9 +89,9 @@ final class ReportingService
             null,
             [],
             [
-                'available' => false,
-                'formats' => [],
-                'message' => 'Bulk export is not implemented. Use paginated report tables or existing admin lists.',
+                'available' => true,
+                'formats' => ['csv'],
+                'message' => 'Use GET /api/admin/reports/exports/*.csv with the same query params as JSON reports (UTF-8, Excel-friendly).',
             ],
         );
     }

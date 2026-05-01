@@ -60,4 +60,9 @@ final class ReportingController extends Controller
     {
         return ApiResponses::success($this->reporting->billing($request->filters()));
     }
+
+    public function recurringRevenue(AdminReportRequest $request): JsonResponse
+    {
+        return ApiResponses::success($this->reporting->recurringRevenue($request->filters()));
+    }
 }

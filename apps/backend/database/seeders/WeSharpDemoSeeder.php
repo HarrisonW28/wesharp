@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Invoices\AllocateInvoiceNumber;
+use App\Enums\BillingInterval;
 use App\Enums\BookingStatus;
 use App\Enums\CompanyStatus;
 use App\Enums\InvoiceStatus;
@@ -13,13 +15,14 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\RouteStopStatus;
 use App\Enums\ServiceType;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
-use App\Actions\Invoices\AllocateInvoiceNumber;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CompanyLocation;
+use App\Models\CompanySubscription;
 use App\Models\Contact;
 use App\Models\DamageReport;
 use App\Models\Invoice;
@@ -35,8 +38,10 @@ use App\Models\PricingRule;
 use App\Models\Refund;
 use App\Models\RouteStop;
 use App\Models\ServiceArea;
+use App\Models\SubscriptionPlan;
 use App\Models\UploadedFile;
 use App\Models\User;
+use Faker\Factory;
 use Faker\Generator;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
@@ -50,7 +55,7 @@ final class WeSharpDemoSeeder extends Seeder
 
     public function run(): void
     {
-        $this->faker = \Faker\Factory::create('en_GB');
+        $this->faker = Factory::create('en_GB');
         DB::transaction(fn () => $this->seedScenario());
     }
 
@@ -161,6 +166,34 @@ final class WeSharpDemoSeeder extends Seeder
                     'company_id' => $portalCompany->id,
                 ],
             );
+
+            $demoPlan = SubscriptionPlan::query()->updateOrCreate(
+                ['name' => 'Demo Kitchen Care'],
+                [
+                    'description' => 'Non-production demo plan for the seeded tenant portal.',
+                    'billing_interval' => BillingInterval::Monthly,
+                    'price_amount_minor' => 9900,
+                    'currency' => 'GBP',
+                    'included_collections' => 4,
+                    'included_knife_allowance' => 40,
+                    'overage_price_amount_minor' => 800,
+                    'is_active' => true,
+                    'sort_order' => 10,
+                ],
+            );
+
+            if (! $portalCompany->subscription()->exists()) {
+                CompanySubscription::query()->create([
+                    'company_id' => $portalCompany->id,
+                    'subscription_plan_id' => $demoPlan->id,
+                    'status' => SubscriptionStatus::Active,
+                    'starts_at' => now()->toDateString(),
+                    'renews_at' => now()->addMonth()->toDateString(),
+                    'price_amount_minor_snapshot' => $demoPlan->price_amount_minor,
+                    'currency' => $demoPlan->currency,
+                    'notes' => 'Seeded for local/demo environments only.',
+                ]);
+            }
         }
 
         $allBookings = [];

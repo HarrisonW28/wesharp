@@ -22,9 +22,9 @@ final class SubscriptionReportService
         $total = (int) (clone $base)->count();
 
         $byStatus = (clone $base)
-            ->selectRaw('status AS status_value, COUNT(*) AS c')
-            ->groupBy('status')
-            ->orderBy('status')
+            ->selectRaw('company_subscriptions.status AS status_value, COUNT(*) AS c')
+            ->groupBy('company_subscriptions.status')
+            ->orderBy('company_subscriptions.status')
             ->get()
             ->map(static fn ($r): array => [
                 'status' => (string) $r->status_value,
@@ -34,17 +34,21 @@ final class SubscriptionReportService
             ->all();
 
         $paginator = (clone $base)
-            ->with(['company:id,name'])
-            ->orderBy('company_subscriptions.plan_name')
+            ->select('company_subscriptions.*')
+            ->with(['company:id,name', 'plan:id,name'])
+            ->join('subscription_plans', 'company_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
+            ->orderBy('subscription_plans.name')
+            ->orderBy('company_subscriptions.created_at')
             ->paginate(perPage: $f->perPage, columns: ['*'], pageName: 'page', page: $f->page);
 
         $rows = collect($paginator->items())->map(static function ($s): array {
             /** @var CompanySubscription $s */
             return [
                 'id' => (string) $s->id,
-                'plan_name' => (string) $s->plan_name,
-                'status' => (string) $s->status,
-                'current_period_end' => $s->current_period_end?->toDateString(),
+                'plan_name' => $s->plan !== null ? (string) $s->plan->name : '',
+                'status' => $s->status?->value ?? (string) $s->status,
+                'renews_at' => $s->renews_at?->toDateString(),
+                'price_amount_minor_snapshot' => (int) $s->price_amount_minor_snapshot,
                 'company_name' => $s->company?->name,
             ];
         })->values()->all();
@@ -60,7 +64,8 @@ final class SubscriptionReportService
                 'columns' => [
                     ['key' => 'plan_name', 'label' => 'Plan'],
                     ['key' => 'status', 'label' => 'Status'],
-                    ['key' => 'current_period_end', 'label' => 'Period end'],
+                    ['key' => 'renews_at', 'label' => 'Renews'],
+                    ['key' => 'price_amount_minor_snapshot', 'label' => 'Price snapshot (minor)'],
                     ['key' => 'company_name', 'label' => 'Company'],
                 ],
                 'rows' => $rows,
@@ -73,7 +78,7 @@ final class SubscriptionReportService
                 ],
             ],
             [
-                'subscription_row_count' => 'Rows in company_subscriptions (CRM). Not MRR; no proration.',
+                'subscription_row_count' => 'Rows in company_subscriptions (CRM). Price snapshot is frozen at assignment; MRR uses active monthly subscriptions only.',
             ],
         );
     }

@@ -4,26 +4,26 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Enums\InvoiceStatus;
-use App\Enums\PaymentMethod;
-use App\Enums\PaymentStatus;
-use App\Enums\UserRole;
 use App\Enums\DamageReportStatus;
+use App\Enums\InvoiceStatus;
 use App\Enums\KnifeServiceKind;
 use App\Enums\KnifeStatus;
 use App\Enums\OperationalRouteStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\RouteStopStatus;
 use App\Enums\ServiceType;
+use App\Enums\UserRole;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\DamageReport;
 use App\Models\Invoice;
 use App\Models\Knife;
 use App\Models\KnifeServiceAssignment;
-use App\Models\Order;
 use App\Models\OperationalRoute;
-use App\Models\RouteStop;
+use App\Models\Order;
 use App\Models\Payment;
+use App\Models\RouteStop;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -345,6 +345,30 @@ final class AdminReportingApiTest extends TestCase
         self::assertSame(1, (int) $filtered->json('data.kpis.knives_activity_count'));
     }
 
+    public function test_finance_can_access_recurring_revenue_report_empty(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Finance]);
+
+        $res = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/reports/recurring-revenue');
+
+        $res->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.report', 'recurring_revenue')
+            ->assertJsonPath('data.kpis.mrr_computable', false)
+            ->assertJsonPath('data.kpis.arr_computable', false)
+            ->assertJsonPath('data.kpis.active_subscriptions_count', 0);
+    }
+
+    public function test_route_manager_cannot_access_recurring_revenue_report(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::RouteManager]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/reports/recurring-revenue')
+            ->assertForbidden();
+    }
+
     public function test_finance_can_access_billing_report_empty(): void
     {
         $user = User::factory()->create(['role' => UserRole::Finance]);
@@ -437,7 +461,8 @@ final class AdminReportingApiTest extends TestCase
         $this->withHeader('X-WeSharp-Test-User-Id', (string) $finance->id)
             ->getJson('/api/admin/reports/export')
             ->assertOk()
-            ->assertJsonPath('data.export.available', false);
+            ->assertJsonPath('data.export.available', true)
+            ->assertJsonPath('data.export.formats', ['csv']);
 
         $driver = User::factory()->create(['role' => UserRole::RouteManager]);
         $this->withHeader('X-WeSharp-Test-User-Id', (string) $driver->id)

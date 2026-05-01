@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CompanyStatus;
+use App\Enums\SubscriptionStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -42,9 +43,23 @@ class Company extends Model
         return $this->hasMany(CompanyLocation::class);
     }
 
+    /**
+     * The company's single active subscription (billing slot), if any.
+     */
     public function subscription(): HasOne
     {
-        return $this->hasOne(CompanySubscription::class);
+        return $this->hasOne(CompanySubscription::class)
+            ->where('status', SubscriptionStatus::Active->value);
+    }
+
+    /**
+     * Full subscription history for the company (all statuses, excluding soft-deleted rows).
+     */
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(CompanySubscription::class)
+            ->orderByDesc('starts_at')
+            ->orderByDesc('created_at');
     }
 
     public function users(): HasMany

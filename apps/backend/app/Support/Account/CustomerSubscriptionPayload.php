@@ -4,6 +4,7 @@ namespace App\Support\Account;
 
 use App\Models\CompanySubscription;
 use App\Models\Invoice;
+use App\Models\SubscriptionPlan;
 use App\Support\Money\MoneyFormatting;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -32,30 +33,56 @@ final class CustomerSubscriptionPayload
             ->limit(8)
             ->get();
 
+        $plan = $sub->plan;
+
         return [
-            'plan_name' => $sub->plan_name,
-            'status' => $sub->status,
-            'current_period_end' => $sub->current_period_end?->format('Y-m-d'),
-            'included_services' => $sub->included_services,
-            'allowance_summary' => $sub->allowance_summary,
-            'summary' => self::summaryLine($sub),
+            'plan_name' => $plan !== null ? $plan->name : $sub->planName(),
+            'status' => $sub->status?->value ?? (string) $sub->status,
+            'renews_at' => $sub->renews_at?->format('Y-m-d'),
+            'current_period_end' => $sub->renews_at?->format('Y-m-d'),
+            'included_services' => $plan?->description,
+            'allowance_summary' => self::allowanceSummaryFromPlan($plan),
+            'price_amount_minor_snapshot' => (int) $sub->price_amount_minor_snapshot,
+            'formatted_price_snapshot_gbp' => strtoupper((string) $sub->currency) === 'GBP'
+                ? MoneyFormatting::formatGbpFromPence((int) $sub->price_amount_minor_snapshot)
+                : null,
+            'summary' => self::summaryLine($plan, $sub),
             'recent_invoices' => self::formatInvoices($recentInvoices),
         ];
     }
 
-    private static function summaryLine(CompanySubscription $sub): ?string
+    private static function allowanceSummaryFromPlan(?SubscriptionPlan $plan): ?string
     {
-        $allowance = trim((string) ($sub->allowance_summary ?? ''));
-        if ($allowance !== '') {
-            return $allowance;
+        if ($plan === null) {
+            return null;
         }
 
-        $included = trim((string) ($sub->included_services ?? ''));
-        if ($included !== '') {
-            return Str::limit($included, 200);
+        $parts = [];
+        if ($plan->included_collections !== null) {
+            $parts[] = $plan->included_collections.' collection visit(s) included';
+        }
+        if ($plan->included_knife_allowance !== null) {
+            $parts[] = $plan->included_knife_allowance.' knife allowance';
         }
 
-        return null;
+        return $parts === [] ? null : implode('; ', $parts);
+    }
+
+    private static function summaryLine(?SubscriptionPlan $plan, CompanySubscription $sub): ?string
+    {
+        $fromPlan = self::allowanceSummaryFromPlan($plan);
+        if ($fromPlan !== null && $fromPlan !== '') {
+            return $fromPlan;
+        }
+
+        $desc = trim((string) ($plan?->description ?? ''));
+        if ($desc !== '') {
+            return Str::limit($desc, 200);
+        }
+
+        $notes = trim((string) ($sub->notes ?? ''));
+
+        return $notes !== '' ? Str::limit($notes, 200) : null;
     }
 
     /** @param  Collection<int, Invoice>  $invoices */

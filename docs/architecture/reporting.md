@@ -55,12 +55,32 @@ Every report returns:
 | GET | **`/api/admin/reports/sales`** | `reports.finance` |
 | GET | **`/api/admin/reports/invoices`** | `reports.finance` |
 | GET | **`/api/admin/reports/billing`** | `reports.finance` |
+| GET | **`/api/admin/reports/recurring-revenue`** | `reports.finance` |
 | GET | **`/api/admin/reports/subscriptions`** | `reports.finance` |
 | GET | **`/api/admin/reports/export`** | `reports.finance` |
 | GET | **`/api/admin/reports/bookings`** | `reports.operations` |
 | GET | **`/api/admin/reports/orders`** | `reports.operations` |
 | GET | **`/api/admin/reports/routes`** | `reports.operations` |
 | GET | **`/api/admin/reports/knives`** | `reports.operations` |
+
+---
+
+## CSV exports (Sprint 8.7)
+
+Authenticated **`GET`** endpoints under **`/api/admin/reports/exports/`** use the same query parameters as **`AdminReportRequest`** (dates, **`company_id`**, status filters, **`area`**, **`route_id`**, etc.). Responses are **`text/csv; charset=UTF-8`** with a **UTF-8 BOM** for Excel, **`Content-Disposition: attachment`**, and filenames like **`wesharp-{report}-{date_from}-{date_to}.csv`**.
+
+| Path | Permission |
+| --- | --- |
+| **`/exports/sales-invoices.csv`** | `reports.finance` |
+| **`/exports/invoices-outstanding.csv`** | `reports.finance` |
+| **`/exports/payments.csv`** | `reports.finance` |
+| **`/exports/subscriptions.csv`** | `reports.finance` |
+| **`/exports/bookings.csv`** | `reports.operations` |
+| **`/exports/orders.csv`** | `reports.operations` |
+| **`/exports/routes.csv`** | `reports.operations` |
+| **`/exports/knives.csv`** | `reports.operations` |
+
+The legacy JSON **`GET /api/admin/reports/export`** remains a small metadata payload pointing at these CSV routes.
 
 ---
 
@@ -73,6 +93,7 @@ Every report returns:
 - **Orders (`orders`)** — Sprint **8.3**. Primary cohort: **`created_at`** in range. **KPIs:** **`orders_created_count`**; **`active_workshop_orders_count`** (draft → quality_check — **snapshot**, date range **not** applied); **`completed_orders_count`** (**`completed_at`** in range, else **`updated_at`** if **`completed_at`** null); **`cancelled_orders_count`**; **`total_pence_created_cohort`**; **`average_order_value_pence`**; **`average_completion_hours`** (mean **`completed_at` − `created_at`** in hours for completed rows with **`completed_at`** in range; **`null`** if none). **Series:** **`orders_by_day`**, **`order_status_breakdown`**. **`recent_activity`** + paginated **`table`**. Same UI as bookings.
 - **Routes (`routes`)** — Sprint **8.4** performance. **Cohort:** **`routes.scheduled_date`** between **`date_from`** and **`date_to`** (inclusive), plus **`route_status`**, **`driver_user_id`**, **`area`/`coverage_city`**, **`failure_reason`** (exists skipped stop), optional **`route_id`**. **KPIs:** **`routes_count`**; **`routes_completed_count`** (**`route_status = completed`**); **`total_stops`** / **`completed_stops`** / **`failed_collections`** ( **`skipped`** = failed collection in this report); **`completion_rate`** (**`completed_stops ÷ total_stops`**, **`null`** if no stops); **`average_stops_per_route`**; **`photos_captured_count`** (non-archived **`evidence_photos`** linked to **`route_stops`** in cohort). **Series:** **`routes_by_day`**, **`route_status_breakdown`**, **`stop_status_breakdown`**, **`failed_collection_reasons`** (top **50** **`failure_reason`** on skipped stops), **`driver_performance`** (rollup by **`driver_user_id`**, including unassigned). **Table:** per-route **`stops_count`**, completed/failed counts, per-route completion rate, photo count. UI: **`/admin/reports/routes`**.
 - **Knives (`knives`)** — Sprint **8.5** service volume. **Cohort:** **`knives.updated_at`** in range (+ **`whereCompanyCity`**, **`company_id`**, **`knife_status`**, **`knife_type`**, booking **`service_type`**). **KPIs:** **`knives_activity_count`**; **`knives_completed_workshop_count`** (sharpened / quality_checked / returned); **`knives_in_progress_snapshot_count`** (received / inspected / sharpening / issue_reported — **snapshot**, date **not** applied); **`knives_inspected_count`**; **`sharpened_throughput_count`** (same three output states as existing scope); **`average_knives_per_order`** (cohort rows with **`order_id`** ÷ distinct orders); **`reservice_assignments_count`** (**`knife_service_assignments`** with **`service_kind = reservice`**, **`linked_at`** in range, knife matches filters); **`damage_reports_created_count`** (non-archived, **`created_at`** in range, knife matches filters). **Series:** **`knives_by_day`**, **`knife_type_breakdown`**, **`service_type_breakdown`** (from booking; **`none`** if unlinked), **`knife_status_breakdown`**, **`service_kind_breakdown`** (all assignment kinds by **`linked_at`**), **`top_companies_by_knife_volume`** (max **50**), **`damage_by_severity`**, **`damage_by_status`**. UI: **`/admin/reports/knives`**.
+- **Recurring revenue (`recurring_revenue`)** — Sprint **8.8** subscription visibility without fabricated MRR/ARR. **`mrr` / `arr`** are **not computed** until Sprint 9 adds plan pricing on subscriptions (`computable: false`, reasons in payload). **Real metrics:** subscription row counts (`active`, `cancelled` snapshot, `new` / `cancelled` in period via `created_at` / `updated_at` approximations), **subscription-tagged vs one-off** invoiced totals (`issued_on` in range, void excluded) and payment totals (`paid_at` in range), **overdue subscription-flagged** open invoices (due date strictly before period end date; positive residual), **upcoming renewals** (`current_period_end` in selected range), **top subscription customers** by subscription-tagged invoiced sum. Full detail also on **`GET /api/admin/finance/dashboard`** under **`recurring_revenue`**. When no subscription rows and no tagged invoice/payment activity, **`reporting_surface_ready`** is false and UI shows a placeholder only.
 - **Billing (`billing`)** — Sprint **8.6** invoice / payment / AR ageing. **Period cohort:** **`issued_on`** between **`date_from`** and **`date_to`** for KPIs **`invoices_sent_count`** (excludes draft/void), **`invoices_paid_count`**, **`overdue_invoices_period_count`** (status = overdue). **Payments in period:** **`paid_at`** in range, invoice-linked; **`total_paid_pence`**, **`payments_received_count`**, **`series.payment_method_breakdown`**, **`series.payments_by_day`**; optional **`payment_method`** and **`payment_status`** filters. **AR snapshot as of end of `date_to`:** invoices **`issued_on ≤ date_to`**, not draft/void; residual = **`total_pence − SUM(payments.amount_pence)`** for payments with **`paid_at ≤ end of date_to`**. **`unpaid_invoices_snapshot_count`**, **`total_outstanding_pence`**, **`series.ageing`** (outstanding only, buckets vs **`COALESCE(due_on, issued_on)`**), **`series.outstanding_by_customer`** (top **50**), paginated **`unpaid_invoices`** and **`overdue_invoices`** (overdue = due date strictly before as-of calendar day). **`average_days_to_pay`:** mean days from **`issued_on`** to last payment **`paid_at`** for invoices marked paid with **`issued_on`** in range; **`null`** if none. UI: **`/admin/reports/billing`**.
 
 ---
@@ -86,7 +107,7 @@ Every report returns:
 
 ## Known limitations
 
-- **`GET /api/admin/reports/export`** returns **`available: false`** — no file generation yet.
+- CSV exports stream **all matching rows** (no arbitrary row cap yet); very large filters may require a background job in future.
 - Subscription report is **CRM row counts**, not MRR or proration.
 - Route **failed collections** are inferred from **`route_stop_status = skipped`** (not a separate “failed” enum).
 - **`failure_reason`** filter and breakdown use **exact** string matches; free-text reasons may fragment categories.

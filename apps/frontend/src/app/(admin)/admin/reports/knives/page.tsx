@@ -23,6 +23,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -143,6 +144,19 @@ export default function AdminKnifeServiceReportPage() {
     [companyId, dateFrom, dateTo, knifeStatus, knifeType, page, serviceType],
   );
 
+  const knivesExportQs = useMemo(
+    () =>
+      buildQs({
+        date_from: dateFrom,
+        date_to: dateTo,
+        company_id: companyId,
+        knife_type: knifeType,
+        service_type: serviceType,
+        knife_status: knifeStatus,
+      }),
+    [companyId, dateFrom, dateTo, knifeStatus, knifeType, serviceType],
+  );
+
   const reportQuery = useQuery({
     queryKey: ["admin-knife-service-report", reportQs],
     queryFn: async () => {
@@ -184,6 +198,19 @@ export default function AdminKnifeServiceReportPage() {
       <PageHeader
         title="Knife & service volume"
         description="Workshop throughput from knife rows: activity is scoped by updated_at; pipeline and assignment metrics are defined in the API."
+        actions={
+          <ReportCsvExportButton
+            admin={admin}
+            exportPath={`/api/admin/reports/exports/knives.csv${knivesExportQs}`}
+            label="Export knives (CSV)"
+            disabled={
+              reportQuery.isPending ||
+              reportQuery.isError ||
+              !d ||
+              d.kpis.knives_activity_count <= 0
+            }
+          />
+        }
       />
 
       <Card className="border-dashed">

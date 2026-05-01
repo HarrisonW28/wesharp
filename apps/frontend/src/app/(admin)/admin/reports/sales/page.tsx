@@ -24,6 +24,7 @@ import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -159,6 +160,25 @@ export default function AdminSalesReportPage() {
       <PageHeader
         title="Sales & revenue"
         description="Invoice accrual and payment cash in GBP — all figures from the server; definitions below each section."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <ReportCsvExportButton
+              admin={admin}
+              exportPath={`/api/admin/reports/exports/sales-invoices.csv${reportQs}`}
+              label="Export sales (CSV)"
+              disabled={reportQuery.isPending || reportQuery.isError || !d || d.kpis.total_revenue_pence <= 0}
+            />
+            <ReportCsvExportButton
+              admin={admin}
+              exportPath={`/api/admin/reports/exports/payments.csv${reportQs}`}
+              label="Export payments (CSV)"
+              disabled={
+                reportQuery.isPending || reportQuery.isError || !d || d.kpis.payments_received_count <= 0
+              }
+              variant="secondary"
+            />
+          </div>
+        }
       />
 
       <Card className="border-dashed">

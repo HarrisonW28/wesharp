@@ -23,6 +23,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,6 +134,19 @@ export default function AdminRoutePerformanceReportPage() {
     [area, dateFrom, dateTo, driverUserId, failureReason, page, routeStatus],
   );
 
+  const routesExportQs = useMemo(
+    () =>
+      buildQs({
+        date_from: dateFrom,
+        date_to: dateTo,
+        route_status: routeStatus,
+        driver_user_id: driverUserId,
+        area,
+        failure_reason: failureReason,
+      }),
+    [area, dateFrom, dateTo, driverUserId, failureReason, routeStatus],
+  );
+
   const reportQuery = useQuery({
     queryKey: ["admin-route-performance-report", reportQs],
     queryFn: async () => {
@@ -166,6 +180,16 @@ export default function AdminRoutePerformanceReportPage() {
       <PageHeader
         title="Route performance"
         description="Stop throughput, failures, and completion quality for routes scheduled in the selected window."
+        actions={
+          <ReportCsvExportButton
+            admin={admin}
+            exportPath={`/api/admin/reports/exports/routes.csv${routesExportQs}`}
+            label="Export routes (CSV)"
+            disabled={
+              reportQuery.isPending || reportQuery.isError || !d || d.kpis.routes_count <= 0
+            }
+          />
+        }
       />
 
       <Card className="border-dashed">

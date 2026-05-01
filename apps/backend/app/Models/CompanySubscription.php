@@ -1,35 +1,78 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Enums\SubscriptionStatus;
+use Database\Factories\CompanySubscriptionFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CompanySubscription extends Model
 {
+    /** @use HasFactory<CompanySubscriptionFactory> */
     use HasFactory;
+
     use HasUuids;
+    use SoftDeletes;
 
     protected $fillable = [
         'company_id',
-        'plan_name',
+        'subscription_plan_id',
         'status',
-        'current_period_end',
-        'included_services',
-        'allowance_summary',
+        'starts_at',
+        'renews_at',
+        'cancelled_at',
+        'billing_contact_id',
+        'price_amount_minor_snapshot',
+        'currency',
+        'notes',
     ];
 
     protected function casts(): array
     {
         return [
-            'current_period_end' => 'date',
+            'status' => SubscriptionStatus::class,
+            'starts_at' => 'date',
+            'renews_at' => 'date',
+            'cancelled_at' => 'datetime',
+            'price_amount_minor_snapshot' => 'integer',
         ];
+    }
+
+    /** @param  Builder<CompanySubscription>  $query */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', SubscriptionStatus::Active->value);
     }
 
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(SubscriptionPlan::class, 'subscription_plan_id');
+    }
+
+    public function billingContact(): BelongsTo
+    {
+        return $this->belongsTo(Contact::class, 'billing_contact_id');
+    }
+
+    /**
+     * Display name for exports and legacy payloads (plan catalogue name).
+     */
+    public function planName(): string
+    {
+        return $this->relationLoaded('plan') && $this->plan !== null
+            ? (string) $this->plan->name
+            : 'Plan';
     }
 }

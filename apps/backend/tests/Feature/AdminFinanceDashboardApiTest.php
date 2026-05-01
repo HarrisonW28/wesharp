@@ -52,6 +52,7 @@ final class AdminFinanceDashboardApiTest extends TestCase
                         'formatted_subscription_tagged_payments_in_period',
                     ],
                     'subscription',
+                    'recurring_revenue',
                     'integrations',
                     'overdue_invoices',
                     'draft_invoices',

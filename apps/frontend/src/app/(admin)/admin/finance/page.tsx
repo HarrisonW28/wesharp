@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo } from "react";
 
-import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, Info, Loader2, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { toast } from "sonner";
 
 import { FinanceDashboardResponseSchema } from "@/lib/api/admin-finance-schema";
@@ -14,7 +15,9 @@ import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -87,6 +90,8 @@ export default function AdminFinanceDashboardPage() {
     [companyId, dateFrom, dateTo, invoiceStatus],
   );
 
+  const subscriptionsExportQs = useMemo(() => buildQs({ company_id: companyId }), [companyId]);
+
   const dashboardQuery = useQuery({
     queryKey: ["admin-finance-dashboard", dashboardQs],
     queryFn: async () => {
@@ -113,9 +118,27 @@ export default function AdminFinanceDashboardPage() {
   }, [dashboardQuery.error, dashboardQuery.isError]);
 
   const data = dashboardQuery.data;
+  const rr = data?.recurring_revenue;
   const defaultPeriodHint = data?.period
     ? `${data.period.date_from} → ${data.period.date_to} (${data.period.timezone})`
     : undefined;
+
+  const invoicedSplitChart =
+    !rr || rr.revenue_invoiced_period_pence.total <= 0
+      ? []
+      : [
+          { name: "Subscription-tagged invoiced", pence: rr.revenue_invoiced_period_pence.subscription_tagged },
+          { name: "One-off invoiced", pence: rr.revenue_invoiced_period_pence.one_off },
+        ];
+  const paymentsSplitChart =
+    !rr || rr.revenue_payments_period_pence.total <= 0
+      ? []
+      : [
+          { name: "Subscription-tagged cash", pence: rr.revenue_payments_period_pence.subscription_tagged },
+          { name: "One-off cash", pence: rr.revenue_payments_period_pence.one_off },
+        ];
+
+  const SPLIT_COLORS = ["hsl(var(--primary))", "hsl(142 76% 36%)"];
 
   return (
     <div className="space-y-8">
@@ -130,6 +153,12 @@ export default function AdminFinanceDashboardPage() {
         description="Billing KPIs, overdue AR, and recent cash — amounts in GBP from the server."
         actions={
           <div className="flex flex-wrap gap-2">
+            <ReportCsvExportButton
+              admin={admin}
+              exportPath={`/api/admin/reports/exports/subscriptions.csv${subscriptionsExportQs}`}
+              label="Export subscriptions (CSV)"
+              variant="secondary"
+            />
             <Button asChild variant="outline" className="text-base">
               <Link href="/admin/reports/sales">Sales &amp; revenue report</Link>
             </Button>
@@ -265,51 +294,237 @@ export default function AdminFinanceDashboardPage() {
             />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
+          {rr ? (
+            <Card className="border-primary/15 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg">Upcoming renewals</CardTitle>
-                <CardDescription className="text-base">From company subscriptions (next 30 days).</CardDescription>
+                <CardTitle className="text-xl">Recurring revenue &amp; subscriptions</CardTitle>
+                <CardDescription className="text-base">
+                  Figures use <span className="font-medium">company_subscriptions</span> and{" "}
+                  <span className="font-medium">is_subscription_billing</span> on invoices — no estimated MRR/ARR until Sprint 9
+                  pricing fields exist.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {!data.subscription.has_subscription_rows ? (
-                  <p className="text-base text-muted-foreground">No subscription rows in the system.</p>
-                ) : data.subscription.upcoming_renewals.length === 0 ? (
-                  <p className="text-base text-muted-foreground">No renewals in the next 30 days.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {data.subscription.upcoming_renewals.map((r) => (
-                      <li key={`${r.company_id}-${r.renews_on}`} className="flex flex-wrap items-baseline justify-between gap-2 text-base">
-                        <Link href={`/admin/crm/${r.company_id}`} className="font-medium text-primary underline">
-                          {r.company_name ?? "Company"}
-                        </Link>
-                        <span className="text-muted-foreground">
-                          {r.plan_name ?? "Plan"} · {r.renews_on ?? "—"}
-                        </span>
+              <CardContent className="space-y-6">
+                {!rr.reporting_surface_ready ? (
+                  <Alert>
+                    <Info className="h-4 w-4" aria-hidden />
+                    <AlertTitle className="text-base">No subscription revenue data yet</AlertTitle>
+                    <AlertDescription className="text-base text-muted-foreground">
+                      Subscription reporting will appear once subscription plans are active. {rr.placeholder_message}
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <KpiCard
+                    title="MRR"
+                    value={rr.mrr.computable && rr.mrr.formatted_gbp ? rr.mrr.formatted_gbp : "—"}
+                    hint={rr.mrr.reason}
+                  />
+                  <KpiCard
+                    title="ARR"
+                    value={rr.arr.computable && rr.arr.formatted_gbp ? rr.arr.formatted_gbp : "—"}
+                    hint={rr.arr.reason}
+                  />
+                  <KpiCard title="Active subscriptions" value={String(rr.subscription_counts.active)} hint="status = active" />
+                  <KpiCard
+                    title="Cancelled (snapshot)"
+                    value={String(rr.subscription_counts.cancelled_snapshot)}
+                    hint="status = cancelled"
+                  />
+                  <KpiCard title="New subscriptions (period)" value={String(rr.subscription_counts.new_in_period)} hint="created_at in range" />
+                  <KpiCard
+                    title="Cancelled in period"
+                    value={String(rr.subscription_counts.cancelled_in_period)}
+                    hint="cancelled status &amp; updated_at in range (approx.)"
+                  />
+                  <KpiCard
+                    title="Subscription invoiced (period)"
+                    value={rr.revenue_invoiced_period_pence.formatted_subscription_tagged}
+                    hint="issued_on in range, subscription-flagged, excl. void"
+                  />
+                  <KpiCard
+                    title="One-off invoiced (period)"
+                    value={rr.revenue_invoiced_period_pence.formatted_one_off}
+                    hint="Other invoices issued in range"
+                  />
+                  <KpiCard
+                    title="Overdue subscription invoices"
+                    value={String(rr.overdue_subscription_invoices_count)}
+                    hint={`Past due vs ${rr.meta.period_end_date_for_overdue ?? "period end"}; open balance`}
+                  />
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Card className="overflow-hidden shadow-none">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Invoiced: recurring vs one-off</CardTitle>
+                      <CardDescription className="text-xs">Accrual by issued_on in the selected period.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[240px] pt-2">
+                      {invoicedSplitChart.length === 0 || invoicedSplitChart.every((x) => x.pence <= 0) ? (
+                        <p className="text-sm text-muted-foreground">No invoiced revenue in this period.</p>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={invoicedSplitChart}
+                              dataKey="pence"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={88}
+                              label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                            >
+                              {invoicedSplitChart.map((_, i) => (
+                                <Cell key={i} fill={SPLIT_COLORS[i % SPLIT_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip
+                              formatter={(v) => formatGBP(typeof v === "number" ? v : Number(v ?? 0))}
+                            />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card className="overflow-hidden shadow-none">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Cash: recurring vs one-off</CardTitle>
+                      <CardDescription className="text-xs">Payments with paid_at in the selected period.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[240px] pt-2">
+                      {paymentsSplitChart.length === 0 || paymentsSplitChart.every((x) => x.pence <= 0) ? (
+                        <p className="text-sm text-muted-foreground">No payments in this period.</p>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={paymentsSplitChart}
+                              dataKey="pence"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={88}
+                              label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                            >
+                              {paymentsSplitChart.map((_, i) => (
+                                <Cell key={i} fill={SPLIT_COLORS[i % SPLIT_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip
+                              formatter={(v) => formatGBP(typeof v === "number" ? v : Number(v ?? 0))}
+                            />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="space-y-2">
+                    <h3 className="text-base font-semibold">Upcoming renewals</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Rows where <span className="font-medium">current_period_end</span> falls in the selected date range.
+                    </p>
+                    {!rr.has_subscription_rows ? (
+                      <p className="text-base text-muted-foreground">No subscription rows in the system.</p>
+                    ) : rr.upcoming_renewals.length === 0 ? (
+                      <p className="text-base text-muted-foreground">No renewals due in this date range.</p>
+                    ) : (
+                      <div className="overflow-x-auto rounded-lg border">
+                        <table className="w-full min-w-[400px] text-left text-sm">
+                          <thead className="border-b bg-muted/40">
+                            <tr>
+                              <th className="px-3 py-2 font-medium">Company</th>
+                              <th className="px-3 py-2 font-medium">Plan</th>
+                              <th className="px-3 py-2 font-medium">Status</th>
+                              <th className="px-3 py-2 font-medium">Period end</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rr.upcoming_renewals.map((r) => (
+                              <tr key={`${r.company_id}-${r.renews_on}`} className="border-b last:border-0">
+                                <td className="px-3 py-2">
+                                  <Link href={`/admin/crm/${r.company_id}`} className="text-primary underline">
+                                    {r.company_name ?? "Company"}
+                                  </Link>
+                                </td>
+                                <td className="px-3 py-2">{r.plan_name ?? "—"}</td>
+                                <td className="px-3 py-2 text-muted-foreground">{r.status ?? "—"}</td>
+                                <td className="px-3 py-2 tabular-nums">{r.renews_on ?? "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-base font-semibold">Top subscription customers</h3>
+                    <p className="text-sm text-muted-foreground">By subscription-tagged invoiced total in the period.</p>
+                    {rr.top_subscription_customers.length === 0 ? (
+                      <p className="text-base text-muted-foreground">None in this period.</p>
+                    ) : (
+                      <div className="overflow-x-auto rounded-lg border">
+                        <table className="w-full min-w-[360px] text-left text-sm">
+                          <thead className="border-b bg-muted/40">
+                            <tr>
+                              <th className="px-3 py-2 font-medium">Company</th>
+                              <th className="px-3 py-2 font-medium text-right">Invoiced</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rr.top_subscription_customers.map((row) => (
+                              <tr key={row.company_id} className="border-b last:border-0">
+                                <td className="px-3 py-2">
+                                  <Link href={`/admin/crm/${row.company_id}`} className="text-primary underline">
+                                    {row.company_name ?? row.company_id}
+                                  </Link>
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums font-medium">{row.formatted}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <details className="rounded-lg border bg-muted/20 px-4 py-3 text-sm">
+                  <summary className="cursor-pointer font-medium text-foreground">Metric definitions</summary>
+                  <ul className="mt-3 list-inside list-disc space-y-1 text-muted-foreground">
+                    {Object.entries(rr.definitions).map(([k, v]) => (
+                      <li key={k}>
+                        <span className="font-mono text-xs">{k}</span>: {v}
                       </li>
                     ))}
                   </ul>
-                )}
+                </details>
               </CardContent>
             </Card>
+          ) : null}
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Integrations</CardTitle>
-                <CardDescription className="text-base">Placeholders until Xero / Stripe ops are wired.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 text-base">
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <div className="font-semibold">Xero</div>
-                  <p className="mt-1 text-muted-foreground">{data.integrations.xero.message}</p>
-                </div>
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <div className="font-semibold">Stripe</div>
-                  <p className="mt-1 text-muted-foreground">{data.integrations.stripe.message}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Integrations</CardTitle>
+              <CardDescription className="text-base">Placeholders until Xero / Stripe ops are wired.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-base">
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="font-semibold">Xero</div>
+                <p className="mt-1 text-muted-foreground">{data.integrations.xero.message}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="font-semibold">Stripe</div>
+                <p className="mt-1 text-muted-foreground">{data.integrations.stripe.message}</p>
+              </div>
+            </CardContent>
+          </Card>
 
           <Separator />
 

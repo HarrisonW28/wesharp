@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\CompanySubscription;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -17,13 +18,13 @@ final class AccountSubscriptionApiTest extends TestCase
         $company = Company::factory()->create();
         User::factory()->create(['company_id' => $company->id]);
 
+        $plan = SubscriptionPlan::factory()->create([
+            'name' => 'Kitchen Care Plus',
+            'description' => 'Collections and sharpening.',
+        ]);
         CompanySubscription::factory()->create([
             'company_id' => $company->id,
-            'plan_name' => 'Kitchen Care Plus',
-            'status' => 'active',
-            'current_period_end' => now()->addMonth()->toDateString(),
-            'included_services' => 'Collections and sharpening.',
-            'allowance_summary' => 'Up to 4 visits per month.',
+            'subscription_plan_id' => $plan->id,
         ]);
 
         $this->withHeader('X-WeSharp-Test-User-Id', (string) User::query()->where('company_id', $company->id)->firstOrFail()->id)

@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\CompanySubscription;
 use App\Models\Contact;
 use App\Models\Invoice;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Support\Money\MoneyFormatting;
 use Illuminate\Support\Str;
@@ -30,7 +31,11 @@ final class CompanySubscriptionCrmPayload
 
         $sub = $company->relationLoaded('subscription')
             ? $company->subscription
-            : $company->subscription()->first();
+            : $company->subscription()->with('plan')->first();
+
+        if ($sub instanceof CompanySubscription) {
+            $sub->loadMissing('plan');
+        }
 
         $actions = self::stubActions();
 
@@ -46,19 +51,32 @@ final class CompanySubscriptionCrmPayload
             ];
         }
 
+        $snapshot = (int) $sub->price_amount_minor_snapshot;
+        $plan = $sub->plan;
+
         $core = [
             'state' => 'record',
-            'headline' => $sub->plan_name,
+            'headline' => $plan !== null ? $plan->name : 'Subscription',
             'id' => (string) $sub->id,
-            'plan_name' => $sub->plan_name,
-            'status' => $sub->status,
-            'status_label' => Str::headline(str_replace('_', ' ', $sub->status)),
-            'current_period_end' => $sub->current_period_end?->format('Y-m-d'),
-            'allowance_summary' => $sub->allowance_summary,
-            'included_services' => $sub->included_services,
+            'subscription_plan_id' => (string) $sub->subscription_plan_id,
+            'plan_name' => $plan !== null ? $plan->name : 'Plan',
+            'status' => $sub->status?->value ?? (string) $sub->status,
+            'status_label' => Str::headline(str_replace('_', ' ', $sub->status?->value ?? (string) $sub->status)),
+            'starts_at' => $sub->starts_at?->format('Y-m-d'),
+            'renews_at' => $sub->renews_at?->format('Y-m-d'),
+            'current_period_end' => $sub->renews_at?->format('Y-m-d'),
+            'allowance_summary' => self::allowanceSummaryFromPlan($plan),
+            'included_services' => $plan?->description,
+            'price_amount_minor_snapshot' => $snapshot,
+            'formatted_price_snapshot_gbp' => strtoupper((string) $sub->currency) === 'GBP'
+                ? MoneyFormatting::formatGbpFromPence($snapshot)
+                : null,
+            'currency' => (string) $sub->currency,
             'plan_management_available' => false,
-            'recurring_amount_pence' => null,
-            'recurring_amount_note' => 'No MRR/ARR column on `company_subscriptions` — Sprint 9 will define commercial pricing fields.',
+            'recurring_amount_pence' => $snapshot > 0 ? $snapshot : null,
+            'recurring_amount_note' => $snapshot > 0
+                ? 'Snapshot in minor units at assignment; invoices may differ after discounts or plan changes.'
+                : 'No price snapshot on this row (legacy migration or draft).',
             'crm_actions' => $actions,
         ];
 
@@ -78,6 +96,23 @@ final class CompanySubscriptionCrmPayload
             'outstanding_subscription_invoices_pence' => $outstanding,
             'formatted_outstanding_subscription' => MoneyFormatting::formatGbpFromPence($outstanding),
         ]);
+    }
+
+    private static function allowanceSummaryFromPlan(?SubscriptionPlan $plan): ?string
+    {
+        if ($plan === null) {
+            return null;
+        }
+
+        $parts = [];
+        if ($plan->included_collections !== null) {
+            $parts[] = $plan->included_collections.' collection visit(s) included';
+        }
+        if ($plan->included_knife_allowance !== null) {
+            $parts[] = $plan->included_knife_allowance.' knife allowance';
+        }
+
+        return $parts === [] ? null : implode('; ', $parts);
     }
 
     /** @return list<array<string, mixed>> */

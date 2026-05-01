@@ -15,6 +15,8 @@ export type AdminFetchJsonResult<T> =
       payload: unknown;
     };
 
+export type AdminDownloadCsvResult = { ok: true; filename: string } | { ok: false; message: string };
+
 /**
  * Thin helper for Bearer-authenticated Laravel admin routes (`/api/admin/*`).
  */
@@ -101,6 +103,54 @@ export function useAdminApi() {
         }
 
         return res.blob();
+      },
+
+      /**
+       * Download a CSV attachment (report exports). Triggers a browser download on success.
+       */
+      async downloadCsv(path: string): Promise<AdminDownloadCsvResult> {
+        const origin = apiOrigin();
+        const token = await getToken();
+
+        if (!origin) {
+          return { ok: false, message: "Set NEXT_PUBLIC_API_ORIGIN." };
+        }
+        if (!token) {
+          return { ok: false, message: "Not signed in." };
+        }
+
+        const res = await fetch(`${origin}${path}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "text/csv,*/*",
+          },
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          const raw = await res.json().catch(() => null);
+          return { ok: false, message: safeApiErrorMessage(raw, `Export failed (${res.status}).`) };
+        }
+
+        const blob = await res.blob();
+        const cd = res.headers.get("Content-Disposition");
+        let filename = "export.csv";
+        if (cd) {
+          const m = /filename="([^"]+)"/i.exec(cd) ?? /filename=([^;\s]+)/i.exec(cd);
+          if (m?.[1]) filename = m[1].replace(/"/g, "").trim();
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
+        return { ok: true, filename };
       },
     }),
     [getToken],

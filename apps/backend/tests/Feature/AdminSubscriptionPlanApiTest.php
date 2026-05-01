@@ -1,0 +1,88 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature;
+
+use App\Enums\BillingInterval;
+use App\Enums\UserRole;
+use App\Models\AuditLog;
+use App\Models\SubscriptionPlan;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+final class AdminSubscriptionPlanApiTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_finance_can_list_plans(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Finance]);
+        SubscriptionPlan::factory()->create(['name' => 'Plan A']);
+
+        $res = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/subscription-plans');
+
+        $res->assertOk()
+            ->assertJsonPath('success', true);
+        self::assertGreaterThanOrEqual(1, count($res->json('data.items') ?? []));
+    }
+
+    public function test_route_manager_cannot_list_plans(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::RouteManager]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/subscription-plans')
+            ->assertForbidden();
+    }
+
+    public function test_finance_can_create_update_and_deactivate_plan_with_audit_logs(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Finance]);
+
+        $create = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)->postJson('/api/admin/subscription-plans', [
+            'name' => 'Kitchen Care Monthly',
+            'description' => 'Monthly plan',
+            'billing_interval' => BillingInterval::Monthly->value,
+            'price_amount_minor' => 9900,
+            'currency' => 'gbp',
+            'included_collections' => 4,
+            'included_knife_allowance' => 40,
+            'overage_price_amount_minor' => 800,
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+
+        $create->assertCreated();
+        $id = (string) $create->json('data.plan.id');
+        self::assertNotSame('', $id);
+
+        $update = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)->putJson('/api/admin/subscription-plans/'.$id, [
+            'name' => 'Kitchen Care Monthly',
+            'description' => 'Monthly plan updated',
+            'billing_interval' => BillingInterval::Monthly->value,
+            'price_amount_minor' => 12_000,
+            'currency' => 'GBP',
+            'included_collections' => 4,
+            'included_knife_allowance' => 40,
+            'overage_price_amount_minor' => 800,
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+
+        $update->assertOk()
+            ->assertJsonPath('data.plan.price_amount_minor', 12_000);
+
+        $deactivate = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->postJson('/api/admin/subscription-plans/'.$id.'/deactivate');
+
+        $deactivate->assertOk()
+            ->assertJsonPath('data.plan.is_active', false);
+
+        self::assertTrue(AuditLog::query()->where('action', 'subscription_plan.created')->exists());
+        self::assertTrue(AuditLog::query()->where('action', 'subscription_plan.updated')->exists());
+        self::assertTrue(AuditLog::query()->where('action', 'subscription_plan.deactivated')->exists());
+    }
+}

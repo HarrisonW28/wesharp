@@ -15,17 +15,19 @@ use App\Http\Controllers\Admin\KnifeController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\ReportingController;
 use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\RouteStopController;
+use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserDirectoryController;
 use App\Http\Controllers\Api\Account\AccountBookingController;
 use App\Http\Controllers\Api\Account\AccountDashboardController;
 use App\Http\Controllers\Api\Account\AccountInvoiceController;
 use App\Http\Controllers\Api\Account\AccountKnifeController;
 use App\Http\Controllers\Api\Account\AccountLocationController;
-use App\Http\Controllers\Api\Account\AccountOrderEvidencePhotoController;
 use App\Http\Controllers\Api\Account\AccountOrderController;
+use App\Http\Controllers\Api\Account\AccountOrderEvidencePhotoController;
 use App\Http\Controllers\Api\Account\AccountSettingsController;
 use App\Http\Controllers\Api\Account\AccountSubscriptionController;
 use App\Http\Controllers\Api\V1\BootstrapTenantOrganisationController;
@@ -94,6 +96,18 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     });
 
     Route::middleware('permission:audit_logs.view')->get('audit-logs', [AuditLogController::class, 'index'])->name('api.admin.audit_logs.index');
+
+    Route::middleware('permission:subscriptions.view')->prefix('subscription-plans')->group(function (): void {
+        Route::get('/', [SubscriptionPlanController::class, 'index'])->name('api.admin.subscription_plans.index');
+    });
+
+    Route::middleware('permission:subscriptions.manage')->prefix('subscription-plans')->group(function (): void {
+        Route::post('/', [SubscriptionPlanController::class, 'store'])->name('api.admin.subscription_plans.store');
+        Route::put('{plan}', [SubscriptionPlanController::class, 'update'])->whereUuid('plan')->name('api.admin.subscription_plans.update');
+        Route::post('{plan}/activate', [SubscriptionPlanController::class, 'activate'])->whereUuid('plan')->name('api.admin.subscription_plans.activate');
+        Route::post('{plan}/deactivate', [SubscriptionPlanController::class, 'deactivate'])->whereUuid('plan')->name('api.admin.subscription_plans.deactivate');
+        Route::post('{plan}/archive', [SubscriptionPlanController::class, 'archive'])->whereUuid('plan')->name('api.admin.subscription_plans.archive');
+    });
 
     Route::middleware('permission:users.view')->get('users', [UserDirectoryController::class, 'index'])->name('api.admin.users.index');
     Route::middleware('permission:users.view')->get('users/{target}', [UserDirectoryController::class, 'show'])->whereNumber('target')->name('api.admin.users.show');
@@ -225,8 +239,16 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
         Route::get('sales', [ReportingController::class, 'sales'])->name('api.admin.reports.sales');
         Route::get('invoices', [ReportingController::class, 'invoices'])->name('api.admin.reports.invoices');
         Route::get('billing', [ReportingController::class, 'billing'])->name('api.admin.reports.billing');
+        Route::get('recurring-revenue', [ReportingController::class, 'recurringRevenue'])->name('api.admin.reports.recurring_revenue');
         Route::get('subscriptions', [ReportingController::class, 'subscriptions'])->name('api.admin.reports.subscriptions');
         Route::get('export', [ReportingController::class, 'exportPlaceholder'])->name('api.admin.reports.export');
+    });
+
+    Route::middleware('permission:reports.finance')->prefix('reports/exports')->group(function (): void {
+        Route::get('sales-invoices.csv', [ReportExportController::class, 'salesInvoices'])->name('api.admin.reports.exports.sales_invoices');
+        Route::get('invoices-outstanding.csv', [ReportExportController::class, 'invoicesOutstanding'])->name('api.admin.reports.exports.invoices_outstanding');
+        Route::get('payments.csv', [ReportExportController::class, 'payments'])->name('api.admin.reports.exports.payments');
+        Route::get('subscriptions.csv', [ReportExportController::class, 'subscriptions'])->name('api.admin.reports.exports.subscriptions');
     });
 
     Route::middleware('permission:reports.operations')->prefix('reports')->group(function (): void {
@@ -234,6 +256,13 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
         Route::get('orders', [ReportingController::class, 'orders'])->name('api.admin.reports.orders');
         Route::get('routes', [ReportingController::class, 'routes'])->name('api.admin.reports.routes');
         Route::get('knives', [ReportingController::class, 'knives'])->name('api.admin.reports.knives');
+    });
+
+    Route::middleware('permission:reports.operations')->prefix('reports/exports')->group(function (): void {
+        Route::get('bookings.csv', [ReportExportController::class, 'bookings'])->name('api.admin.reports.exports.bookings');
+        Route::get('orders.csv', [ReportExportController::class, 'orders'])->name('api.admin.reports.exports.orders');
+        Route::get('routes.csv', [ReportExportController::class, 'routes'])->name('api.admin.reports.exports.routes');
+        Route::get('knives.csv', [ReportExportController::class, 'knives'])->name('api.admin.reports.exports.knives');
     });
 
     Route::middleware('permission:payments.view')->get('payments', [PaymentController::class, 'index'])->name('api.admin.payments.index');

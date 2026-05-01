@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Contracts\Payments\PaymentProviderInterface;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
+use App\Models\CompanySubscription;
 use App\Models\CustomerPortalUpdate;
 use App\Models\DamageReport;
 use App\Models\EvidencePhoto;
@@ -14,10 +16,12 @@ use App\Models\OperationalRoute;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\RouteStop;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Policies\AuditLogPolicy;
 use App\Policies\BookingPolicy;
 use App\Policies\CompanyPolicy;
+use App\Policies\CompanySubscriptionPolicy;
 use App\Policies\CustomerPortalUpdatePolicy;
 use App\Policies\DamageReportPolicy;
 use App\Policies\EvidencePhotoPolicy;
@@ -27,8 +31,8 @@ use App\Policies\OperationalRoutePolicy;
 use App\Policies\OrderPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\RouteStopPolicy;
+use App\Policies\SubscriptionPlanPolicy;
 use App\Policies\UserPolicy;
-use App\Contracts\Payments\PaymentProviderInterface;
 use App\Services\Clerk\ClerkJwtVerifier;
 use App\Services\Clerk\ClerkUserSynchronizer;
 use App\Services\Payments\StripePaymentProvider;
@@ -73,5 +77,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(Payment::class, PaymentPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(SubscriptionPlan::class, SubscriptionPlanPolicy::class);
+        Gate::policy(CompanySubscription::class, CompanySubscriptionPolicy::class);
     }
 }

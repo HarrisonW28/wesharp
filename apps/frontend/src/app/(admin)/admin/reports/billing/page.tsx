@@ -26,6 +26,7 @@ import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -192,6 +193,20 @@ export default function AdminBillingReportPage() {
     ],
   );
 
+  /** Query params aligned with CSV exporters (no table pagination). */
+  const exportCoreQs = useMemo(
+    () =>
+      buildQs({
+        date_from: dateFrom,
+        date_to: dateTo,
+        company_id: companyId,
+        invoice_status: invoiceStatus,
+        payment_status: paymentStatus,
+        payment_method: paymentMethod,
+      }),
+    [companyId, dateFrom, dateTo, invoiceStatus, paymentMethod, paymentStatus],
+  );
+
   const reportQuery = useQuery({
     queryKey: ["admin-billing-report", reportQs],
     queryFn: async () => {
@@ -257,9 +272,33 @@ export default function AdminBillingReportPage() {
         title="Invoices & payments"
         description="AR snapshot as of the period end date, payment cash in period, and ageing — amounts in GBP from the server."
         actions={
-          <Button asChild variant="outline" className="text-base">
-            <Link href="/admin/reports/sales">Sales report</Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <ReportCsvExportButton
+              admin={admin}
+              exportPath={`/api/admin/reports/exports/invoices-outstanding.csv${exportCoreQs}`}
+              label="Export invoices (CSV)"
+              disabled={
+                reportQuery.isPending ||
+                reportQuery.isError ||
+                !d ||
+                d.kpis.invoices_sent_count <= 0
+              }
+            />
+            <ReportCsvExportButton
+              admin={admin}
+              exportPath={`/api/admin/reports/exports/payments.csv${exportCoreQs}`}
+              label="Export payments (CSV)"
+              disabled={
+                reportQuery.isPending ||
+                reportQuery.isError ||
+                !d ||
+                d.kpis.payments_received_count <= 0
+              }
+            />
+            <Button asChild variant="outline" className="text-base">
+              <Link href="/admin/reports/sales">Sales report</Link>
+            </Button>
+          </div>
         }
       />
 

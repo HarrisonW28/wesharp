@@ -7,7 +7,6 @@ namespace App\Services\Finance;
 use App\Enums\InvoiceStatus;
 use App\Http\Requests\Admin\FinanceDashboardRequest;
 use App\Models\Company;
-use App\Models\CompanySubscription;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Support\Invoices\InvoiceJson;
@@ -20,6 +19,10 @@ use Illuminate\Support\Collection;
 
 final class FinanceDashboardService
 {
+    public function __construct(
+        private readonly RecurringRevenueMetricsService $recurringRevenueMetrics,
+    ) {}
+
     /** @return array<string, mixed> */
     public function build(FinanceDashboardRequest $request): array
     {
@@ -127,22 +130,7 @@ final class FinanceDashboardService
 
         $topOutstanding = $this->topOutstandingCompanies($companyId, $invoiceStatus, 8);
 
-        $upcomingRenewals = CompanySubscription::query()
-            ->with('company:id,name')
-            ->when($companyId !== null, fn (Builder $q) => $q->where('company_id', $companyId))
-            ->whereNotNull('current_period_end')
-            ->whereBetween('current_period_end', [$now->toDateString(), $now->addDays(30)->toDateString()])
-            ->orderBy('current_period_end')
-            ->limit(12)
-            ->get()
-            ->map(fn (CompanySubscription $s): array => [
-                'company_id' => (string) $s->company_id,
-                'company_name' => $s->relationLoaded('company') && $s->company !== null ? $s->company->name : null,
-                'plan_name' => $s->plan_name,
-                'renews_on' => $s->current_period_end?->format('Y-m-d'),
-            ])
-            ->values()
-            ->all();
+        $recurring = $this->recurringRevenueMetrics->build($periodStart, $periodEnd, $companyId);
 
         return [
             'period' => [
@@ -169,9 +157,10 @@ final class FinanceDashboardService
             ],
             'kpis_note' => 'Outstanding, unpaid, overdue, and drafts are snapshots (current open AR). Paid amounts and void-in-period use the selected date range.',
             'subscription' => [
-                'upcoming_renewals' => $upcomingRenewals,
-                'has_subscription_rows' => CompanySubscription::query()->when($companyId !== null, fn (Builder $q) => $q->where('company_id', $companyId))->exists(),
+                'upcoming_renewals' => $recurring['upcoming_renewals'],
+                'has_subscription_rows' => (bool) ($recurring['has_subscription_rows'] ?? false),
             ],
+            'recurring_revenue' => $recurring,
             'integrations' => [
                 'xero' => [
                     'configured' => false,

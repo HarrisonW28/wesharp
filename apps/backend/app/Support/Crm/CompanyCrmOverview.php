@@ -4,7 +4,6 @@ namespace App\Support\Crm;
 
 use App\Enums\BookingStatus;
 use App\Enums\OrderStatus;
-use App\Support\Orders\OrderStatusPresentation;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
@@ -13,6 +12,7 @@ use App\Models\CompanySubscription;
 use App\Models\Contact;
 use App\Models\Note;
 use App\Models\Order;
+use App\Support\Orders\OrderStatusPresentation;
 use Illuminate\Support\Str;
 
 /**
@@ -36,7 +36,7 @@ final class CompanyCrmOverview
         $activeOrder = self::resolveActiveOrder($company);
         $subscription = $company->relationLoaded('subscription')
             ? $company->subscription
-            : $company->subscription()->first();
+            : $company->subscription()->with('plan')->first();
 
         $unpaidBalancePence = (int) $company->invoices()->outstanding()->sum('total_pence');
 
@@ -218,14 +218,16 @@ final class CompanyCrmOverview
             return null;
         }
 
-        $status = $sub->status;
+        $sub->loadMissing('plan');
+        $status = $sub->status?->value ?? (string) $sub->status;
 
         return [
             'id' => (string) $sub->id,
-            'plan_name' => $sub->plan_name,
+            'plan_name' => $sub->plan?->name ?? $sub->planName(),
             'status' => $status,
             'status_label' => self::readable($status),
-            'current_period_end' => $sub->current_period_end?->format('Y-m-d'),
+            'renews_at' => $sub->renews_at?->format('Y-m-d'),
+            'current_period_end' => $sub->renews_at?->format('Y-m-d'),
         ];
     }
 
