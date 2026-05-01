@@ -68,6 +68,12 @@ class Order extends Model
         return $this->hasMany(Knife::class);
     }
 
+    /** @return HasMany<EvidencePhoto, Order> */
+    public function evidencePhotos(): HasMany
+    {
+        return $this->hasMany(EvidencePhoto::class, 'order_id');
+    }
+
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);

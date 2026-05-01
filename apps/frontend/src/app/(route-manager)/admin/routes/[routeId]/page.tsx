@@ -17,7 +17,10 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { useBackendMe } from "@/hooks/use-backend-me";
 
 import { RouteManagerShell } from "@/components/layout/RouteManagerShell";
+import { MobileNextStopBanner } from "@/components/route-manager/MobileNextStopBanner";
+import { MobileRouteProgress } from "@/components/route-manager/MobileRouteProgress";
 import { StatusBadge } from "@/components/status/StatusBadge";
+import { firstOpenStop } from "@/lib/route-manager/route-stop-helpers";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -295,6 +298,7 @@ export default function RouteDetailPage() {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const canComplete = route.route_status === "in_progress";
   const stopIdsOrdered = route.stops.map((s) => s.id);
+  const nextStop = firstOpenStop(route.stops);
 
   const stickyFooter = canComplete ? (
     <Button
@@ -325,24 +329,42 @@ export default function RouteDetailPage() {
       stickyFooter={stickyFooter ?? undefined}
     >
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" size="sm" variant="outline" className="min-h-10" asChild>
-            <Link href="/admin/routes">All routes</Link>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <Button type="button" variant="outline" className="h-12 w-full rounded-xl text-base sm:w-auto" asChild>
+            <Link href="/admin/routes/today">Today</Link>
           </Button>
-          {canManageRoutes ? (
-            <Button type="button" size="sm" className="min-h-10" onClick={openEditDialog}>
-              Edit route
+          <div className="hidden flex-wrap items-center gap-2 md:flex">
+            <Button type="button" variant="outline" className="h-10 min-h-10" asChild>
+              <Link href="/admin/routes">All routes</Link>
             </Button>
-          ) : null}
-          {canManageRoutes ? (
-            <Button type="button" size="sm" variant="secondary" className="min-h-10" onClick={() => setAddOpen(true)}>
-              Add booking…
-            </Button>
-          ) : null}
+            {canManageRoutes ? (
+              <Button type="button" className="h-10 min-h-10" onClick={openEditDialog}>
+                Edit route
+              </Button>
+            ) : null}
+            {canManageRoutes ? (
+              <Button type="button" variant="secondary" className="h-10 min-h-10" onClick={() => setAddOpen(true)}>
+                Add booking…
+              </Button>
+            ) : null}
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-[11px] text-slate-400 md:text-muted-foreground">
+        <div className="space-y-3 md:hidden">
+          <MobileRouteProgress route={route} />
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge kind="route" status={route.route_status ?? ""} className="px-3 py-1 text-sm" />
+          </div>
+        </div>
+
+        {nextStop ? (
+          <div className="md:hidden">
+            <MobileNextStopBanner route={route} stop={nextStop} />
+          </div>
+        ) : null}
+
+        <div className="hidden space-y-2 md:block">
+          <div className="flex justify-between text-sm text-slate-400 md:text-muted-foreground">
             <span>
               Progress · {completed}/{total} done · {pendingCount} open
             </span>
@@ -351,7 +373,7 @@ export default function RouteDetailPage() {
           <div className="h-3 overflow-hidden rounded-full bg-white/10 md:bg-muted">
             <div className="h-full rounded-full bg-sky-500/90 transition-[width]" style={{ width: `${pct}%` }} />
           </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
             <StatusBadge kind="route" status={route.route_status ?? ""} />
           </div>
         </div>
@@ -376,63 +398,74 @@ export default function RouteDetailPage() {
 
         <Separator className="bg-white/10 md:bg-border" />
 
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 md:text-muted-foreground">
+        <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">
           Stops
         </div>
 
         <ol className="space-y-3">
-          {route.stops.map((s, idx) => (
+          {route.stops.map((s, idx) => {
+            const isNext = nextStop?.id === s.id;
+            return (
             <li key={s.id}>
-              <Card className="border-white/10 bg-white/[0.06] p-4 shadow-none backdrop-blur-md md:border-border md:bg-card">
+              <Card
+                className={`border-white/10 bg-white/[0.06] p-4 shadow-none backdrop-blur-md md:border-border md:bg-card ${
+                  isNext ? "ring-2 ring-sky-400/50 md:ring-0" : ""
+                }`}
+              >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <Link href={`/admin/routes/${route.id}/stops/${s.id}`} className="group flex min-w-0 flex-1 gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-lg font-bold md:bg-muted">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/15 text-xl font-bold md:h-10 md:w-10 md:text-lg md:bg-muted">
                       {s.sequence}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold leading-snug group-hover:underline">{s.company_name ?? "Venue"}</div>
+                      {isNext ? (
+                        <div className="mb-1 text-sm font-semibold uppercase tracking-wide text-sky-200 md:hidden">Next</div>
+                      ) : null}
+                      <div className="text-lg font-bold leading-snug group-hover:underline md:text-base md:font-semibold">
+                        {s.company_name ?? "Venue"}
+                      </div>
                       {s.booking_reference ? (
-                        <div className="mt-0.5 text-xs text-slate-300 md:text-muted-foreground">
+                        <div className="mt-1 text-base text-slate-300 md:text-sm md:text-muted-foreground">
                           Booking · <span className="font-medium text-slate-100 md:text-foreground">{s.booking_reference}</span>
                         </div>
                       ) : null}
-                      <div className="mt-1 text-xs text-slate-400 md:text-muted-foreground">{s.address_line ?? "—"}</div>
+                      <div className="mt-1 text-base text-slate-300 md:text-sm md:text-muted-foreground">{s.address_line ?? "—"}</div>
                       {s.postcode ? (
-                        <div className="mt-0.5 text-[11px] text-slate-500 md:text-muted-foreground">{s.postcode}</div>
+                        <div className="mt-0.5 text-base font-medium text-slate-200 md:text-xs md:font-normal md:text-muted-foreground">{s.postcode}</div>
                       ) : null}
                       {s.planned_window ? (
-                        <div className="mt-2 text-[11px] text-slate-400 md:text-muted-foreground">
+                        <div className="mt-2 text-base text-slate-400 md:text-xs md:text-muted-foreground">
                           <span className="font-medium text-slate-200 md:text-foreground">Planned: </span>
                           {s.planned_window}
                         </div>
                       ) : null}
-                      <div className="mt-2 text-[11px] text-slate-400 md:text-muted-foreground">
+                      <div className="mt-2 text-base text-slate-400 md:text-xs md:text-muted-foreground">
                         <span className="font-medium text-slate-200 md:text-foreground">Confirmed window: </span>
                         {formatConfirmedWindow(s.confirmed_time_window_start, s.confirmed_time_window_end) ?? "—"}
                         {s.confirmed_collection_date ? ` · ${s.confirmed_collection_date}` : null}
                       </div>
                       {s.customer_notes ? (
-                        <p className="mt-2 line-clamp-2 text-xs text-slate-300 md:text-foreground">
+                        <p className="mt-2 line-clamp-3 text-base text-slate-200 md:line-clamp-2 md:text-xs md:text-foreground">
                           <span className="text-slate-500 md:text-muted-foreground">Notes: </span>
                           {s.customer_notes}
                         </p>
                       ) : null}
                       {s.damage_notes ? (
-                        <p className="mt-1 line-clamp-2 text-xs text-blue-200/90 md:text-blue-900 dark:md:text-blue-100">
+                        <p className="mt-1 line-clamp-2 text-base text-blue-200/90 md:text-xs md:text-blue-900 dark:md:text-blue-100">
                           Stop: {s.damage_notes}
                         </p>
                       ) : null}
-                      <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-                        <StatusBadge kind="route_stop" status={s.route_stop_status ?? ""} />
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <StatusBadge kind="route_stop" status={s.route_stop_status ?? ""} className="px-2.5 py-1 text-sm md:text-xs" />
                         {s.estimated_knife_count != null ? (
-                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-slate-200 md:bg-muted md:text-muted-foreground">
+                          <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-slate-200 md:bg-muted md:px-2 md:text-xs md:text-muted-foreground">
                             ~{s.estimated_knife_count} knives
                           </span>
                         ) : null}
                       </div>
                     </div>
                   </Link>
-                  <div className="flex shrink-0 flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:border-0 sm:pt-0 md:border-0">
+                  <div className="hidden shrink-0 flex-col gap-2 border-t border-white/10 pt-3 sm:flex sm:flex-row sm:border-0 sm:pt-0 md:border-0">
                     {canManageRoutes ? (
                       <div className="flex gap-1">
                         <Button
@@ -496,10 +529,19 @@ export default function RouteDetailPage() {
                       ) : null}
                     </div>
                   </div>
+                  <div className="flex flex-col gap-2 sm:hidden">
+                    <Button type="button" variant="secondary" className="h-12 w-full rounded-xl text-base" asChild>
+                      <Link href={`/admin/routes/${route.id}/stops/${s.id}`}>
+                        Open stop
+                        <ExternalLink className="ml-2 h-4 w-4 opacity-80" aria-hidden />
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </Card>
             </li>
-          ))}
+            );
+          })}
         </ol>
       </div>
 

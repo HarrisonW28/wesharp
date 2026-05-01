@@ -28,6 +28,7 @@ final readonly class BookingStatusTransitions
             BookingStatus::Collected->value,
             BookingStatus::ConvertedToOrder->value,
             BookingStatus::Cancelled->value,
+            BookingStatus::NoShow->value,
         ],
 
         BookingStatus::Collected->value => [

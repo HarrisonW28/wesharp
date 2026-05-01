@@ -4,15 +4,19 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { ExternalLink, Loader2, MapPinned, PhoneCall, Truck } from "lucide-react";
+import { Camera, ExternalLink, ImageIcon, Loader2, MapPinned, PhoneCall, Truck } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
 import { StopDetailResponseSchema } from "@/lib/api/admin-routes-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { visibleRouteStopActions } from "@/lib/route-manager/route-stop-workflow";
+import { formatGBP } from "@/lib/format/money";
+import { visibleRouteStopActions, visibleRouteStopFailureAction } from "@/lib/route-manager/route-stop-workflow";
 
 import { RouteManagerShell } from "@/components/layout/RouteManagerShell";
+import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +33,14 @@ async function fetchStop(admin: ReturnType<typeof useAdminApi>, stopId: string) 
     throw new Error("Unexpected stop payload.");
   }
   return parsed.data.data;
+}
+
+function formatWindowLine(start?: string | null, end?: string | null): string | null {
+  if (!start && !end) {
+    return null;
+  }
+  const f = (s: string) => (s.length >= 5 ? s.slice(0, 5) : s);
+  return `${start ? f(start) : "?"}–${end ? f(end) : "?"}`;
 }
 
 export default function RouteStopDetailPage() {
@@ -49,6 +61,10 @@ export default function RouteStopDetailPage() {
 
   const [knifeDraft, setKnifeDraft] = useState<number | "">("");
   const [damageDraft, setDamageDraft] = useState("");
+  const [failOpen, setFailOpen] = useState(false);
+  const [failReason, setFailReason] = useState("");
+  const [failNotes, setFailNotes] = useState("");
+  const [failPhotoAck, setFailPhotoAck] = useState(false);
 
   useEffect(() => {
     if (!stop) {
@@ -80,7 +96,7 @@ export default function RouteStopDetailPage() {
       return parsed.data.data;
     },
     onSuccess: () => {
-      toast.success("Saved.");
+      toast.success("Note saved.");
       void queryClient.invalidateQueries({ queryKey: ["admin-route-stop", stopId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-route-detail", routeId] });
     },
@@ -118,25 +134,60 @@ export default function RouteStopDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const skipMutation = useMutation({
+    mutationFn: async (payload: {
+      failure_reason: string;
+      failure_notes?: string;
+      evidence_placeholder_acknowledged?: boolean;
+    }) => {
+      const res = await admin.json(`/api/admin/route-stops/${stopId}/mark-skipped`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = StopDetailResponseSchema.safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected status response.");
+      }
+      return parsed.data.data;
+    },
+    onSuccess: (data) => {
+      toast.success("Failed collection recorded.");
+      setFailOpen(false);
+      setFailReason("");
+      setFailNotes("");
+      setFailPhotoAck(false);
+      queryClient.setQueryData(["admin-route-stop", stopId], data);
+      void queryClient.invalidateQueries({ queryKey: ["admin-route-detail", routeId] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-routes-today"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const tel = stop?.contact?.phone ? `tel:${stop.contact.phone.replace(/\s+/g, "")}` : null;
   const mapsHref = useMemo(() => {
     if (!stop?.location) {
       return null;
     }
-    const bits = [stop.location.line_one, stop.location.city, stop.location.postcode].filter(Boolean).join(", ");
+    const bits = [stop.location.line_one, stop.location.line_two, stop.location.city, stop.location.postcode].filter(Boolean).join(", ");
 
     return bits ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bits)}` : null;
   }, [stop?.location]);
 
   const actionRows = useMemo(() => visibleRouteStopActions(status), [status]);
+  const failureAction = useMemo(() => visibleRouteStopFailureAction(status), [status]);
+
+  const contactName = [stop?.contact?.first_name, stop?.contact?.last_name].filter(Boolean).join(" ").trim();
 
   const stickyFooter =
-    tel || mapsHref || actionRows.length > 0 ? (
-      <div className="flex flex-col gap-2">
+    tel || mapsHref || actionRows.length > 0 || failureAction ? (
+      <div className="flex flex-col gap-3">
         {tel || mapsHref ? (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {tel ? (
-              <Button variant="secondary" className="h-12 rounded-xl" type="button" asChild>
+              <Button variant="secondary" className="h-14 rounded-xl text-base" type="button" asChild>
                 <a href={tel}>
                   <PhoneCall className="mr-2 h-5 w-5" aria-hidden />
                   Call
@@ -146,7 +197,7 @@ export default function RouteStopDetailPage() {
               <span />
             )}
             {mapsHref ? (
-              <Button variant="secondary" className="h-12 rounded-xl" type="button" asChild>
+              <Button variant="secondary" className="h-14 rounded-xl text-base" type="button" asChild>
                 <a href={mapsHref} target="_blank" rel="noreferrer">
                   <MapPinned className="mr-2 h-5 w-5" aria-hidden />
                   Maps
@@ -162,8 +213,13 @@ export default function RouteStopDetailPage() {
             key={row.key}
             type="button"
             className="h-14 w-full rounded-xl text-base font-semibold"
-            disabled={transitionMutation.isPending}
-            onClick={() => transitionMutation.mutate(row.path)}
+            disabled={transitionMutation.isPending || skipMutation.isPending}
+            onClick={() => {
+              if (row.path === "complete" && !window.confirm("Mark this stop as fully completed?")) {
+                return;
+              }
+              transitionMutation.mutate(row.path);
+            }}
           >
             {transitionMutation.isPending ? (
               <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden />
@@ -173,13 +229,24 @@ export default function RouteStopDetailPage() {
             {row.label}
           </Button>
         ))}
+        {failureAction ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12 w-full rounded-xl border-amber-500/60 text-base text-amber-100 hover:bg-amber-500/10 hover:text-amber-50"
+            disabled={transitionMutation.isPending || skipMutation.isPending}
+            onClick={() => setFailOpen(true)}
+          >
+            {failureAction.label}
+          </Button>
+        ) : null}
       </div>
     ) : undefined;
 
   if (stopQuery.status === "pending") {
     return (
       <RouteManagerShell title="Stop">
-        <Loader2 className="mx-auto mt-16 h-8 w-8 animate-spin text-slate-400 md:text-muted-foreground" aria-hidden />
+        <Loader2 className="mx-auto mt-16 h-10 w-10 animate-spin text-slate-400 md:text-muted-foreground" aria-hidden />
       </RouteManagerShell>
     );
   }
@@ -187,73 +254,239 @@ export default function RouteStopDetailPage() {
   if (stopQuery.status === "error" || !stop) {
     return (
       <RouteManagerShell title="Stop">
-        <p className="text-sm text-red-300 md:text-destructive">{(stopQuery.error as Error | undefined)?.message ?? "Missing stop."}</p>
+        <Card className="border-destructive/40 bg-destructive/10 p-4 text-base text-red-200 md:text-destructive">
+          {(stopQuery.error as Error | undefined)?.message ?? "Missing stop."}
+        </Card>
+        <Button asChild variant="secondary" className="mt-4 h-12 w-full rounded-xl">
+          <Link href={`/admin/routes/${routeId}`}>Back to route</Link>
+        </Button>
       </RouteManagerShell>
     );
   }
 
+  const confirmedLine = formatWindowLine(stop.booking?.confirmed_time_window_start, stop.booking?.confirmed_time_window_end);
+  const requestedLine = formatWindowLine(stop.booking?.time_window_start, stop.booking?.time_window_end);
+
   return (
-    <RouteManagerShell title={`Stop ${stop.sequence}`} subtitle={stop.company?.name ?? "Venue"} stickyFooter={stickyFooter}>
+    <RouteManagerShell
+      title={`Stop ${stop.sequence}`}
+      subtitle={stop.company?.name ?? "Venue"}
+      stickyFooter={stickyFooter}
+    >
       <div className="space-y-4">
-        <Card className="border-white/10 bg-white/5 p-4 text-sm md:border-border md:bg-muted/40">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 md:text-muted-foreground">
-            Booking & status
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" className="h-11 rounded-xl text-base">
+            <Link href={`/admin/routes/${routeId}`}>← Route</Link>
+          </Button>
+          <Button asChild variant="outline" className="h-11 rounded-xl text-base md:inline-flex">
+            <Link href="/admin/routes/today">Today</Link>
+          </Button>
+        </div>
+
+        <Card className="border-white/10 bg-white/5 p-4 text-slate-100 md:border-border md:bg-muted/40 md:text-foreground">
+          <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Stop status</div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <StatusBadge kind="route_stop" status={stop.route_stop_status ?? ""} className="px-3 py-1.5 text-sm" />
+            {stop.booking?.status ? (
+              <span className="text-base text-slate-300 md:text-muted-foreground">Booking: {stop.booking.status}</span>
+            ) : null}
           </div>
-          <dl className="mt-3 space-y-1 text-xs md:text-sm">
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-400 md:text-muted-foreground">Stop status</dt>
-              <dd className="font-medium capitalize">{stop.route_stop_status?.replace(/_/g, " ")}</dd>
+        </Card>
+
+        {stop.failure_reason ? (
+          <Card className="border-amber-500/35 bg-amber-950/40 p-4 md:border-amber-500/40 md:bg-amber-500/5 md:text-foreground">
+            <div className="text-sm font-semibold uppercase tracking-wide text-amber-200 md:text-amber-900 dark:md:text-amber-950">
+              Failed collection
             </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-400 md:text-muted-foreground">Booking</dt>
-              <dd>{stop.booking?.status ?? "—"}</dd>
+            <p className="mt-2 text-base font-medium leading-relaxed">{stop.failure_reason}</p>
+            {stop.failure_notes ? (
+              <p className="mt-2 whitespace-pre-wrap text-base text-slate-200 md:text-muted-foreground">{stop.failure_notes}</p>
+            ) : null}
+            {stop.failure_meta && typeof stop.failure_meta === "object" && stop.failure_meta !== null && "target_sprint" in stop.failure_meta ? (
+              <p className="mt-2 text-sm text-slate-400 md:text-muted-foreground">Photo evidence flagged for a future release.</p>
+            ) : null}
+          </Card>
+        ) : null}
+
+        <Sheet open={failOpen} onOpenChange={setFailOpen}>
+          <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl border-white/10 bg-slate-950 text-slate-50 md:border-border md:bg-background md:text-foreground">
+            <SheetHeader>
+              <SheetTitle className="text-left text-xl">Failed collection</SheetTitle>
+            </SheetHeader>
+            <div className="space-y-4 py-2">
+              <p className="text-base text-slate-300 md:text-muted-foreground">
+                Describe why collection could not happen. This is required for audit and dispatch follow-up.
+              </p>
+              <div>
+                <Label htmlFor="fail-reason" className="text-base">
+                  Reason <span className="text-amber-300">*</span>
+                </Label>
+                <Textarea
+                  id="fail-reason"
+                  className="mt-2 min-h-[100px] rounded-xl text-base"
+                  placeholder="e.g. Site closed, no access, refused handover…"
+                  value={failReason}
+                  onChange={(e) => setFailReason(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="fail-notes" className="text-base">
+                  Extra notes (optional)
+                </Label>
+                <Textarea
+                  id="fail-notes"
+                  className="mt-2 min-h-[88px] rounded-xl text-base"
+                  placeholder="Gate codes tried, who you spoke to…"
+                  value={failNotes}
+                  onChange={(e) => setFailNotes(e.target.value)}
+                />
+              </div>
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-base md:border-border md:bg-muted/30">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-5 w-5 shrink-0 rounded border-white/20"
+                  checked={failPhotoAck}
+                  onChange={(e) => setFailPhotoAck(e.target.checked)}
+                />
+                <span>We will attach photo evidence in Sprint 5.4 (acknowledge placeholder).</span>
+              </label>
             </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-400 md:text-muted-foreground">Service</dt>
-              <dd className="capitalize">{stop.booking?.service_type ?? "—"}</dd>
+            <SheetFooter className="flex-col gap-2 sm:flex-col">
+              <Button
+                type="button"
+                className="h-14 w-full rounded-xl text-base font-semibold"
+                disabled={skipMutation.isPending || failReason.trim().length < 3}
+                onClick={() => {
+                  const payload: {
+                    failure_reason: string;
+                    failure_notes?: string;
+                    evidence_placeholder_acknowledged?: boolean;
+                  } = { failure_reason: failReason.trim() };
+                  if (failNotes.trim() !== "") {
+                    payload.failure_notes = failNotes.trim();
+                  }
+                  if (failPhotoAck) {
+                    payload.evidence_placeholder_acknowledged = true;
+                  }
+                  skipMutation.mutate(payload);
+                }}
+              >
+                {skipMutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden /> : null}
+                Submit failed collection
+              </Button>
+              <Button type="button" variant="ghost" className="h-12 rounded-xl text-base" onClick={() => setFailOpen(false)}>
+                Cancel
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+
+        <Card className="border-white/10 bg-white/[0.06] p-4 md:border-border md:bg-card">
+          <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Site</div>
+          <p className="mt-3 text-lg font-bold leading-snug text-white md:text-foreground">{stop.company?.name ?? "—"}</p>
+          <p className="mt-2 text-base leading-relaxed text-slate-200 md:text-foreground">
+            {[stop.location?.line_one, stop.location?.line_two, stop.location?.city].filter(Boolean).join(", ") || "—"}
+          </p>
+          {stop.location?.postcode ? <p className="mt-2 text-lg font-semibold text-slate-100 md:text-foreground">{stop.location.postcode}</p> : null}
+          {contactName || stop.contact?.phone ? (
+            <div className="mt-4 text-base">
+              {contactName ? <div className="font-semibold text-slate-100 md:text-foreground">{contactName}</div> : null}
+              {stop.contact?.phone ? <div className="mt-1 text-slate-300 md:text-muted-foreground">{stop.contact.phone}</div> : null}
             </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-slate-400 md:text-muted-foreground">Payment hint</dt>
-              <dd className="tabular-nums">{stop.booking?.payment_status_hint ?? "—"}</dd>
+          ) : null}
+        </Card>
+
+        <Card className="border-white/10 bg-white/[0.04] p-4 md:border-border md:bg-card">
+          <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Windows</div>
+          <dl className="mt-3 space-y-2 text-base">
+            <div>
+              <dt className="text-slate-400 md:text-muted-foreground">Confirmed collection</dt>
+              <dd className="font-medium text-slate-100 md:text-foreground">
+                {confirmedLine ?? "—"}
+                {stop.booking?.confirmed_collection_date ? ` · ${stop.booking.confirmed_collection_date}` : null}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-400 md:text-muted-foreground">Requested</dt>
+              <dd className="font-medium text-slate-100 md:text-foreground">
+                {requestedLine ?? "—"}
+                {stop.booking?.requested_date ? ` · ${stop.booking.requested_date}` : null}
+              </dd>
             </div>
           </dl>
         </Card>
 
-        {stop.booking?.internal_notes ?? stop.booking?.customer_notes ? (
-          <Card className="border-primary/30 bg-primary/10 p-3 text-xs text-foreground">
-            <div className="font-semibold text-foreground">Notes</div>
-            <p className="mt-1 whitespace-pre-wrap">{stop.booking?.internal_notes ?? stop.booking?.customer_notes}</p>
+        {stop.booking?.internal_notes || stop.booking?.customer_notes ? (
+          <Card className="border-amber-500/30 bg-amber-500/10 p-4 text-slate-50 md:border-amber-500/40 md:bg-amber-500/5 md:text-foreground">
+            <div className="text-sm font-semibold uppercase tracking-wide text-amber-100 md:text-amber-900 dark:md:text-amber-950">Access & notes</div>
+            {stop.booking.internal_notes ? (
+              <div className="mt-2">
+                <div className="text-sm font-medium text-amber-50/90 md:text-foreground">Ops / access</div>
+                <p className="mt-1 whitespace-pre-wrap text-base leading-relaxed">{stop.booking.internal_notes}</p>
+              </div>
+            ) : null}
+            {stop.booking.customer_notes ? (
+              <div className="mt-3">
+                <div className="text-sm font-medium text-amber-50/90 md:text-foreground">Customer</div>
+                <p className="mt-1 whitespace-pre-wrap text-base leading-relaxed">{stop.booking.customer_notes}</p>
+              </div>
+            ) : null}
           </Card>
         ) : null}
 
-        <Card className="border-white/10 bg-white/[0.06] p-4 md:border-border md:bg-card">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 md:text-muted-foreground">Address</div>
-          <p className="mt-2 text-sm leading-relaxed">
-            {[stop.location?.line_one, stop.location?.city, stop.location?.postcode].filter(Boolean).join(", ") || "—"}
-          </p>
-          {stop.contact ? (
-            <p className="mt-2 text-sm">
-              {stop.contact.first_name} {stop.contact.last_name}
-              {stop.contact.phone ? <span className="ml-2 text-slate-400 md:text-muted-foreground">{stop.contact.phone}</span> : null}
+        {stop.booking && (stop.booking.service_type != null || stop.booking.estimated_knife_count != null) ? (
+          <Card className="border-white/10 bg-white/[0.04] p-4 md:border-border md:bg-card">
+            <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Booking summary</div>
+            <dl className="mt-3 space-y-2 text-base">
+              <div className="flex justify-between gap-2">
+                <dt className="text-slate-400 md:text-muted-foreground">Service</dt>
+                <dd className="font-medium capitalize">{stop.booking.service_type ?? "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-slate-400 md:text-muted-foreground">Est. knives</dt>
+                <dd className="font-semibold tabular-nums">{stop.booking.estimated_knife_count ?? "—"}</dd>
+              </div>
+            </dl>
+          </Card>
+        ) : null}
+
+        {stop.order ? (
+          <Card className="border-white/10 bg-white/[0.04] p-4 md:border-border md:bg-card">
+            <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Linked order</div>
+            <p className="mt-2 text-base">
+              Order <span className="font-mono text-sm">{stop.order.id.slice(0, 8)}…</span>
             </p>
-          ) : null}
+            <p className="mt-1 text-lg font-bold tabular-nums">{formatGBP(stop.order.total_pence)}</p>
+          </Card>
+        ) : null}
+
+        <Card className="border-dashed border-white/20 bg-white/[0.03] p-4 md:border-border md:bg-muted/30">
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">
+            <Camera className="h-5 w-5" aria-hidden />
+            Photos
+          </div>
+          <p className="mt-2 text-base text-slate-300 md:text-muted-foreground">Photo capture is planned for Sprint 5.4.</p>
+          <Button type="button" variant="secondary" className="mt-3 h-12 w-full rounded-xl text-base" disabled>
+            <ImageIcon className="mr-2 h-5 w-5 opacity-50" aria-hidden />
+            Add photo (soon)
+          </Button>
         </Card>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label className="text-xs">Est. knives</Label>
-            <div className="mt-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-lg font-semibold tabular-nums md:border-border md:bg-background">
+            <Label className="text-base text-slate-300 md:text-foreground">Est. knives</Label>
+            <div className="mt-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xl font-bold tabular-nums md:border-border md:bg-background">
               {stop.booking?.estimated_knife_count ?? "—"}
             </div>
           </div>
           <div>
-            <Label htmlFor="actual-knives" className="text-xs">
+            <Label htmlFor="actual-knives" className="text-base text-slate-300 md:text-foreground">
               Actual knives
             </Label>
             <Input
               id="actual-knives"
               inputMode="numeric"
-              className="mt-1 h-12 text-lg font-semibold tabular-nums"
+              className="mt-2 h-14 rounded-xl text-xl font-semibold tabular-nums"
               value={knifeDraft === "" ? "" : String(knifeDraft)}
               onChange={(e) => {
                 const v = e.target.value;
@@ -271,13 +504,13 @@ export default function RouteStopDetailPage() {
         </div>
 
         <div>
-          <Label htmlFor="damage" className="text-xs">
-            Damage note
+          <Label htmlFor="stop-note" className="text-base text-slate-300 md:text-foreground">
+            Stop note
           </Label>
           <Textarea
-            id="damage"
-            className="mt-1 min-h-[88px] text-base"
-            placeholder="Optional"
+            id="stop-note"
+            className="mt-2 min-h-[120px] rounded-xl text-base"
+            placeholder="Access issues, counts, failed attempt details…"
             value={damageDraft}
             onChange={(e) => setDamageDraft(e.target.value)}
           />
@@ -286,17 +519,17 @@ export default function RouteStopDetailPage() {
         <Button
           type="button"
           variant="secondary"
-          className="h-12 w-full rounded-xl"
+          className="h-14 w-full rounded-xl text-base font-semibold"
           disabled={saveMutation.isPending}
           onClick={() => saveMutation.mutate()}
         >
           {saveMutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden /> : null}
-          Save count & damage
+          Save note and knife count
         </Button>
 
-        <Button asChild variant="ghost" className="w-full">
+        <Button asChild variant="ghost" className="h-12 w-full rounded-xl text-base">
           <Link href={`/admin/routes/${routeId}`}>
-            <ExternalLink className="mr-2 h-4 w-4" aria-hidden />
+            <ExternalLink className="mr-2 h-5 w-5" aria-hidden />
             Back to route
           </Link>
         </Button>

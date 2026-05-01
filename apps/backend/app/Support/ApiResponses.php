@@ -51,9 +51,9 @@ final class ApiResponses
     /**
      * @param  array<string, mixed|string>  $details
      */
-    public static function unauthorized(string $message = 'Authentication required.'): JsonResponse
+    public static function unauthorized(string $message = 'Authentication required.', string $code = 'unauthenticated'): JsonResponse
     {
-        return self::error($message, 'unauthenticated', SymfonyResponse::HTTP_UNAUTHORIZED);
+        return self::error($message, $code, SymfonyResponse::HTTP_UNAUTHORIZED);
     }
 
     public static function forbidden(string $message = 'You are not allowed to perform this action.', string $code = 'forbidden'): JsonResponse

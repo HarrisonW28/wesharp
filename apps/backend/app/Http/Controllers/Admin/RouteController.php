@@ -69,9 +69,9 @@ final class RouteController extends Controller
             ->with('driver:id,name')
             ->withCount([
                 'stops as stops_count',
-                'stops as completed_stops_count' => fn (Builder $q) => $q->where(
+                'stops as completed_stops_count' => fn (Builder $q) => $q->whereIn(
                     'route_stop_status',
-                    RouteStopStatus::Completed
+                    [RouteStopStatus::Completed, RouteStopStatus::Skipped],
                 ),
             ]);
 
@@ -159,9 +159,9 @@ final class RouteController extends Controller
             ->with('driver:id,name')
             ->withCount([
                 'stops as stops_count',
-                'stops as completed_stops_count' => fn (Builder $q) => $q->where(
+                'stops as completed_stops_count' => fn (Builder $q) => $q->whereIn(
                     'route_stop_status',
-                    RouteStopStatus::Completed
+                    [RouteStopStatus::Completed, RouteStopStatus::Skipped],
                 ),
             ])
             ->orderBy('scheduled_date')
@@ -177,7 +177,10 @@ final class RouteController extends Controller
             'primary_route' => $primary !== null ? RouteFormatting::routeDetail($primary) : null,
             'routes' => $routes->map(fn (OperationalRoute $r) => array_merge(RouteFormatting::listRow($r), [
                 'stops_count' => $r->stops->count(),
-                'completed_stops' => $r->stops->where('route_stop_status', RouteStopStatus::Completed)->count(),
+                'completed_stops' => $r->stops->whereIn('route_stop_status', [
+                    RouteStopStatus::Completed,
+                    RouteStopStatus::Skipped,
+                ])->count(),
             ]))->values()->all(),
             'upcoming_routes' => $upcoming,
             'metrics' => $metrics,

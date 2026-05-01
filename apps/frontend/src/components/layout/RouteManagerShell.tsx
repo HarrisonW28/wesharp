@@ -24,24 +24,24 @@ export function RouteManagerShell({
   children: ReactNode;
 }) {
   return (
-    <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-slate-950 text-slate-50 md:max-w-none md:bg-background md:text-foreground">
+    <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-x-hidden bg-slate-950 text-slate-50 md:max-w-none md:bg-background md:text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/85 backdrop-blur-xl md:border-border md:bg-background/85 md:text-foreground">
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 md:text-muted-foreground">
+          <div className="min-w-0 pr-2">
+            <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">
               Route manager
             </div>
-            <div className="truncate text-lg font-semibold leading-tight">{title}</div>
-            {subtitle ? <div className="truncate text-xs text-slate-400 md:text-muted-foreground">{subtitle}</div> : null}
+            <div className="truncate text-xl font-bold leading-tight md:text-lg">{title}</div>
+            {subtitle ? <div className="mt-0.5 truncate text-base text-slate-300 md:text-sm md:text-muted-foreground">{subtitle}</div> : null}
           </div>
           <Button
             size="icon"
             variant="secondary"
-            className="rounded-full bg-white/10 text-white hover:bg-white/15 md:bg-muted md:text-foreground"
+            className="h-12 w-12 shrink-0 rounded-full bg-white/10 text-white hover:bg-white/15 md:h-10 md:w-10 md:bg-muted md:text-foreground"
             type="button"
             aria-label="Notifications"
           >
-            <Bell className="h-5 w-5" />
+            <Bell className="h-6 w-6 md:h-5 md:w-5" />
           </Button>
         </div>
       </header>
@@ -62,8 +62,8 @@ export function RouteManagerShell({
         </div>
       ) : null}
 
-      <div className="border-t border-white/10 bg-slate-950/90 px-4 py-3 text-[11px] text-slate-400 md:hidden">
-        Optimised for technicians · Pull down on-site manifests offline phase later.
+      <div className="border-t border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-slate-400 md:hidden">
+        Field mode · Large controls for on-site use.
       </div>
 
       <div className="md:hidden">

@@ -1,4 +1,4 @@
-<?php
+fix <?php
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
@@ -19,7 +19,11 @@ return [
      */
     'jwt_issuer' => env('CLERK_JWT_ISSUER'),
 
-    /** Optional: require audience (azp) claim to match this Frontend API / instance id. */
+    /**
+     * Optional: pin session JWTs to a Frontend API identifier.
+     * Clerk puts this in `aud` and/or `azp`; we accept either when this is set.
+     * Leave empty unless you intentionally restrict tokens.
+     */
     'jwt_audience' => env('CLERK_JWT_AUDIENCE'),
 
     /**

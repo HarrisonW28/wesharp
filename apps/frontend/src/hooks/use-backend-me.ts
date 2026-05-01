@@ -62,11 +62,16 @@ export function useBackendMe() {
 
       if (!res.ok) {
         const apiMsg = body?.error?.message;
+        const apiCode = body?.error?.code;
+        const codePart =
+          apiCode != null && apiCode !== "" && apiCode !== "unauthenticated"
+            ? ` [${apiCode}]`
+            : "";
         const suffix =
           apiMsg != null && apiMsg !== ""
             ? ` ${apiMsg}`
             : "";
-        throw new Error(`API /me failed (${res.status}).${suffix}`.trim());
+        throw new Error(`API /me failed (${res.status}).${codePart}${suffix}`.trim());
       }
 
       return body;

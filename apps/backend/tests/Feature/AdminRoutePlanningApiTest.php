@@ -136,7 +136,11 @@ final class AdminRoutePlanningApiTest extends TestCase
         ]);
 
         $this->withHeaders(['X-WeSharp-Test-User-Id' => (string) $driver->id])
-            ->postJson('/api/admin/route-stops/'.$stop->id.'/mark-skipped', [])
+            ->postJson('/api/admin/route-stops/'.$stop->id.'/mark-skipped', [
+                'failure_reason' => 'PHPUnit — site closed',
+                'failure_notes' => 'No answer at door.',
+                'evidence_placeholder_acknowledged' => true,
+            ])
             ->assertOk()
             ->assertJsonPath('success', true);
 

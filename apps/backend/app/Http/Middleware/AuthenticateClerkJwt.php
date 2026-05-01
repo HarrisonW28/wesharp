@@ -39,8 +39,8 @@ final class AuthenticateClerkJwt
             );
 
             Auth::guard('web')->setUser($user);
-        } catch (ClerkTokenException) {
-            return ApiResponses::unauthorized();
+        } catch (ClerkTokenException $e) {
+            return ApiResponses::unauthorized($e->getMessage(), $e->apiCode());
         }
 
         return $next($request);

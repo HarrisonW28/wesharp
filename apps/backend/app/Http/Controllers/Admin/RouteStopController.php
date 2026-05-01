@@ -9,6 +9,7 @@ use App\Actions\Routes\MarkRouteStopReturnedAction;
 use App\Actions\Routes\MarkRouteStopSkippedAction;
 use App\Actions\Routes\MarkRouteStopTravellingAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MarkRouteStopSkippedRequest;
 use App\Http\Requests\UpdateRouteStopRequest;
 use App\Models\RouteStop;
 use App\Services\Audit\AuditRecorder;
@@ -90,11 +91,20 @@ final class RouteStopController extends Controller
         return ApiResponses::success(RouteFormatting::stopDetail($stop));
     }
 
-    public function markSkipped(Request $request, RouteStop $stop): JsonResponse
+    public function markSkipped(MarkRouteStopSkippedRequest $request, RouteStop $stop): JsonResponse
     {
         $this->authorize('manage', $stop);
 
-        $stop = $this->markRouteStopSkippedAction->execute($stop, $request->user(), $request);
+        $payload = $request->validatedPayload();
+
+        $stop = $this->markRouteStopSkippedAction->execute(
+            $stop,
+            $request->user(),
+            $request,
+            $payload['failure_reason'],
+            $payload['failure_notes'],
+            $payload['failure_meta'],
+        );
 
         return ApiResponses::success(RouteFormatting::stopDetail($stop));
     }

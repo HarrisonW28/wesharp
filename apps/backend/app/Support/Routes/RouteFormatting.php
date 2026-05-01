@@ -5,19 +5,36 @@ namespace App\Support\Routes;
 use App\Enums\RouteStopStatus;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
-use Illuminate\Support\Str;
 use App\Models\OperationalRoute;
 use App\Models\RouteStop;
+use App\Support\Evidence\EvidencePhotoJson;
+use Illuminate\Support\Str;
 
 final class RouteFormatting
 {
+    public static function stopStatusPublicLabel(?RouteStopStatus $status): ?string
+    {
+        if ($status === null) {
+            return null;
+        }
+
+        if ($status === RouteStopStatus::Skipped) {
+            return 'Failed collection';
+        }
+
+        return Str::headline(str_replace('_', ' ', $status->value));
+    }
+
     /** @return array<string, mixed> */
     public static function listRow(OperationalRoute $r): array
     {
         $total = isset($r->stops_count) ? (int) $r->stops_count : $r->stops()->count();
         $completed = isset($r->completed_stops_count)
             ? (int) $r->completed_stops_count
-            : $r->stops()->where('route_stop_status', RouteStopStatus::Completed)->count();
+            : $r->stops()->whereIn('route_stop_status', [
+                RouteStopStatus::Completed,
+                RouteStopStatus::Skipped,
+            ])->count();
 
         return [
             'id' => (string) $r->id,
@@ -115,15 +132,18 @@ final class RouteFormatting
     {
         $total = $route->stops->count();
 
-        $completed = $route->stops->where(
-            'route_stop_status',
-            RouteStopStatus::Completed
+        $addressed = $route->stops->filter(
+            static fn (RouteStop $s): bool => in_array(
+                $s->route_stop_status,
+                [RouteStopStatus::Completed, RouteStopStatus::Skipped],
+                true
+            )
         )->count();
 
         return [
-            'completed' => $completed,
+            'completed' => $addressed,
             'total' => $total,
-            'pending' => max(0, $total - $completed),
+            'pending' => max(0, $total - $addressed),
         ];
     }
 
@@ -136,9 +156,7 @@ final class RouteFormatting
             'id' => (string) $stop->id,
             'sequence' => $stop->sequence,
             'route_stop_status' => $stop->route_stop_status?->value,
-            'route_stop_status_label' => $stop->route_stop_status !== null
-                ? Str::headline(str_replace('_', ' ', $stop->route_stop_status->value))
-                : null,
+            'route_stop_status_label' => self::stopStatusPublicLabel($stop->route_stop_status),
             'booking_id' => $booking !== null ? (string) $booking->id : null,
             'booking_reference' => $booking !== null ? BookingResource::reference($booking) : null,
             'planned_window' => self::plannedWindowLine($booking),
@@ -188,6 +206,10 @@ final class RouteFormatting
             'departed_at' => $stop->departed_at?->toIso8601String(),
             'actual_knife_count' => $stop->actual_knife_count,
             'damage_notes' => $stop->damage_notes,
+            'failure_reason' => $stop->failure_reason,
+            'failure_notes' => $stop->failure_notes,
+            'failure_meta' => $stop->failure_meta,
+            'route_stop_status_label' => self::stopStatusPublicLabel($stop->route_stop_status),
             'route_id' => (string) $stop->route_id,
             'route' => $stop->route !== null ? [
                 'name' => $stop->route->name,
@@ -234,6 +256,17 @@ final class RouteFormatting
                 'last_name' => $booking->contact->last_name,
                 'phone' => $booking->contact->phone,
             ] : null,
+            'evidence_photos' => $stop->evidencePhotos->map(
+                static fn ($p): array => EvidencePhotoJson::adminRow($p)
+            )->values()->all(),
+            'evidence_settings' => [
+                'require_collection_photo' => (bool) config('wesharp_evidence.require_collection_photo', false),
+                'require_return_photo' => (bool) config('wesharp_evidence.require_return_photo', false),
+                'require_failed_collection_photo' => (bool) config('wesharp_evidence.require_failed_collection_photo', false),
+                'default_visibility' => (string) config('wesharp_evidence.default_visibility', 'internal_only'),
+                'allow_customer_visible_photos' => (bool) config('wesharp_evidence.allow_customer_visible_photos', true),
+                'show_in_customer_portal' => (bool) config('wesharp_evidence.show_in_customer_portal', true),
+            ],
         ];
     }
 

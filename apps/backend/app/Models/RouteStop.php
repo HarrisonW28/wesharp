@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RouteStop extends Model
 {
@@ -23,6 +24,9 @@ class RouteStop extends Model
         'departed_at',
         'actual_knife_count',
         'damage_notes',
+        'failure_reason',
+        'failure_notes',
+        'failure_meta',
     ];
 
     protected function casts(): array
@@ -33,6 +37,7 @@ class RouteStop extends Model
             'arrived_at' => 'datetime',
             'departed_at' => 'datetime',
             'actual_knife_count' => 'integer',
+            'failure_meta' => 'array',
         ];
     }
 
@@ -44,5 +49,11 @@ class RouteStop extends Model
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    /** @return HasMany<EvidencePhoto, RouteStop> */
+    public function evidencePhotos(): HasMany
+    {
+        return $this->hasMany(EvidencePhoto::class, 'route_stop_id');
     }
 }

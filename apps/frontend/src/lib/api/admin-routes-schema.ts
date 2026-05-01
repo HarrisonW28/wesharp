@@ -62,6 +62,20 @@ export const RouteDetailDataSchema = z
   })
   .passthrough();
 
+export const RouteRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  route_status: z.string().nullable().optional(),
+  route_status_label: z.string().nullable().optional(),
+  scheduled_date: z.string().nullable().optional(),
+  coverage_city: z.string().nullable().optional(),
+  driver_user_id: z.string().nullable().optional(),
+  driver_name: z.string().nullable().optional(),
+  stops_count: z.number().optional(),
+  completed_stops: z.number().optional(),
+  incomplete_stops: z.number().optional(),
+});
+
 export const TodayResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({
@@ -89,20 +103,6 @@ export const TodayResponseSchema = z.object({
 export const RouteDetailResponseSchema = z.object({
   success: z.literal(true),
   data: RouteDetailDataSchema,
-});
-
-export const RouteRowSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  route_status: z.string().nullable().optional(),
-  route_status_label: z.string().nullable().optional(),
-  scheduled_date: z.string().nullable().optional(),
-  coverage_city: z.string().nullable().optional(),
-  driver_user_id: z.string().nullable().optional(),
-  driver_name: z.string().nullable().optional(),
-  stops_count: z.number().optional(),
-  completed_stops: z.number().optional(),
-  incomplete_stops: z.number().optional(),
 });
 
 export const RouteDriverLookupItemSchema = z.object({
@@ -151,11 +151,15 @@ export const StopDetailDataSchema = z
     id: z.string(),
     sequence: z.number(),
     route_stop_status: z.string().nullable(),
+    route_stop_status_label: z.string().nullable().optional(),
     expected_arrival_at: z.string().nullable().optional(),
     arrived_at: z.string().nullable().optional(),
     departed_at: z.string().nullable().optional(),
     actual_knife_count: z.number().nullable().optional(),
     damage_notes: z.string().nullable().optional(),
+    failure_reason: z.string().nullable().optional(),
+    failure_notes: z.string().nullable().optional(),
+    failure_meta: z.unknown().optional(),
     route_id: z.string(),
     route: z
       .object({

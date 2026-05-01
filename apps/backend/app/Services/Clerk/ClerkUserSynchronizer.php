@@ -26,20 +26,29 @@ final class ClerkUserSynchronizer
     public function userFromBearer(?string $authorizationHeader): User
     {
         if ($authorizationHeader === null || $authorizationHeader === '' || ! Str::startsWith($authorizationHeader, 'Bearer ')) {
-            throw new ClerkTokenException('Missing Bearer token.');
+            throw new ClerkTokenException(
+                'Missing Bearer token.',
+                ClerkTokenException::CODE_MISSING_BEARER
+            );
         }
 
         $jwt = trim(Str::after($authorizationHeader, 'Bearer'));
 
         if ($jwt === '') {
-            throw new ClerkTokenException('Missing Bearer token.');
+            throw new ClerkTokenException(
+                'Missing Bearer token.',
+                ClerkTokenException::CODE_MISSING_BEARER
+            );
         }
 
         $decoded = $this->verifier->verify($jwt);
 
         $sub = is_string($decoded->sub ?? null) ? $decoded->sub : null;
         if ($sub === null || $sub === '') {
-            throw new ClerkTokenException('Invalid subject claim.');
+            throw new ClerkTokenException(
+                'Invalid subject claim.',
+                ClerkTokenException::CODE_INVALID_SUBJECT
+            );
         }
 
         return $this->syncLocalUser($sub, $decoded);
@@ -88,7 +97,10 @@ final class ClerkUserSynchronizer
             ?? $this->fetchEmailFromClerkRestApi($clerkUserId);
 
         if ($email === null) {
-            throw new ClerkTokenException('Unable to resolve email for Clerk user.');
+            throw new ClerkTokenException(
+                'Unable to resolve email for Clerk user. Ensure CLERK_SECRET_KEY is set for the same Clerk instance and the user has a primary email in Clerk.',
+                ClerkTokenException::CODE_EMAIL_UNRESOLVABLE
+            );
         }
 
         $resolvedName = $this->fetchNameFromClerkRestApi($clerkUserId) ?? $name;

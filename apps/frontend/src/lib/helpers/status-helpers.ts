@@ -150,7 +150,7 @@ export function routeStopStatusLabel(status: string): string {
     in_sharpening: "In sharpening",
     returned: "Returned",
     completed: "Completed",
-    skipped: "Skipped",
+    skipped: "Failed collection",
   };
   const key = status.trim();
   return labels[key] ?? humanizeUnderscored(key);

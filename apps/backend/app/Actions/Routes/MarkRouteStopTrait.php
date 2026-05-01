@@ -15,6 +15,7 @@ trait MarkRouteStopTrait
     /**
      * @param  array<string, mixed>  $auditExtra
      * @param  array<string, mixed>  $columns
+     * @param  (callable(RouteStop): void)|null  $afterTransition  Runs in the same transaction after audit (e.g. booking sync).
      */
     protected function transitionStop(
         RouteStop $stop,
@@ -24,8 +25,9 @@ trait MarkRouteStopTrait
         ?Request $request,
         array $auditExtra = [],
         array $columns = [],
+        ?callable $afterTransition = null,
     ): RouteStop {
-        return DB::transaction(function () use ($stop, $target, $auditAction, $actor, $request, $auditExtra, $columns): RouteStop {
+        return DB::transaction(function () use ($stop, $target, $auditAction, $actor, $request, $auditExtra, $columns, $afterTransition): RouteStop {
             $stop->refresh();
 
             $from = $stop->route_stop_status;
@@ -43,6 +45,13 @@ trait MarkRouteStopTrait
                 'from' => $from->value,
                 'to' => $target->value,
             ], $auditExtra), $request);
+
+            if ($afterTransition !== null) {
+                $fresh = $stop->fresh();
+                if ($fresh !== null) {
+                    $afterTransition($fresh);
+                }
+            }
 
             return $stop->fresh();
         });
