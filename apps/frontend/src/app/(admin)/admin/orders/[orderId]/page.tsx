@@ -105,6 +105,8 @@ export default function AdminOrderDetailPage() {
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [statusStepConfirmOpen, setStatusStepConfirmOpen] = useState(false);
+  const [pendingStatusStep, setPendingStatusStep] = useState<{ value: string; label: string } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editDiscountGbp, setEditDiscountGbp] = useState("");
   const [editPppGbp, setEditPppGbp] = useState("");
@@ -165,9 +167,15 @@ export default function AdminOrderDetailPage() {
       return parsed.data.data;
     },
     onSuccess: (_, vars) => {
-      toast.success(vars.target_status === "active" ? "Order marked active." : "Order cancelled.");
+      if (vars.target_status === "cancelled") {
+        toast.success("Order cancelled.");
+      } else {
+        toast.success("Order status updated.");
+      }
       setCancelDialogOpen(false);
       setCancelReason("");
+      setStatusStepConfirmOpen(false);
+      setPendingStatusStep(null);
       void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
     },
@@ -457,9 +465,15 @@ export default function AdminOrderDetailPage() {
   const orderRef = o.reference ?? `Order`;
   const hasBillableLines = (o.items?.length ?? 0) > 0;
   const hasWorkForComplete = (o.items?.length ?? 0) > 0 || (o.knives?.length ?? 0) > 0;
-  const isCompleted = o.status === "completed";
+  const allowedNext = o.allowed_next_statuses ?? [];
+  const mayCancel = allowedNext.some((x) => x.value === "cancelled");
+  const mayComplete = allowedNext.some((x) => x.value === "completed") && hasWorkForComplete;
+  const linearWorkflow = allowedNext.filter((x) => x.value !== "completed" && x.value !== "cancelled");
   const isCancelled = o.status === "cancelled";
-  const isDraft = o.status === "draft";
+  const isReturned = o.status === "returned";
+  const lockOrderManifest = isCancelled || isReturned || o.status === "completed" || o.status === "invoiced";
+  /** Invoice draft API currently requires `completed` (invoiced is a later lifecycle step). */
+  const mayGenerateInvoiceDraft = o.status === "completed";
   const bd = o.booking_detail;
 
   const completeWarnings: string[] = [];
@@ -497,18 +511,7 @@ export default function AdminOrderDetailPage() {
                 <Pencil className="h-4 w-4" aria-hidden />
                 Edit details
               </Button>
-              {isDraft ? (
-                <Button
-                  type="button"
-                  size="lg"
-                  disabled={transitionMutation.isPending}
-                  onClick={() => transitionMutation.mutate({ target_status: "active" })}
-                >
-                  {transitionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
-                  Mark active
-                </Button>
-              ) : null}
-              {!isCompleted && !isCancelled ? (
+              {mayCancel ? (
                 <Button type="button" variant="destructive" size="lg" onClick={() => setCancelDialogOpen(true)}>
                   Cancel order
                 </Button>
@@ -648,7 +651,7 @@ export default function AdminOrderDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {canOrders && !isCompleted && !isCancelled && hasWorkForComplete ? (
+      {canOrders && mayComplete ? (
         <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-sm font-semibold">Ready to close out?</div>
@@ -657,6 +660,34 @@ export default function AdminOrderDetailPage() {
           <Button type="button" size="lg" className="w-full sm:w-auto" onClick={() => setCompleteDialogOpen(true)}>
             Complete order
           </Button>
+        </Card>
+      ) : null}
+
+      {canOrders && linearWorkflow.length > 0 ? (
+        <Card className="flex flex-col gap-3 p-4">
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Workflow</div>
+          <p className="text-sm text-muted-foreground">Advance the order one step at a time. Risky steps need confirmation.</p>
+          <div className="flex flex-wrap gap-2">
+            {linearWorkflow.map((step) => (
+              <Button
+                key={step.value}
+                type="button"
+                size="lg"
+                variant={step.risky ? "secondary" : "default"}
+                disabled={transitionMutation.isPending}
+                onClick={() => {
+                  if (step.risky) {
+                    setPendingStatusStep({ value: step.value, label: step.label });
+                    setStatusStepConfirmOpen(true);
+                  } else {
+                    transitionMutation.mutate({ target_status: step.value });
+                  }
+                }}
+              >
+                {step.label}
+              </Button>
+            ))}
+          </div>
         </Card>
       ) : null}
 
@@ -780,7 +811,7 @@ export default function AdminOrderDetailPage() {
                 <Link href={`/admin/invoices/${o.invoice.id}`}>Open invoice</Link>
               </Button>
             </>
-          ) : isCompleted ? (
+          ) : mayGenerateInvoiceDraft ? (
             <>
               <p className="text-sm text-muted-foreground">No invoice yet. Generate a draft from this order (not sent).</p>
               {canInvoice ? (
@@ -798,6 +829,10 @@ export default function AdminOrderDetailPage() {
                 <p className="text-xs text-muted-foreground">Your role cannot create invoices.</p>
               )}
             </>
+          ) : o.status === "invoiced" ? (
+            <p className="text-sm text-muted-foreground">
+              This order is marked invoiced. Open the linked invoice from finance records if it is missing here.
+            </p>
           ) : (
             <p className="text-sm text-muted-foreground">Complete the order to create an invoice draft.</p>
           )}
@@ -867,7 +902,7 @@ export default function AdminOrderDetailPage() {
           </div>
         </Card>
 
-        {canKnives && canOrders && !isCompleted && !isCancelled ? (
+        {canKnives && canOrders && !lockOrderManifest ? (
           <Card className="flex flex-col gap-3 p-4 lg:col-span-3">
             <div className="text-xs font-semibold uppercase text-muted-foreground">Manifest &amp; lifecycle</div>
             <div className="flex flex-col gap-3 md:flex-row md:flex-wrap">

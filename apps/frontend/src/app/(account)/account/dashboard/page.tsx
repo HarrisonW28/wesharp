@@ -42,7 +42,11 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 
 function isActiveOrderStatus(status: string | null | undefined): boolean {
   const s = (status ?? "").toLowerCase();
-  return s !== "completed" && s !== "cancelled" && s !== "";
+  if (s === "") {
+    return false;
+  }
+  /** Closed-out orders — hide from the “active” strip (history still in full list). */
+  return s !== "completed" && s !== "returned" && s !== "cancelled";
 }
 
 function isUnpaidInvoiceStatus(status: string | null | undefined): boolean {
@@ -309,20 +313,20 @@ export default function AccountDashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="secondary" size="sm" className="rounded-lg" asChild>
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+        <Button type="button" variant="secondary" size="sm" className="rounded-lg justify-center" asChild>
           <Link href="/account/bookings">My bookings</Link>
         </Button>
-        <Button type="button" variant="secondary" size="sm" className="rounded-lg" asChild>
+        <Button type="button" variant="secondary" size="sm" className="rounded-lg justify-center" asChild>
           <Link href="/account/orders">My orders</Link>
         </Button>
-        <Button type="button" variant="secondary" size="sm" className="rounded-lg" asChild>
+        <Button type="button" variant="secondary" size="sm" className="rounded-lg justify-center" asChild>
           <Link href="/account/invoices">Invoices</Link>
         </Button>
-        <Button type="button" variant="outline" size="sm" className="rounded-lg" asChild>
+        <Button type="button" variant="outline" size="sm" className="rounded-lg justify-center" asChild>
           <Link href="/account/knives">Knives</Link>
         </Button>
-        <Button type="button" variant="outline" size="sm" className="rounded-lg" asChild>
+        <Button type="button" variant="outline" size="sm" className="rounded-lg justify-center" asChild>
           <Link href="/account/settings">Settings</Link>
         </Button>
       </div>

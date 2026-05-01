@@ -316,6 +316,7 @@ final class OrderJson
                 'risky' => in_array($status, [
                     OrderStatus::Cancelled,
                     OrderStatus::Completed,
+                    OrderStatus::Invoiced,
                     OrderStatus::Returned,
                 ], true),
             ];
@@ -373,6 +374,7 @@ final class OrderJson
             'booking_id' => (string) $order->booking_id,
             'route_id' => $order->route_id !== null ? (string) $order->route_id : null,
             'status' => $order->order_status?->value,
+            'status_label' => OrderStatusPresentation::adminLabel($order->order_status),
             'knife_count' => $order->knife_count,
             'billable_lines_count' => $billableLines,
             'knives_registered_count' => $knivesReg,
@@ -445,6 +447,7 @@ final class OrderJson
 
         $payload['audit_timeline'] = AuditLogPresenter::mapTimeline($audits, includeIp: true);
         $payload['status_timeline'] = self::statusTimeline($order, $audits);
+        $payload['allowed_next_statuses'] = self::allowedNextStatusesForDetail($order);
 
         $activeInvoice = null;
         if ($order->relationLoaded('invoices')) {

@@ -15,7 +15,7 @@ export function SidebarNav({ items, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-col gap-1 p-3" aria-label="Primary">
+    <nav className="flex flex-col gap-1 p-2 md:p-3" aria-label="Primary">
       {items.map((item) => {
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         const Icon = item.icon;
@@ -25,13 +25,13 @@ export function SidebarNav({ items, onNavigate }: SidebarNavProps) {
             href={item.href}
             onClick={() => onNavigate?.()}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex min-h-12 items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors md:min-h-0 md:py-2 md:text-sm",
               active
                 ? "bg-accent text-accent-foreground"
                 : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
             )}
           >
-            <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+            <Icon className="h-5 w-5 shrink-0 opacity-90 md:h-4 md:w-4" aria-hidden />
             {item.title}
           </Link>
         );

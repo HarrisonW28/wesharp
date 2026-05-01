@@ -23,16 +23,22 @@ export function Breadcrumbs({
 }: BreadcrumbsProps) {
   const trail = items ?? crumbs ?? [];
   return (
-    <nav aria-label="Breadcrumb" className={cn("flex flex-wrap items-center gap-2 text-sm text-muted-foreground", className)}>
-      <Link href={homeHref} className="inline-flex items-center gap-1 hover:text-foreground">
-        <Home className="h-4 w-4" aria-hidden />
+    <nav
+      aria-label="Breadcrumb"
+      className={cn("flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground sm:text-sm", className)}
+    >
+      <Link
+        href={homeHref}
+        className="inline-flex min-h-10 items-center gap-1.5 rounded-md px-1 py-1 hover:text-foreground sm:min-h-0 sm:px-0 sm:py-0"
+      >
+        <Home className="h-5 w-5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
         <span className="hidden sm:inline">Home</span>
       </Link>
       {trail.map((item, idx) => (
         <span key={`${item.label}-${idx}`} className="flex items-center gap-2">
-          <ChevronRight className="h-4 w-4 opacity-60" aria-hidden />
+          <ChevronRight className="h-5 w-5 shrink-0 opacity-60 sm:h-4 sm:w-4" aria-hidden />
           {item.href ? (
-            <Link href={item.href} className="hover:text-foreground">
+            <Link href={item.href} className="min-h-10 rounded-md px-1 py-1.5 hover:text-foreground sm:min-h-0 sm:px-0 sm:py-0">
               {item.label}
             </Link>
           ) : (

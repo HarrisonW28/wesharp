@@ -45,6 +45,7 @@ final class AuditActionLabels
         'order.created_from_booking' => 'Order created from booking',
         'order.updated' => 'Order updated',
         'order.activated' => 'Order activated',
+        'order.status_changed' => 'Order status changed',
         'order.completed' => 'Order completed',
         'order.cancelled' => 'Order cancelled',
         'order.bulk_order_items_added' => 'Bulk line items added',

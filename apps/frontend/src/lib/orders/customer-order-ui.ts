@@ -77,22 +77,71 @@ export function buildCustomerOrderTimeline(input: {
     };
   }
 
-  if (st === "active") {
+  if (st === "received") {
     return {
       steps: [
         placed,
+        { id: "recv", label: "Received", description: "Your order is at our workshop.", state: "complete" },
         {
           id: "workshop",
-          label: "In progress",
-          description: "Your knives are in our workshop.",
+          label: "Sharpening",
+          description: "We're preparing your blades for service.",
           state: "current",
         },
+        { id: "done", label: "Completed", description: "We'll update this when work is finished.", state: "upcoming" },
+      ],
+    };
+  }
+
+  if (st === "inspection") {
+    return {
+      steps: [
+        placed,
+        { id: "recv", label: "Received", state: "complete" },
         {
-          id: "done",
-          label: "Completed",
-          description: "We'll confirm completion once your order is closed out.",
-          state: "upcoming",
+          id: "inspect",
+          label: "Inspection",
+          description: "We're assessing your knives before sharpening.",
+          state: "current",
         },
+        { id: "workshop", label: "Sharpening", state: "upcoming" },
+        { id: "done", label: "Completed", state: "upcoming" },
+      ],
+    };
+  }
+
+  if (st === "in_progress" || st === "active") {
+    return {
+      steps: [
+        placed,
+        { id: "recv", label: "Received", state: "complete" },
+        { id: "inspect", label: "Inspection", state: "complete" },
+        {
+          id: "workshop",
+          label: "Sharpening in progress",
+          description: "Your knives are being sharpened.",
+          state: "current",
+        },
+        { id: "qc", label: "Quality check", state: "upcoming" },
+        { id: "done", label: "Completed", state: "upcoming" },
+      ],
+    };
+  }
+
+  if (st === "quality_check") {
+    return {
+      steps: [
+        placed,
+        { id: "recv", label: "Received", state: "complete" },
+        { id: "inspect", label: "Inspection", state: "complete" },
+        { id: "workshop", label: "Sharpening", state: "complete" },
+        {
+          id: "qc",
+          label: "Final quality check",
+          description: "We're doing a last check before we close out.",
+          state: "current",
+        },
+        { id: "done", label: "Completed", state: "upcoming" },
       ],
     };
   }
@@ -109,8 +158,42 @@ export function buildCustomerOrderTimeline(input: {
         },
         {
           id: "done",
-          label: "Completed",
+          label: "Work finished",
           description: completedOn ? `Closed on ${completedOn}.` : "This order is complete.",
+          state: "complete",
+        },
+      ],
+    };
+  }
+
+  if (st === "invoiced") {
+    return {
+      steps: [
+        placed,
+        { id: "workshop", label: "Sharpening", state: "complete" },
+        { id: "done", label: "Work finished", state: "complete" },
+        {
+          id: "bill",
+          label: "Invoice issued",
+          description: "Your bill is available in the invoices section.",
+          state: "current",
+        },
+        { id: "ret", label: "Returned to you", state: "upcoming" },
+      ],
+    };
+  }
+
+  if (st === "returned") {
+    return {
+      steps: [
+        placed,
+        { id: "workshop", label: "Sharpening", state: "complete" },
+        { id: "done", label: "Work finished", state: "complete" },
+        { id: "bill", label: "Invoice", state: "complete" },
+        {
+          id: "ret",
+          label: "Returned to you",
+          description: "Your knives are back with you.",
           state: "complete",
         },
       ],
@@ -138,11 +221,20 @@ export function customerOrderNextSteps(status: string | null | undefined): strin
   if (st === "draft") {
     return ["We’ll move this order forward once all details are confirmed.", "You’ll see blades listed below as we register them."];
   }
-  if (st === "active") {
+  if (st === "received" || st === "inspection") {
+    return ["Your order is with us.", "Blades will appear below as we register them."];
+  }
+  if (st === "in_progress" || st === "quality_check" || st === "active") {
     return ["We’re working through your knives in the workshop.", "Totals and line items update as we progress — check back for the latest figures."];
   }
   if (st === "completed") {
     return ["This order is closed.", "If an invoice is linked below, you’ll find it on your Invoices page too."];
+  }
+  if (st === "invoiced") {
+    return ["Your invoice is ready to view.", "Pay any balance due from the Invoices page when you’re ready."];
+  }
+  if (st === "returned") {
+    return ["Your knives have been returned.", "Thank you for choosing WeSharp."];
   }
   return ["Check the timeline above for where things stand."];
 }

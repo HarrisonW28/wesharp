@@ -186,11 +186,10 @@ final class PortalFulfilmentPresenter
                 'step_key' => 'sharpening',
                 'label' => 'Sharpening in progress',
                 'description' => 'Our team is working through your batch.',
-                'at' => static fn (): ?string => $order->order_status === OrderStatus::Active
+                'at' => static fn (): ?string => $order->order_status === OrderStatus::InProgress
                     ? $order->updated_at?->toIso8601String()
                     : null,
-                'done' => static fn (): bool => in_array($order->order_status, [OrderStatus::Active, OrderStatus::Completed], true)
-                    || self::bookingAtLeast($bs, BookingStatus::InSharpening),
+                'done' => static fn (): bool => self::orderSharpeningDone($order, $bs),
             ],
             [
                 'step_key' => 'returned',
@@ -314,10 +313,10 @@ final class PortalFulfilmentPresenter
                 'step_key' => 'sharpening',
                 'label' => 'Sharpening in progress',
                 'description' => 'Our team is working through your batch.',
-                'at' => static fn (): ?string => $order->order_status === OrderStatus::Active
+                'at' => static fn (): ?string => $order->order_status === OrderStatus::InProgress
                     ? $order->updated_at?->toIso8601String()
                     : null,
-                'done' => static fn (): bool => in_array($order->order_status, [OrderStatus::Active, OrderStatus::Completed], true),
+                'done' => static fn (): bool => self::orderSharpeningDoneOrderOnly($order),
             ],
             [
                 'step_key' => 'fulfilment_complete',
@@ -409,6 +408,32 @@ final class PortalFulfilmentPresenter
         }
 
         return $out;
+    }
+
+    private static function orderSharpeningDone(Order $order, BookingStatus $bs): bool
+    {
+        return self::orderInSharpeningOrLater($order->order_status)
+            || self::bookingAtLeast($bs, BookingStatus::InSharpening);
+    }
+
+    private static function orderSharpeningDoneOrderOnly(Order $order): bool
+    {
+        return self::orderInSharpeningOrLater($order->order_status);
+    }
+
+    private static function orderInSharpeningOrLater(?OrderStatus $status): bool
+    {
+        if ($status === null) {
+            return false;
+        }
+
+        return in_array($status, [
+            OrderStatus::InProgress,
+            OrderStatus::QualityCheck,
+            OrderStatus::Completed,
+            OrderStatus::Invoiced,
+            OrderStatus::Returned,
+        ], true);
     }
 
     private static function bookingAtLeast(BookingStatus $status, BookingStatus $min): bool

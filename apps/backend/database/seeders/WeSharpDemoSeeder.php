@@ -212,7 +212,7 @@ final class WeSharpDemoSeeder extends Seeder
                     'company_id' => $companyModel->id,
                     'booking_id' => $booking->id,
                     'route_id' => $booking->assigned_route_id,
-                    'order_status' => ($scenario === 0 ? OrderStatus::Active : OrderStatus::Completed),
+                    'order_status' => ($scenario === 0 ? OrderStatus::InProgress : OrderStatus::Completed),
                     'knife_count' => $bladeCount,
                     'price_per_knife_pence' => 850,
                     'discount_pence' => 0,

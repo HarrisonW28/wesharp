@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Support\Crm\CompanyCrmOverview;
 use App\Support\Crm\CompanySubscriptionCrmPayload;
+use App\Support\Orders\OrderStatusPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
@@ -84,7 +85,7 @@ class CompanyDetailResource extends JsonResource
                 'id' => (string) $o->id,
                 'order_status' => $o->order_status?->value,
                 'order_status_label' => $o->order_status !== null
-                    ? Str::headline(str_replace('_', ' ', $o->order_status->value))
+                    ? OrderStatusPresentation::adminLabel($o->order_status)
                     : null,
                 'total_pence' => (int) $o->total_pence,
                 'currency' => $o->currency,

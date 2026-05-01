@@ -31,11 +31,18 @@ function variantBooking(status: string): Variant {
 function variantOrder(status: string): Variant {
   switch (status.trim()) {
     case "completed":
+    case "returned":
       return "success";
     case "cancelled":
       return "destructive";
     case "draft":
+    case "received":
       return "secondary";
+    case "invoiced":
+      return "warning";
+    case "inspection":
+    case "in_progress":
+    case "quality_check":
     case "active":
     default:
       return "default";

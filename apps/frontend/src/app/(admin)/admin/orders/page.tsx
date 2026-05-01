@@ -45,8 +45,13 @@ const createOrderSchema = z.object({
 const ORDER_STATUS_OPTIONS = [
   { value: "", label: "Any order status" },
   { value: "draft", label: "Draft" },
-  { value: "active", label: "Active" },
+  { value: "received", label: "Received" },
+  { value: "inspection", label: "Inspection" },
+  { value: "in_progress", label: "In progress" },
+  { value: "quality_check", label: "Quality check" },
   { value: "completed", label: "Completed" },
+  { value: "invoiced", label: "Invoiced" },
+  { value: "returned", label: "Returned" },
   { value: "cancelled", label: "Cancelled" },
 ];
 

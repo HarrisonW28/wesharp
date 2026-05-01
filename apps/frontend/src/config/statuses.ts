@@ -30,8 +30,13 @@ export const INVOICE_STATUS = {
 
 export const ORDER_STATUS = {
   DRAFT: "draft",
-  ACTIVE: "active",
+  RECEIVED: "received",
+  INSPECTION: "inspection",
+  IN_PROGRESS: "in_progress",
+  QUALITY_CHECK: "quality_check",
   COMPLETED: "completed",
+  INVOICED: "invoiced",
+  RETURNED: "returned",
   CANCELLED: "cancelled",
 } as const;
 

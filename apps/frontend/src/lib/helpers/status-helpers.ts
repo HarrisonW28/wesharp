@@ -103,9 +103,16 @@ export function knifeStatusLabel(status: string): string {
 export function orderStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     [ORDER_STATUS.DRAFT]: "Draft",
-    [ORDER_STATUS.ACTIVE]: "Active",
+    [ORDER_STATUS.RECEIVED]: "Received",
+    [ORDER_STATUS.INSPECTION]: "Inspection",
+    [ORDER_STATUS.IN_PROGRESS]: "In progress",
+    [ORDER_STATUS.QUALITY_CHECK]: "Quality check",
     [ORDER_STATUS.COMPLETED]: "Completed",
+    [ORDER_STATUS.INVOICED]: "Invoiced",
+    [ORDER_STATUS.RETURNED]: "Returned",
     [ORDER_STATUS.CANCELLED]: "Cancelled",
+    /** Legacy DB value pre–Sprint 6.1 */
+    active: "In progress",
   };
   const key = status.trim();
   return labels[key] ?? humanizeUnderscored(key);
@@ -117,11 +124,26 @@ export function customerOrderStatusLabel(status: string | null | undefined): str
   if (key === ORDER_STATUS.DRAFT) {
     return "Being prepared";
   }
-  if (key === ORDER_STATUS.ACTIVE) {
-    return "In progress";
+  if (key === ORDER_STATUS.RECEIVED) {
+    return "Received at our workshop";
+  }
+  if (key === ORDER_STATUS.INSPECTION) {
+    return "Inspecting your knives";
+  }
+  if (key === ORDER_STATUS.IN_PROGRESS || key === "active") {
+    return "Sharpening in progress";
+  }
+  if (key === ORDER_STATUS.QUALITY_CHECK) {
+    return "Final quality check";
   }
   if (key === ORDER_STATUS.COMPLETED) {
-    return "Completed";
+    return "Work finished";
+  }
+  if (key === ORDER_STATUS.INVOICED) {
+    return "Invoice issued";
+  }
+  if (key === ORDER_STATUS.RETURNED) {
+    return "Returned to you";
   }
   if (key === ORDER_STATUS.CANCELLED) {
     return "Cancelled";

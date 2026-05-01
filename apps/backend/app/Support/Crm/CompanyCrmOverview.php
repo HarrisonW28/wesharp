@@ -4,6 +4,7 @@ namespace App\Support\Crm;
 
 use App\Enums\BookingStatus;
 use App\Enums\OrderStatus;
+use App\Support\Orders\OrderStatusPresentation;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
@@ -96,16 +97,26 @@ final class CompanyCrmOverview
 
     private static function resolveActiveOrder(Company $company): ?Order
     {
+        $openStatuses = [
+            OrderStatus::Draft,
+            OrderStatus::Received,
+            OrderStatus::Inspection,
+            OrderStatus::InProgress,
+            OrderStatus::QualityCheck,
+            OrderStatus::Completed,
+            OrderStatus::Invoiced,
+        ];
+
         if ($company->relationLoaded('orders') && $company->orders->isNotEmpty()) {
             $candidates = $company->orders->filter(
-                fn (Order $o) => in_array($o->order_status, [OrderStatus::Draft, OrderStatus::Active], true)
+                static fn (Order $o) => in_array($o->order_status, $openStatuses, true)
             );
 
             return $candidates->sortByDesc(fn (Order $o) => $o->updated_at?->timestamp ?? 0)->first();
         }
 
         return $company->orders()
-            ->whereIn('order_status', [OrderStatus::Draft, OrderStatus::Active])
+            ->whereIn('order_status', $openStatuses)
             ->orderByDesc('updated_at')
             ->first();
     }
@@ -192,7 +203,9 @@ final class CompanyCrmOverview
         return [
             'id' => (string) $o->id,
             'order_status' => $status,
-            'order_status_label' => $status !== null ? self::readable($status) : null,
+            'order_status_label' => $o->order_status !== null
+                ? OrderStatusPresentation::adminLabel($o->order_status)
+                : null,
             'total_pence' => (int) $o->total_pence,
             'currency' => $o->currency,
         ];

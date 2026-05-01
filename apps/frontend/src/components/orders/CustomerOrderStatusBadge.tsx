@@ -6,14 +6,17 @@ type Variant = NonNullable<BadgeProps["variant"]>;
 
 function variantForStatus(status: string): Variant {
   const s = status.trim().toLowerCase();
-  if (s === "completed") {
+  if (s === "completed" || s === "returned") {
     return "success";
   }
   if (s === "cancelled") {
     return "destructive";
   }
-  if (s === "draft") {
+  if (s === "draft" || s === "received") {
     return "secondary";
+  }
+  if (s === "invoiced") {
+    return "warning";
   }
   return "default";
 }

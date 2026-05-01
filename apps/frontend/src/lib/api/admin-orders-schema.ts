@@ -38,6 +38,12 @@ export const OrderInvoiceDraftResponseSchema = z.object({
   }),
 });
 
+export const OrderAllowedNextStatusSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+  risky: z.boolean(),
+});
+
 export const OrderRowSchema = z.object({
   id: z.string(),
   reference: z.string().optional(),
@@ -45,6 +51,7 @@ export const OrderRowSchema = z.object({
   booking_id: z.string(),
   route_id: z.string().nullable().optional(),
   status: z.string().nullable(),
+  status_label: z.string().optional(),
   knife_count: z.number().nullable().optional(),
   billable_lines_count: z.number().nullable().optional(),
   knives_registered_count: z.number().nullable().optional(),
@@ -157,6 +164,7 @@ export const OrderDetailSchema = OrderRowSchema.extend({
   booking_detail: OrderBookingDetailSchema.nullable().optional(),
   audit_timeline: z.array(OrderAuditEntrySchema).optional(),
   status_timeline: z.array(OrderStatusMilestoneSchema).optional(),
+  allowed_next_statuses: z.array(OrderAllowedNextStatusSchema).optional(),
 });
 
 export const OrderDetailResponseSchema = z.object({
