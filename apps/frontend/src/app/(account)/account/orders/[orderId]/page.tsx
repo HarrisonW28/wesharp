@@ -216,7 +216,11 @@ export default function TenantOrderDetailPage() {
                   </CardDescription>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <CustomerInvoiceStatusBadge status={o.invoice.status} />
+                  <CustomerInvoiceStatusBadge
+                    status={o.invoice.status}
+                    customerLabel={o.invoice.customer_status_label}
+                    hint={o.invoice.customer_status_hint}
+                  />
                   <Button size="sm" className="rounded-lg" asChild>
                     <Link href={`/account/invoices/${o.invoice.id}`}>View invoice</Link>
                   </Button>
@@ -299,12 +303,54 @@ export default function TenantOrderDetailPage() {
               ) : (
                 <ul className="divide-y rounded-lg border">
                   {o.knives.map((k, idx) => (
-                    <li key={`${idx}-${k.tag_id ?? k.label ?? "k"}`} className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0">
-                        <div className="font-medium leading-tight">{knifeTitle(k)}</div>
-                        {k.tag_id ? <p className="text-xs text-muted-foreground">Tag {k.tag_id}</p> : null}
+                    <li key={`${idx}-${k.tag_id ?? k.label ?? "k"}`} className="flex flex-col gap-3 px-3 py-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="font-medium leading-tight">{knifeTitle(k)}</div>
+                          {k.tag_id ? <p className="text-xs text-muted-foreground">Tag {k.tag_id}</p> : null}
+                        </div>
+                        <StatusBadge kind="knife" status={k.status} />
                       </div>
-                      <StatusBadge kind="knife" status={k.status} />
+                      {k.inspection ? (
+                        <div className="rounded-md bg-muted/40 px-3 py-2 text-sm">
+                          <p className="text-xs font-semibold uppercase text-muted-foreground">
+                            {k.inspection.heading ?? "Workshop inspection"}
+                          </p>
+                          {k.inspection.condition ? (
+                            <p className="mt-1 text-muted-foreground">
+                              <span className="font-medium text-foreground">Condition:</span> {k.inspection.condition}
+                            </p>
+                          ) : null}
+                          {k.inspection.notes ? (
+                            <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{k.inspection.notes}</p>
+                          ) : null}
+                          {k.inspection.inspected_at ? (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {new Date(k.inspection.inspected_at).toLocaleString("en-GB")}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {(k.damage_reports ?? []).length > 0 ? (
+                        <ul className="space-y-2 text-sm">
+                          {(k.damage_reports ?? []).map((d, j) => (
+                            <li key={`${idx}-dmg-${j}`} className="rounded-md border border-border/80 bg-background/50 px-3 py-2">
+                              <p className="text-xs text-muted-foreground">
+                                {d.severity_label ?? d.severity ?? "Update"}
+                                {d.status_label ? ` · ${d.status_label}` : null}
+                              </p>
+                              {d.description ? (
+                                <p className="mt-1 whitespace-pre-wrap text-foreground">{d.description}</p>
+                              ) : null}
+                              {d.resolved_at ? (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  Updated {new Date(d.resolved_at).toLocaleDateString("en-GB")}
+                                </p>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
                     </li>
                   ))}
                 </ul>

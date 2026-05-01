@@ -18,6 +18,7 @@ final class PaymentService
                 'company:id,name',
                 'invoice:id,invoice_number,company_id',
                 'order:id,booking_id',
+                'recordedBy:id,name,email',
             ]);
 
         if (($cid = trim((string) $request->query('company_id', ''))) !== '') {

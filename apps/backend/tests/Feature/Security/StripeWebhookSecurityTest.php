@@ -12,7 +12,7 @@ final class StripeWebhookSecurityTest extends TestCase
 
     public function test_rejects_when_webhook_secret_missing(): void
     {
-        Config::set('services.stripe.webhook_secret', '');
+        Config::set('stripe.webhook_secret', '');
 
         $response = $this->postJson('/api/webhooks/stripe', [], [
             'Stripe-Signature' => 't=1,v1=abc',
@@ -26,7 +26,7 @@ final class StripeWebhookSecurityTest extends TestCase
     public function test_accepts_valid_signature(): void
     {
         $secret = 'whsec_test_key_for_unit';
-        Config::set('services.stripe.webhook_secret', $secret);
+        Config::set('stripe.webhook_secret', $secret);
 
         $payload = '{"id":"evt_test"}';
         $t = time();

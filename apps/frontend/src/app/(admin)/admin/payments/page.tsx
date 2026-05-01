@@ -93,6 +93,21 @@ export default function AdminPaymentsPage() {
         cell: ({ row }) => <StatusBadge kind="payment" status={row.original.status} />,
       },
       { accessorKey: "reference", header: "Ref.", cell: ({ row }) => <span className="font-mono text-xs">{row.original.reference ?? "—"}</span> },
+      {
+        accessorKey: "notes",
+        header: "Notes",
+        cell: ({ row }) => {
+          const n = row.original.notes?.trim() ?? "";
+          if (n === "") return <span className="text-muted-foreground">—</span>;
+          const short = n.length > 48 ? `${n.slice(0, 48)}…` : n;
+          return <span title={n}>{short}</span>;
+        },
+      },
+      {
+        accessorKey: "recorded_by",
+        header: "Recorded by",
+        cell: ({ row }) => <span className="text-sm">{row.original.recorded_by?.name ?? "—"}</span>,
+      },
     ],
     [],
   );

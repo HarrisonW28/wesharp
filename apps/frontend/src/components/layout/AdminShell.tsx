@@ -34,8 +34,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <StaffRouteGate>
       <Toaster richColors closeButton position="top-right" />
       <ShellPermissionBoundary scope="admin" label="Checking operations permissions…">
-        <div className="flex min-h-screen bg-gradient-to-br from-muted/35 via-background to-muted/20">
-          <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95 md:backdrop-blur">
+        <div className="flex min-h-screen bg-gradient-to-br from-muted/35 via-background to-muted/20 print:min-h-0 print:bg-white">
+          <aside className="app-chrome hidden print:hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95 md:backdrop-blur">
             <div className="flex h-14 items-center border-b px-4">
               <WeSharpLogo className="h-10" />
             </div>
@@ -47,15 +47,18 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
           <div className="flex min-w-0 flex-1 flex-col">
             <TopBar
+              className="app-chrome print:hidden"
               title="Operations console"
               showMenu
               onMenuClick={() => setDrawerOpen(true)}
               trailing={<UserMenu variant="internal" />}
             />
-            <main className="flex-1 space-y-8 px-4 py-6 md:px-8">{children}</main>
+            <main className="flex-1 space-y-8 px-4 py-6 print:px-4 print:py-3 md:px-8">{children}</main>
           </div>
 
-          <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} items={navItems} />
+          <div className="app-chrome print:hidden">
+            <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} items={navItems} />
+          </div>
         </div>
       </ShellPermissionBoundary>
     </StaffRouteGate>

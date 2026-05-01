@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CustomerPortalUpdate;
+use App\Models\DamageReport;
 use App\Models\EvidencePhoto;
 use App\Models\Invoice;
 use App\Models\Knife;
@@ -18,6 +19,7 @@ use App\Policies\AuditLogPolicy;
 use App\Policies\BookingPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\CustomerPortalUpdatePolicy;
+use App\Policies\DamageReportPolicy;
 use App\Policies\EvidencePhotoPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\KnifePolicy;
@@ -26,8 +28,10 @@ use App\Policies\OrderPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\RouteStopPolicy;
 use App\Policies\UserPolicy;
+use App\Contracts\Payments\PaymentProviderInterface;
 use App\Services\Clerk\ClerkJwtVerifier;
 use App\Services\Clerk\ClerkUserSynchronizer;
+use App\Services\Payments\StripePaymentProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -43,6 +47,8 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ClerkJwtVerifier::class);
         $this->app->singleton(ClerkUserSynchronizer::class);
+        $this->app->singleton(StripePaymentProvider::class);
+        $this->app->bind(PaymentProviderInterface::class, StripePaymentProvider::class);
     }
 
     /**
@@ -63,6 +69,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(RouteStop::class, RouteStopPolicy::class);
         Gate::policy(Order::class, OrderPolicy::class);
         Gate::policy(Knife::class, KnifePolicy::class);
+        Gate::policy(DamageReport::class, DamageReportPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(Payment::class, PaymentPolicy::class);
         Gate::policy(User::class, UserPolicy::class);

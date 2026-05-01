@@ -4,19 +4,36 @@ declare(strict_types=1);
 
 namespace App\Support\Invoices;
 
+use App\Enums\InvoiceLineItemType;
 use App\Enums\InvoiceStatus;
 use App\Http\Resources\BookingResource;
 use App\Models\AuditLog;
 use App\Models\Invoice;
+use App\Support\Audit\AuditActionLabels;
 use App\Support\Audit\AuditLogPresenter;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Support\Money\MoneyFormatting;
 use App\Support\Orders\OrderJson;
 use App\Support\Payments\PaymentJson;
+use App\Support\Stripe\StripeInvoicePresentation;
 
 final class InvoiceJson
 {
+    /** @var list<string> */
+    private const STATUS_TIMELINE_ACTIONS = [
+        'invoice.created_from_order',
+        'invoice.draft_generated',
+        'invoice.send_placeholder',
+        'invoice.marked_paid',
+        'invoice.void',
+        'invoice.reopened_draft',
+        'invoice.auto_overdue',
+        'invoice.updated_meta',
+        'invoice.draft_lines_updated',
+        'invoice.payment_recorded',
+    ];
+
     public static function displayReference(Invoice $invoice): string
     {
         if (is_string($invoice->invoice_number) && $invoice->invoice_number !== '') {
@@ -40,24 +57,38 @@ final class InvoiceJson
         return 'INV-'.strtoupper(substr($hex, 0, 8));
     }
 
-    /** @return 'service'|'subscription'|'overage'|'adjustment' */
+    /** Canonical line type for API / UI (persisted enum, else description heuristic). */
     public static function inferLineKind(InvoiceItem $item): string
+    {
+        return self::lineItemTypeValue($item);
+    }
+
+    public static function lineItemTypeValue(InvoiceItem $item): string
+    {
+        if ($item->line_item_type instanceof InvoiceLineItemType) {
+            return $item->line_item_type->value;
+        }
+
+        return self::inferLegacyLineTypeFromDescription($item)->value;
+    }
+
+    private static function inferLegacyLineTypeFromDescription(InvoiceItem $item): InvoiceLineItemType
     {
         $d = strtolower($item->description);
 
         if (str_contains($d, 'subscription')) {
-            return 'subscription';
+            return InvoiceLineItemType::Subscription;
         }
 
         if (str_contains($d, 'overage')) {
-            return 'overage';
+            return InvoiceLineItemType::Overage;
         }
 
         if (str_contains($d, 'adjust')) {
-            return 'adjustment';
+            return InvoiceLineItemType::Adjustment;
         }
 
-        return 'service';
+        return InvoiceLineItemType::OneOffService;
     }
 
     /**
@@ -81,6 +112,8 @@ final class InvoiceJson
             default => max(0, $tot - $received),
         };
 
+        $customer = InvoicePresentation::customerStatus($invoice);
+
         return [
             'id' => (string) $invoice->id,
             'display_reference' => self::displayReference($invoice),
@@ -101,6 +134,8 @@ final class InvoiceJson
             'formatted_amount_due' => MoneyFormatting::formatGbpFromPence($due),
             'currency' => $invoice->currency,
             'status' => $invoice->invoice_status?->value,
+            'customer_status_label' => $customer['label'],
+            'customer_status_hint' => $customer['hint'],
             'payment_status' => InvoiceRollup::paymentStatus($invoice),
             'overdue' => InvoiceRollup::isPastDue($invoice),
             'company_name' => $invoice->relationLoaded('company') && $invoice->company !== null ? $invoice->company->name : null,
@@ -121,13 +156,24 @@ final class InvoiceJson
     public static function portalDetail(Invoice $invoice): array
     {
         $invoice->loadMissing([
-            'company:id,name',
+            'company:id,name,city,billing_email,phone',
             'order:id,created_at,order_status',
             'items' => fn ($q) => $q->orderBy('created_at'),
             'payments' => fn ($q) => $q->orderByDesc('paid_at')->orderByDesc('created_at'),
         ]);
 
         $row = self::portalListRow($invoice);
+
+        $company = $invoice->company;
+        $row['company'] = $company !== null ? [
+            'name' => $company->name,
+            'city' => $company->city,
+            'billing_email' => $company->billing_email,
+            'phone' => $company->phone,
+        ] : null;
+        $row['issuer'] = self::issuerPayload();
+        $row['default_payment_footer'] = (string) config('invoices.default_payment_footer', '');
+        $row['customer_notes'] = $invoice->customer_notes;
 
         $row['items'] = $invoice->items->map(fn (InvoiceItem $i): array => [
             'description' => $i->description,
@@ -143,16 +189,21 @@ final class InvoiceJson
             ->values()
             ->all();
 
-        $row['payment'] = [
-            'online_checkout_available' => false,
-            'cta_label' => 'Pay online',
-            'cta_hint' => 'Online card payment is not set up yet. Use the bank details on your invoice or contact us to pay.',
-        ];
+        $row['payment'] = StripeInvoicePresentation::portalPaymentCta($invoice);
 
         $row['documents'] = [
             'pdf_download_available' => false,
             'print_available' => true,
         ];
+
+        $received = (int) $invoice->payments->sum(fn (Payment $p): int => (int) $p->amount_pence);
+        $row['paid_pence'] = $received;
+        /** @phpstan-ignore-next-line */
+        $totP = (int) $invoice->total_pence;
+        $row['outstanding_pence'] = match ($invoice->invoice_status) {
+            InvoiceStatus::Void, InvoiceStatus::Paid => 0,
+            default => max(0, $totP - $received),
+        };
 
         return $row;
     }
@@ -196,7 +247,11 @@ final class InvoiceJson
             'id' => (string) $invoice->id,
             'display_reference' => self::adminReference($invoice),
             'company_id' => (string) $invoice->company_id,
-            'order_id' => (string) $invoice->order_id,
+            'order_id' => $invoice->order_id !== null ? (string) $invoice->order_id : null,
+            'source_type' => $invoice->source_type,
+            'source_id' => $invoice->source_id,
+            'billing_period_start' => $invoice->billing_period_start?->format('Y-m-d'),
+            'billing_period_end' => $invoice->billing_period_end?->format('Y-m-d'),
             'invoice_number' => $invoice->invoice_number,
             'issue_date' => $invoice->issued_on?->format('Y-m-d'),
             'due_date' => $invoice->due_on?->format('Y-m-d'),
@@ -234,7 +289,7 @@ final class InvoiceJson
             'company:id,name,city,billing_email,phone',
             'order' => fn ($q) => $q->with('booking:id,scheduled_date,booking_status'),
             'items' => fn ($q) => $q->orderBy('created_at'),
-            'payments' => fn ($q) => $q->orderByDesc('paid_at')->orderByDesc('created_at'),
+            'payments' => fn ($q) => $q->with('recordedBy:id,name,email')->orderByDesc('paid_at')->orderByDesc('created_at'),
         ]);
 
         $row = self::listRow($invoice);
@@ -244,9 +299,12 @@ final class InvoiceJson
             $unit = (int) $i->unit_amount_pence;
             $line = (int) $i->line_total_pence;
 
+            $type = self::lineItemTypeValue($i);
+
             return [
                 'id' => (string) $i->id,
-                'kind' => self::inferLineKind($i),
+                'kind' => $type,
+                'line_item_type' => $type,
                 'description' => $i->description,
                 'quantity' => $qty,
                 'unit_amount' => $unit,
@@ -286,7 +344,92 @@ final class InvoiceJson
             : null;
 
         $row['audit_timeline'] = self::auditTimeline($invoice);
+        $row['status_timeline'] = self::statusTimeline($invoice);
+        $row['allowed_actions'] = self::allowedActions($invoice);
+        $row['issuer'] = self::issuerPayload();
+        $row['default_payment_footer'] = (string) config('invoices.default_payment_footer', '');
+        $row['customer_notes'] = $invoice->customer_notes;
+        $row['internal_notes'] = $invoice->internal_notes;
+        $row['stripe'] = StripeInvoicePresentation::adminDetailPanel($invoice);
 
         return $row;
+    }
+
+    /**
+     * @return array{legal_name: string, address_lines: list<string>, email: string|null, phone: string|null, vat_number: string|null}
+     */
+    public static function issuerPayload(): array
+    {
+        /** @var mixed $raw */
+        $raw = config('invoices.issuer.address_lines', []);
+        $lines = is_array($raw)
+            ? array_values(array_filter(array_map(static fn ($l): string => is_string($l) ? $l : (string) $l, $raw)))
+            : [];
+
+        return [
+            'legal_name' => (string) config('invoices.issuer.legal_name', 'WeSharp'),
+            'address_lines' => $lines,
+            'email' => config('invoices.issuer.email'),
+            'phone' => config('invoices.issuer.phone'),
+            'vat_number' => config('invoices.issuer.vat_number'),
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function statusTimeline(Invoice $invoice): array
+    {
+        $rows = AuditLog::query()
+            ->with('actor:id,name,email')
+            ->where('auditable_type', Invoice::class)
+            ->where('auditable_id', $invoice->id)
+            ->whereIn('action', self::STATUS_TIMELINE_ACTIONS)
+            ->orderBy('created_at')
+            ->limit(80)
+            ->get();
+
+        $out = [];
+        foreach ($rows as $log) {
+            $out[] = [
+                'id' => (string) $log->id,
+                'at' => $log->created_at?->toIso8601String(),
+                'action' => $log->action,
+                'label' => AuditActionLabels::label((string) $log->action),
+            ];
+        }
+
+        return $out;
+    }
+
+    /** @return array<string, bool> */
+    public static function allowedActions(Invoice $invoice): array
+    {
+        $st = $invoice->invoice_status;
+        if (! $st instanceof InvoiceStatus) {
+            return [
+                'send' => false,
+                'mark_paid' => false,
+                'void' => false,
+                'reopen_draft' => false,
+                'record_payment' => false,
+                'edit_draft_lines' => false,
+                'edit_draft_meta' => false,
+            ];
+        }
+
+        $paidPence = $invoice->relationLoaded('payments')
+            ? (int) $invoice->payments->sum(fn (Payment $p): int => (int) $p->amount_pence)
+            : (int) $invoice->payments()->sum('amount_pence');
+
+        $open = ! in_array($st, [InvoiceStatus::Paid, InvoiceStatus::Void], true);
+
+        return [
+            'send' => InvoiceStatusTransitions::canSend($st),
+            'mark_paid' => InvoiceStatusTransitions::canMarkPaid($st),
+            'void' => InvoiceStatusTransitions::canVoid($st),
+            'reopen_draft' => InvoiceStatusTransitions::canReopenDraft($st) && $paidPence === 0,
+            'record_payment' => $open && $st !== InvoiceStatus::Draft,
+            'edit_draft_lines' => $st === InvoiceStatus::Draft,
+            'edit_draft_meta' => $st === InvoiceStatus::Draft,
+        ];
     }
 }

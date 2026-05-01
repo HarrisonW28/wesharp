@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\BookingStatus;
 use App\Enums\OrderStatus;
 use App\Enums\ServiceType;
+use App\Enums\InvoiceSourceType;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
@@ -155,6 +156,11 @@ final class AdminOrderCompleteInvoiceDraftApiTest extends TestCase
 
         $invoiceId = (string) $first->json('data.invoice.id');
         self::assertNotEmpty($invoiceId);
+
+        /** @phpstan-ignore-next-line */
+        $row = Invoice::query()->findOrFail($invoiceId);
+        self::assertSame(InvoiceSourceType::Order->value, $row->source_type);
+        self::assertSame((string) $orderId, (string) $row->source_id);
 
         $second = $this->withHeader('X-WeSharp-Test-User-Id', (string) $ops->id)
             ->postJson('/api/admin/orders/'.$orderId.'/invoice-draft', []);

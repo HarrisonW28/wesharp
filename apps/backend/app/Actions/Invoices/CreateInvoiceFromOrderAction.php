@@ -2,6 +2,8 @@
 
 namespace App\Actions\Invoices;
 
+use App\Enums\InvoiceLineItemType;
+use App\Enums\InvoiceSourceType;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -59,6 +61,9 @@ final class CreateInvoiceFromOrderAction
                 'company_id' => $order->company_id,
                 /** @phpstan-ignore-next-line */
                 'order_id' => $order->id,
+                'source_type' => InvoiceSourceType::Order->value,
+                /** @phpstan-ignore-next-line */
+                'source_id' => $order->id,
                 'invoice_number' => $number,
                 /** @phpstan-ignore-next-line */
                 'invoice_status' => InvoiceStatus::Draft,
@@ -85,6 +90,7 @@ final class CreateInvoiceFromOrderAction
                 InvoiceItem::query()->create([
                     /** @phpstan-ignore-next-line */
                     'invoice_id' => $invoice->id,
+                    'line_item_type' => InvoiceLineItemType::OneOffService,
                     /** @phpstan-ignore-next-line */
                     'description' => (string) $line->description,
                     /** @phpstan-ignore-next-line */
@@ -102,6 +108,7 @@ final class CreateInvoiceFromOrderAction
                 InvoiceItem::query()->create([
                     /** @phpstan-ignore-next-line */
                     'invoice_id' => $invoice->id,
+                    'line_item_type' => InvoiceLineItemType::OneOffService,
                     /** @phpstan-ignore-next-line */
                     'description' => 'Workshop services — order '.(string) $order->id,
                     'quantity' => 1,

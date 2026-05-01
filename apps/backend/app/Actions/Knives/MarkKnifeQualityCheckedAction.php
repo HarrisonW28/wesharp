@@ -19,7 +19,6 @@ final class MarkKnifeQualityCheckedAction
         return $this->transitionKnife(
             $knife,
             KnifeStatus::QualityChecked,
-            'knife.mark_quality_checked',
             $actor,
             $request,
             $actorId !== null ? ['quality_checked_by_user_id' => $actorId] : [],

@@ -93,6 +93,16 @@ Requests: **`AccountStoreBookingRequest`**, **`AccountStoreCompanyLocationReques
 
 ---
 
+## Admin reports API (Sprint 8.1)
+
+| Route group | Middleware | Notes |
+| --- | --- | --- |
+| **`/api/admin/reports/*`** | `clerk.auth`, **`staff`**, **`permission:reports.finance`** or **`reports.operations`** | Thin **`ReportingController`** → **`ReportingService`** → domain services under **`App\Services\Reports`** (**`SalesReportService`**, **`InvoiceReportService`**, **`SubscriptionReportService`**, **`BookingReportService`**, **`OrderReportService`**, **`RouteReportService`**, **`KnifeReportService`**). Shared filters via **`AdminReportRequest`** / **`AdminReportFilters`**; consistent JSON envelope **`ReportEnvelope`**. |
+
+Full endpoint list, metric definitions, and limitations: **`docs/architecture/reporting.md`**.
+
+---
+
 ## Persistence & audit
 
 - `users.clerk_user_id` links Clerk JWT `sub`; nullable for legacy seeded accounts.

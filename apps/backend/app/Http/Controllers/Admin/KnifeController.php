@@ -6,9 +6,14 @@ use App\Actions\Knives\MarkKnifeInspectedAction;
 use App\Actions\Knives\MarkKnifeQualityCheckedAction;
 use App\Actions\Knives\MarkKnifeReturnedAction;
 use App\Actions\Knives\MarkKnifeSharpenedAction;
+use App\Actions\Knives\RecordKnifeInspectionAction;
 use App\Actions\Knives\ReportKnifeIssueAction;
+use App\Actions\Knives\TransitionKnifeStatusAction;
+use App\Enums\KnifeStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RecordKnifeInspectionRequest;
 use App\Http\Requests\ReportKnifeIssueRequest;
+use App\Http\Requests\TransitionKnifeRequest;
 use App\Http\Requests\StoreKnifePhotoRequest;
 use App\Http\Requests\StoreKnifeRequest;
 use App\Http\Requests\UpdateKnifeRequest;
@@ -38,6 +43,8 @@ final class KnifeController extends Controller
         private readonly MarkKnifeQualityCheckedAction $markKnifeQualityCheckedAction,
         private readonly MarkKnifeReturnedAction $markKnifeReturnedAction,
         private readonly ReportKnifeIssueAction $reportKnifeIssueAction,
+        private readonly TransitionKnifeStatusAction $transitionKnifeStatusAction,
+        private readonly RecordKnifeInspectionAction $recordKnifeInspectionAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -125,11 +132,36 @@ final class KnifeController extends Controller
         return ApiResponses::success(KnifeJson::detail($knife));
     }
 
+    public function transition(TransitionKnifeRequest $request, Knife $knife): JsonResponse
+    {
+        $this->authorize('transition', $knife);
+
+        $target = KnifeStatus::from($request->validated('target_status'));
+        /** @var string|null $note */
+        $note = $request->validated('note');
+        $knife = $this->transitionKnifeStatusAction->execute($knife, $target, $request->user(), $request, $note);
+
+        return ApiResponses::success(KnifeJson::detail($knife));
+    }
+
     public function markInspected(Request $request, Knife $knife): JsonResponse
     {
         $this->authorize('transition', $knife);
 
         $knife = $this->markKnifeInspectedAction->execute($knife, $request->user(), $request);
+
+        return ApiResponses::success(KnifeJson::detail($knife));
+    }
+
+    public function recordInspection(RecordKnifeInspectionRequest $request, Knife $knife): JsonResponse
+    {
+        $this->authorize('update', $knife);
+
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        $knife = $this->recordKnifeInspectionAction->execute($knife, $request->validated(), $user, $request);
+        $knife->loadMissing(KnifeJson::detailEagerLoadRelations());
 
         return ApiResponses::success(KnifeJson::detail($knife));
     }

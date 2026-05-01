@@ -13,6 +13,6 @@ final class MarkKnifeInspectedAction
 
     public function execute(Knife $knife, ?Authenticatable $actor, ?Request $request): Knife
     {
-        return $this->transitionKnife($knife, KnifeStatus::Inspected, 'knife.mark_inspected', $actor, $request);
+        return $this->transitionKnife($knife, KnifeStatus::Inspected, $actor, $request);
     }
 }

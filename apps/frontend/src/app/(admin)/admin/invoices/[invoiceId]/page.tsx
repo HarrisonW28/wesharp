@@ -11,7 +11,9 @@ import { toast } from "sonner";
 import { InvoiceDetailResponseSchema } from "@/lib/api/admin-invoices-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP, parseGbpInputToMinorUnits } from "@/lib/format/money";
+import { humanizeUnderscored, invoiceStatusLabel } from "@/lib/helpers/status-helpers";
 import { useBackendMe } from "@/hooks/use-backend-me";
+import { InvoiceDocument } from "@/components/invoices/InvoiceDocument";
 
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -48,6 +50,8 @@ const PAYMENT_METHOD_OPTIONS = [
   { value: "cash", label: "Cash" },
   { value: "card", label: "Card (manual)" },
   { value: "bank_transfer", label: "Bank transfer" },
+  { value: "invoice_later", label: "Invoice later / trade credit" },
+  { value: "manual", label: "Manual (adjustment)" },
   { value: "other", label: "Other" },
 ];
 
@@ -73,14 +77,18 @@ export default function AdminInvoiceDetailPage() {
   const [manualOpen, setManualOpen] = useState(false);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [amountGbp, setAmountGbp] = useState("");
   const [reference, setReference] = useState("");
+  const [payNotes, setPayNotes] = useState("");
   const [payMethod, setPayMethod] = useState("bank_transfer");
   const [paidAt, setPaidAt] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [issueDate, setIssueDate] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [draftCustomerNotes, setDraftCustomerNotes] = useState("");
+  const [draftInternalNotes, setDraftInternalNotes] = useState("");
   const [draftLines, setDraftLines] = useState<DraftLine[]>([]);
 
   const invQuery = useQuery({
@@ -106,6 +114,8 @@ export default function AdminInvoiceDetailPage() {
     if (!inv) return;
     setIssueDate(inv.issue_date ?? "");
     setDueDate(inv.due_date ?? "");
+    setDraftCustomerNotes(inv.customer_notes ?? "");
+    setDraftInternalNotes(inv.internal_notes ?? "");
     const lines = inv.items ?? [];
     setDraftLines(
       lines.length > 0
@@ -144,9 +154,10 @@ export default function AdminInvoiceDetailPage() {
 
   const voidMut = useMutation({
     mutationFn: async () => {
+      const trimmed = voidReason.trim();
       const res = await admin.json(`/api/admin/invoices/${invoiceId}/void`, {
         method: "POST",
-        body: JSON.stringify({ reason: voidReason.trim() }),
+        body: JSON.stringify(trimmed === "" ? {} : { reason: trimmed }),
       });
       if (!res.ok) throw new Error(res.message);
       return InvoiceDetailResponseSchema.parse(res.data).data;
@@ -155,6 +166,23 @@ export default function AdminInvoiceDetailPage() {
       toast.success("Invoice voided.");
       setVoidOpen(false);
       setVoidReason("");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const reopenDraftMut = useMutation({
+    mutationFn: async () => {
+      const res = await admin.json(`/api/admin/invoices/${invoiceId}/reopen-draft`, {
+        method: "POST",
+        body: "{}",
+      });
+      if (!res.ok) throw new Error(res.message);
+      return InvoiceDetailResponseSchema.parse(res.data).data;
+    },
+    onSuccess: () => {
+      toast.success("Invoice moved back to draft.");
+      setReopenOpen(false);
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -179,6 +207,9 @@ export default function AdminInvoiceDetailPage() {
         payment_method: payMethod,
         reference: reference.trim() || undefined,
       };
+      if (payNotes.trim() !== "") {
+        body.notes = payNotes.trim();
+      }
       if (paidAt.trim() !== "") {
         body.paid_at = paidAt;
       }
@@ -195,6 +226,7 @@ export default function AdminInvoiceDetailPage() {
       setManualOpen(false);
       setAmountGbp("");
       setReference("");
+      setPayNotes("");
       setPaidAt("");
       invalidate();
     },
@@ -229,6 +261,8 @@ export default function AdminInvoiceDetailPage() {
           issue_date: issueDate || undefined,
           due_date: dueDate || undefined,
           items,
+          customer_notes: draftCustomerNotes.trim() === "" ? null : draftCustomerNotes.trim(),
+          internal_notes: draftInternalNotes.trim() === "" ? null : draftInternalNotes.trim(),
         }),
       });
       if (!res.ok) throw new Error(res.message);
@@ -273,36 +307,56 @@ export default function AdminInvoiceDetailPage() {
   const st = inv.status ?? "";
   const payable = !["paid", "void"].includes(st);
   const isDraft = st === "draft";
+  const aa = inv.allowed_actions;
+  const showSend = canInvoice && (aa?.send ?? st === "draft");
+  const showMarkPaid = canInvoice && canPay && (aa?.mark_paid ?? payable);
+  const showVoid = canInvoice && (aa?.void ?? payable);
+  const showRecordPayment = canInvoice && canPay && (aa?.record_payment ?? (payable && st !== "draft"));
+  const showReopenDraft = canInvoice && Boolean(aa?.reopen_draft);
+  const showEditDraft = canInvoice && (aa?.edit_draft_lines ?? isDraft);
   const title = inv.display_reference ?? inv.invoice_number ?? "Invoice";
   const paid = inv.paid_pence ?? 0;
   const outstanding = inv.outstanding_pence ?? Math.max(0, (inv.total ?? 0) - paid);
 
+  const issuer = inv.issuer ?? { legal_name: "WeSharp", address_lines: [] as string[] };
+  const billTo = inv.company
+    ? {
+        name: inv.company.name ?? "—",
+        city: inv.company.city,
+        billing_email: inv.company.billing_email,
+        phone: inv.company.phone,
+      }
+    : null;
+
   return (
     <>
-      <Breadcrumbs crumbs={[{ label: "Invoices", href: "/admin/invoices" }, { label: title }]} />
-      <PageHeader
-        title={title}
-        description={`${inv.company?.name ?? "Account"}${inv.company?.city ? ` · ${inv.company.city}` : ""}`}
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="lg" className="gap-2">
-              <Link href={`/admin/invoices/${invoiceId}/print`} target="_blank" rel="noopener noreferrer">
-                <Printer className="h-4 w-4" aria-hidden />
-                Print view
-              </Link>
-            </Button>
-            {canInvoice && isDraft ? (
-              <Button type="button" variant="outline" size="lg" className="gap-2" onClick={openEditDraft}>
-                <Pencil className="h-4 w-4" aria-hidden />
-                Edit draft
+      <div className="print:hidden">
+        <Breadcrumbs crumbs={[{ label: "Invoices", href: "/admin/invoices" }, { label: title }]} />
+        <PageHeader
+          title={title}
+          description={`${inv.company?.name ?? "Account"}${inv.company?.city ? ` · ${inv.company.city}` : ""}`}
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="lg" className="gap-2">
+                <Link href={`/admin/invoices/${invoiceId}/print`} target="_blank" rel="noopener noreferrer">
+                  <Printer className="h-4 w-4" aria-hidden />
+                  Print view
+                </Link>
               </Button>
-            ) : null}
-          </div>
-        }
-      />
+              {showEditDraft ? (
+                <Button type="button" variant="outline" size="lg" className="gap-2" onClick={openEditDraft}>
+                  <Pencil className="h-4 w-4" aria-hidden />
+                  Edit draft
+                </Button>
+              ) : null}
+            </div>
+          }
+        />
+      </div>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <div className="print:hidden">
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit draft invoice</DialogTitle>
           </DialogHeader>
@@ -380,6 +434,30 @@ export default function AdminInvoiceDetailPage() {
               </div>
             ))}
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1 sm:col-span-2">
+              <Label htmlFor="cust-notes">Customer notes (print on invoice)</Label>
+              <Textarea
+                id="cust-notes"
+                rows={3}
+                value={draftCustomerNotes}
+                onChange={(e) => setDraftCustomerNotes(e.target.value)}
+                placeholder="Thank you, payment terms, reference to quote…"
+                className="min-h-[80px]"
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <Label htmlFor="int-notes">Internal notes (admin only, never sent to customer)</Label>
+              <Textarea
+                id="int-notes"
+                rows={3}
+                value={draftInternalNotes}
+                onChange={(e) => setDraftInternalNotes(e.target.value)}
+                placeholder="Chase rules, account manager, CRM hints…"
+                className="min-h-[80px]"
+              />
+            </div>
+          </div>
           <Button type="button" variant="outline" size="sm" onClick={() => setDraftLines((l) => [...l, { key: crypto.randomUUID(), description: "", quantity: 1, unitGbp: "0.00" }])}>
             + Add line
           </Button>
@@ -394,27 +472,33 @@ export default function AdminInvoiceDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
 
       {canInvoice ? (
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          {payable ? (
-            <Button type="button" variant="secondary" size="lg" disabled={sendMut.isPending || st !== "draft"} onClick={() => sendMut.mutate()}>
+        <div className="mb-6 flex flex-col gap-3 print:hidden sm:flex-row sm:flex-wrap">
+          {showSend ? (
+            <Button type="button" variant="secondary" size="lg" disabled={sendMut.isPending} onClick={() => sendMut.mutate()}>
               {sendMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
               Mark sent
             </Button>
           ) : null}
-          {payable && canPay ? (
+          {showMarkPaid ? (
             <Button type="button" size="lg" disabled={markPaidMut.isPending} onClick={() => setMarkPaidOpen(true)}>
               {markPaidMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
               Mark paid (write-off balance)
             </Button>
           ) : null}
-          {payable ? (
+          {showReopenDraft ? (
+            <Button type="button" variant="outline" size="lg" onClick={() => setReopenOpen(true)}>
+              Reopen as draft
+            </Button>
+          ) : null}
+          {showVoid ? (
             <Button type="button" variant="destructive" size="lg" disabled={voidMut.isPending} onClick={() => setVoidOpen(true)}>
               Void invoice
             </Button>
           ) : null}
-          {payable && canPay ? (
+          {showRecordPayment ? (
             <Dialog open={manualOpen} onOpenChange={setManualOpen}>
               <DialogTrigger asChild>
                 <Button type="button" variant="outline" size="lg">
@@ -426,8 +510,9 @@ export default function AdminInvoiceDetailPage() {
                   <DialogTitle>Record manual payment</DialogTitle>
                 </DialogHeader>
                 <p className="text-sm text-muted-foreground">
-                  No card processing here — log what was received. Overpayment is blocked unless an admin uses the override
-                  path in the API.
+                  No card processing or Stripe capture here — log what was received. Partial payments are allowed. Amounts
+                  above the outstanding balance are blocked unless an operator with <span className="font-mono">payments.override</span>{" "}
+                  (super admin / admin) posts them.
                 </p>
                 <div className="space-y-3">
                   <div className="space-y-1">
@@ -464,6 +549,17 @@ export default function AdminInvoiceDetailPage() {
                     <Label htmlFor="ref">Reference / note</Label>
                     <Input id="ref" className="h-11" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="e.g. FPS ref" />
                   </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="pay-notes">Internal payment notes (optional)</Label>
+                    <Textarea
+                      id="pay-notes"
+                      rows={2}
+                      className="min-h-[72px]"
+                      value={payNotes}
+                      onChange={(e) => setPayNotes(e.target.value)}
+                      placeholder="Till, batch, reconciliation hint — not shown on customer invoice"
+                    />
+                  </div>
                 </div>
                 <DialogFooter className="gap-2">
                   <Button variant="outline" type="button" onClick={() => setManualOpen(false)}>
@@ -479,55 +575,93 @@ export default function AdminInvoiceDetailPage() {
           ) : null}
         </div>
       ) : (
-        <p className="mb-4 text-sm text-muted-foreground">You can view this invoice but your role cannot change finance fields.</p>
+        <p className="mb-4 print:hidden text-sm text-muted-foreground">
+          You can view this invoice but your role cannot change finance fields.
+        </p>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="p-4">
-          <div className="text-xs font-semibold uppercase text-muted-foreground">Bill to</div>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div>
-              <dt className="text-muted-foreground">Company</dt>
-              <dd className="text-lg font-semibold">{inv.company?.name ?? "—"}</dd>
-            </div>
-            {inv.company?.city ? (
-              <div>
-                <dt className="text-muted-foreground">City</dt>
-                <dd>{inv.company.city}</dd>
-              </div>
-            ) : null}
-            {inv.company?.billing_email ? (
-              <div>
-                <dt className="text-muted-foreground">Billing email</dt>
-                <dd>{inv.company.billing_email}</dd>
-              </div>
-            ) : null}
-            {inv.company?.phone ? (
-              <div>
-                <dt className="text-muted-foreground">Phone</dt>
-                <dd>{inv.company.phone}</dd>
-              </div>
-            ) : null}
-          </dl>
+      {inv.stripe ? (
+        <Card className="mb-6 p-4 print:hidden">
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Stripe (foundation)</div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {inv.stripe.hosted_checkout_disabled_reason ??
+              "Online checkout is not enabled yet. Manual payment below remains the supported flow."}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            {inv.stripe.webhook_secret_configured ? (
+              <Badge variant="secondary">Webhook secret configured</Badge>
+            ) : (
+              <Badge variant="outline">Webhook secret not set</Badge>
+            )}
+            {inv.stripe.publishable_key_configured ? (
+              <Badge variant="secondary">Publishable key set</Badge>
+            ) : (
+              <Badge variant="outline">Publishable key not set</Badge>
+            )}
+            {inv.stripe.live_mode_blocked ? <Badge variant="destructive">Live keys blocked by policy</Badge> : null}
+          </div>
+          <div className="mt-4">
+            <Button type="button" variant="secondary" size="lg" disabled className="w-full sm:w-auto">
+              Pay with Stripe — not enabled yet
+            </Button>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Card capture and Checkout URLs are deferred. Invoices are not marked paid from the browser.
+            </p>
+          </div>
         </Card>
+      ) : null}
 
+      <InvoiceDocument
+        className="mb-8 rounded-xl border bg-card p-5 shadow-sm md:p-8 print:mb-0 print:rounded-none print:border-0 print:bg-white print:p-0 print:shadow-none"
+        documentTitle={title}
+        invoiceNumber={inv.invoice_number}
+        issueDate={inv.issue_date}
+        dueDate={inv.due_date}
+        statusLabel={invoiceStatusLabel(st)}
+        paymentStatusLabel={inv.payment_status ? humanizeUnderscored(inv.payment_status) : undefined}
+        issuer={issuer}
+        billTo={billTo}
+        lines={(inv.items ?? []).map((line) => ({
+          description: line.description,
+          quantity: line.quantity,
+          unitFormatted: line.unit_formatted ?? formatGBP(line.unit_amount),
+          lineFormatted: line.line_formatted ?? formatGBP(line.line_total),
+          kind: line.line_item_type ?? line.kind,
+        }))}
+        showLineKinds
+        subtotalPence={inv.subtotal ?? 0}
+        taxPence={inv.tax_total ?? 0}
+        totalPence={inv.total ?? 0}
+        paidPence={paid}
+        outstandingPence={outstanding}
+        customerNotes={inv.customer_notes}
+        defaultPaymentFooter={inv.default_payment_footer}
+        internalNotes={inv.internal_notes}
+      />
+
+      <div className="space-y-8 print:hidden">
         <Card className="p-4">
-          <div className="text-xs font-semibold uppercase text-muted-foreground">Status &amp; dates</div>
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Operations</div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <StatusBadge kind="invoice" status={st} />
             <StatusBadge kind="payment" status={inv.payment_status ?? ""} />
             {inv.overdue ? <Badge variant="destructive">Overdue</Badge> : null}
           </div>
-          <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-muted-foreground">Issue date</dt>
-              <dd className="font-medium">{inv.issue_date ?? "—"}</dd>
+          {(inv.status_timeline ?? []).length > 0 ? (
+            <div className="mt-4 border-t pt-4">
+              <div className="text-xs font-semibold uppercase text-muted-foreground">Status history</div>
+              <ol className="mt-2 space-y-2 text-sm">
+                {(inv.status_timeline ?? []).map((row) => (
+                  <li key={row.id} className="flex flex-wrap gap-x-2 gap-y-0.5">
+                    <span className="text-muted-foreground tabular-nums">
+                      {row.at ? new Date(row.at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "—"}
+                    </span>
+                    <span className="font-medium">{row.label ?? row.action}</span>
+                  </li>
+                ))}
+              </ol>
             </div>
-            <div>
-              <dt className="text-muted-foreground">Due date</dt>
-              <dd className="font-medium">{inv.due_date ?? "—"}</dd>
-            </div>
-          </dl>
+          ) : null}
           {inv.order?.id ? (
             <p className="mt-4 text-sm">
               <span className="text-muted-foreground">Linked order </span>
@@ -535,98 +669,26 @@ export default function AdminInvoiceDetailPage() {
                 {inv.order.reference ?? inv.order.display_reference ?? "Open order"}
               </Link>
               {inv.order.booking?.reference ? (
-                <span className="text-muted-foreground">
-                  {" "}
-                  · Booking {inv.order.booking.reference}
-                </span>
+                <span className="text-muted-foreground"> · Booking {inv.order.booking.reference}</span>
               ) : null}
+            </p>
+          ) : null}
+          {inv.is_subscription_billing ? (
+            <p className="mt-3 text-sm text-muted-foreground">{inv.subscription_summary}</p>
+          ) : null}
+          {inv.source_type === "company_subscription" && (inv.billing_period_start || inv.billing_period_end) ? (
+            <p className="mt-3 text-sm">
+              <span className="text-muted-foreground">Billing period </span>
+              <span className="font-medium tabular-nums">
+                {inv.billing_period_start ?? "—"} → {inv.billing_period_end ?? "—"}
+              </span>
             </p>
           ) : null}
         </Card>
 
-        <Card className="p-4 lg:col-span-2">
-          <div className="text-xs font-semibold uppercase text-muted-foreground">Amounts</div>
-          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <dt className="text-muted-foreground">Subtotal (ex VAT)</dt>
-              <dd className="text-lg font-semibold tabular-nums">{formatGBP(inv.subtotal ?? 0)}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">VAT</dt>
-              <dd className="text-lg font-semibold tabular-nums">{formatGBP(inv.tax_total ?? 0)}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Total</dt>
-              <dd className="text-xl font-bold tabular-nums">{formatGBP(inv.total ?? 0)}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Paid / outstanding</dt>
-              <dd className="space-y-1">
-                <div className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
-                  Paid {inv.formatted_paid ?? formatGBP(paid)}
-                </div>
-                <div className="font-semibold tabular-nums">
-                  Due {inv.formatted_outstanding ?? formatGBP(outstanding)}
-                </div>
-              </dd>
-            </div>
-          </dl>
-        </Card>
+        <Separator />
 
-        {inv.is_subscription_billing ? (
-          <Card className="border-dashed p-4 lg:col-span-2">
-            <div className="text-xs font-semibold uppercase text-muted-foreground">Subscription</div>
-            <p className="mt-2 text-sm text-muted-foreground">{inv.subscription_summary}</p>
-          </Card>
-        ) : null}
-      </div>
-
-      <Separator className="my-8" />
-
-      <div className="text-base font-semibold">Line items</div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Rows are tagged as service / subscription / overage / adjustment when the description matches common patterns.
-      </p>
-      <div className="mt-4 hidden overflow-x-auto rounded-lg border md:block">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2">Type</th>
-              <th className="px-3 py-2">Description</th>
-              <th className="px-3 py-2">Qty</th>
-              <th className="px-3 py-2">Unit</th>
-              <th className="px-3 py-2">Line</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(inv.items ?? []).map((line) => (
-              <tr key={line.id} className="border-t">
-                <td className="px-3 py-2 capitalize">{line.kind ?? "service"}</td>
-                <td className="px-3 py-2 font-medium">{line.description}</td>
-                <td className="px-3 py-2 tabular-nums">{line.quantity}</td>
-                <td className="px-3 py-2 tabular-nums">{line.unit_formatted ?? formatGBP(line.unit_amount)}</td>
-                <td className="px-3 py-2 tabular-nums font-medium">{line.line_formatted ?? formatGBP(line.line_total)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <ul className="mt-3 space-y-2 md:hidden">
-        {(inv.items ?? []).map((line) => (
-          <li key={line.id} className="rounded-lg border bg-muted/15 p-3 text-sm">
-            <div className="text-xs uppercase text-muted-foreground">{line.kind ?? "service"}</div>
-            <div className="font-medium">{line.description}</div>
-            <div className="mt-1 text-muted-foreground">
-              {line.quantity} × {line.unit_formatted ?? formatGBP(line.unit_amount)}
-            </div>
-            <div className="mt-1 font-semibold tabular-nums">{line.line_formatted ?? formatGBP(line.line_total)}</div>
-          </li>
-        ))}
-      </ul>
-
-      <Separator className="my-8" />
-
-      <div className="text-base font-semibold">Payment history</div>
+        <div className="text-base font-semibold">Payment history</div>
       <ul className="mt-3 space-y-2">
         {(inv.payments ?? []).length === 0 ? (
           <li className="text-sm text-muted-foreground">No payments recorded.</li>
@@ -641,16 +703,23 @@ export default function AdminInvoiceDetailPage() {
               </div>
               {p.paid_at ? <div className="text-xs text-muted-foreground">{new Date(p.paid_at).toLocaleString("en-GB")}</div> : null}
               {p.reference ? <div className="mt-1 font-mono text-xs">{p.reference}</div> : null}
+              {p.notes?.trim() ? (
+                <div className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{p.notes}</div>
+              ) : null}
+              {p.recorded_by?.name ? (
+                <div className="mt-1 text-xs text-muted-foreground">Recorded by {p.recorded_by.name}</div>
+              ) : null}
             </li>
           ))
         )}
       </ul>
 
-      <Separator className="my-8" />
+        <Separator />
 
-      <div className="text-base font-semibold">Activity &amp; audit</div>
-      <div className="mt-2">
-        <AuditTimeline items={(inv.audit_timeline ?? []) as AuditTimelineRow[]} showPayload />
+        <div className="text-base font-semibold">Activity &amp; audit</div>
+        <div className="mt-2">
+          <AuditTimeline items={(inv.audit_timeline ?? []) as AuditTimelineRow[]} showPayload />
+        </div>
       </div>
 
       <AlertDialog open={markPaidOpen} onOpenChange={setMarkPaidOpen}>
@@ -681,7 +750,7 @@ export default function AdminInvoiceDetailPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="void-reason">Reason (required)</Label>
+            <Label htmlFor="void-reason">Reason (optional)</Label>
             <Textarea
               id="void-reason"
               rows={3}
@@ -692,15 +761,27 @@ export default function AdminInvoiceDetailPage() {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
-            <Button
-              type="button"
-              variant="destructive"
-              size="lg"
-              disabled={voidMut.isPending || voidReason.trim().length < 3}
-              onClick={() => voidMut.mutate()}
-            >
+            <Button type="button" variant="destructive" size="lg" disabled={voidMut.isPending} onClick={() => voidMut.mutate()}>
               {voidMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
               Confirm void
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={reopenOpen} onOpenChange={setReopenOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reopen this invoice as draft?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Only available when no payments are recorded. The invoice returns to draft so you can edit lines and dates again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <Button type="button" size="lg" disabled={reopenDraftMut.isPending} onClick={() => reopenDraftMut.mutate()}>
+              {reopenDraftMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+              Reopen draft
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -26,7 +26,15 @@ class Invoice extends Model
         'tax_pence',
         'total_pence',
         'currency',
+        'customer_notes',
+        'internal_notes',
         'is_subscription_billing',
+        'stripe_checkout_session_id',
+        'stripe_payment_intent_id',
+        'source_type',
+        'source_id',
+        'billing_period_start',
+        'billing_period_end',
     ];
 
     protected function casts(): array
@@ -36,6 +44,8 @@ class Invoice extends Model
             'issued_on' => 'date',
             'due_on' => 'date',
             'is_subscription_billing' => 'boolean',
+            'billing_period_start' => 'date',
+            'billing_period_end' => 'date',
         ];
     }
 

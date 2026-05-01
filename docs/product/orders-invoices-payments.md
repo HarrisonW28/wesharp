@@ -31,6 +31,7 @@ Order line items (or order totals fallback) supply **`invoice_items`** lines ins
 | **`/admin/invoices`** | Paginated invoice list (**`GET /api/admin/invoices`**), status / payment badges, overdue flag, **New invoice from order** (`order_id` → **`POST /api/admin/invoices`**). |
 | **`/admin/invoices/[invoiceId]`** | Detail: line items, payment rows, actions — **Send** (placeholder), **Mark paid**, **Void**, **Manual bank payment** dialog (amount **`amount_pence`**, optional reference / paid_at). Links to company / order embeds where API exposes names. |
 | **`/admin/payments`** | Payment history (**`GET /api/admin/payments`**) with company / invoice breadcrumbs in row. |
+| **`/admin/finance`** | Finance dashboard — KPIs, overdue / draft tables, recent payments, top outstanding customers (**`GET /api/admin/finance/dashboard`**). Requires **`payments.view`** (and API also **`invoices.view`**). Hidden from **`route_manager`**. |
 
 **Navigation:** **`src/config/navigation.ts`** — **Invoices** (`invoices.view`), **Payments** (`payments.view`).
 
@@ -74,6 +75,13 @@ Detail adds **`items[]`** and nested **`payments[]`** summaries.
 | --- | --- | --- |
 | **GET** | `/api/admin/payments` | Paginated; **`PaymentJson::detail`** rows. `payments.view`. |
 | **POST** | `/api/admin/payments/manual` | **`RecordManualPaymentRequest`**: `invoice_id`, `amount_pence`, `payment_method`, optional `reference`, `paid_at`. **`InvoicePolicy::recordManualPayment`** ⇒ **`payments.manage`** + scoped **`invoices.view`**. Server enforces balance / override rules (see below). |
+| **POST** | `/api/admin/invoices/{invoice}/stripe-checkout-session` | **`payments.manage`** + **`recordManualPayment`** scope. Placeholder: returns hosted-checkout **availability metadata** only (no Stripe Session URL yet). |
+
+**Stripe foundation:** env vars, webhook idempotency, and PSP abstraction — **`docs/integrations/stripe.md`**. Invoice detail JSON includes a **`stripe`** block for admin UI; customer portal **`payment`** CTA stays generic until a real checkout URL exists.
+
+**Finance dashboard:** **`GET /api/admin/finance/dashboard`** — query params **`date_from`**, **`date_to`**, **`company_id`**, **`invoice_status`**. Outstanding / unpaid / overdue / drafts are **snapshots**; paid totals and void-in-period respect the date range. Subscription card uses **real** payments on **`is_subscription_billing`** invoices and **subscription renewal dates** from **`company_subscriptions`** (not modelled MRR).
+
+**Recurring / subscription invoices (foundation):** Invoices can carry **`source_type`**, **`source_id`**, **`billing_period_start` / `billing_period_end`**, and line **`line_item_type`** (`one_off_service`, `subscription`, `overage`, `adjustment`). Duplicate subscription-period bills are prevented by DB + app rules; automatic generation stays off until Sprint 9/11. See **`docs/product/subscription-invoices.md`**.
 
 ---
 
@@ -120,9 +128,10 @@ Detail adds **`items[]`** and nested **`payments[]`** summaries.
 ## Known gaps
 
 - **Email / PDF**: **Send invoice** is a placeholder (audit-only).
+- **Server PDF**: No generated PDF asset or download endpoint yet — customers and admins use **browser print → Save as PDF**. A future sprint may add server-side PDF (e.g. Dompdf / Browsershot) if required for email attachment workflows.
 - **Overdue cron**: **`invoice_status`** may not auto-transition to **`overdue`** without scheduled work.
-- **PSP webhooks**: Stripe/card capture flows not integrated; **`PaymentMethod::Stripe`** reserved.
-- **Customer portal**: No tenant-facing invoice download in this MVP.
+- **PSP webhooks**: Stripe webhook route verifies signatures and stores **`evt_*`** idempotently; **payment settlement from Stripe events is not implemented** — **`PaymentMethod::Stripe`** reserved for webhook-created rows later.
+- **Customer portal**: No dedicated PDF download in this MVP (print only).
 
 ---
 

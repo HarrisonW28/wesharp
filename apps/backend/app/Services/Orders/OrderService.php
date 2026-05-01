@@ -4,11 +4,13 @@ namespace App\Services\Orders;
 
 use App\Actions\Orders\CompleteOrderAction;
 use App\Enums\InvoiceStatus;
+use App\Enums\KnifeServiceKind;
 use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Knives\KnifeService;
+use App\Services\Knives\KnifeServiceAssignmentRecorder;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -19,6 +21,7 @@ final class OrderService
     public function __construct(
         private KnifeService $knifeService,
         private CompleteOrderAction $completeOrderAction,
+        private KnifeServiceAssignmentRecorder $knifeAssignmentRecorder,
     ) {}
 
     public function paginate(Request $request, bool $withOperationalRoute = true): LengthAwarePaginator
@@ -364,7 +367,10 @@ final class OrderService
         });
     }
 
-    /** Link an unassigned workshop knife inventory row to this order without mutating historic orders. */
+    /**
+     * Link an on-file knife to this order. If the knife is on a closed order, service history is preserved
+     * and a new assignment row opens; active orders block re-attachment.
+     */
     public function attachKnifeFromInventory(Order $order, string $knifeId, Authenticatable $actor, Request $request): Knife
     {
         return DB::transaction(function () use ($order, $knifeId, $actor, $request): Knife {
@@ -376,12 +382,24 @@ final class OrderService
                 abort(422, 'This knife belongs to a different customer company.');
             }
 
-            if ($knife->order_id !== null) {
-                abort(422, 'This knife already belongs to an order.');
+            $priorOrderId = $knife->order_id;
+            $kind = KnifeServiceKind::InventoryLink;
+
+            if ($priorOrderId !== null) {
+                /** @phpstan-ignore-next-line */
+                $priorOrder = Order::query()->find($priorOrderId);
+                if ($priorOrder === null) {
+                    $this->knifeAssignmentRecorder->closeOpenForKnife($knife);
+                } elseif (! $priorOrder->isEligibleForKnifeReservice()) {
+                    abort(422, 'This knife is still linked to an active order. Complete, invoice, return, or cancel that order before attaching it here.');
+                } else {
+                    $kind = KnifeServiceKind::Reservice;
+                    $this->knifeAssignmentRecorder->closeOpenForKnife($knife);
+                }
             }
 
             $before = [
-                'order_id' => null,
+                'order_id' => $priorOrderId !== null ? (string) $priorOrderId : null,
                 'booking_id' => $knife->booking_id,
             ];
 
@@ -392,6 +410,8 @@ final class OrderService
             /** @phpstan-ignore-next-line */
             $knife->save();
 
+            $this->knifeAssignmentRecorder->openForOrder($knife->fresh(), $order, $kind);
+
             AuditRecorder::record($actor, $knife, 'knife.attached_to_order', [
                 'before' => $before,
                 'after' => [
@@ -400,6 +420,9 @@ final class OrderService
                     /** @phpstan-ignore-next-line */
                     'booking_id' => $knife->booking_id !== null ? (string) $knife->booking_id : null,
                 ],
+                /** @phpstan-ignore-next-line */
+                'prior_order_id' => $priorOrderId !== null ? (string) $priorOrderId : null,
+                'service_kind' => $kind->value,
                 /** @phpstan-ignore-next-line */
                 'tag_id' => $knife->tag_id,
             ], $request);

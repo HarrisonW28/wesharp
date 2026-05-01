@@ -28,11 +28,13 @@ type KnifeRow = z.infer<typeof KnifeRowSchema>;
 const STATUS_OPTIONS = [
   "",
   "logged",
-  "collected",
+  "received",
   "inspected",
+  "sharpening",
   "sharpened",
   "quality_checked",
   "returned",
+  "cancelled",
   "issue_reported",
 ] as const;
 

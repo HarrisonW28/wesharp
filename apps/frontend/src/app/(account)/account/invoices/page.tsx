@@ -85,7 +85,11 @@ export default function AccountInvoicesPage() {
                       <div className="font-medium leading-tight">
                         {inv.display_reference ?? inv.invoice_number ?? "Invoice"}
                       </div>
-                      <CustomerInvoiceStatusBadge status={inv.status} />
+                      <CustomerInvoiceStatusBadge
+                        status={inv.status}
+                        customerLabel={inv.customer_status_label}
+                        hint={inv.customer_status_hint}
+                      />
                       {inv.payment_status ? (
                         <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                           <span>Payment</span>
@@ -141,7 +145,13 @@ export default function AccountInvoicesPage() {
                       {inv.amount_due_pence != null && inv.amount_due_pence > 0 ? formatGBP(inv.amount_due_pence) : "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <CustomerInvoiceStatusBadge status={inv.status} />
+                      <div className="flex justify-end">
+                        <CustomerInvoiceStatusBadge
+                          status={inv.status}
+                          customerLabel={inv.customer_status_label}
+                          hint={inv.customer_status_hint}
+                        />
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link className="font-medium text-primary underline underline-offset-2" href={`/account/invoices/${inv.id}`}>

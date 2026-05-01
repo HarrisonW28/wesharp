@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CustomerPortalUpdate;
+use App\Models\DamageReport;
 use App\Models\EvidencePhoto;
 use App\Models\Invoice;
 use App\Models\Knife;
@@ -190,9 +191,17 @@ final class AuditLogCompanyResolver
 
     private static function mergeEvidencePhotoCompanies(array &$target, array $ids): void
     {
-        $rows = EvidencePhoto::query()->whereIn('id', $ids)->get(['id', 'order_id', 'route_stop_id']);
+        $rows = EvidencePhoto::query()->whereIn('id', $ids)->get([
+            'id',
+            'order_id',
+            'route_stop_id',
+            'knife_id',
+            'damage_report_id',
+        ]);
         $orderIds = $rows->pluck('order_id')->filter()->unique()->values()->all();
         $stopIds = $rows->pluck('route_stop_id')->filter()->unique()->values()->all();
+        $knifeIds = $rows->pluck('knife_id')->filter()->unique()->values()->all();
+        $damageIds = $rows->pluck('damage_report_id')->filter()->unique()->values()->all();
 
         $orders = $orderIds !== []
             ? Order::query()->whereIn('id', $orderIds)->get(['id', 'company_id'])->keyBy('id')
@@ -205,6 +214,14 @@ final class AuditLogCompanyResolver
         $bookingIds = $stops->pluck('booking_id')->filter()->unique()->values()->all();
         $bookings = $bookingIds !== []
             ? Booking::query()->whereIn('id', $bookingIds)->get(['id', 'company_id'])->keyBy('id')
+            : collect();
+
+        $knives = $knifeIds !== []
+            ? Knife::query()->whereIn('id', $knifeIds)->get(['id', 'company_id'])->keyBy('id')
+            : collect();
+
+        $damages = $damageIds !== []
+            ? DamageReport::query()->whereIn('id', $damageIds)->get(['id', 'company_id'])->keyBy('id')
             : collect();
 
         foreach ($rows as $row) {
@@ -221,6 +238,16 @@ final class AuditLogCompanyResolver
                 } else {
                     $target[$key] = null;
                 }
+
+                continue;
+            }
+            if ($row->knife_id !== null && isset($knives[(string) $row->knife_id])) {
+                $target[$key] = ['id' => (string) $knives[(string) $row->knife_id]->company_id];
+
+                continue;
+            }
+            if ($row->damage_report_id !== null && isset($damages[(string) $row->damage_report_id])) {
+                $target[$key] = ['id' => (string) $damages[(string) $row->damage_report_id]->company_id];
 
                 continue;
             }

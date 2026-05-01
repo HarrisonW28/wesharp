@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Invoices\CreateInvoiceFromOrderAction;
+use App\Actions\Payments\CreateStripeHostedCheckoutSessionAction;
 use App\Actions\Invoices\MarkInvoicePaidAction;
+use App\Actions\Invoices\ReopenInvoiceDraftAction;
 use App\Actions\Invoices\SendInvoicePlaceholderAction;
+use App\Actions\Invoices\SyncInvoiceOverdueStatusAction;
 use App\Actions\Invoices\UpdateDraftInvoiceLinesAction;
 use App\Actions\Invoices\VoidInvoiceAction;
 use App\Enums\InvoiceStatus;
@@ -31,6 +34,8 @@ final class InvoiceController extends Controller
         private readonly MarkInvoicePaidAction $markInvoicePaidAction,
         private readonly VoidInvoiceAction $voidInvoiceAction,
         private readonly UpdateDraftInvoiceLinesAction $updateDraftInvoiceLinesAction,
+        private readonly SyncInvoiceOverdueStatusAction $syncInvoiceOverdueStatusAction,
+        private readonly ReopenInvoiceDraftAction $reopenInvoiceDraftAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -68,6 +73,9 @@ final class InvoiceController extends Controller
     {
         $this->authorize('view', $invoice);
 
+        /** @phpstan-ignore-next-line */
+        $invoice = $this->syncInvoiceOverdueStatusAction->execute($invoice, $request->user(), $request);
+
         return ApiResponses::success(InvoiceJson::detail($invoice));
     }
 
@@ -99,6 +107,9 @@ final class InvoiceController extends Controller
 
         $dateKeys = array_intersect_key($validated, array_flip(['issue_date', 'due_date']));
         if ($dateKeys !== []) {
+            if ($invoice->invoice_status !== InvoiceStatus::Draft) {
+                abort(422, 'Issue and due dates can only be changed while the invoice is in draft.');
+            }
             if (isset($dateKeys['due_date'])) {
                 /** @phpstan-ignore-next-line */
                 $invoice->due_on = new Carbon((string) $dateKeys['due_date']);
@@ -113,6 +124,20 @@ final class InvoiceController extends Controller
                 'issue_date' => $dateKeys['issue_date'] ?? null,
                 'due_date' => $dateKeys['due_date'] ?? null,
             ], $request);
+        }
+
+        $noteKeys = array_intersect_key($validated, array_flip(['customer_notes', 'internal_notes']));
+        if ($noteKeys !== []) {
+            if ($invoice->invoice_status !== InvoiceStatus::Draft) {
+                abort(422, 'Customer and internal notes can only be edited while the invoice is in draft.');
+            }
+            if (array_key_exists('customer_notes', $noteKeys)) {
+                $invoice->customer_notes = $validated['customer_notes'];
+            }
+            if (array_key_exists('internal_notes', $noteKeys)) {
+                $invoice->internal_notes = $validated['internal_notes'];
+            }
+            $invoice->save();
         }
 
         return ApiResponses::success(InvoiceJson::detail($invoice->fresh()));
@@ -142,12 +167,34 @@ final class InvoiceController extends Controller
     {
         $this->authorize('voidInvoice', $invoice);
 
-        /** @var string $reason */
+        /** @var string|null $reason */
         $reason = $request->validated('reason');
 
         /** @phpstan-ignore-next-line */
         $invoice = $this->voidInvoiceAction->execute($invoice, $request->user(), $request, $reason);
 
         return ApiResponses::success(InvoiceJson::detail($invoice));
+    }
+
+    public function reopenDraft(Request $request, Invoice $invoice): JsonResponse
+    {
+        $this->authorize('reopenDraft', $invoice);
+
+        /** @phpstan-ignore-next-line */
+        $invoice = $this->reopenInvoiceDraftAction->execute($invoice, $request->user(), $request);
+
+        return ApiResponses::success(InvoiceJson::detail($invoice));
+    }
+
+    /**
+     * Placeholder for Stripe Checkout — returns availability only (no session URL until API is wired).
+     */
+    public function stripeCheckoutSession(Request $request, Invoice $invoice, CreateStripeHostedCheckoutSessionAction $action): JsonResponse
+    {
+        $this->authorize('recordManualPayment', $invoice);
+
+        $result = $action->execute($invoice);
+
+        return ApiResponses::success($result->toArray());
     }
 }

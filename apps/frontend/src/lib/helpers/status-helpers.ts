@@ -89,12 +89,15 @@ export function customerInvoiceStatusLabel(status: string | null | undefined): s
 export function knifeStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     logged: "Logged",
-    collected: "Collected",
+    received: "Received",
     inspected: "Inspected",
+    sharpening: "Sharpening",
     sharpened: "Sharpened",
     quality_checked: "Quality checked",
     returned: "Returned",
+    cancelled: "Cancelled",
     issue_reported: "Issue reported",
+    collected: "Received",
   };
   const key = status.trim();
   return labels[key] ?? humanizeUnderscored(key);

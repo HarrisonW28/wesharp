@@ -27,6 +27,8 @@ export const TenantSubscriptionInvoiceRowSchema = z.object({
   id: z.string(),
   invoice_number: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
+  customer_status_label: z.string().nullable().optional(),
+  customer_status_hint: z.string().nullable().optional(),
   issue_date: z.string().nullable().optional(),
   due_date: z.string().nullable().optional(),
   total_pence: z.number(),
@@ -239,12 +241,32 @@ export const PaginatedTenantOrdersSchema = z.object({
   meta: MetaSchema.optional(),
 });
 
+export const AccountPortalKnifeInspectionSchema = z.object({
+  heading: z.string().optional(),
+  condition: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  inspected_at: z.string().nullable().optional(),
+});
+
+export const AccountPortalKnifeDamageSchema = z.object({
+  severity: z.string().nullable().optional(),
+  severity_label: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  status: z.string().nullable().optional(),
+  status_label: z.string().nullable().optional(),
+  resolved_at: z.string().nullable().optional(),
+  photo_placeholder: z.null().optional(),
+});
+
 export const AccountPortalOrderKnifeSchema = z.object({
   tag_id: z.string().nullable().optional(),
   label: z.string().nullable().optional(),
   knife_type: z.string().nullable().optional(),
   brand: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
+  status_label: z.string().nullable().optional(),
+  inspection: AccountPortalKnifeInspectionSchema.optional(),
+  damage_reports: z.array(AccountPortalKnifeDamageSchema).optional(),
 });
 
 export const AccountPortalOrderItemSchema = z.object({
@@ -254,12 +276,16 @@ export const AccountPortalOrderItemSchema = z.object({
   line_total_pence: z.number(),
   formatted_unit_amount: z.string(),
   formatted_line_total: z.string(),
+  status: z.string().nullable().optional(),
+  status_label: z.string().nullable().optional(),
 });
 
 export const AccountPortalOrderInvoiceSchema = z.object({
   id: z.string(),
   invoice_number: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
+  customer_status_label: z.string().nullable().optional(),
+  customer_status_hint: z.string().nullable().optional(),
   subtotal_pence: z.number(),
   tax_pence: z.number(),
   total_pence: z.number(),
@@ -312,6 +338,50 @@ export const PaginatedTenantKnivesSchema = z.object({
   meta: MetaSchema.optional(),
 });
 
+export const AccountKnifePortalHistoryEntrySchema = z
+  .object({
+    assignment_id: z.string(),
+    service_kind: z.string().nullable().optional(),
+    service_kind_label: z.string().nullable().optional(),
+    service_date: z.string().nullable().optional(),
+    order: z
+      .object({
+        id: z.string(),
+        status: z.string().nullable().optional(),
+        status_label: z.string().nullable().optional(),
+      })
+      .passthrough(),
+    is_current: z.boolean().optional(),
+    condition_summary: z.string().nullable().optional(),
+    photos: z.array(z.record(z.string(), z.unknown())).optional(),
+    invoices: z
+      .array(
+        z.object({
+          id: z.string(),
+          invoice_number: z.string().nullable().optional(),
+          portal_path: z.string().optional(),
+        }),
+      )
+      .optional(),
+  })
+  .passthrough();
+
+export const AccountKnifeDetailDataSchema = KnifeRowTenantSchema.extend({
+  label: z.string().nullable().optional(),
+  knife_type: z.string().nullable().optional(),
+  brand: z.string().nullable().optional(),
+  status_label: z.string().nullable().optional(),
+  inspection: z.record(z.string(), z.unknown()).optional(),
+  damage_reports: z.array(z.record(z.string(), z.unknown())).optional(),
+  service_history: z.array(AccountKnifePortalHistoryEntrySchema).optional(),
+  created_at: z.string().nullable().optional(),
+}).passthrough();
+
+export const AccountKnifeDetailResponseSchema = z.object({
+  success: z.literal(true),
+  data: AccountKnifeDetailDataSchema,
+});
+
 export const AccountPortalInvoiceOrderSummarySchema = z.object({
   id: z.string(),
   display_reference: z.string().optional(),
@@ -334,6 +404,8 @@ export const InvoiceRowTenantSchema = z
     formatted_amount_due: z.string().nullable().optional(),
     amount_due_pence: z.number().nullable().optional(),
     status: z.string().nullable().optional(),
+    customer_status_label: z.string().nullable().optional(),
+    customer_status_hint: z.string().nullable().optional(),
     payment_status: z.string().nullable().optional(),
     overdue: z.boolean().optional(),
     issue_date: z.string().nullable().optional(),
@@ -357,6 +429,7 @@ export const AccountPortalInvoiceLineSchema = z.object({
   line_total_pence: z.number(),
   formatted_unit_amount: z.string(),
   formatted_line_total: z.string(),
+  line_item_type: z.string().nullable().optional(),
 });
 
 export const AccountPortalInvoicePaymentSchema = z.object({
@@ -367,7 +440,28 @@ export const AccountPortalInvoicePaymentSchema = z.object({
   paid_at: z.string().nullable().optional(),
 });
 
+export const InvoiceIssuerTenantSchema = z.object({
+  legal_name: z.string(),
+  address_lines: z.array(z.string()),
+  email: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  vat_number: z.string().nullable().optional(),
+});
+
+export const AccountInvoiceCompanyBlockSchema = z.object({
+  name: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  billing_email: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+});
+
 export const AccountInvoiceDetailDataSchema = InvoiceRowTenantSchema.extend({
+  company: AccountInvoiceCompanyBlockSchema.nullable().optional(),
+  issuer: InvoiceIssuerTenantSchema.optional(),
+  default_payment_footer: z.string().nullable().optional(),
+  customer_notes: z.string().nullable().optional(),
+  paid_pence: z.number().optional(),
+  outstanding_pence: z.number().optional(),
   items: z.array(AccountPortalInvoiceLineSchema).optional(),
   payments: z.array(AccountPortalInvoicePaymentSchema).optional(),
   payment: z

@@ -44,8 +44,12 @@ final class InvoiceRollup
         }
 
         $due = $invoice->due_on;
+        if ($due === null) {
+            return false;
+        }
+        $dueYmd = $due instanceof \Carbon\CarbonInterface ? $due->toDateString() : (string) $due;
 
-        return $due !== null && $due->clone()->startOfDay()->lt(now()->startOfDay())
+        return $dueYmd < now()->toDateString()
             && in_array($invoice->invoice_status, [InvoiceStatus::Sent, InvoiceStatus::Overdue], true);
     }
 }

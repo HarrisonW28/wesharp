@@ -60,7 +60,11 @@ export default function AccountKnivesPage() {
             <tbody>
               {rows.map((k, i) => (
                 <tr key={k.id} className="border-t hover:bg-muted/30">
-                  <td className="px-4 py-3 tabular-nums text-sm">{customerKnifeListLabel(k.tag_id, i)}</td>
+                  <td className="px-4 py-3 tabular-nums text-sm">
+                    <Link className="font-medium text-primary underline underline-offset-2" href={`/account/knives/${k.id}`}>
+                      {customerKnifeListLabel(k.tag_id, i)}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3">
                     <StatusBadge kind="knife" status={k.status} />
                   </td>

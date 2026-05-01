@@ -229,6 +229,7 @@ final class WeSharpDemoSeeder extends Seeder
                     'description' => 'Industrial sharpen batch ('.$bladeCount.' knives)',
                     'quantity' => 1,
                     'unit_amount_pence' => $subtotal,
+                    'service_status' => KnifeStatus::QualityChecked,
                 ]);
 
                 foreach (range(1, min(10, max(6, $bladeCount))) as $spot) {
@@ -273,6 +274,9 @@ final class WeSharpDemoSeeder extends Seeder
                             'company_id' => $companyModel->id,
                             'order_id' => $order->id,
                             'details' => 'Minor chip resurfaced ahead of sharpening; logged for QA trace.',
+                            'internal_notes' => 'Internal: touch-up documented for QA only.',
+                            'customer_visible' => true,
+                            'customer_description' => 'We noted a small edge chip before sharpening and smoothed it as part of service.',
                             'severity' => 'minor',
                             'reported_by_id' => $operator->id,
                         ]);

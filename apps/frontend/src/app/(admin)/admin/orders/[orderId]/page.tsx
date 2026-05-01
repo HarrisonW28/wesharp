@@ -2,23 +2,32 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Copy, FileText, ListPlus, Loader2, Plus, PackagePlus, Pencil } from "lucide-react";
+import { Copy, FileText, ListChecks, ListPlus, Loader2, Plus, PackagePlus, Pencil } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { OrderDetailResponseSchema, OrderInvoiceDraftResponseSchema } from "@/lib/api/admin-orders-schema";
+import {
+  BulkWorkshopSummarySchema,
+  OrderDetailResponseSchema,
+  OrderInvoiceDraftResponseSchema,
+} from "@/lib/api/admin-orders-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { coerceGbpInputToMinorUnits, formatGBP, parseGbpInputToMinorUnits } from "@/lib/format/money";
 import { KNIFE_TYPE_OPTIONS } from "@/lib/knife-catalog";
+import { canKnifeTransition, isRiskyKnifeTransition } from "@/lib/knife-status-workflow";
 import { useBackendMe } from "@/hooks/use-backend-me";
 
+import type { z } from "zod";
+
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
+import { WorkshopEvidenceSection } from "@/components/admin/WorkshopEvidenceSection";
 import { KnifeLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -77,6 +86,21 @@ const PAYMENT_OPTIONS = [
 
 const BULK_CONFIRM_THRESHOLD = 25;
 
+const BULK_WORKSHOP_STATUS_OPTIONS = [
+  { value: "inspected", label: "Mark inspected" },
+  { value: "sharpening", label: "Mark sharpening" },
+  { value: "sharpened", label: "Mark sharpened" },
+  { value: "quality_checked", label: "Mark quality checked" },
+  { value: "returned", label: "Mark returned" },
+] as const;
+
+type BulkWorkshopMode =
+  | "knife_status"
+  | "append_notes"
+  | "knife_type"
+  | "line_prices"
+  | "inspection_visibility";
+
 export default function AdminOrderDetailPage() {
   const params = useParams<{ orderId: string }>();
   const orderId = params.orderId;
@@ -111,6 +135,20 @@ export default function AdminOrderDetailPage() {
   const [editDiscountGbp, setEditDiscountGbp] = useState("");
   const [editPppGbp, setEditPppGbp] = useState("");
   const [editPayment, setEditPayment] = useState("unpaid");
+
+  const [selKnifeIds, setSelKnifeIds] = useState<string[]>([]);
+  const [selLineIds, setSelLineIds] = useState<string[]>([]);
+  const [bulkWorkshopOpen, setBulkWorkshopOpen] = useState(false);
+  const [bulkWorkshopConfirmOpen, setBulkWorkshopConfirmOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState<BulkWorkshopMode>("knife_status");
+  const [bulkTargetStatus, setBulkTargetStatus] = useState<string>("inspected");
+  const [bulkAppendNote, setBulkAppendNote] = useState("");
+  const [bulkTypeValue, setBulkTypeValue] = useState("chefs");
+  const [bulkUnitGbp, setBulkUnitGbp] = useState("5.00");
+  const [bulkInspectionVisible, setBulkInspectionVisible] = useState(false);
+  const [bulkAckPrice, setBulkAckPrice] = useState(false);
+  const [bulkAckVisibility, setBulkAckVisibility] = useState(false);
+  const [bulkSummaryBanner, setBulkSummaryBanner] = useState<z.infer<typeof BulkWorkshopSummarySchema> | null>(null);
 
   const setBulkLine = (key: string, patch: Partial<BulkLineRow>) => {
     setBulkLines((rows) =>
@@ -181,6 +219,146 @@ export default function AdminOrderDetailPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const knifeTransitionMutation = useMutation({
+    mutationFn: async (vars: { knifeId: string; target_status: string }) => {
+      const res = await admin.json<unknown>(`/api/admin/knives/${vars.knifeId}/transition`, {
+        method: "POST",
+        body: JSON.stringify({ target_status: vars.target_status }),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("Blade status updated.");
+      void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const orderItemTransitionMutation = useMutation({
+    mutationFn: async (vars: { itemId: string; target_status: string }) => {
+      const res = await admin.json<unknown>(`/api/admin/orders/${orderId}/items/${vars.itemId}/transition`, {
+        method: "POST",
+        body: JSON.stringify({ target_status: vars.target_status }),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = OrderDetailResponseSchema.safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected order response.");
+      }
+      return parsed.data.data;
+    },
+    onSuccess: () => {
+      toast.success("Line status updated.");
+      void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const toggleSelKnife = useCallback((id: string) => {
+    setSelKnifeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, []);
+
+  const toggleSelLine = useCallback((id: string) => {
+    setSelLineIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, []);
+
+  useEffect(() => {
+    const d = orderQuery.data;
+    if (!d) {
+      return;
+    }
+    const k = new Set((d.knives ?? []).map((x) => x.id));
+    const l = new Set((d.items ?? []).map((x) => x.id));
+    setSelKnifeIds((ids) => ids.filter((id) => k.has(id)));
+    setSelLineIds((ids) => ids.filter((id) => l.has(id)));
+  }, [orderQuery.data]);
+
+  const bulkWorkshopMutation = useMutation({
+    mutationFn: async (body: Record<string, unknown>) => {
+      const res = await admin.json<unknown>(`/api/admin/orders/${orderId}/bulk-workshop`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = OrderDetailResponseSchema.safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected bulk workshop response.");
+      }
+      return parsed.data.data;
+    },
+    onSuccess: (data) => {
+      const raw = data.bulk_workshop_summary;
+      const sumParsed = raw !== undefined ? BulkWorkshopSummarySchema.safeParse(raw) : null;
+      const summary = sumParsed?.success ? sumParsed.data : null;
+      if (summary) {
+        setBulkSummaryBanner(summary);
+      }
+      const applied = summary?.any_applied === true;
+      const sk = (summary?.skipped_knives as { knife_id?: string; reason?: string }[] | undefined)?.length ?? 0;
+      const sl =
+        (summary?.skipped_line_items as { order_item_id?: string; reason?: string }[] | undefined)?.length ?? 0;
+      if (applied) {
+        toast.success(
+          sk + sl > 0 ? `Bulk action applied. ${sk + sl} row(s) skipped — see summary below.` : "Bulk workshop action applied.",
+        );
+      } else {
+        toast.message("No changes applied", {
+          description: "Every selected row was skipped (see summary). Check statuses or selection.",
+        });
+      }
+      setBulkWorkshopConfirmOpen(false);
+      setBulkWorkshopOpen(false);
+      setSelKnifeIds([]);
+      setSelLineIds([]);
+      setBulkAckPrice(false);
+      setBulkAckVisibility(false);
+      void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const bulkStatusInvalidPreview = useMemo(() => {
+    const d = orderQuery.data;
+    if (!d || bulkMode !== "knife_status") {
+      return [] as { id: string; label: string; reason: string }[];
+    }
+    const out: { id: string; label: string; reason: string }[] = [];
+    for (const kid of selKnifeIds) {
+      const kn = (d.knives ?? []).find((k) => k.id === kid);
+      const st = kn?.status ?? null;
+      if (!canKnifeTransition(st, bulkTargetStatus)) {
+        const lb = kn && typeof (kn as { label?: string }).label === "string" ? (kn as { label: string }).label : "";
+        const label = [kn?.tag_id, lb || kn?.knife_type].filter(Boolean).join(" · ") || kid.slice(0, 8);
+        out.push({
+          id: kid,
+          label,
+          reason: `Cannot go from ${st || "unknown"} to ${bulkTargetStatus}.`,
+        });
+      }
+    }
+    for (const lid of selLineIds) {
+      const line = (d.items ?? []).find((l) => l.id === lid);
+      const st = line?.effective_status ?? line?.service_status ?? null;
+      if (!canKnifeTransition(st, bulkTargetStatus)) {
+        out.push({
+          id: lid,
+          label: line?.description?.slice(0, 48) || lid.slice(0, 8),
+          reason: `Cannot go from ${st || "unknown"} to ${bulkTargetStatus}.`,
+        });
+      }
+    }
+    return out;
+  }, [orderQuery.data, bulkMode, selKnifeIds, selLineIds, bulkTargetStatus]);
 
   const updateOrderMutation = useMutation({
     mutationFn: async () => {
@@ -472,9 +650,108 @@ export default function AdminOrderDetailPage() {
   const isCancelled = o.status === "cancelled";
   const isReturned = o.status === "returned";
   const lockOrderManifest = isCancelled || isReturned || o.status === "completed" || o.status === "invoiced";
+  const canUpdateBladeStatuses = canKnives && !isCancelled;
   /** Invoice draft API currently requires `completed` (invoiced is a later lifecycle step). */
   const mayGenerateInvoiceDraft = o.status === "completed";
   const bd = o.booking_detail;
+  const lineOnlyLines = (o.items ?? []).filter((li) => !li.knife_id);
+
+  const requestBulkWorkshopConfirm = () => {
+    if (bulkMode === "knife_status") {
+      if (selKnifeIds.length === 0 && selLineIds.length === 0) {
+        toast.error("Select at least one blade or line-only item.");
+        return;
+      }
+    } else if (bulkMode === "line_prices") {
+      if (selLineIds.length === 0) {
+        toast.error("Select at least one billable line.");
+        return;
+      }
+      try {
+        const p = parseGbpInputToMinorUnits(bulkUnitGbp);
+        if (p === undefined) {
+          throw new Error("Enter a valid unit price (GBP).");
+        }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Enter a valid unit price (GBP).");
+        return;
+      }
+      if (!bulkAckPrice) {
+        toast.error("Acknowledge the unit price change to continue.");
+        return;
+      }
+    } else if (bulkMode === "inspection_visibility") {
+      if (selKnifeIds.length === 0) {
+        toast.error("Select at least one blade.");
+        return;
+      }
+      if (!bulkAckVisibility) {
+        toast.error("Confirm customer visibility for inspection notes to continue.");
+        return;
+      }
+    } else if (bulkMode === "append_notes") {
+      if (selKnifeIds.length === 0) {
+        toast.error("Select at least one blade.");
+        return;
+      }
+      if (!bulkAppendNote.trim()) {
+        toast.error("Enter a note to append.");
+        return;
+      }
+    } else if (bulkMode === "knife_type") {
+      if (selKnifeIds.length === 0) {
+        toast.error("Select at least one blade.");
+        return;
+      }
+      if (!bulkTypeValue.trim()) {
+        toast.error("Choose a service / blade type.");
+        return;
+      }
+    }
+    setBulkWorkshopConfirmOpen(true);
+  };
+
+  const applyBulkWorkshop = () => {
+    let body: Record<string, unknown>;
+    if (bulkMode === "knife_status") {
+      body = {
+        mode: "knife_status",
+        knife_ids: selKnifeIds,
+        line_item_ids: selLineIds,
+        target_status: bulkTargetStatus,
+      };
+    } else if (bulkMode === "append_notes") {
+      body = { mode: "append_notes", knife_ids: selKnifeIds, append_notes: bulkAppendNote.trim() };
+    } else if (bulkMode === "knife_type") {
+      body = { mode: "knife_type", knife_ids: selKnifeIds, knife_type: bulkTypeValue.trim() };
+    } else if (bulkMode === "line_prices") {
+      let pence = 0;
+      try {
+        const raw = parseGbpInputToMinorUnits(bulkUnitGbp);
+        if (raw === undefined) {
+          throw new Error("Enter a unit price.");
+        }
+        pence = raw;
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Invalid unit price.");
+        return;
+      }
+      body = {
+        mode: "line_prices",
+        line_item_ids: selLineIds,
+        unit_amount_pence: pence,
+        confirm_price_change: true,
+      };
+    } else {
+      body = {
+        mode: "inspection_visibility",
+        knife_ids: selKnifeIds,
+        inspection_customer_visible: bulkInspectionVisible,
+        confirm_customer_visibility: true,
+      };
+    }
+    bulkWorkshopMutation.mutate(body);
+  };
 
   const completeWarnings: string[] = [];
   if (!hasBillableLines && (o.knives?.length ?? 0) > 0) {
@@ -591,6 +868,43 @@ export default function AdminOrderDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog
+        open={statusStepConfirmOpen}
+        onOpenChange={(open) => {
+          setStatusStepConfirmOpen(open);
+          if (!open) {
+            setPendingStatusStep(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingStatusStep ? `Confirm: ${pendingStatusStep.label}?` : "Confirm order step"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This order status change may be significant. Continue only if the workshop state matches what you expect.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Back</AlertDialogCancel>
+            <Button
+              type="button"
+              size="lg"
+              disabled={transitionMutation.isPending || pendingStatusStep === null}
+              onClick={() => {
+                if (pendingStatusStep) {
+                  transitionMutation.mutate({ target_status: pendingStatusStep.value });
+                }
+              }}
+            >
+              {transitionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+              Confirm
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={bulkKnifeConfirmOpen} onOpenChange={setBulkKnifeConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -604,6 +918,39 @@ export default function AdminOrderDetailPage() {
             <Button type="button" size="lg" disabled={bulkMutation.isPending} onClick={() => bulkMutation.mutate()}>
               {bulkMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
               Yes, add knives
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkWorkshopConfirmOpen} onOpenChange={setBulkWorkshopConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apply bulk workshop action?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  You are about to run <strong className="text-foreground">{bulkMode.replace(/_/g, " ")}</strong> on{" "}
+                  <strong className="text-foreground">
+                    {bulkMode === "knife_status"
+                      ? `${selKnifeIds.length} blade(s) and ${selLineIds.length} line-only row(s)`
+                      : bulkMode === "line_prices"
+                        ? `${selLineIds.length} billable line(s)`
+                        : `${selKnifeIds.length} blade(s)`}
+                  </strong>
+                  . Invalid transitions are skipped per row and reported after submission — nothing is silently forced.
+                </p>
+                {bulkMode === "knife_status" && isRiskyKnifeTransition(bulkTargetStatus) ? (
+                  <p className="text-amber-800 dark:text-amber-200">This status change can be consequential — double-check the selection.</p>
+                ) : null}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Back</AlertDialogCancel>
+            <Button type="button" size="lg" disabled={bulkWorkshopMutation.isPending} onClick={applyBulkWorkshop}>
+              {bulkWorkshopMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+              Apply
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -688,6 +1035,66 @@ export default function AdminOrderDetailPage() {
               </Button>
             ))}
           </div>
+        </Card>
+      ) : null}
+
+      {o.workshop_progress ? (
+        <Card className="p-4">
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Blade &amp; line progress</div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{o.workshop_progress.knife_count}</span> blade(s) on this order
+            {o.workshop_progress.line_only_units > 0 ? (
+              <>
+                {" "}
+                · <span className="font-medium text-foreground">{o.workshop_progress.line_only_units}</span> unit(s) on lines
+                without a blade record
+              </>
+            ) : null}
+            {o.workshop_progress.all_knives_complete ? (
+              <span className="text-foreground"> — all blades returned or cancelled.</span>
+            ) : null}
+          </p>
+          {o.workshop_progress.by_status && Object.keys(o.workshop_progress.by_status).length > 0 ? (
+            <ul className="mt-3 flex flex-wrap gap-2 text-xs">
+              {Object.entries(o.workshop_progress.by_status).map(([st, n]) => (
+                <li key={st} className="rounded-md border bg-muted/30 px-2 py-1 capitalize text-muted-foreground">
+                  <span className="font-medium text-foreground">{st.replace(/_/g, " ")}</span> · {n}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {(o.order_damage_reports ?? []).length > 0 ? (
+        <Card className="p-4">
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Damage reports (order)</div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            All structured damage rows linked to blades on this order. Open a blade to edit or archive.
+          </p>
+          <ul className="mt-3 space-y-2 text-sm">
+            {(o.order_damage_reports ?? []).map((row) => (
+              <li key={row.id} className="rounded-md border bg-muted/20 px-3 py-2">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  {row.knife_label || row.knife_tag_id ? (
+                    <span className="font-medium text-foreground">
+                      {row.knife_label ?? row.knife_tag_id}
+                      {row.knife_tag_id && row.knife_label ? ` · ${row.knife_tag_id}` : null}
+                    </span>
+                  ) : null}
+                  {row.severity ? <Badge variant="outline">{row.severity}</Badge> : null}
+                  {row.status ? <Badge variant="secondary">{row.status}</Badge> : null}
+                  {row.customer_visible ? <span className="text-foreground">Customer-visible</span> : null}
+                </div>
+                <p className="mt-1 whitespace-pre-wrap">{row.description ?? row.details ?? "—"}</p>
+                {row.knife_id ? (
+                  <Link className="mt-2 inline-block text-xs font-medium text-primary underline" href={`/admin/knives/${row.knife_id}`}>
+                    Blade record
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ul>
         </Card>
       ) : null}
 
@@ -888,12 +1295,29 @@ export default function AdminOrderDetailPage() {
           </ol>
         </Card>
 
-        <Card className="p-4 lg:col-span-3">
-          <div className="text-xs font-semibold uppercase text-muted-foreground">Workshop photos</div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Photo capture for orders is not enabled yet — use knife-level photos from the blades list when needed.
-          </p>
-        </Card>
+        {canOrders ? (
+          <div className="lg:col-span-3">
+            <WorkshopEvidenceSection
+              uploadUrl={`/api/admin/orders/${orderId}/evidence-photos`}
+              photos={orderQuery.data?.evidence_photos ?? []}
+              settings={orderQuery.data?.evidence_settings}
+              invalidateQueryKeys={[["admin-order", orderId]]}
+              knifeLinkOptions={(orderQuery.data?.knives ?? []).map((kn) => ({
+                id: kn.id,
+                label: [kn.label, kn.tag_id].filter(Boolean).join(" · ") || `${kn.id.slice(0, 8)}…`,
+              }))}
+              damageReportLinkOptions={(orderQuery.data?.order_damage_reports ?? []).map((dr) => ({
+                id: dr.id,
+                label: `${dr.knife_label ?? "Blade"} — ${(dr.description ?? dr.details ?? "").slice(0, 48)}`,
+              }))}
+            />
+          </div>
+        ) : (
+          <Card className="p-4 lg:col-span-3">
+            <div className="text-xs font-semibold uppercase text-muted-foreground">Workshop photos</div>
+            <p className="mt-2 text-sm text-muted-foreground">Your role cannot upload order evidence.</p>
+          </Card>
+        )}
 
         <Card className="p-4 lg:col-span-3">
           <div className="text-xs font-semibold uppercase text-muted-foreground">Activity &amp; audit</div>
@@ -1188,9 +1612,10 @@ export default function AdminOrderDetailPage() {
                     <DialogTitle>Resharpening — link inventory knife</DialogTitle>
                   </DialogHeader>
                   <p className="text-sm text-muted-foreground">
-                    Search blades on file for {o.company?.name ?? "this customer"} that are not already on another order. History
-                    stays on the blade; this only sets the current workshop order. To register a brand-new blade, use{" "}
-                    <strong>Add one knife</strong> instead.
+                    Search blades on file for {o.company?.name ?? "this customer"}. Includes unassigned inventory and knives whose
+                    prior order is completed, invoiced, returned, or cancelled. History stays on the blade; this sets the current
+                    workshop order. Cross-company attachment is blocked. To register a brand-new blade, use <strong>Add one knife</strong>{" "}
+                    instead.
                   </p>
                   <KnifeLookup
                     label="Knife"
@@ -1199,7 +1624,7 @@ export default function AdminOrderDetailPage() {
                     disabled={!o.company_id}
                     extraParams={
                       o.company_id
-                        ? { company_id: o.company_id, unassigned_only: true }
+                        ? { company_id: o.company_id, resharpen_eligible_only: true }
                         : undefined
                     }
                     placeholder="Search by tag, type, or label…"
@@ -1236,6 +1661,324 @@ export default function AdminOrderDetailPage() {
 
       <Separator className="my-6" />
 
+      {bulkSummaryBanner ? (
+        <Card className="mb-6 border-primary/35 bg-primary/5 p-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="text-sm font-semibold">Last bulk workshop result</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Mode: <span className="font-medium text-foreground">{bulkSummaryBanner.mode}</span>
+                {bulkSummaryBanner.any_applied === false ? " · Nothing was written (all rows skipped)." : null}
+              </p>
+            </div>
+            <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => setBulkSummaryBanner(null)}>
+              Dismiss
+            </Button>
+          </div>
+          {Array.isArray(bulkSummaryBanner.skipped_knives) && bulkSummaryBanner.skipped_knives.length > 0 ? (
+            <div className="mt-3 text-sm">
+              <div className="font-medium text-amber-900 dark:text-amber-100">Skipped blades</div>
+              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-muted-foreground">
+                {(bulkSummaryBanner.skipped_knives as { knife_id?: string; reason?: string }[]).map((row, i) => (
+                  <li key={`${row.knife_id ?? i}-sk`}>
+                    <span className="font-mono text-foreground">{row.knife_id?.slice(0, 8) ?? "—"}</span>
+                    {row.reason ? ` — ${row.reason}` : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {Array.isArray(bulkSummaryBanner.skipped_line_items) && bulkSummaryBanner.skipped_line_items.length > 0 ? (
+            <div className="mt-3 text-sm">
+              <div className="font-medium text-amber-900 dark:text-amber-100">Skipped lines</div>
+              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-muted-foreground">
+                {(bulkSummaryBanner.skipped_line_items as { order_item_id?: string; reason?: string }[]).map((row, i) => (
+                  <li key={`${row.order_item_id ?? i}-sl`}>
+                    <span className="font-mono text-foreground">{row.order_item_id?.slice(0, 8) ?? "—"}</span>
+                    {row.reason ? ` — ${row.reason}` : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {canUpdateBladeStatuses ? (
+        <>
+          <Card className="mb-6 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-2">
+                <ListChecks className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+                <div>
+                  <div className="text-sm font-semibold">Bulk workshop</div>
+                  <p className="text-xs text-muted-foreground">
+                    {selKnifeIds.length} blade{selKnifeIds.length === 1 ? "" : "s"} and {selLineIds.length} line
+                    {selLineIds.length === 1 ? "" : "s"} selected. Use checkboxes on rows and blade cards, then open actions.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-10"
+                  onClick={() => {
+                    setSelKnifeIds((o.knives ?? []).map((k) => k.id));
+                    setSelLineIds(lineOnlyLines.map((l) => l.id));
+                  }}
+                >
+                  Select blades + line-only
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-10"
+                  onClick={() => setSelLineIds((o.items ?? []).map((l) => l.id))}
+                >
+                  Select all lines
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-10"
+                  onClick={() => {
+                    setSelKnifeIds([]);
+                    setSelLineIds([]);
+                  }}
+                >
+                  Clear
+                </Button>
+                <Button type="button" size="sm" className="h-10 gap-1" onClick={() => setBulkWorkshopOpen(true)}>
+                  <ListChecks className="h-4 w-4" aria-hidden />
+                  Bulk actions…
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <Dialog
+            open={bulkWorkshopOpen}
+            onOpenChange={(open) => {
+              setBulkWorkshopOpen(open);
+              if (!open) {
+                setBulkAckPrice(false);
+                setBulkAckVisibility(false);
+              }
+            }}
+          >
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Bulk workshop action</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 text-sm">
+                <div className="space-y-1">
+                  <Label>Action type</Label>
+                  <Select
+                    value={bulkMode}
+                    onValueChange={(v) => {
+                      setBulkMode(v as BulkWorkshopMode);
+                      setBulkAckPrice(false);
+                      setBulkAckVisibility(false);
+                    }}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="knife_status">Service status (blades + line-only rows)</SelectItem>
+                      <SelectItem value="append_notes">Append staff note (blades)</SelectItem>
+                      <SelectItem value="knife_type">Set service / blade type (blades)</SelectItem>
+                      <SelectItem value="line_prices">Set unit price ex VAT (billable lines)</SelectItem>
+                      <SelectItem value="inspection_visibility">Inspection notes visible to customer (blades)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground">Selected</div>
+                  <ul className="mt-1 max-h-36 overflow-y-auto rounded-md border bg-muted/20 p-2 text-xs">
+                    {bulkMode === "line_prices" ? (
+                      selLineIds.length === 0 ? (
+                        <li className="text-muted-foreground">No lines selected.</li>
+                      ) : (
+                        selLineIds.map((id) => {
+                          const li = (o.items ?? []).find((l) => l.id === id);
+                          return (
+                            <li key={id} className="truncate py-0.5">
+                              Line · {li?.description ?? id.slice(0, 8)}
+                            </li>
+                          );
+                        })
+                      )
+                    ) : (
+                      <>
+                        {selKnifeIds.length === 0 ? (
+                          <li className="text-muted-foreground">No blades selected.</li>
+                        ) : (
+                          selKnifeIds.map((id) => {
+                            const kn = (o.knives ?? []).find((k) => k.id === id);
+                            const lb =
+                              kn && typeof (kn as { label?: string }).label === "string"
+                                ? (kn as { label: string }).label
+                                : "";
+                            return (
+                              <li key={id} className="truncate py-0.5">
+                                Blade · {kn?.tag_id ?? ""} {lb || kn?.knife_type || id.slice(0, 8)}
+                              </li>
+                            );
+                          })
+                        )}
+                        {bulkMode === "knife_status" && selLineIds.length > 0 ? (
+                          <>
+                            {selLineIds.map((id) => {
+                              const li = (o.items ?? []).find((l) => l.id === id);
+                              return (
+                                <li key={`l-${id}`} className="truncate py-0.5">
+                                  Line-only · {li?.description ?? id.slice(0, 8)}
+                                </li>
+                              );
+                            })}
+                          </>
+                        ) : null}
+                      </>
+                    )}
+                  </ul>
+                </div>
+
+                {bulkMode === "knife_status" ? (
+                  <div className="space-y-1">
+                    <Label>Target status</Label>
+                    <Select value={bulkTargetStatus} onValueChange={setBulkTargetStatus}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BULK_WORKSHOP_STATUS_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isRiskyKnifeTransition(bulkTargetStatus) ? (
+                      <p className="text-xs text-amber-800 dark:text-amber-200">
+                        This transition is sensitive for some workflows — invalid rows are skipped server-side; you will confirm
+                        before applying.
+                      </p>
+                    ) : null}
+                    {bulkStatusInvalidPreview.length > 0 ? (
+                      <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+                        <div className="font-medium text-amber-900 dark:text-amber-100">
+                          {bulkStatusInvalidPreview.length} selected row(s) cannot move to this status (will be skipped)
+                        </div>
+                        <ul className="mt-1 max-h-28 list-inside list-disc space-y-0.5 overflow-y-auto text-muted-foreground">
+                          {bulkStatusInvalidPreview.map((row) => (
+                            <li key={row.id}>
+                              <span className="text-foreground">{row.label}</span> — {row.reason}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {bulkMode === "append_notes" ? (
+                  <div className="space-y-1">
+                    <Label>Note to append</Label>
+                    <Textarea
+                      className="min-h-[88px]"
+                      value={bulkAppendNote}
+                      onChange={(e) => setBulkAppendNote(e.target.value)}
+                      placeholder="Appended with a timestamp on each blade…"
+                    />
+                  </div>
+                ) : null}
+
+                {bulkMode === "knife_type" ? (
+                  <div className="space-y-1">
+                    <Label>Service / blade type</Label>
+                    <Select value={bulkTypeValue || "__pick__"} onValueChange={setBulkTypeValue}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Type" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {KNIFE_TYPE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
+
+                {bulkMode === "line_prices" ? (
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label>New unit £ (ex VAT)</Label>
+                      <Input className="h-11" inputMode="decimal" value={bulkUnitGbp} onChange={(e) => setBulkUnitGbp(e.target.value)} />
+                    </div>
+                    <label className="flex cursor-pointer items-start gap-2 text-xs leading-snug">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border border-input"
+                        checked={bulkAckPrice}
+                        onChange={(e) => setBulkAckPrice(e.target.checked)}
+                      />
+                      <span>
+                        I understand this overwrites the unit price on each selected line, rebuilds order totals, and is audited.
+                      </span>
+                    </label>
+                  </div>
+                ) : null}
+
+                {bulkMode === "inspection_visibility" ? (
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label>Customer can see inspection notes</Label>
+                      <Select
+                        value={bulkInspectionVisible ? "yes" : "no"}
+                        onValueChange={(v) => setBulkInspectionVisible(v === "yes")}
+                      >
+                        <SelectTrigger className="h-11">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Visible to customer</SelectItem>
+                          <SelectItem value="no">Hidden from customer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <label className="flex cursor-pointer items-start gap-2 text-xs leading-snug">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border border-input"
+                        checked={bulkAckVisibility}
+                        onChange={(e) => setBulkAckVisibility(e.target.checked)}
+                      />
+                      <span>I confirm this customer visibility change for inspection notes on the selected blades.</span>
+                    </label>
+                  </div>
+                ) : null}
+              </div>
+              <DialogFooter className="gap-2">
+                <Button type="button" variant="outline" onClick={() => setBulkWorkshopOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="button" size="lg" onClick={requestBulkWorkshopConfirm}>
+                  Review &amp; confirm…
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      ) : null}
+
       <div className="text-base font-semibold">Billable lines</div>
       {(o.items ?? []).length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">
@@ -1245,58 +1988,169 @@ export default function AdminOrderDetailPage() {
       ) : (
         <>
           <div className="mt-3 hidden md:block overflow-x-auto rounded-lg border">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full min-w-[820px] text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                 <tr>
+                  {canUpdateBladeStatuses ? (
+                    <th className="w-10 px-2 py-2">
+                      <span className="sr-only">Select for bulk</span>
+                    </th>
+                  ) : null}
                   <th className="px-3 py-2">Description</th>
                   <th className="px-3 py-2">Qty</th>
                   <th className="px-3 py-2">Unit (ex VAT)</th>
                   <th className="px-3 py-2">Line</th>
                   <th className="px-3 py-2">Blade</th>
+                  <th className="px-3 py-2">Service</th>
                 </tr>
               </thead>
               <tbody>
-                {(o.items ?? []).map((line) => (
-                  <tr key={line.id} className="border-t">
-                    <td className="px-3 py-2 font-medium">{line.description}</td>
-                    <td className="px-3 py-2 tabular-nums">{line.quantity}</td>
-                    <td className="px-3 py-2 tabular-nums">
-                      {line.formatted_unit_amount ?? formatGBP(line.unit_amount_pence)}
-                    </td>
-                    <td className="px-3 py-2 tabular-nums font-medium">
-                      {line.formatted_line_total ?? formatGBP(line.line_total_pence ?? line.quantity * line.unit_amount_pence)}
-                    </td>
-                    <td className="px-3 py-2">
-                      {line.knife_id ? (
-                        <Link className="text-primary underline" href={`/admin/knives/${line.knife_id}`}>
-                          Open
-                        </Link>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {(o.items ?? []).map((line) => {
+                  const lineRow = line as typeof line & {
+                    allowed_next_service_statuses?: { value: string; label: string; risky: boolean }[];
+                    effective_status?: string | null;
+                  };
+                  const lineNext = lineRow.allowed_next_service_statuses ?? [];
+                  const svc = lineRow.effective_status ?? "";
+                  const busyLine = orderItemTransitionMutation.isPending;
+
+                  return (
+                    <tr key={line.id} className="border-t">
+                      {canUpdateBladeStatuses ? (
+                        <td className="px-2 py-2 align-middle">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border border-input"
+                            checked={selLineIds.includes(line.id)}
+                            onChange={() => toggleSelLine(line.id)}
+                            aria-label={`Select line ${line.description}`}
+                          />
+                        </td>
+                      ) : null}
+                      <td className="px-3 py-2 font-medium">{line.description}</td>
+                      <td className="px-3 py-2 tabular-nums">{line.quantity}</td>
+                      <td className="px-3 py-2 tabular-nums">
+                        {line.formatted_unit_amount ?? formatGBP(line.unit_amount_pence)}
+                      </td>
+                      <td className="px-3 py-2 tabular-nums font-medium">
+                        {line.formatted_line_total ?? formatGBP(line.line_total_pence ?? line.quantity * line.unit_amount_pence)}
+                      </td>
+                      <td className="px-3 py-2">
+                        {line.knife_id ? (
+                          <Link className="text-primary underline" href={`/admin/knives/${line.knife_id}`}>
+                            Open
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="max-w-[220px] px-3 py-2 align-top">
+                        {svc ? <StatusBadge kind="knife" status={svc} /> : null}
+                        {!line.knife_id && canUpdateBladeStatuses && lineNext.length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {lineNext.map((step) => (
+                              <Button
+                                key={step.value}
+                                type="button"
+                                size="sm"
+                                variant={step.risky || isRiskyKnifeTransition(step.value) ? "destructive" : "secondary"}
+                                className="h-auto min-h-8 px-2 py-1 text-xs"
+                                disabled={busyLine}
+                                onClick={() => {
+                                  if (step.risky || isRiskyKnifeTransition(step.value)) {
+                                    const ok = window.confirm(`Confirm: ${step.label}?`);
+                                    if (!ok) {
+                                      return;
+                                    }
+                                  }
+                                  orderItemTransitionMutation.mutate({ itemId: line.id, target_status: step.value });
+                                }}
+                              >
+                                {step.label}
+                              </Button>
+                            ))}
+                          </div>
+                        ) : null}
+                        {line.knife_id ? (
+                          <p className="mt-1 text-xs text-muted-foreground">Follow blade card below.</p>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
           <ul className="mt-3 space-y-2 md:hidden">
-            {(o.items ?? []).map((line) => (
-              <li key={line.id} className="rounded-lg border bg-muted/20 p-3 text-sm">
-                <div className="font-medium">{line.description}</div>
-                <div className="mt-1 text-muted-foreground">
-                  {line.quantity} × {line.formatted_unit_amount ?? formatGBP(line.unit_amount_pence)} ex VAT
-                </div>
-                <div className="mt-1 font-semibold tabular-nums">
-                  Line: {line.formatted_line_total ?? formatGBP(line.line_total_pence ?? line.quantity * line.unit_amount_pence)}
-                </div>
-                {line.knife_id ? (
-                  <Button asChild variant="link" className="mt-1 h-auto px-0 text-base">
-                    <Link href={`/admin/knives/${line.knife_id}`}>Blade record</Link>
-                  </Button>
-                ) : null}
-              </li>
-            ))}
+            {(o.items ?? []).map((line) => {
+              const lineRow = line as typeof line & {
+                allowed_next_service_statuses?: { value: string; label: string; risky: boolean }[];
+                effective_status?: string | null;
+              };
+              const lineNext = lineRow.allowed_next_service_statuses ?? [];
+              const svc = lineRow.effective_status ?? "";
+              const busyLine = orderItemTransitionMutation.isPending;
+
+              return (
+                <li key={line.id} className="flex gap-3 rounded-lg border bg-muted/20 p-3 text-sm">
+                  {canUpdateBladeStatuses ? (
+                    <label className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-start justify-center pt-0.5">
+                      <input
+                        type="checkbox"
+                        className="h-5 w-5 rounded border border-input"
+                        checked={selLineIds.includes(line.id)}
+                        onChange={() => toggleSelLine(line.id)}
+                        aria-label={`Select line ${line.description}`}
+                      />
+                    </label>
+                  ) : null}
+                  <div className="min-w-0 flex-1">
+                  <div className="font-medium">{line.description}</div>
+                  <div className="mt-1 text-muted-foreground">
+                    {line.quantity} × {line.formatted_unit_amount ?? formatGBP(line.unit_amount_pence)} ex VAT
+                  </div>
+                  <div className="mt-1 font-semibold tabular-nums">
+                    Line: {line.formatted_line_total ?? formatGBP(line.line_total_pence ?? line.quantity * line.unit_amount_pence)}
+                  </div>
+                  {svc ? (
+                    <div className="mt-2">
+                      <StatusBadge kind="knife" status={svc} />
+                    </div>
+                  ) : null}
+                  {!line.knife_id && canUpdateBladeStatuses && lineNext.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {lineNext.map((step) => (
+                        <Button
+                          key={step.value}
+                          type="button"
+                          size="sm"
+                          variant={step.risky || isRiskyKnifeTransition(step.value) ? "destructive" : "secondary"}
+                          className="h-auto min-h-9 px-2 py-1.5 text-xs"
+                          disabled={busyLine}
+                          onClick={() => {
+                            if (step.risky || isRiskyKnifeTransition(step.value)) {
+                              const ok = window.confirm(`Confirm: ${step.label}?`);
+                              if (!ok) {
+                                return;
+                              }
+                            }
+                            orderItemTransitionMutation.mutate({ itemId: line.id, target_status: step.value });
+                          }}
+                        >
+                          {step.label}
+                        </Button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {line.knife_id ? (
+                    <Button asChild variant="link" className="mt-1 h-auto px-0 text-base">
+                      <Link href={`/admin/knives/${line.knife_id}`}>Blade record</Link>
+                    </Button>
+                  ) : null}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
@@ -1308,22 +2162,68 @@ export default function AdminOrderDetailPage() {
         <p className="mt-3 text-sm text-muted-foreground">No blades registered yet — use bulk or single add above.</p>
       ) : null}
       <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {(o.knives ?? []).map((k) => (
-          <Card key={k.id} className="p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="font-mono text-xs text-muted-foreground">{k.tag_id}</div>
-                <div className="truncate font-semibold">
-                  {("label" in k && typeof k.label === "string" && k.label) || k.knife_type || "Blade"}
+        {(o.knives ?? []).map((k) => {
+          const kn = k as typeof k & {
+            allowed_next_statuses?: { value: string; label: string; risky: boolean }[];
+          };
+          const nextSteps = kn.allowed_next_statuses ?? [];
+          const busyKnife = knifeTransitionMutation.isPending;
+
+          return (
+            <Card key={k.id} className="p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-1 items-start gap-2">
+                  {canUpdateBladeStatuses ? (
+                    <label className="flex min-h-10 min-w-10 shrink-0 cursor-pointer items-start justify-center pt-0.5">
+                      <input
+                        type="checkbox"
+                        className="h-5 w-5 rounded border border-input md:h-4 md:w-4"
+                        checked={selKnifeIds.includes(k.id)}
+                        onChange={() => toggleSelKnife(k.id)}
+                        aria-label={`Select blade ${k.tag_id ?? k.id}`}
+                      />
+                    </label>
+                  ) : null}
+                  <div className="min-w-0">
+                    <div className="font-mono text-xs text-muted-foreground">{k.tag_id}</div>
+                    <div className="truncate font-semibold">
+                      {("label" in k && typeof k.label === "string" && k.label) || k.knife_type || "Blade"}
+                    </div>
+                  </div>
                 </div>
+                <StatusBadge kind="knife" status={k.status ?? ""} />
               </div>
-              <StatusBadge kind="knife" status={k.status ?? ""} />
-            </div>
-            <Button asChild variant="link" className="mt-2 h-auto px-0 text-base">
-              <Link href={`/admin/knives/${k.id}`}>Open lifecycle</Link>
-            </Button>
-          </Card>
-        ))}
+              {canUpdateBladeStatuses && nextSteps.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {nextSteps.map((step) => (
+                    <Button
+                      key={step.value}
+                      type="button"
+                      size="sm"
+                      variant={step.risky || isRiskyKnifeTransition(step.value) ? "destructive" : "secondary"}
+                      className="h-auto min-h-9 px-2 py-1.5 text-xs leading-tight"
+                      disabled={busyKnife}
+                      onClick={() => {
+                        if (step.risky || isRiskyKnifeTransition(step.value)) {
+                          const ok = window.confirm(`Confirm: ${step.label}?`);
+                          if (!ok) {
+                            return;
+                          }
+                        }
+                        knifeTransitionMutation.mutate({ knifeId: k.id, target_status: step.value });
+                      }}
+                    >
+                      {step.label}
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
+              <Button asChild variant="link" className="mt-2 h-auto px-0 text-base">
+                <Link href={`/admin/knives/${k.id}`}>Open full lifecycle</Link>
+              </Button>
+            </Card>
+          );
+        })}
       </div>
     </>
   );

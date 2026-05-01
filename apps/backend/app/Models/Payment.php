@@ -26,6 +26,11 @@ class Payment extends Model
         'paid_at',
         'due_at',
         'reference',
+        'notes',
+        'recorded_by',
+        'external_provider_id',
+        'stripe_checkout_session_id',
+        'stripe_payment_intent_id',
     ];
 
     protected function casts(): array
@@ -51,6 +56,11 @@ class Payment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function recordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
     }
 
     public function refunds(): HasMany

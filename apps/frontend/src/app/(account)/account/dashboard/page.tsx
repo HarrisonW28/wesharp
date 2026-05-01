@@ -477,7 +477,13 @@ export default function AccountDashboardPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="tabular-nums">{formatGBP(inv.total ?? null)}</span>
-                      {inv.status ? <CustomerInvoiceStatusBadge status={inv.status} /> : null}
+                      {inv.status ? (
+                        <CustomerInvoiceStatusBadge
+                          status={inv.status}
+                          customerLabel={inv.customer_status_label}
+                          hint={inv.customer_status_hint}
+                        />
+                      ) : null}
                       <Button type="button" variant="link" className="h-auto px-0" asChild>
                         <Link href={`/account/invoices/${inv.id}`}>View</Link>
                       </Button>
@@ -613,7 +619,9 @@ export default function AccountDashboardPage() {
               <ul className="space-y-3">
                 {(knivesPreview.data ?? []).map((k, i) => (
                   <li key={k.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2 last:border-0 last:pb-0">
-                    <span className="font-medium">{customerKnifeListLabel(k.tag_id, i)}</span>
+                    <Link className="font-medium text-primary underline underline-offset-2" href={`/account/knives/${k.id}`}>
+                      {customerKnifeListLabel(k.tag_id, i)}
+                    </Link>
                     {k.status ? <StatusBadge kind="knife" status={k.status} /> : null}
                   </li>
                 ))}

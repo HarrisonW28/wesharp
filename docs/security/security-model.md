@@ -46,7 +46,7 @@ Internal-only collections stay under **`/api/admin/*`** with explicit **`staff`*
 
  Overrides (write-offs/refunds exceeding automated tolerances): require **`payments.manage` + elevated approval** enforced by Laravel services (feature flags + dual logging). Frontend labels must not authorize alone.
 
-**Manual invoice payments:** **`POST /api/admin/payments/manual`** authorises **`InvoicePolicy::recordManualPayment`** (**`payments.manage`** + scoped **`invoices.view`**). Posting **`amount_pence`** above the unpaid remainder requires **`payments.override`** (**`RecordManualPaymentAction`**).
+**Manual invoice payments:** **`POST /api/admin/payments/manual`** authorises **`InvoicePolicy::recordManualPayment`** (**`payments.manage`** + scoped **`invoices.view`**). Posting **`amount_pence`** above the unpaid remainder (or recording when the invoice is already **paid**) requires **`payments.override`**, which is granted only to **`super_admin`** / **`admin`** (**`RecordManualPaymentAction`**).
 
 ---
 
@@ -85,7 +85,7 @@ Internal-only collections stay under **`/api/admin/*`** with explicit **`staff`*
 
 ## Stripe webhooks
 
-**`POST /api/webhooks/stripe`** is **unauthenticated**; **`StripeWebhookSignature`** verifies **`Stripe-Signature`** using **`services.stripe.webhook_secret`** (see **`docs/security/stripe-security.md`**). Missing secret ⇒ **503** with safe JSON (**no raw provider errors** in production wrappers).
+**`POST /api/webhooks/stripe`** is **unauthenticated**; **`StripeWebhookSignature`** verifies **`Stripe-Signature`** using **`config('stripe.webhook_secret')`** (see **`docs/security/stripe-security.md`** and **`docs/integrations/stripe.md`**). Missing secret ⇒ **503** with safe JSON (**no raw provider errors** in production wrappers).
 
 ---
 

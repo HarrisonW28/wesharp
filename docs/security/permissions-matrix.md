@@ -31,9 +31,9 @@ Legend:
 | `knives.update`                  | Sharpen QA updates                                                     | ✅ route QA + admins; ⚠ scoped customer_staff where allowed         |
 | `invoices.view`                  | AR visibility                                                          | ✅ finance + tenant invoicing consoles                              |
 | `invoices.create` / `update`     | Bill generation                                                        | ✅ finance/admin combos                                             |
-| `payments.view`                  | Payment timeline                                                       | ✅ finance + authorised tenant finance roles                        |
+| `payments.view`                  | Payment timeline + **`GET /api/admin/finance/dashboard`** (with **`invoices.view`**) | ✅ finance + admin/super_admin; ⛔ `route_manager`; tenant (portal payments only) |
 | `payments.manage`                | Capture manual payments/refunds surfaced to finance                    | ✅ finance + super_admin                                            |
-| `payments.override`              | Write-offs exceeding automated guardrails — **dual control** workflows | ✅ finance tiers + admins (explicit constant)                       |
+| `payments.override`              | Overpayment / settle on **paid** invoice — elevated guardrails         | ✅ `super_admin`, `admin`; ⛔ `finance` (Sprint 7.3)                |
 | `analytics.view`                 | BI tiles                                                               | ✅ staff leadership + finance                                       |
 | `account.locations.manage`       | Tenant self-service **`company_locations`** create/update/delete       | ✅ `customer_owner` + `customer_staff` (scoped)                     |
 | `account.settings.update`       | PATCH **`/api/account/settings`**                                      | ✅ `customer_owner` + `customer_staff`                               |
@@ -48,7 +48,7 @@ Manual **`POST /api/admin/payments/manual`** enforces **`InvoicePolicy::recordMa
 
 - **`/api/account/*`** — each verb adds **`EnsurePermission`** ( **`dashboard.view`**, **`bookings.view`**, **`bookings.create`**, **`orders.view`**, **`knives.view`**, **`invoices.view`**, **`account.locations.manage`**, **`account.settings.update`**) atop **`tenant`** middleware.
 - **`/api/admin/invoices*`** — grouped by **`permission:invoices.view|create|update`** per route definition in **`routes/api.php`**.
-- **`/api/admin/payments*`** — **`GET`** requires **`payments.view`**; **`POST /payments/manual`** requires **`payments.manage`**.
+- **`/api/admin/payments*`** — **`GET`** requires **`payments.view`**; **`POST /payments/manual`** requires **`payments.manage`**; **`PATCH /payments/{id}`** (reference/notes only) requires **`payments.manage`**.
 - **`/api/admin/routes*`** — create / **`PUT`** / reorder / add-stop use **`routes.manage`**; **`POST …/start`** and **`POST …/complete`** remain **middleware-free** beyond **`staff`** so **`OperationalRoutePolicy::manage`** can authorise assigned drivers without **`routes.manage`**.
 - **`route-stops/*`** mutations — **`RouteStopPolicy::manage`** enforces **`ROUTE_STOPS_UPDATE`** with planner/driver carve-outs.
 

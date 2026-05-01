@@ -279,6 +279,8 @@ final class RouteFormatting
                 'require_collection_photo' => (bool) config('wesharp_evidence.require_collection_photo', false),
                 'require_return_photo' => (bool) config('wesharp_evidence.require_return_photo', false),
                 'require_failed_collection_photo' => (bool) config('wesharp_evidence.require_failed_collection_photo', false),
+                'require_damage_photo_when_damage_report' => (bool) config('wesharp_evidence.require_damage_photo_when_damage_report', false),
+                'require_completion_photo' => (bool) config('wesharp_evidence.require_completion_photo', false),
                 'default_visibility' => (string) config('wesharp_evidence.default_visibility', 'internal_only'),
                 'allow_customer_visible_photos' => (bool) config('wesharp_evidence.allow_customer_visible_photos', true),
                 'show_in_customer_portal' => (bool) config('wesharp_evidence.show_in_customer_portal', true),

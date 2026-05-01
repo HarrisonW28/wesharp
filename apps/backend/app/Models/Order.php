@@ -102,6 +102,20 @@ class Order extends Model
     }
 
     /**
+     * Orders in this state allow an existing workshop knife to leave the order and attach to a new one.
+     */
+    public function isEligibleForKnifeReservice(): bool
+    {
+        return match ($this->order_status) {
+            OrderStatus::Completed,
+            OrderStatus::Invoiced,
+            OrderStatus::Returned,
+            OrderStatus::Cancelled => true,
+            default => false,
+        };
+    }
+
+    /**
      * @param  Builder<Order>  $query
      * @return Builder<Order>
      */

@@ -7,12 +7,15 @@ use App\Http\Controllers\Admin\CompanyContactController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\CompanyLocationController;
 use App\Http\Controllers\Admin\CustomerPortalUpdateController;
+use App\Http\Controllers\Admin\DamageReportController;
 use App\Http\Controllers\Admin\EvidencePhotoController;
+use App\Http\Controllers\Admin\FinanceDashboardController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\KnifeController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\ReportingController;
 use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\RouteStopController;
 use App\Http\Controllers\Admin\UserDirectoryController;
@@ -51,6 +54,7 @@ Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (
     Route::middleware('permission:orders.view')->get('orders/{order}/evidence-photos/{photo}/file', [AccountOrderEvidencePhotoController::class, 'showFile'])->whereUuid(['order', 'photo'])->name('api.account.orders.evidence_photos.file');
 
     Route::middleware('permission:knives.view')->get('knives', [AccountKnifeController::class, 'index'])->name('api.account.knives.index');
+    Route::middleware('permission:knives.view')->get('knives/{knife}', [AccountKnifeController::class, 'show'])->whereUuid('knife')->name('api.account.knives.show');
 
     Route::middleware('permission:invoices.view')->get('invoices', [AccountInvoiceController::class, 'index'])->name('api.account.invoices.index');
     Route::middleware('permission:invoices.view')->get('invoices/{invoice}', [AccountInvoiceController::class, 'show'])->whereUuid('invoice')->name('api.account.invoices.show');
@@ -152,6 +156,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
 
     Route::post('route-stops/{stop}/evidence-photos', [EvidencePhotoController::class, 'storeForRouteStop'])->whereUuid('stop')->name('api.admin.route_stops.evidence_photos.store');
     Route::middleware('permission:orders.update')->post('orders/{order}/evidence-photos', [EvidencePhotoController::class, 'storeForOrder'])->whereUuid('order')->name('api.admin.orders.evidence_photos.store');
+    Route::middleware('permission:knives.update')->post('knives/{knife}/evidence-photos', [EvidencePhotoController::class, 'storeForKnife'])->whereUuid('knife')->name('api.admin.knives.evidence_photos.store');
+    Route::middleware('permission:knives.update')->post('damage-reports/{damageReport}/evidence-photos', [EvidencePhotoController::class, 'storeForDamageReport'])->whereUuid('damageReport')->name('api.admin.damage_reports.evidence_photos.store');
     Route::patch('evidence-photos/{photo}', [EvidencePhotoController::class, 'update'])->whereUuid('photo')->name('api.admin.evidence_photos.update');
     Route::middleware('permission:routes.view')->get('evidence-photos/{photo}/file', [EvidencePhotoController::class, 'showFile'])->whereUuid('photo')->name('api.admin.evidence_photos.file');
 
@@ -182,16 +188,23 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:knives.update')->post('orders/{order}/add-knife', [OrderController::class, 'addKnife'])->whereUuid('order')->name('api.admin.orders.add_knife');
     Route::middleware('permission:knives.update')->post('orders/{order}/bulk-add-knives', [OrderController::class, 'bulkAddKnives'])->whereUuid('order')->name('api.admin.orders.bulk_add_knives');
     Route::middleware('permission:knives.update')->post('orders/{order}/bulk-order-items', [OrderController::class, 'bulkAddOrderItems'])->whereUuid('order')->name('api.admin.orders.bulk_order_items');
+    Route::middleware('permission:knives.update')->post('orders/{order}/bulk-workshop', [OrderController::class, 'bulkWorkshop'])->whereUuid('order')->name('api.admin.orders.bulk_workshop');
+    Route::middleware('permission:knives.update')->post('orders/{order}/items/{orderItem}/transition', [OrderController::class, 'transitionOrderItem'])->whereUuid(['order', 'orderItem'])->name('api.admin.orders.items.transition');
 
     Route::middleware('permission:knives.view')->get('knives', [KnifeController::class, 'index'])->name('api.admin.knives.index');
     Route::middleware('permission:knives.update')->post('knives', [KnifeController::class, 'store'])->name('api.admin.knives.store');
     Route::middleware('permission:knives.view')->get('knives/{knife}', [KnifeController::class, 'show'])->whereUuid('knife')->name('api.admin.knives.show');
     Route::middleware('permission:knives.update')->put('knives/{knife}', [KnifeController::class, 'update'])->whereUuid('knife')->name('api.admin.knives.update');
+    Route::middleware('permission:knives.update')->post('knives/{knife}/transition', [KnifeController::class, 'transition'])->whereUuid('knife')->name('api.admin.knives.transition');
     Route::middleware('permission:knives.update')->post('knives/{knife}/mark-inspected', [KnifeController::class, 'markInspected'])->whereUuid('knife')->name('api.admin.knives.mark_inspected');
     Route::middleware('permission:knives.update')->post('knives/{knife}/mark-sharpened', [KnifeController::class, 'markSharpened'])->whereUuid('knife')->name('api.admin.knives.mark_sharpened');
     Route::middleware('permission:knives.update')->post('knives/{knife}/mark-quality-checked', [KnifeController::class, 'markQualityChecked'])->whereUuid('knife')->name('api.admin.knives.mark_quality_checked');
     Route::middleware('permission:knives.update')->post('knives/{knife}/mark-returned', [KnifeController::class, 'markReturned'])->whereUuid('knife')->name('api.admin.knives.mark_returned');
     Route::middleware('permission:knives.update')->post('knives/{knife}/report-issue', [KnifeController::class, 'reportIssue'])->whereUuid('knife')->name('api.admin.knives.report_issue');
+    Route::middleware('permission:knives.update')->post('knives/{knife}/inspection', [KnifeController::class, 'recordInspection'])->whereUuid('knife')->name('api.admin.knives.inspection');
+    Route::middleware('permission:knives.update')->post('knives/{knife}/damage-reports', [DamageReportController::class, 'store'])->whereUuid('knife')->name('api.admin.knives.damage_reports.store');
+    Route::middleware('permission:knives.update')->put('damage-reports/{damageReport}', [DamageReportController::class, 'update'])->whereUuid('damageReport')->name('api.admin.damage_reports.update');
+    Route::middleware('permission:knives.update')->post('damage-reports/{damageReport}/archive', [DamageReportController::class, 'archive'])->whereUuid('damageReport')->name('api.admin.damage_reports.archive');
     Route::middleware('permission:knives.update')->post('knives/{knife}/photos', [KnifeController::class, 'storePhoto'])->whereUuid('knife')->name('api.admin.knives.photos.store');
     Route::middleware('permission:knives.view')->get('knife-photos/{photo}/file', [KnifeController::class, 'showPhotoFile'])->whereUuid('photo')->name('api.admin.knife_photos.file');
     Route::middleware('permission:knives.update')->delete('knives/{knife}/photos/{photo}', [KnifeController::class, 'destroyPhoto'])->whereUuid(['knife', 'photo'])->name('api.admin.knives.photos.destroy');
@@ -203,9 +216,28 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:invoices.update')->post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->whereUuid('invoice')->name('api.admin.invoices.send');
     Route::middleware('permission:invoices.update')->post('invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->whereUuid('invoice')->name('api.admin.invoices.mark_paid');
     Route::middleware('permission:invoices.update')->post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->whereUuid('invoice')->name('api.admin.invoices.void');
+    Route::middleware('permission:invoices.update')->post('invoices/{invoice}/reopen-draft', [InvoiceController::class, 'reopenDraft'])->whereUuid('invoice')->name('api.admin.invoices.reopen_draft');
+    Route::middleware('permission:payments.manage')->post('invoices/{invoice}/stripe-checkout-session', [InvoiceController::class, 'stripeCheckoutSession'])->whereUuid('invoice')->name('api.admin.invoices.stripe_checkout_session');
+
+    Route::middleware(['permission:invoices.view', 'permission:payments.view'])->get('finance/dashboard', FinanceDashboardController::class)->name('api.admin.finance.dashboard');
+
+    Route::middleware('permission:reports.finance')->prefix('reports')->group(function (): void {
+        Route::get('sales', [ReportingController::class, 'sales'])->name('api.admin.reports.sales');
+        Route::get('invoices', [ReportingController::class, 'invoices'])->name('api.admin.reports.invoices');
+        Route::get('subscriptions', [ReportingController::class, 'subscriptions'])->name('api.admin.reports.subscriptions');
+        Route::get('export', [ReportingController::class, 'exportPlaceholder'])->name('api.admin.reports.export');
+    });
+
+    Route::middleware('permission:reports.operations')->prefix('reports')->group(function (): void {
+        Route::get('bookings', [ReportingController::class, 'bookings'])->name('api.admin.reports.bookings');
+        Route::get('orders', [ReportingController::class, 'orders'])->name('api.admin.reports.orders');
+        Route::get('routes', [ReportingController::class, 'routes'])->name('api.admin.reports.routes');
+        Route::get('knives', [ReportingController::class, 'knives'])->name('api.admin.reports.knives');
+    });
 
     Route::middleware('permission:payments.view')->get('payments', [PaymentController::class, 'index'])->name('api.admin.payments.index');
     Route::middleware('permission:payments.manage')->post('payments/manual', [PaymentController::class, 'manual'])->name('api.admin.payments.manual');
+    Route::middleware('permission:payments.manage')->patch('payments/{payment}', [PaymentController::class, 'update'])->whereUuid('payment')->name('api.admin.payments.update');
 });
 
 Route::prefix('public')->middleware('throttle:booking-enquiries')->group(function (): void {

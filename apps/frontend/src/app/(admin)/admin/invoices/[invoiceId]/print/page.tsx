@@ -9,6 +9,8 @@ import { useQuery } from "@tanstack/react-query";
 import { InvoiceDetailResponseSchema } from "@/lib/api/admin-invoices-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
+import { humanizeUnderscored, invoiceStatusLabel } from "@/lib/helpers/status-helpers";
+import { InvoiceDocument } from "@/components/invoices/InvoiceDocument";
 
 import { Button } from "@/components/ui/button";
 
@@ -51,96 +53,59 @@ export default function AdminInvoicePrintPage() {
 
   const inv = invQuery.data;
   const title = inv.display_reference ?? inv.invoice_number ?? "Invoice";
+  const st = inv.status ?? "";
+  const paid = inv.paid_pence ?? 0;
+  const outstanding = inv.outstanding_pence ?? Math.max(0, (inv.total ?? 0) - paid);
+  const issuer = inv.issuer ?? { legal_name: "WeSharp", address_lines: [] as string[] };
+  const billTo = inv.company
+    ? {
+        name: inv.company.name ?? "—",
+        city: inv.company.city,
+        billing_email: inv.company.billing_email,
+        phone: inv.company.phone,
+      }
+    : null;
 
   return (
-    <div className="min-h-screen bg-white p-8 text-black print:p-6">
-      <div className="mx-auto max-w-3xl print:max-w-none">
-        <div className="mb-8 flex items-start justify-between gap-4 print:hidden">
-          <Button type="button" size="lg" onClick={() => window.print()}>
+    <div className="min-h-screen bg-background print:bg-white">
+      <div className="mx-auto max-w-4xl px-4 py-8 print:max-w-none print:px-0 print:py-0">
+        <div className="mb-6 print:hidden">
+          <Button type="button" size="lg" onClick={() => globalThis.window?.print()}>
             Print / Save as PDF
           </Button>
+          <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+            {/* PDF: server-generated PDFs are backlog — see docs/product/orders-invoices-payments.md */}
+            Use your browser&apos;s print dialog to save as PDF. A dedicated PDF download is not available yet.
+          </p>
         </div>
 
-        <header className="border-b pb-6">
-          <h1 className="text-2xl font-bold">{title}</h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            {inv.company?.name}
-            {inv.company?.city ? ` · ${inv.company.city}` : ""}
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-            <div>
-              <div className="text-neutral-500">Status</div>
-              <div className="font-medium capitalize">{inv.status}</div>
-            </div>
-            <div>
-              <div className="text-neutral-500">Issue</div>
-              <div className="font-medium">{inv.issue_date ?? "—"}</div>
-            </div>
-            <div>
-              <div className="text-neutral-500">Due</div>
-              <div className="font-medium">{inv.due_date ?? "—"}</div>
-            </div>
-            <div>
-              <div className="text-neutral-500">Total</div>
-              <div className="font-bold tabular-nums">{formatGBP(inv.total ?? 0)}</div>
-            </div>
-          </div>
-        </header>
-
-        <section className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Lines</h2>
-          <table className="mt-3 w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-neutral-500">
-                <th className="py-2 pr-2">Description</th>
-                <th className="py-2 pr-2">Qty</th>
-                <th className="py-2 pr-2">Unit</th>
-                <th className="py-2 text-right">Line</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(inv.items ?? []).map((line) => (
-                <tr key={line.id} className="border-b border-neutral-200">
-                  <td className="py-2 pr-2">{line.description}</td>
-                  <td className="py-2 pr-2 tabular-nums">{line.quantity}</td>
-                  <td className="py-2 pr-2 tabular-nums">{line.unit_formatted ?? formatGBP(line.unit_amount)}</td>
-                  <td className="py-2 text-right tabular-nums font-medium">
-                    {line.line_formatted ?? formatGBP(line.line_total)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-
-        <section className="mt-10 flex justify-end">
-          <dl className="w-full max-w-xs space-y-2 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-neutral-600">Subtotal</dt>
-              <dd className="tabular-nums">{formatGBP(inv.subtotal ?? 0)}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-neutral-600">VAT</dt>
-              <dd className="tabular-nums">{formatGBP(inv.tax_total ?? 0)}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-t pt-2 text-base font-bold">
-              <dt>Total</dt>
-              <dd className="tabular-nums">{formatGBP(inv.total ?? 0)}</dd>
-            </div>
-            <div className="flex justify-between gap-4 text-neutral-600">
-              <dt>Paid</dt>
-              <dd className="tabular-nums">{inv.formatted_paid ?? formatGBP(inv.paid_pence ?? 0)}</dd>
-            </div>
-            <div className="flex justify-between gap-4 font-semibold">
-              <dt>Outstanding</dt>
-              <dd className="tabular-nums">{inv.formatted_outstanding ?? formatGBP(inv.outstanding_pence ?? 0)}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <footer className="mt-16 border-t pt-6 text-center text-xs text-neutral-500">
-          WeSharp · Internal print view · Not a tax invoice until issued per your process
-        </footer>
+        <InvoiceDocument
+          className="print:shadow-none"
+          documentTitle={title}
+          invoiceNumber={inv.invoice_number}
+          issueDate={inv.issue_date}
+          dueDate={inv.due_date}
+          statusLabel={invoiceStatusLabel(st)}
+          paymentStatusLabel={inv.payment_status ? humanizeUnderscored(inv.payment_status) : undefined}
+          issuer={issuer}
+          billTo={billTo}
+          lines={(inv.items ?? []).map((line) => ({
+            description: line.description,
+            quantity: line.quantity,
+            unitFormatted: line.unit_formatted ?? formatGBP(line.unit_amount),
+            lineFormatted: line.line_formatted ?? formatGBP(line.line_total),
+            kind: line.line_item_type ?? line.kind,
+          }))}
+          showLineKinds
+          subtotalPence={inv.subtotal ?? 0}
+          taxPence={inv.tax_total ?? 0}
+          totalPence={inv.total ?? 0}
+          paidPence={paid}
+          outstandingPence={outstanding}
+          customerNotes={inv.customer_notes}
+          defaultPaymentFooter={inv.default_payment_footer}
+          internalNotes={inv.internal_notes}
+        />
       </div>
     </div>
   );

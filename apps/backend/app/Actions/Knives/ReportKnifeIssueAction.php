@@ -25,7 +25,6 @@ final class ReportKnifeIssueAction
         return $this->transitionKnife(
             $knife,
             KnifeStatus::IssueReported,
-            'knife.report_issue',
             $actor,
             $request,
             $patches,

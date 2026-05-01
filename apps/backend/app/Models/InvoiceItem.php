@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\InvoiceLineItemType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +19,15 @@ class InvoiceItem extends Model
         'quantity',
         'unit_amount_pence',
         'line_total_pence',
+        'line_item_type',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'line_item_type' => InvoiceLineItemType::class,
+        ];
+    }
 
     public function invoice(): BelongsTo
     {

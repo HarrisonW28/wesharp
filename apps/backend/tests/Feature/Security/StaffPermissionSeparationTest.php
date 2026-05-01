@@ -81,4 +81,13 @@ final class StaffPermissionSeparationTest extends TestCase
 
         $response->assertCreated();
     }
+
+    public function test_route_manager_cannot_list_admin_invoices(): void
+    {
+        $routeManager = User::query()->where('email', 'driver@demo.wesharp.test')->firstOrFail();
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $routeManager->id)
+            ->getJson('/api/admin/invoices')
+            ->assertForbidden();
+    }
 }

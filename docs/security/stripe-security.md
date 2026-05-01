@@ -2,7 +2,7 @@
 
 ## Webhook endpoint
 
-- **`POST /api/webhooks/stripe`** — **no** Bearer auth; validates **`Stripe-Signature`** with **`STRIPE_WEBHOOK_SECRET`** ( **`config('services.stripe.webhook_secret')`** ).
+- **`POST /api/webhooks/stripe`** — **no** Bearer auth; validates **`Stripe-Signature`** with **`STRIPE_WEBHOOK_SECRET`** ( **`config('stripe.webhook_secret')`** ).
 - Missing secret → **503** + **`error.code: webhook_not_configured`** (safe message).
 - Invalid / expired signature → **400** + **`webhook_bad_request`** / **`webhook_error`**.
 
@@ -10,7 +10,7 @@ Implementation: **`App\Support\Stripe\StripeWebhookSignature`** (HMAC SHA-256, *
 
 ## Event handling
 
-Payload processing (idempotency, mapping to invoices) is **placeholder** — endpoint **acknowledges** with **`{ "received": true }`** so Stripe stops retrying signature failures only.
+After verification, **`stripe_webhook_events`** stores each **`evt_*` id**; duplicates are **not** re-processed (**`insertOrIgnore`**). Handlers that create **`Payment`** rows are **TODO** — see **`docs/integrations/stripe.md`**. Endpoint **acknowledges** with **`{ "received": true }`** so Stripe stops retrying.
 
 ## Frontend / publishable keys
 
@@ -27,5 +27,5 @@ Payload processing (idempotency, mapping to invoices) is **placeholder** — end
 
 ## Known risks
 
-- No replay idempotency store — duplicative events possible once business logic is wired.
-- PSP **live** keys must use **separate** webhook secrets per environment.
+- Webhook **business logic** not wired — payment duplication is avoided only until handlers run; implement **unique constraints** on provider IDs (e.g. **`stripe_payment_intent_id`**) when recording Stripe-settled payments.
+- PSP **live** keys must use **separate** webhook secrets per environment; **`STRIPE_ALLOW_LIVE`** gates **`sk_live_*`** at the application layer.

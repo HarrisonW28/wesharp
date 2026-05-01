@@ -29,4 +29,15 @@ final class AccountKnifeController extends TenantAccountController
 
         return ApiResponses::paginated($paginator, 'items');
     }
+
+    public function show(Request $request, Knife $knife): JsonResponse
+    {
+        $this->authorize('view', $knife);
+
+        if ((string) $knife->company_id !== $this->tenantCompanyId($request)) {
+            abort(403);
+        }
+
+        return ApiResponses::success(KnifeJson::portalDetail($knife));
+    }
 }

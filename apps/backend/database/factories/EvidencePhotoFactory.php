@@ -26,6 +26,7 @@ class EvidencePhotoFactory extends Factory
             'route_stop_id' => null,
             'order_id' => null,
             'knife_id' => null,
+            'damage_report_id' => null,
             'category' => EvidencePhotoCategory::GeneralRouteStop,
             'visibility' => EvidencePhotoVisibility::InternalOnly,
             'caption' => null,

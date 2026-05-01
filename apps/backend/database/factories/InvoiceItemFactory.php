@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\InvoiceLineItemType;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,6 +19,7 @@ class InvoiceItemFactory extends Factory
 
         return [
             'invoice_id' => Invoice::factory(),
+            'line_item_type' => InvoiceLineItemType::OneOffService,
             'description' => fake()->sentence(3),
             'quantity' => $qty,
             'unit_amount_pence' => $unit,

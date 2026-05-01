@@ -1,5 +1,29 @@
 import { z } from "zod";
 
+import { EvidencePhotoAdminRowSchema, EvidenceSettingsSchema } from "./admin-routes-schema";
+
+export const AdminDamageReportSchema = z
+  .object({
+    id: z.string(),
+    order_id: z.string().nullable().optional(),
+    knife_id: z.string().optional(),
+    description: z.string().nullable().optional(),
+    details: z.string().nullable().optional(),
+    internal_notes: z.string().nullable().optional(),
+    customer_visible: z.boolean().optional(),
+    customer_description: z.string().nullable().optional(),
+    severity: z.string().nullable().optional(),
+    status: z.string().nullable().optional(),
+    resolved_at: z.string().nullable().optional(),
+    archived_at: z.string().nullable().optional(),
+    created_at: z.string().nullable().optional(),
+    created_by: z
+      .object({ id: z.string().nullable().optional(), name: z.string().nullable().optional() })
+      .nullable()
+      .optional(),
+  })
+  .passthrough();
+
 export const KnifeRowSchema = z
   .object({
     id: z.string(),
@@ -12,6 +36,46 @@ export const KnifeRowSchema = z
     order_id: z.string().nullable().optional(),
     booking_id: z.string().nullable().optional(),
     updated_at: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+export const KnifeServiceHistoryEntrySchema = z
+  .object({
+    id: z.string(),
+    order_id: z.string(),
+    order_status: z.string().nullable().optional(),
+    order_status_label: z.string().nullable().optional(),
+    service_kind: z.string().nullable().optional(),
+    service_kind_label: z.string().nullable().optional(),
+    service_date: z.string().nullable().optional(),
+    order_completed_at: z.string().nullable().optional(),
+    linked_at: z.string().nullable().optional(),
+    unlinked_at: z.string().nullable().optional(),
+    is_current: z.boolean().optional(),
+    condition_summary: z.string().nullable().optional(),
+    damage_reports: z.array(AdminDamageReportSchema).optional(),
+    invoices: z
+      .array(
+        z.object({
+          id: z.string(),
+          invoice_number: z.string().nullable().optional(),
+          invoice_status: z.string().nullable().optional(),
+          admin_path: z.string().optional(),
+        }),
+      )
+      .optional(),
+    workshop_evidence_photos: z.array(EvidencePhotoAdminRowSchema).optional(),
+  })
+  .passthrough();
+
+export const KnifePastOrderRowSchema = z
+  .object({
+    order_id: z.string(),
+    order_status: z.string().nullable().optional(),
+    order_status_label: z.string().nullable().optional(),
+    linked_at: z.string().nullable().optional(),
+    unlinked_at: z.string().nullable().optional(),
+    is_current: z.boolean().optional(),
   })
   .passthrough();
 
@@ -57,7 +121,22 @@ export const KnifeDetailSchema = z
       .object({ id: z.string().nullable(), name: z.string().nullable().optional() })
       .nullable()
       .optional(),
-    damage_reports: z.array(z.record(z.string(), z.unknown())).optional(),
+    inspection: z
+      .object({
+        condition: z.string().nullable().optional(),
+        notes: z.string().nullable().optional(),
+        internal_notes: z.string().nullable().optional(),
+        customer_visible: z.boolean().optional(),
+        inspected_at: z.string().nullable().optional(),
+        inspected_by: z
+          .object({ id: z.string().nullable().optional(), name: z.string().nullable().optional() })
+          .nullable()
+          .optional(),
+      })
+      .optional(),
+    damage_reports: z.array(AdminDamageReportSchema).optional(),
+    workshop_evidence_photos: z.array(EvidencePhotoAdminRowSchema).optional(),
+    evidence_settings: EvidenceSettingsSchema.optional(),
     photos: z
       .array(
         z.object({
@@ -86,6 +165,8 @@ export const KnifeDetailSchema = z
       )
       .optional(),
     timeline: z.array(z.record(z.string(), z.unknown())).optional(),
+    past_orders: z.array(KnifePastOrderRowSchema).optional(),
+    service_history: z.array(KnifeServiceHistoryEntrySchema).optional(),
     created_at: z.string().nullable().optional(),
     updated_at: z.string().nullable().optional(),
   })

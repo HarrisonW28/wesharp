@@ -5,6 +5,7 @@ namespace App\Actions\Invoices;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Services\Audit\AuditRecorder;
+use App\Support\Invoices\InvoiceStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,9 +20,12 @@ final class SendInvoicePlaceholderAction
         return DB::transaction(function () use ($invoice, $actor, $request): Invoice {
             $invoice->refresh();
 
-            if ($invoice->invoice_status !== InvoiceStatus::Draft) {
-                abort(422, 'Only draft invoices can be sent from this MVP action.');
+            /** @phpstan-ignore-next-line */
+            $st = $invoice->invoice_status;
+            if (! $st instanceof InvoiceStatus) {
+                abort(422, 'Invalid invoice state.');
             }
+            InvoiceStatusTransitions::assertSend($st);
 
             /** @phpstan-ignore-next-line */
             $fromStatus = $invoice->invoice_status->value;

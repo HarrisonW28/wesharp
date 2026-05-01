@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\KnifeStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +20,15 @@ class OrderItem extends Model
         'description',
         'quantity',
         'unit_amount_pence',
+        'service_status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'service_status' => KnifeStatus::class,
+        ];
+    }
 
     public function order(): BelongsTo
     {

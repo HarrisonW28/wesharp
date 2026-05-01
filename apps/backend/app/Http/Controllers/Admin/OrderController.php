@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Invoices\GenerateInvoiceDraftFromOrderAction;
+use App\Actions\Orders\BulkOrderWorkshopAction;
 use App\Actions\Orders\CancelOrderAction;
+use App\Actions\Orders\TransitionOrderItemServiceStatusAction;
 use App\Actions\Orders\TransitionOrderStatusAction;
+use App\Enums\KnifeStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
@@ -13,11 +16,14 @@ use App\Http\Requests\AddKnifeToOrderRequest;
 use App\Http\Requests\AttachKnifeToOrderRequest;
 use App\Http\Requests\BulkAddKnivesRequest;
 use App\Http\Requests\BulkAddOrderItemsRequest;
+use App\Http\Requests\BulkOrderWorkshopRequest;
 use App\Http\Requests\CompleteOrderRequest;
 use App\Http\Requests\StoreOrderRequest;
+use App\Http\Requests\TransitionOrderItemRequest;
 use App\Http\Requests\TransitionOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Services\Orders\OrderService;
 use App\Support\ApiResponses;
 use App\Support\Knives\KnifeJson;
@@ -32,6 +38,8 @@ final class OrderController extends Controller
         private readonly GenerateInvoiceDraftFromOrderAction $generateInvoiceDraftFromOrderAction,
         private readonly CancelOrderAction $cancelOrderAction,
         private readonly TransitionOrderStatusAction $transitionOrderStatusAction,
+        private readonly TransitionOrderItemServiceStatusAction $transitionOrderItemServiceStatusAction,
+        private readonly BulkOrderWorkshopAction $bulkOrderWorkshopAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -96,13 +104,17 @@ final class OrderController extends Controller
             'company:id,name,city',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
-            'items' => fn ($q) => $q->orderBy('created_at'),
+            'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
             'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
             'invoices' => fn ($q) => $q
                 ->where('invoice_status', '!=', InvoiceStatus::Void->value)
                 ->orderByDesc('created_at')
                 ->with('items')
                 ->limit(1),
+            'evidencePhotos' => fn ($q) => $q
+                ->whereNull('archived_at')
+                ->with('uploadedBy:id,name')
+                ->orderByDesc('captured_at'),
         ]);
 
         return ApiResponses::success(OrderJson::detail($order));
@@ -128,7 +140,36 @@ final class OrderController extends Controller
             'company:id,name,city',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
-            'items' => fn ($q) => $q->orderBy('created_at'),
+            'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
+            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+            'invoices' => fn ($q) => $q
+                ->where('invoice_status', '!=', InvoiceStatus::Void->value)
+                ->orderByDesc('created_at')
+                ->with('items')
+                ->limit(1),
+        ]);
+
+        return ApiResponses::success(OrderJson::detail($order));
+    }
+
+    public function transitionOrderItem(TransitionOrderItemRequest $request, Order $order, OrderItem $orderItem): JsonResponse
+    {
+        if ((string) $orderItem->order_id !== (string) $order->id) {
+            abort(404);
+        }
+
+        $this->authorize('manipulateKnives', $order);
+
+        $target = KnifeStatus::from($request->validated('target_status'));
+        /** @var string|null $note */
+        $note = $request->validated('note');
+        $this->transitionOrderItemServiceStatusAction->execute($orderItem, $target, $request->user(), $request, $note);
+
+        $order->loadMissing([
+            'company:id,name,city',
+            'booking' => fn ($q) => $q->with(['contact', 'location']),
+            'operationalRoute:id,name,route_status,scheduled_date',
+            'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
             'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
             'invoices' => fn ($q) => $q
                 ->where('invoice_status', '!=', InvoiceStatus::Void->value)
@@ -161,6 +202,44 @@ final class OrderController extends Controller
         return ApiResponses::success(OrderJson::detail($order));
     }
 
+    public function bulkWorkshop(BulkOrderWorkshopRequest $request, Order $order): JsonResponse
+    {
+        $this->authorize('manipulateKnives', $order);
+
+        /** @phpstan-ignore-next-line */
+        $summary = $this->bulkOrderWorkshopAction->execute(
+            $order,
+            $request->validated(),
+            $request->user(),
+            $request,
+        );
+
+        /** @phpstan-ignore-next-line */
+        $order->refresh();
+        $order->loadMissing([
+            'company:id,name,city',
+            'booking' => fn ($q) => $q->with(['contact', 'location']),
+            'operationalRoute:id,name,route_status,scheduled_date',
+            'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
+            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+            'invoices' => fn ($q) => $q
+                ->where('invoice_status', '!=', InvoiceStatus::Void->value)
+                ->orderByDesc('created_at')
+                ->with('items')
+                ->limit(1),
+            'evidencePhotos' => fn ($q) => $q
+                ->whereNull('archived_at')
+                ->with('uploadedBy:id,name')
+                ->orderByDesc('captured_at'),
+        ]);
+
+        /** @var array<string, mixed> $detail */
+        $detail = OrderJson::detail($order);
+        $detail['bulk_workshop_summary'] = $summary;
+
+        return ApiResponses::success($detail);
+    }
+
     public function complete(CompleteOrderRequest $request, Order $order): JsonResponse
     {
         $this->authorize('complete', $order);
@@ -170,7 +249,7 @@ final class OrderController extends Controller
             /** @phpstan-ignore-next-line */
             'company:id,name,city',
             'knives' => fn ($q) => $q->latest()->limit(250),
-            'items' => fn ($q) => $q->orderBy('created_at'),
+            'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'invoices' => fn ($q) => $q
@@ -243,7 +322,7 @@ final class OrderController extends Controller
             'company:id,name,city',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
-            'items' => fn ($q) => $q->orderBy('created_at'),
+            'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
             'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
             'invoices' => fn ($q) => $q
                 ->where('invoice_status', '!=', InvoiceStatus::Void->value)

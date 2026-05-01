@@ -7,13 +7,16 @@ use App\Http\Resources\BookingResource;
 use App\Models\AuditLog;
 use App\Models\CustomerPortalUpdate;
 use App\Models\Invoice;
+use App\Models\DamageReport;
 use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Support\Audit\AuditLogPresenter;
 use App\Enums\OrderStatus;
 use App\Support\Evidence\EvidencePhotoJson;
+use App\Enums\KnifeStatus;
 use App\Support\Knives\KnifeJson;
+use App\Support\Knives\KnifeStatusPresentation;
 use App\Support\Portal\PortalCustomerUpdateJson;
 use App\Support\Portal\PortalFulfilmentPresenter;
 use App\Support\Money\MoneyFormatting;
@@ -110,6 +113,8 @@ final class OrderJson
                 $qty = (int) $i->quantity;
                 $unit = (int) $i->unit_amount_pence;
                 $line = $qty * $unit;
+                $eff = self::orderItemEffectiveStatus($i);
+                $labelStatus = $eff ?? ($i->knife_id === null ? KnifeStatus::Logged : null);
 
                 return [
                     'description' => $i->description,
@@ -118,6 +123,8 @@ final class OrderJson
                     'line_total_pence' => $line,
                     'formatted_unit_amount' => MoneyFormatting::formatGbpFromPence($unit),
                     'formatted_line_total' => MoneyFormatting::formatGbpFromPence($line),
+                    'status' => $labelStatus?->value,
+                    'status_label' => KnifeStatusPresentation::customerLabel($labelStatus),
                 ];
             })->values()->all()
             : [];
@@ -153,6 +160,7 @@ final class OrderJson
         }
 
         $payload['fulfilment'] = PortalFulfilmentPresenter::forOrder($order);
+        $payload['workshop_progress'] = self::workshopProgress($order);
 
         if (config('wesharp_evidence.show_in_customer_portal', true)) {
             $payload['customer_messages'] = CustomerPortalUpdate::query()
@@ -418,6 +426,7 @@ final class OrderJson
             ->get();
 
         $payload = array_merge(self::listRow($order), [
+            'order_damage_reports' => self::adminOrderDamageReports($order),
             'knives' => $order->relationLoaded('knives')
                 ? $order->knives->map(fn (Knife $k) => KnifeJson::summary($k))->values()->all()
                 : [],
@@ -426,6 +435,7 @@ final class OrderJson
                     $qty = (int) $i->quantity;
                     $unit = (int) $i->unit_amount_pence;
                     $line = $qty * $unit;
+                    $eff = self::orderItemEffectiveStatus($i);
 
                     return [
                         'id' => (string) $i->id,
@@ -436,6 +446,12 @@ final class OrderJson
                         'line_total_pence' => $line,
                         'formatted_unit_amount' => MoneyFormatting::formatGbpFromPence($unit),
                         'formatted_line_total' => MoneyFormatting::formatGbpFromPence($line),
+                        'service_status' => $i->service_status?->value,
+                        'effective_status' => $eff?->value,
+                        'status_label' => KnifeStatusPresentation::adminLabel($eff),
+                        'allowed_next_service_statuses' => $i->knife_id === null
+                            ? KnifeJson::allowedNextFromKnifeStatus($i->service_status ?? KnifeStatus::Logged)
+                            : [],
                     ];
                 })->values()->all()
                 : [],
@@ -448,6 +464,7 @@ final class OrderJson
         $payload['audit_timeline'] = AuditLogPresenter::mapTimeline($audits, includeIp: true);
         $payload['status_timeline'] = self::statusTimeline($order, $audits);
         $payload['allowed_next_statuses'] = self::allowedNextStatusesForDetail($order);
+        $payload['workshop_progress'] = self::workshopProgress($order);
 
         $activeInvoice = null;
         if ($order->relationLoaded('invoices')) {
@@ -458,6 +475,118 @@ final class OrderJson
             ? self::invoiceEmbed($activeInvoice)
             : null;
 
+        if ($order->relationLoaded('evidencePhotos')) {
+            $payload['evidence_photos'] = $order->evidencePhotos
+                ->filter(static fn ($p) => $p->archived_at === null)
+                ->map(static fn ($p): array => EvidencePhotoJson::adminRow($p))
+                ->values()
+                ->all();
+        } else {
+            $payload['evidence_photos'] = [];
+        }
+
+        $payload['evidence_settings'] = self::adminEvidenceSettings();
+
         return $payload;
+    }
+
+    /** Evidence / workshop policy flags for admin UIs (orders, knives, route stops). */
+    /** @return array<string, mixed> */
+    public static function adminEvidenceSettings(): array
+    {
+        return [
+            'require_collection_photo' => (bool) config('wesharp_evidence.require_collection_photo', false),
+            'require_return_photo' => (bool) config('wesharp_evidence.require_return_photo', false),
+            'require_failed_collection_photo' => (bool) config('wesharp_evidence.require_failed_collection_photo', false),
+            'require_damage_photo_when_damage_report' => (bool) config('wesharp_evidence.require_damage_photo_when_damage_report', false),
+            'require_completion_photo' => (bool) config('wesharp_evidence.require_completion_photo', false),
+            'default_visibility' => (string) config('wesharp_evidence.default_visibility', 'internal_only'),
+            'allow_customer_visible_photos' => (bool) config('wesharp_evidence.allow_customer_visible_photos', true),
+            'allow_customer_visible_workshop_photos' => (bool) config('wesharp_evidence.allow_customer_visible_photos', true),
+            'show_in_customer_portal' => (bool) config('wesharp_evidence.show_in_customer_portal', true),
+        ];
+    }
+
+    private static function orderItemEffectiveStatus(OrderItem $i): ?KnifeStatus
+    {
+        if ($i->knife_id !== null && $i->relationLoaded('knife') && $i->knife !== null) {
+            return $i->knife->knife_status;
+        }
+
+        return $i->service_status;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private static function adminOrderDamageReports(Order $order): array
+    {
+        if (! $order->relationLoaded('knives')) {
+            return [];
+        }
+
+        $ids = $order->knives->pluck('id')->all();
+        if ($ids === []) {
+            return [];
+        }
+
+        return DamageReport::query()
+            ->whereIn('knife_id', $ids)
+            ->with(['knife:id,label,tag_id', 'reportedBy:id,name'])
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get()
+            ->map(function (DamageReport $d): array {
+                $row = KnifeJson::adminDamageReportRow($d);
+
+                return array_merge($row, [
+                    'knife_label' => $d->knife?->label,
+                    'knife_tag_id' => $d->knife?->tag_id,
+                ]);
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function workshopProgress(Order $order): array
+    {
+        $order->loadMissing(['knives', 'items.knife']);
+
+        $byStatus = [];
+        $knifeTerminal = 0;
+
+        foreach ($order->knives as $k) {
+            $v = $k->knife_status->value;
+            $byStatus[$v] = ($byStatus[$v] ?? 0) + 1;
+            if (in_array($k->knife_status, [KnifeStatus::Returned, KnifeStatus::Cancelled], true)) {
+                $knifeTerminal++;
+            }
+        }
+
+        $lineOnlyUnits = 0;
+        foreach ($order->items as $item) {
+            if ($item->knife_id !== null) {
+                continue;
+            }
+            $qty = (int) $item->quantity;
+            $lineOnlyUnits += $qty;
+            $st = $item->service_status ?? KnifeStatus::Logged;
+            $v = $st->value;
+            $byStatus[$v] = ($byStatus[$v] ?? 0) + $qty;
+        }
+
+        $knifeCount = $order->knives->count();
+
+        return [
+            'knife_count' => $knifeCount,
+            'line_only_units' => $lineOnlyUnits,
+            'work_units' => $knifeCount + $lineOnlyUnits,
+            'by_status' => $byStatus,
+            'knives_returned_or_cancelled' => $knifeTerminal,
+            'all_knives_complete' => $knifeCount === 0 || $knifeTerminal >= $knifeCount,
+        ];
     }
 }

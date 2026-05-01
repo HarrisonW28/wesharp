@@ -11,6 +11,15 @@ export const PaymentRowSchema = z
     status: z.string().nullable().optional(),
     paid_at: z.string().nullable().optional(),
     reference: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
+    recorded_by: z
+      .object({
+        id: z.string(),
+        name: z.string(),
+        email: z.string().optional(),
+      })
+      .nullable()
+      .optional(),
     currency: z.string().nullable().optional(),
     invoice: z
       .object({

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Invoices;
 
+use App\Enums\InvoiceLineItemType;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 final class UpdateDraftInvoiceLinesAction
 {
     /**
-     * @param  list<array{description: string, quantity: int, unit_amount_pence: int}>  $lines
+     * @param  list<array{description: string, quantity: int, unit_amount_pence: int, line_item_type?: string|null}>  $lines
      */
     public function execute(Invoice $invoice, array $lines, ?Authenticatable $actor, Request $request): Invoice
     {
@@ -35,9 +36,14 @@ final class UpdateDraftInvoiceLinesAction
                 $lineTotal = $qty * $unit;
                 $net += $lineTotal;
 
+                $lineType = isset($row['line_item_type']) && is_string($row['line_item_type'])
+                    ? InvoiceLineItemType::tryFrom($row['line_item_type']) ?? InvoiceLineItemType::OneOffService
+                    : InvoiceLineItemType::OneOffService;
+
                 InvoiceItem::query()->create([
                     /** @phpstan-ignore-next-line */
                     'invoice_id' => $invoice->id,
+                    'line_item_type' => $lineType,
                     'description' => $row['description'],
                     'quantity' => $qty,
                     'unit_amount_pence' => $unit,

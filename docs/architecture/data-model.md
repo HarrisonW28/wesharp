@@ -24,7 +24,7 @@ WeSharp MVP tables (`2026_04_29_*` migrations):
 
 | Table               | UUID PK | Notes                                                                                                                          |
 | ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `companies`         | Yes     | Tenant-style org; optional `slug`; `company_status`; soft deletes (`deleted_at`); nullable `city` indexed                      |
+| `companies`         | Yes     | Tenant-style org; optional `slug`; `company_status`; soft deletes (`deleted_at`); nullable `city` indexed; optional **`stripe_customer_id`** |
 | `company_locations` | Yes     | FK `company_id` → `companies` (cascade)                                                                                        |
 | `contacts`          | Yes     | FK `company_id` (cascade)                                                                                                      |
 | `notes`             | Yes     | Polymorphic `noteable_*` (`uuidMorphs`)                                                                                        |
@@ -38,9 +38,10 @@ WeSharp MVP tables (`2026_04_29_*` migrations):
 | `knives`            | Yes     | FK **`company_id`**; nullable **`booking_id`**, **`order_id`**; unique **`tag_id`**; **`knife_status`**; optional **`description`**, attribution FKs (**`sharpened_by_user_id`** …) |
 | `knife_photos`      | Yes     | FK `knife_id`; nullable FK `uploaded_file_id`                                                                                  |
 | `damage_reports`    | Yes     | FK `knife_id`, `company_id`, nullable `order_id`; optional `reported_by_id` → `users`                                          |
-| `invoices`          | Yes     | FK `company_id`, `order_id`; unique `invoice_number`; `issued_on`, `due_on` dates                                              |
-| `invoice_items`     | Yes     | FK `invoice_id` (cascade)                                                                                                      |
-| `payments`          | Yes     | FK `company_id`; nullable FK `invoice_id`, `order_id`; `payment_status`, `payment_method`                                      |
+| `invoices`          | Yes     | FK `company_id`; nullable FK `order_id`; unique `invoice_number`; `issued_on`, `due_on`; **`source_type`**, **`source_id`**, **`billing_period_start`**, **`billing_period_end`** (subscription idempotency); optional Stripe IDs |
+| `invoice_items`     | Yes     | FK `invoice_id` (cascade); **`line_item_type`** (`one_off_service`, `subscription`, `overage`, `adjustment`)                    |
+| `payments`          | Yes     | FK `company_id`; nullable FK `invoice_id`, `order_id`; `payment_status`, `payment_method`; optional **`stripe_checkout_session_id`**, **`stripe_payment_intent_id`** |
+| `stripe_webhook_events` | Yes | Primary key Stripe event **`id`** (`evt_*`); **`type`**; **`received_at`**, **`processed_at`**; idempotent webhook ingress |
 | `refunds`           | Yes     | FK `payment_id` (cascade)                                                                                                      |
 | `service_areas`     | Yes     | Coverage / pricing geography                                                                                                   |
 | `pricing_rules`     | Yes     | FK nullable `service_area_id`; `service_type`; JSON `constraints`                                                              |

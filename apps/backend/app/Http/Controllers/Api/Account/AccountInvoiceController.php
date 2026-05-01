@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Account;
 
+use App\Actions\Invoices\SyncInvoiceOverdueStatusAction;
 use App\Models\Invoice;
 use App\Services\Invoices\InvoiceService;
 use App\Support\ApiResponses;
@@ -13,6 +14,7 @@ final class AccountInvoiceController extends TenantAccountController
 {
     public function __construct(
         private readonly InvoiceService $invoiceService,
+        private readonly SyncInvoiceOverdueStatusAction $syncInvoiceOverdueStatusAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -33,6 +35,9 @@ final class AccountInvoiceController extends TenantAccountController
     public function show(Request $request, Invoice $invoice): JsonResponse
     {
         $this->authorize('view', $invoice);
+
+        /** @phpstan-ignore-next-line */
+        $invoice = $this->syncInvoiceOverdueStatusAction->execute($invoice, $request->user(), $request);
 
         return ApiResponses::success(InvoiceJson::portalDetail($invoice));
     }

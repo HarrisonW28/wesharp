@@ -19,7 +19,6 @@ final class MarkKnifeSharpenedAction
         return $this->transitionKnife(
             $knife,
             KnifeStatus::Sharpened,
-            'knife.mark_sharpened',
             $actor,
             $request,
             $actorId !== null ? ['sharpened_by_user_id' => $actorId] : [],

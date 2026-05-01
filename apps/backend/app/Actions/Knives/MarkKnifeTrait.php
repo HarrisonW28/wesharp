@@ -19,13 +19,12 @@ trait MarkKnifeTrait
     protected function transitionKnife(
         Knife $knife,
         KnifeStatus $target,
-        string $auditAction,
         ?Authenticatable $actor,
         ?Request $request,
         array $columnPatches = [],
         array $auditExtra = [],
     ): Knife {
-        return DB::transaction(function () use ($knife, $target, $auditAction, $actor, $request, $columnPatches, $auditExtra): Knife {
+        return DB::transaction(function () use ($knife, $target, $actor, $request, $columnPatches, $auditExtra): Knife {
             $knife->refresh();
             $from = $knife->knife_status;
 
@@ -39,7 +38,7 @@ trait MarkKnifeTrait
 
             $knife->save();
 
-            AuditRecorder::record($actor, $knife, $auditAction, array_merge([
+            AuditRecorder::record($actor, $knife, 'knife.status_changed', array_merge([
                 'from' => $from->value,
                 'to' => $target->value,
             ], $auditExtra), $request);

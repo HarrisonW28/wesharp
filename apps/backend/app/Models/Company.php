@@ -26,6 +26,7 @@ class Company extends Model
         'phone',
         'billing_email',
         'city',
+        'stripe_customer_id',
     ];
 
     protected function casts(): array

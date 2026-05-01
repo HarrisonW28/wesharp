@@ -7,10 +7,14 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\EvidencePhotoCategory;
 use App\Enums\EvidencePhotoVisibility;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreDamageReportEvidencePhotoRequest;
+use App\Http\Requests\StoreKnifeEvidencePhotoRequest;
 use App\Http\Requests\StoreOrderEvidencePhotoRequest;
 use App\Http\Requests\StoreRouteStopEvidencePhotoRequest;
 use App\Http\Requests\UpdateEvidencePhotoRequest;
+use App\Models\DamageReport;
 use App\Models\EvidencePhoto;
+use App\Models\Knife;
 use App\Models\Order;
 use App\Models\RouteStop;
 use App\Models\UploadedFile;
@@ -92,7 +96,7 @@ final class EvidencePhotoController extends Controller
     {
         $this->authorize('update', $order);
 
-        /** @var array{category: string, caption?: ?string, notes?: ?string, knife_id?: ?string} $data */
+        /** @var array{category: string, caption?: ?string, notes?: ?string, knife_id?: ?string, damage_report_id?: ?string} $data */
         $data = $request->validated();
         $category = EvidencePhotoCategory::from($data['category']);
 
@@ -119,6 +123,8 @@ final class EvidencePhotoController extends Controller
 
         /** @phpstan-ignore-next-line */
         $knifeId = isset($data['knife_id']) && $data['knife_id'] !== '' ? $data['knife_id'] : null;
+        /** @phpstan-ignore-next-line */
+        $damageReportId = isset($data['damage_report_id']) && $data['damage_report_id'] !== '' ? $data['damage_report_id'] : null;
 
         /** @var EvidencePhoto $photo */
         $photo = EvidencePhoto::query()->create([
@@ -129,6 +135,7 @@ final class EvidencePhotoController extends Controller
             'route_stop_id' => null,
             'order_id' => $order->id,
             'knife_id' => $knifeId,
+            'damage_report_id' => $damageReportId,
             'category' => $category,
             'visibility' => $visibility,
             'caption' => $data['caption'] ?? null,
@@ -139,6 +146,128 @@ final class EvidencePhotoController extends Controller
             'category' => $category->value,
             'visibility' => $visibility->value,
             'order_id' => (string) $order->id,
+            'knife_id' => $knifeId !== null ? (string) $knifeId : null,
+            'damage_report_id' => $damageReportId !== null ? (string) $damageReportId : null,
+        ], $request);
+
+        $photo->load(['uploadedBy:id,name']);
+
+        return ApiResponses::success(EvidencePhotoJson::adminRow($photo), 201);
+    }
+
+    public function storeForKnife(StoreKnifeEvidencePhotoRequest $request, Knife $knife): JsonResponse
+    {
+        $this->authorize('update', $knife);
+
+        /** @var array{category: string, caption?: ?string, notes?: ?string} $data */
+        $data = $request->validated();
+        $category = EvidencePhotoCategory::from($data['category']);
+
+        /** @phpstan-ignore-next-line */
+        $file = $request->file('photo');
+        /** @phpstan-ignore-next-line */
+        $path = $file->store('knife-evidence/'.(string) $knife->getKey(), 'local');
+
+        /** @phpstan-ignore-next-line */
+        $uploaded = UploadedFile::query()->create([
+            'fileable_type' => Knife::class,
+            'fileable_id' => $knife->id,
+            'disk' => 'local',
+            'path' => $path,
+            /** @phpstan-ignore-next-line */
+            'original_filename' => $file->getClientOriginalName(),
+            /** @phpstan-ignore-next-line */
+            'mime_type' => (string) $file->getMimeType(),
+            /** @phpstan-ignore-next-line */
+            'byte_size' => (int) $file->getSize(),
+        ]);
+
+        $visibility = $this->normalizeVisibility($request->input('visibility'));
+        $orderId = $knife->order_id;
+
+        /** @var EvidencePhoto $photo */
+        $photo = EvidencePhoto::query()->create([
+            'uploaded_file_id' => $uploaded->id,
+            /** @phpstan-ignore-next-line */
+            'uploaded_by_user_id' => $request->user()?->getAuthIdentifier(),
+            'captured_at' => now(),
+            'route_stop_id' => null,
+            'order_id' => $orderId,
+            'knife_id' => $knife->id,
+            'damage_report_id' => null,
+            'category' => $category,
+            'visibility' => $visibility,
+            'caption' => $data['caption'] ?? null,
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        AuditRecorder::record($request->user(), $photo, 'evidence_photo.uploaded', [
+            'category' => $category->value,
+            'visibility' => $visibility->value,
+            'knife_id' => (string) $knife->id,
+            'order_id' => $orderId !== null ? (string) $orderId : null,
+        ], $request);
+
+        $photo->load(['uploadedBy:id,name']);
+
+        return ApiResponses::success(EvidencePhotoJson::adminRow($photo), 201);
+    }
+
+    public function storeForDamageReport(StoreDamageReportEvidencePhotoRequest $request, DamageReport $damageReport): JsonResponse
+    {
+        $this->authorize('update', $damageReport);
+
+        $damageReport->loadMissing('knife');
+
+        /** @var array{category: string, caption?: ?string, notes?: ?string} $data */
+        $data = $request->validated();
+        $category = EvidencePhotoCategory::from($data['category']);
+
+        /** @phpstan-ignore-next-line */
+        $file = $request->file('photo');
+        /** @phpstan-ignore-next-line */
+        $path = $file->store('damage-report-evidence/'.(string) $damageReport->getKey(), 'local');
+
+        /** @phpstan-ignore-next-line */
+        $uploaded = UploadedFile::query()->create([
+            'fileable_type' => DamageReport::class,
+            'fileable_id' => $damageReport->id,
+            'disk' => 'local',
+            'path' => $path,
+            /** @phpstan-ignore-next-line */
+            'original_filename' => $file->getClientOriginalName(),
+            /** @phpstan-ignore-next-line */
+            'mime_type' => (string) $file->getMimeType(),
+            /** @phpstan-ignore-next-line */
+            'byte_size' => (int) $file->getSize(),
+        ]);
+
+        $visibility = $this->normalizeVisibility($request->input('visibility'));
+        $orderId = $damageReport->order_id ?? $damageReport->knife?->order_id;
+        $knifeId = (string) $damageReport->knife_id;
+
+        /** @var EvidencePhoto $photo */
+        $photo = EvidencePhoto::query()->create([
+            'uploaded_file_id' => $uploaded->id,
+            /** @phpstan-ignore-next-line */
+            'uploaded_by_user_id' => $request->user()?->getAuthIdentifier(),
+            'captured_at' => now(),
+            'route_stop_id' => null,
+            'order_id' => $orderId,
+            'knife_id' => $knifeId,
+            'damage_report_id' => $damageReport->id,
+            'category' => $category,
+            'visibility' => $visibility,
+            'caption' => $data['caption'] ?? null,
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        AuditRecorder::record($request->user(), $photo, 'evidence_photo.uploaded', [
+            'category' => $category->value,
+            'visibility' => $visibility->value,
+            'damage_report_id' => (string) $damageReport->id,
+            'knife_id' => $knifeId,
+            'order_id' => $orderId !== null ? (string) $orderId : null,
         ], $request);
 
         $photo->load(['uploadedBy:id,name']);

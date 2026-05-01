@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Support\Crm\CompanyCrmOverview;
 use App\Support\Crm\CompanySubscriptionCrmPayload;
+use App\Support\Knives\KnifeStatusPresentation;
 use App\Support\Orders\OrderStatusPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -92,12 +93,15 @@ class CompanyDetailResource extends JsonResource
             ]),
             'knives' => $c->knives->map(static fn (Knife $k) => [
                 'id' => (string) $k->id,
+                'tag_id' => $k->tag_id,
                 'label' => $k->label,
                 'knife_status' => $k->knife_status?->value,
                 'knife_status_label' => $k->knife_status !== null
-                    ? Str::headline(str_replace('_', ' ', $k->knife_status->value))
+                    ? KnifeStatusPresentation::adminLabel($k->knife_status)
                     : null,
                 'position' => $k->position,
+                'order_id' => $k->order_id !== null ? (string) $k->order_id : null,
+                'updated_at' => $k->updated_at?->toIso8601String(),
             ]),
             'invoices' => $c->invoices->map(static fn (Invoice $inv) => [
                 'id' => (string) $inv->id,

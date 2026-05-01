@@ -2,6 +2,7 @@
 
 namespace App\Services\Knives;
 
+use App\Enums\KnifeServiceKind;
 use App\Enums\KnifeStatus;
 use App\Models\Knife;
 use App\Models\Order;
@@ -13,6 +14,10 @@ use Illuminate\Support\Str;
 
 final class KnifeService
 {
+    public function __construct(
+        private readonly KnifeServiceAssignmentRecorder $assignmentRecorder,
+    ) {}
+
     public function allocateTagId(?Order $order = null): string
     {
         do {
@@ -42,7 +47,8 @@ final class KnifeService
     {
         $status = $payload['knife_status'] ?? KnifeStatus::Logged;
 
-        return Knife::query()->create([
+        /** @var Knife $knife */
+        $knife = Knife::query()->create([
             'company_id' => $order->company_id,
             'booking_id' => $order->booking_id,
             'order_id' => $order->id,
@@ -58,6 +64,10 @@ final class KnifeService
             'position' => $payload['position'] ?? null,
             'notes' => $payload['notes'] ?? null,
         ]);
+
+        $this->assignmentRecorder->openForOrder($knife, $order, KnifeServiceKind::Intake);
+
+        return $knife;
     }
 
     /**

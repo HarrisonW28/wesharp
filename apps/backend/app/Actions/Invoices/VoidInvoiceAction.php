@@ -5,6 +5,7 @@ namespace App\Actions\Invoices;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Services\Audit\AuditRecorder;
+use App\Support\Invoices\InvoiceStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,19 +18,17 @@ final class VoidInvoiceAction
             $invoice->refresh();
 
             /** @phpstan-ignore-next-line */
-            if ($invoice->invoice_status === InvoiceStatus::Paid) {
-                abort(422, 'Paid invoices cannot be voided.');
+            $st = $invoice->invoice_status;
+            if (! $st instanceof InvoiceStatus) {
+                abort(422, 'Invalid invoice state.');
             }
-
-            if ($invoice->invoice_status === InvoiceStatus::Void) {
+            if ($st === InvoiceStatus::Void) {
                 abort(422, 'Invoice already void.');
             }
+            InvoiceStatusTransitions::assertVoid($st);
 
             /** @phpstan-ignore-next-line */
-            $before = $invoice->invoice_status instanceof InvoiceStatus
-                /** @phpstan-ignore-next-line */
-                ? $invoice->invoice_status->value
-                : (string) $invoice->invoice_status;
+            $before = $st->value;
 
             /** @phpstan-ignore-next-line */
             $invoice->invoice_status = InvoiceStatus::Void;

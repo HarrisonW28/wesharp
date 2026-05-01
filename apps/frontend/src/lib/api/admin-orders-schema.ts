@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+import { AdminDamageReportSchema } from "./admin-knives-schema";
+import { EvidencePhotoAdminRowSchema, EvidenceSettingsSchema } from "./admin-routes-schema";
+
 export const OrderBookingLinkSchema = z.object({
   id: z.string(),
   reference: z.string(),
@@ -85,6 +88,21 @@ export const KnifeSummarySchema = z
   })
   .passthrough();
 
+export const KnifeAllowedNextSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+  risky: z.boolean(),
+});
+
+export const WorkshopProgressSchema = z.object({
+  knife_count: z.number(),
+  line_only_units: z.number(),
+  work_units: z.number(),
+  by_status: z.record(z.string(), z.number()).optional(),
+  knives_returned_or_cancelled: z.number(),
+  all_knives_complete: z.boolean(),
+});
+
 export const OrderItemRowSchema = z.object({
   id: z.string(),
   knife_id: z.string().nullable().optional(),
@@ -94,6 +112,10 @@ export const OrderItemRowSchema = z.object({
   line_total_pence: z.number().optional(),
   formatted_unit_amount: z.string().optional(),
   formatted_line_total: z.string().optional(),
+  service_status: z.string().nullable().optional(),
+  effective_status: z.string().nullable().optional(),
+  status_label: z.string().nullable().optional(),
+  allowed_next_service_statuses: z.array(KnifeAllowedNextSchema).optional(),
 });
 
 export const OrderAuditEntrySchema = z
@@ -155,7 +177,33 @@ export const PaginatedOrdersResponseSchema = z.object({
     .optional(),
 });
 
+/** Present on `POST .../bulk-workshop` responses; omitted on normal order fetches. */
+export const BulkWorkshopSummarySchema = z
+  .object({
+    mode: z.string(),
+    any_applied: z.boolean().optional(),
+    selected_knife_count: z.number().optional(),
+    selected_line_count: z.number().optional(),
+    applied_knives: z.array(z.record(z.string(), z.unknown())).optional(),
+    skipped_knives: z.array(z.record(z.string(), z.unknown())).optional(),
+    applied_line_items: z.array(z.record(z.string(), z.unknown())).optional(),
+    skipped_line_items: z.array(z.record(z.string(), z.unknown())).optional(),
+    updated_line_prices: z.number().optional(),
+    updated_knife_types: z.number().optional(),
+    updated_inspection_visibility: z.number().optional(),
+    notes_appended: z.number().optional(),
+  })
+  .passthrough();
+
 export const OrderDetailSchema = OrderRowSchema.extend({
+  order_damage_reports: z
+    .array(
+      AdminDamageReportSchema.extend({
+        knife_label: z.string().nullable().optional(),
+        knife_tag_id: z.string().nullable().optional(),
+      }),
+    )
+    .optional(),
   knives: z.array(KnifeSummarySchema).optional(),
   items: z.array(OrderItemRowSchema).optional(),
   created_at: z.string().nullable().optional(),
@@ -165,6 +213,10 @@ export const OrderDetailSchema = OrderRowSchema.extend({
   audit_timeline: z.array(OrderAuditEntrySchema).optional(),
   status_timeline: z.array(OrderStatusMilestoneSchema).optional(),
   allowed_next_statuses: z.array(OrderAllowedNextStatusSchema).optional(),
+  workshop_progress: WorkshopProgressSchema.optional(),
+  evidence_photos: z.array(EvidencePhotoAdminRowSchema).optional(),
+  evidence_settings: EvidenceSettingsSchema.optional(),
+  bulk_workshop_summary: BulkWorkshopSummarySchema.optional(),
 });
 
 export const OrderDetailResponseSchema = z.object({

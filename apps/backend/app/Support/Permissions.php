@@ -63,6 +63,12 @@ final class Permissions
 
     public const ANALYTICS_VIEW = 'analytics.view';
 
+    /** Financial reporting (sales, invoices, subscriptions) — admin API `/api/admin/reports/…`. */
+    public const REPORTS_FINANCE = 'reports.finance';
+
+    /** Operational reporting (bookings, orders, routes, knives) — admin API `/api/admin/reports/…`. */
+    public const REPORTS_OPERATIONS = 'reports.operations';
+
     /** Create/update/remove pick-up addresses for the signed-in company (tenant portal). */
     public const ACCOUNT_LOCATIONS_MANAGE = 'account.locations.manage';
 
@@ -151,6 +157,7 @@ final class Permissions
             self::KNIVES_VIEW,
             self::KNIVES_UPDATE,
             self::ANALYTICS_VIEW,
+            self::REPORTS_OPERATIONS,
             self::SETTINGS_VIEW,
             self::AUDIT_LOGS_VIEW,
         ],
@@ -168,8 +175,8 @@ final class Permissions
             self::INVOICES_UPDATE,
             self::PAYMENTS_VIEW,
             self::PAYMENTS_MANAGE,
-            self::PAYMENTS_OVERRIDE,
             self::ANALYTICS_VIEW,
+            self::REPORTS_FINANCE,
             self::SETTINGS_VIEW,
             self::AUDIT_LOGS_VIEW,
         ],

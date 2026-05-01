@@ -109,10 +109,13 @@ export const OrderPreviewSchema = z.object({
 
 export const KnifePreviewSchema = z.object({
   id: z.string(),
+  tag_id: z.string().nullable().optional(),
   label: z.string().nullable().optional(),
   knife_status: z.string().nullable().optional(),
   knife_status_label: z.string().nullable().optional(),
   position: z.union([z.string(), z.number()]).nullable().optional(),
+  order_id: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
 });
 
 export const InvoicePreviewSchema = z.object({

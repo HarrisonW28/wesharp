@@ -25,6 +25,7 @@ final class RecordManualPaymentAction
      *   amount_pence:int,
      *   payment_method:string,
      *   reference:?string,
+     *   notes:?string,
      *   paid_at:?string,
      * }  $validated
      */
@@ -41,6 +42,10 @@ final class RecordManualPaymentAction
                 abort(422, 'Cannot record payment against a void invoice.');
             }
 
+            if ($invoice->invoice_status === InvoiceStatus::Draft) {
+                abort(422, 'Cannot record payments against a draft invoice. Issue the invoice first.');
+            }
+
             /** @phpstan-ignore-next-line */
             $received = (int) ($invoice->payments()->sum('amount_pence'));
             /** @phpstan-ignore-next-line */
@@ -51,10 +56,17 @@ final class RecordManualPaymentAction
             /** @phpstan-ignore-next-line */
             $remaining = max(0, $total - $received);
 
+            $actorUser = $actor instanceof User ? $actor : null;
+
+            if ($invoice->invoice_status === InvoiceStatus::Paid) {
+                if ($actorUser === null || ! Permissions::userMay($actorUser, Permissions::PAYMENTS_OVERRIDE)) {
+                    abort(422, 'Invoice is already marked paid. Further payments require a payment override.');
+                }
+            }
+
             if ($incoming > $remaining) {
-                $user = $actor instanceof User ? $actor : null;
                 /** @phpstan-ignore-next-line */
-                if ($user === null || ! Permissions::userMay($user, Permissions::PAYMENTS_OVERRIDE)) {
+                if ($actorUser === null || ! Permissions::userMay($actorUser, Permissions::PAYMENTS_OVERRIDE)) {
                     abort(422, 'Manual payment exceeds remaining balance on this invoice.');
                 }
             }
@@ -94,6 +106,8 @@ final class RecordManualPaymentAction
                 'paid_at' => $paidAt,
                 /** @phpstan-ignore-next-line */
                 'reference' => $validated['reference'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'recorded_by' => $actorUser?->id,
             ]);
 
             /** @phpstan-ignore-next-line */
@@ -140,6 +154,7 @@ final class RecordManualPaymentAction
                 'invoice',
                 'company',
                 'order',
+                'recordedBy:id,name,email',
             ]);
         });
     }

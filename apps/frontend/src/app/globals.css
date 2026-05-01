@@ -100,3 +100,18 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+/* Print: hide app chrome (sidebars, top bars); keep invoice documents readable */
+@media print {
+  .app-chrome {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .print-optimized-invoice {
+    break-inside: avoid;
+  }
+}

@@ -143,7 +143,13 @@ final class MvpOperationalPipelineApiTest extends TestCase
             self::assertCount(5, $knifeIds);
             $knifeId = (string) $knifeIds[0];
 
-            foreach (['mark-inspected', 'mark-sharpened', 'mark-quality-checked', 'mark-returned'] as $path) {
+            $this->withHeaders($opsH())
+                ->postJson('/api/admin/knives/'.$knifeId.'/mark-inspected', [])
+                ->assertOk();
+            $this->withHeaders($opsH())
+                ->postJson('/api/admin/knives/'.$knifeId.'/transition', ['target_status' => 'sharpening'])
+                ->assertOk();
+            foreach (['mark-sharpened', 'mark-quality-checked', 'mark-returned'] as $path) {
                 $this->withHeaders($opsH())
                     ->postJson('/api/admin/knives/'.$knifeId.'/'.$path, [])
                     ->assertOk();

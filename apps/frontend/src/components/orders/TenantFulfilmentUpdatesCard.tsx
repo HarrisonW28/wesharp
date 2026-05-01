@@ -99,10 +99,11 @@ export function TenantFulfilmentUpdatesCard({
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Route className="h-4 w-4 text-muted-foreground" aria-hidden />
-          Updates
+          Photos &amp; updates
         </CardTitle>
         <CardDescription>
-          Collection progress, shared notes, and photos from our team (no internal routing details).
+          Collection progress, shared notes, and workshop photos our team has marked visible for you (no internal routing
+          details).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
@@ -205,7 +206,7 @@ export function TenantFulfilmentUpdatesCard({
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-2">
               <ImageIcon className="h-3.5 w-3.5" aria-hidden />
-              Photos
+              Workshop photos
             </p>
             <ul className="mt-3 space-y-6">
               {imgs.map((ph) => (

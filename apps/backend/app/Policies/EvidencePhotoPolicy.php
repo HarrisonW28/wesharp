@@ -58,6 +58,12 @@ final class EvidencePhotoPolicy
             return $order !== null && $user->can('view', $order);
         }
 
+        if ($photo->knife_id !== null) {
+            $knife = $photo->knife;
+
+            return $knife !== null && $user->can('view', $knife);
+        }
+
         return false;
     }
 
@@ -73,6 +79,12 @@ final class EvidencePhotoPolicy
             $order = $photo->order;
 
             return $order !== null && $user->can('update', $order);
+        }
+
+        if ($photo->knife_id !== null) {
+            $knife = $photo->knife;
+
+            return $knife !== null && $user->can('update', $knife);
         }
 
         return false;

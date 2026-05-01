@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\Payments\RecordManualPaymentAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RecordManualPaymentRequest;
+use App\Http\Requests\UpdatePaymentRecordRequest;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\Audit\AuditRecorder;
 use App\Services\Payments\PaymentService;
 use App\Support\ApiResponses;
 use App\Support\Payments\PaymentJson;
@@ -49,5 +51,40 @@ final class PaymentController extends Controller
         );
 
         return ApiResponses::success(PaymentJson::detail($payment), 201);
+    }
+
+    public function update(UpdatePaymentRecordRequest $request, Payment $payment): JsonResponse
+    {
+        $this->authorize('update', $payment);
+
+        $validated = $request->validated();
+        $before = [
+            'reference' => $payment->reference,
+            'notes' => $payment->notes,
+        ];
+
+        if (array_key_exists('reference', $validated)) {
+            $payment->reference = $validated['reference'];
+        }
+        if (array_key_exists('notes', $validated)) {
+            $payment->notes = $validated['notes'];
+        }
+        $payment->save();
+
+        AuditRecorder::record($request->user(), $payment, 'payment.adjusted', [
+            'before' => $before,
+            'after' => [
+                'reference' => $payment->reference,
+                'notes' => $payment->notes,
+            ],
+        ], $request);
+
+        /** @phpstan-ignore-next-line */
+        return ApiResponses::success(PaymentJson::detail($payment->fresh([
+            'company:id,name',
+            'invoice:id,invoice_number',
+            'order:id',
+            'recordedBy:id,name,email',
+        ])));
     }
 }

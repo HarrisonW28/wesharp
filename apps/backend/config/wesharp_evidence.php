@@ -11,6 +11,13 @@ return [
     'require_return_photo' => (bool) env('EVIDENCE_REQUIRE_RETURN_PHOTO', false),
     'require_failed_collection_photo' => (bool) env('EVIDENCE_REQUIRE_FAILED_COLLECTION_PHOTO', false),
 
+    /**
+     * Workshop / intake (Sprint 6.4) — enforcement hooks for future workflows.
+     * When true, completing certain steps may require matching evidence (not all flows wired yet).
+     */
+    'require_damage_photo_when_damage_report' => (bool) env('EVIDENCE_REQUIRE_DAMAGE_PHOTO_WHEN_DAMAGE_REPORT', false),
+    'require_completion_photo' => (bool) env('EVIDENCE_REQUIRE_COMPLETION_PHOTO', false),
+
     /** Default for new uploads: internal_only | customer_visible */
     'default_visibility' => env('EVIDENCE_DEFAULT_VISIBILITY', 'internal_only'),
 

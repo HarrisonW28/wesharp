@@ -13,7 +13,9 @@ use App\Enums\UserStatus;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
+use App\Models\DamageReport;
 use App\Models\EvidencePhoto;
+use App\Models\Knife;
 use App\Models\OperationalRoute;
 use App\Models\Order;
 use App\Models\RouteStop;
@@ -23,6 +25,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile as HttpUploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
+use Database\Seeders\WeSharpDemoSeeder;
 use Tests\TestCase;
 
 final class EvidencePhotoApiTest extends TestCase
@@ -32,6 +35,15 @@ final class EvidencePhotoApiTest extends TestCase
     private function driverHeaders(User $user): array
     {
         return ['X-WeSharp-Test-User-Id' => (string) $user->id];
+    }
+
+    /** @return array<string, string> */
+    private function opsStaffHeaders(): array
+    {
+        $this->seed(WeSharpDemoSeeder::class);
+        $ops = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+
+        return ['X-WeSharp-Test-User-Id' => (string) $ops->id];
     }
 
     public function test_driver_can_upload_collection_proof_and_see_on_stop_detail(): void
@@ -227,6 +239,82 @@ final class EvidencePhotoApiTest extends TestCase
         $this->withHeader('X-WeSharp-Test-User-Id', (string) $tenantA->id)
             ->get('/api/account/orders/'.$orderB->id.'/evidence-photos/'.$photo->id.'/file')
             ->assertForbidden();
+    }
+
+    public function test_staff_can_upload_workshop_category_on_order(): void
+    {
+        Storage::fake('local');
+
+        $h = $this->opsStaffHeaders();
+        $order = Order::query()->whereHas('knives')->firstOrFail();
+        $file = HttpUploadedFile::fake()->image('intake.jpg', 400, 300);
+
+        $this->post('/api/admin/orders/'.$order->id.'/evidence-photos', [
+            'photo' => $file,
+            'category' => EvidencePhotoCategory::IntakeCondition->value,
+            'visibility' => EvidencePhotoVisibility::InternalOnly->value,
+            'caption' => 'Tray on intake',
+        ], $h)
+            ->assertCreated()
+            ->assertJsonPath('data.category', EvidencePhotoCategory::IntakeCondition->value);
+
+        self::assertTrue(
+            AuditLog::query()->where('action', 'evidence_photo.uploaded')->exists()
+        );
+    }
+
+    public function test_staff_can_upload_evidence_on_knife(): void
+    {
+        Storage::fake('local');
+
+        $h = $this->opsStaffHeaders();
+        /** @var Knife $knife */
+        $knife = Knife::query()->whereNotNull('order_id')->firstOrFail();
+        $file = HttpUploadedFile::fake()->image('blade.jpg', 400, 300);
+
+        $this->post('/api/admin/knives/'.$knife->id.'/evidence-photos', [
+            'photo' => $file,
+            'category' => EvidencePhotoCategory::KnifeDetail->value,
+        ], $h)
+            ->assertCreated()
+            ->assertJsonPath('data.knife_id', (string) $knife->id)
+            ->assertJsonPath('data.order_id', (string) $knife->order_id);
+    }
+
+    public function test_staff_can_upload_evidence_on_damage_report(): void
+    {
+        Storage::fake('local');
+
+        $this->seed(WeSharpDemoSeeder::class);
+        $ops = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+        /** @var array<string, string> $auth */
+        $auth = ['X-WeSharp-Test-User-Id' => (string) $ops->id];
+
+        $order = Order::query()->whereHas('knives')->firstOrFail();
+        /** @var Knife $knife */
+        $knife = $order->knives()->firstOrFail();
+
+        $this->postJson('/api/admin/knives/'.$knife->id.'/damage-reports', [
+            'order_id' => (string) $order->id,
+            'description' => 'Chip near tip for evidence test',
+            'severity' => \App\Enums\DamageReportSeverity::Minor->value,
+            'customer_visible' => false,
+        ], $auth)
+            ->assertCreated();
+
+        /** @var DamageReport $report */
+        $report = DamageReport::query()->where('knife_id', $knife->id)->orderByDesc('created_at')->firstOrFail();
+        $reportId = (string) $report->id;
+
+        $file = HttpUploadedFile::fake()->image('dmg.jpg', 400, 300);
+
+        $this->post('/api/admin/damage-reports/'.$reportId.'/evidence-photos', [
+            'photo' => $file,
+            'category' => EvidencePhotoCategory::WorkshopDamage->value,
+        ], $auth)
+            ->assertCreated()
+            ->assertJsonPath('data.damage_report_id', $reportId)
+            ->assertJsonPath('data.category', EvidencePhotoCategory::WorkshopDamage->value);
     }
 
     public function test_visibility_change_is_audited(): void

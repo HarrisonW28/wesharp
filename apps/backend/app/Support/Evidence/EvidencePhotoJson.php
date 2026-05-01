@@ -25,6 +25,7 @@ final class EvidencePhotoJson
             'notes' => $photo->notes,
             'archived_at' => $photo->archived_at?->toIso8601String(),
             'knife_id' => $photo->knife_id !== null ? (string) $photo->knife_id : null,
+            'damage_report_id' => $photo->damage_report_id !== null ? (string) $photo->damage_report_id : null,
             'order_id' => $photo->order_id !== null ? (string) $photo->order_id : null,
             'route_stop_id' => $photo->route_stop_id !== null ? (string) $photo->route_stop_id : null,
             'uploaded_by' => $photo->uploadedBy !== null
@@ -84,6 +85,13 @@ final class EvidencePhotoJson
             EvidencePhotoCategory::FailedCollection => 'Visit',
             EvidencePhotoCategory::GeneralRouteStop => 'Route',
             EvidencePhotoCategory::GeneralOrder => 'Order',
+            EvidencePhotoCategory::IntakeCondition => 'Intake',
+            EvidencePhotoCategory::KnifeDetail => 'Detail',
+            EvidencePhotoCategory::WorkshopDamage => 'Damage',
+            EvidencePhotoCategory::CompletedWork => 'Completed',
+            EvidencePhotoCategory::QualityCheck => 'Quality',
+            EvidencePhotoCategory::Before => 'Before',
+            EvidencePhotoCategory::After => 'After',
             default => 'Photo',
         };
     }
@@ -96,6 +104,13 @@ final class EvidencePhotoJson
             EvidencePhotoCategory::FailedCollection => 'Failed collection',
             EvidencePhotoCategory::GeneralRouteStop => 'General (stop)',
             EvidencePhotoCategory::GeneralOrder => 'General (order)',
+            EvidencePhotoCategory::IntakeCondition => 'Intake condition',
+            EvidencePhotoCategory::KnifeDetail => 'Knife detail',
+            EvidencePhotoCategory::WorkshopDamage => 'Damage',
+            EvidencePhotoCategory::CompletedWork => 'Completed work',
+            EvidencePhotoCategory::QualityCheck => 'Quality check',
+            EvidencePhotoCategory::Before => 'Before',
+            EvidencePhotoCategory::After => 'After',
             default => 'Photo',
         };
     }

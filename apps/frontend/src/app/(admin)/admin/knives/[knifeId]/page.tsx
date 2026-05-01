@@ -10,9 +10,10 @@ import { toast } from "sonner";
 
 import { KnifeDetailResponseSchema } from "@/lib/api/admin-knives-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
-import { availableWorkflowSteps, canReportIssue } from "@/lib/knife-status-workflow";
+import { availableWorkflowSteps, canReportIssue, isRiskyKnifeTransition } from "@/lib/knife-status-workflow";
 
 import { KnifePhotoGalleryCard } from "@/components/admin/KnifePhotoGalleryCard";
+import { WorkshopEvidenceSection } from "@/components/admin/WorkshopEvidenceSection";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,13 @@ function formatTimelineEntry(entry: Record<string, unknown>): string {
 
 const PHOTO_KINDS = ["general", "damage", "before", "after"] as const;
 
+const DAMAGE_SEVERITIES = [
+  { value: "minor", label: "Minor" },
+  { value: "moderate", label: "Moderate" },
+  { value: "needs_attention", label: "Needs attention" },
+  { value: "severe", label: "Severe" },
+] as const;
+
 export default function AdminKnifeDetailPage() {
   const params = useParams<{ knifeId: string }>();
   const knifeId = params.knifeId;
@@ -60,6 +68,28 @@ export default function AdminKnifeDetailPage() {
   const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  const [inspectionOpen, setInspectionOpen] = useState(false);
+  const [inspCondition, setInspCondition] = useState("");
+  const [inspNotes, setInspNotes] = useState("");
+  const [inspInternal, setInspInternal] = useState("");
+  const [inspCustomerVisible, setInspCustomerVisible] = useState(false);
+
+  const [damageOpen, setDamageOpen] = useState(false);
+  const [dmgDescription, setDmgDescription] = useState("");
+  const [dmgInternal, setDmgInternal] = useState("");
+  const [dmgSeverity, setDmgSeverity] = useState("moderate");
+  const [dmgCustomerVisible, setDmgCustomerVisible] = useState(false);
+  const [dmgCustomerDesc, setDmgCustomerDesc] = useState("");
+
+  const [editDamageOpen, setEditDamageOpen] = useState(false);
+  const [editDamageId, setEditDamageId] = useState<string | null>(null);
+  const [editDmgDescription, setEditDmgDescription] = useState("");
+  const [editDmgInternal, setEditDmgInternal] = useState("");
+  const [editDmgSeverity, setEditDmgSeverity] = useState("moderate");
+  const [editDmgCustomerVisible, setEditDmgCustomerVisible] = useState(false);
+  const [editDmgCustomerDesc, setEditDmgCustomerDesc] = useState("");
+  const [editDmgStatus, setEditDmgStatus] = useState("open");
 
   const invalidateKnifeLists = () => {
     void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
@@ -103,58 +133,23 @@ export default function AdminKnifeDetailPage() {
     });
   }, [knifeQuery.data]);
 
-  const mutateTransition = async (pathSegment: string) => {
-    const res = await admin.json<unknown>(`/api/admin/knives/${knifeId}/${pathSegment}`, {
-      method: "POST",
-      body: "{}",
-    });
-
-    if (!res.ok) {
-      throw new Error(res.message);
-    }
-
-    return parseKnifeDetail(res.data);
-  };
-
-  const mutInspected = useMutation({
-    mutationFn: async () => mutateTransition("mark-inspected"),
+  const transitionMutation = useMutation({
+    mutationFn: async (target_status: string) => {
+      const res = await admin.json<unknown>(`/api/admin/knives/${knifeId}/transition`, {
+        method: "POST",
+        body: JSON.stringify({ target_status }),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return parseKnifeDetail(res.data);
+    },
     onSuccess: () => {
-      toast.success("Status updated.");
+      toast.success("Blade status updated.");
       invalidateKnifeLists();
     },
     onError: (e: Error) => toast.error(e.message),
   });
-  const mutSharpened = useMutation({
-    mutationFn: async () => mutateTransition("mark-sharpened"),
-    onSuccess: () => {
-      toast.success("Status updated.");
-      invalidateKnifeLists();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const mutQC = useMutation({
-    mutationFn: async () => mutateTransition("mark-quality-checked"),
-    onSuccess: () => {
-      toast.success("Status updated.");
-      invalidateKnifeLists();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const mutReturned = useMutation({
-    mutationFn: async () => mutateTransition("mark-returned"),
-    onSuccess: () => {
-      toast.success("Status updated.");
-      invalidateKnifeLists();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const pathToMutation = {
-    "mark-inspected": mutInspected,
-    "mark-sharpened": mutSharpened,
-    "mark-quality-checked": mutQC,
-    "mark-returned": mutReturned,
-  } as const;
 
   const photoMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -212,6 +207,121 @@ export default function AdminKnifeDetailPage() {
       toast.success("Issue recorded.");
       setIssueOpen(false);
       setIssueNotes("");
+      invalidateKnifeLists();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const inspectionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await admin.json<unknown>(`/api/admin/knives/${knifeId}/inspection`, {
+        method: "POST",
+        body: JSON.stringify({
+          inspection_condition: inspCondition.trim() || undefined,
+          inspection_notes: inspNotes.trim() || undefined,
+          inspection_internal_notes: inspInternal.trim() || undefined,
+          inspection_customer_visible: inspCustomerVisible,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return parseKnifeDetail(res.data);
+    },
+    onSuccess: (data) => {
+      toast.success("Inspection saved.");
+      setInspectionOpen(false);
+      queryClient.setQueryData(["admin-knife", knifeId], data);
+      invalidateKnifeLists();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const damageCreateMutation = useMutation({
+    mutationFn: async () => {
+      const cur = queryClient.getQueryData<Awaited<ReturnType<typeof parseKnifeDetail>>>(["admin-knife", knifeId]);
+      const oid = cur?.order_id ?? cur?.order_summary?.id;
+      if (!oid) {
+        throw new Error("Link this blade to an order before filing structured damage.");
+      }
+      const desc = dmgDescription.trim();
+      if (desc.length < 2) {
+        throw new Error("Description must be at least 2 characters.");
+      }
+      const res = await admin.json<unknown>(`/api/admin/knives/${knifeId}/damage-reports`, {
+        method: "POST",
+        body: JSON.stringify({
+          order_id: oid,
+          description: desc,
+          severity: dmgSeverity,
+          internal_notes: dmgInternal.trim() || undefined,
+          customer_visible: dmgCustomerVisible,
+          customer_description: dmgCustomerVisible ? dmgCustomerDesc.trim() : undefined,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return parseKnifeDetail(res.data);
+    },
+    onSuccess: (data) => {
+      toast.success("Damage report created.");
+      setDamageOpen(false);
+      setDmgDescription("");
+      setDmgInternal("");
+      setDmgSeverity("moderate");
+      setDmgCustomerVisible(false);
+      setDmgCustomerDesc("");
+      queryClient.setQueryData(["admin-knife", knifeId], data);
+      invalidateKnifeLists();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const damageUpdateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editDamageId) {
+        throw new Error("No report selected.");
+      }
+      const res = await admin.json<unknown>(`/api/admin/damage-reports/${editDamageId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          description: editDmgDescription.trim(),
+          severity: editDmgSeverity,
+          internal_notes: editDmgInternal.trim() || undefined,
+          customer_visible: editDmgCustomerVisible,
+          customer_description: editDmgCustomerVisible ? editDmgCustomerDesc.trim() : undefined,
+          status: editDmgStatus,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return parseKnifeDetail(res.data);
+    },
+    onSuccess: (data) => {
+      toast.success("Damage report updated.");
+      setEditDamageOpen(false);
+      setEditDamageId(null);
+      queryClient.setQueryData(["admin-knife", knifeId], data);
+      invalidateKnifeLists();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const damageArchiveMutation = useMutation({
+    mutationFn: async (reportId: string) => {
+      const res = await admin.json<unknown>(`/api/admin/damage-reports/${reportId}/archive`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return parseKnifeDetail(res.data);
+    },
+    onSuccess: (data) => {
+      toast.success("Damage report archived.");
+      queryClient.setQueryData(["admin-knife", knifeId], data);
       invalidateKnifeLists();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -287,6 +397,17 @@ export default function AdminKnifeDetailPage() {
       <Link href={`/admin/orders/${k.order_summary.id}`}>Open linked order</Link>
     </Button>
   ) : null;
+
+  const openEditDamage = (r: NonNullable<typeof k.damage_reports>[number]) => {
+    setEditDamageId(typeof r.id === "string" ? r.id : String(r.id));
+    setEditDmgDescription(String(r.description ?? r.details ?? ""));
+    setEditDmgInternal(typeof r.internal_notes === "string" ? r.internal_notes : "");
+    setEditDmgSeverity(typeof r.severity === "string" ? r.severity : "moderate");
+    setEditDmgCustomerVisible(Boolean(r.customer_visible));
+    setEditDmgCustomerDesc(typeof r.customer_description === "string" ? r.customer_description : "");
+    setEditDmgStatus(typeof r.status === "string" ? r.status : "open");
+    setEditDamageOpen(true);
+  };
 
   return (
     <>
@@ -379,6 +500,104 @@ export default function AdminKnifeDetailPage() {
               </Button>
             </div>
           </dl>
+          <Separator className="my-4" />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs font-semibold uppercase text-muted-foreground">Workshop inspection</div>
+            <Dialog
+              open={inspectionOpen}
+              onOpenChange={(open) => {
+                setInspectionOpen(open);
+                if (open && knifeQuery.data) {
+                  const i = knifeQuery.data.inspection;
+                  setInspCondition(typeof i?.condition === "string" ? i.condition : "");
+                  setInspNotes(typeof i?.notes === "string" ? i.notes : "");
+                  setInspInternal(typeof i?.internal_notes === "string" ? i.internal_notes : "");
+                  setInspCustomerVisible(Boolean(i?.customer_visible));
+                }
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button type="button" size="sm" variant="outline">
+                  {k.inspection?.inspected_at ? "Update inspection" : "Add inspection"}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Inspection &amp; intake notes</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <Label htmlFor="insp-condition">Condition</Label>
+                    <Input
+                      id="insp-condition"
+                      value={inspCondition}
+                      onChange={(e) => setInspCondition(e.target.value)}
+                      placeholder="e.g. light patina, true edge"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="insp-notes">Inspection notes</Label>
+                    <Textarea
+                      id="insp-notes"
+                      value={inspNotes}
+                      onChange={(e) => setInspNotes(e.target.value)}
+                      rows={3}
+                      className="resize-y"
+                      placeholder="May be shown to the customer when visibility is on."
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="insp-internal">Internal notes</Label>
+                    <Textarea
+                      id="insp-internal"
+                      value={inspInternal}
+                      onChange={(e) => setInspInternal(e.target.value)}
+                      rows={3}
+                      className="resize-y"
+                      placeholder="Never shown in the customer portal."
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={inspCustomerVisible}
+                      onChange={(e) => setInspCustomerVisible(e.target.checked)}
+                      className="h-4 w-4 rounded border-input"
+                    />
+                    Show inspection notes to customer (portal)
+                  </label>
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button type="button" variant="outline" onClick={() => setInspectionOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="button" disabled={inspectionMutation.isPending} onClick={() => inspectionMutation.mutate()}>
+                    {inspectionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+                    Save inspection
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+          {k.inspection?.inspected_at ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Last recorded{" "}
+              <span className="text-foreground">{new Date(k.inspection.inspected_at).toLocaleString("en-GB")}</span>
+              {k.inspection.inspected_by?.name ? (
+                <>
+                  {" "}
+                  · <span className="text-foreground">{k.inspection.inspected_by.name}</span>
+                </>
+              ) : null}
+              {k.inspection.customer_visible ? (
+                <Badge className="ml-2" variant="secondary">
+                  Customer-visible
+                </Badge>
+              ) : null}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">No structured inspection yet.</p>
+          )}
           <Separator className="my-4" />
           <div className="text-xs font-semibold uppercase text-muted-foreground">Photos</div>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -487,6 +706,15 @@ export default function AdminKnifeDetailPage() {
             )}
           </div>
           <Separator className="my-4" />
+          <WorkshopEvidenceSection
+            title="Timestamped workshop evidence"
+            description="Intake, inspection, damage, QC and completion photos. Distinct from the quick gallery above — these support visibility, audit, and the customer portal."
+            uploadUrl={`/api/admin/knives/${knifeId}/evidence-photos`}
+            photos={k.workshop_evidence_photos ?? []}
+            settings={k.evidence_settings}
+            invalidateQueryKeys={[["admin-knife", knifeId], ["admin-orders"]]}
+          />
+          <Separator className="my-4" />
           <div className="text-xs font-semibold uppercase text-muted-foreground">Order link</div>
           <div className="mt-2 text-sm">{orderLink ?? "No order linked."}</div>
           <Separator className="my-4" />
@@ -511,17 +739,25 @@ export default function AdminKnifeDetailPage() {
           <div className="text-sm font-semibold">Workflow</div>
           <div className="flex flex-wrap gap-2">
             {steps.map((step) => {
-              const mutation = pathToMutation[step.path];
-              const busy = mutation.isPending;
+              const busy = transitionMutation.isPending;
+              const variant = isRiskyKnifeTransition(step.target) ? "destructive" : "secondary";
 
               return (
                 <Button
-                  key={step.path}
+                  key={step.target}
                   type="button"
                   size="sm"
-                  variant="secondary"
+                  variant={variant}
                   disabled={busy}
-                  onClick={() => mutation.mutate()}
+                  onClick={() => {
+                    if (isRiskyKnifeTransition(step.target)) {
+                      const ok = window.confirm("Confirm this blade status change?");
+                      if (!ok) {
+                        return;
+                      }
+                    }
+                    transitionMutation.mutate(step.target);
+                  }}
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                   {step.label}
@@ -566,33 +802,340 @@ export default function AdminKnifeDetailPage() {
         </Card>
       </div>
 
+      <section className="mt-8 space-y-4">
+        <h2 className="text-sm font-semibold">Service history</h2>
+        <p className="text-xs text-muted-foreground">
+          Workshop periods linked to each order. Repeat service adds a new row; older rows stay for operations and customer-safe history.
+        </p>
+        {(k.service_history ?? []).length === 0 ? (
+          <p className="text-sm text-muted-foreground">No service assignments recorded.</p>
+        ) : (
+          <ol className="space-y-3 border-l-2 border-border pl-4">
+            {(k.service_history ?? []).map((row) => {
+              const invs = row.invoices ?? [];
+              const ord = row.order_id;
+              return (
+                <li key={row.id} className="relative text-sm">
+                  <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-primary" aria-hidden />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={row.is_current ? "default" : "secondary"}>{row.is_current ? "Current" : "Past"}</Badge>
+                    <span className="font-medium">{row.service_kind_label ?? row.service_kind ?? "Service"}</span>
+                    {typeof row.service_date === "string" ? (
+                      <span className="text-xs text-muted-foreground">{new Date(row.service_date).toLocaleString("en-GB")}</span>
+                    ) : null}
+                  </div>
+                  <div className="mt-1 text-muted-foreground">
+                    Order{" "}
+                    <Link className="font-medium text-primary underline underline-offset-2" href={`/admin/orders/${ord}`}>
+                      {ord.slice(0, 8)}…
+                    </Link>
+                    {row.order_status_label ? <> · {row.order_status_label}</> : null}
+                  </div>
+                  {row.condition_summary ? (
+                    <p className="mt-2 rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
+                      Condition / damage (summary): {row.condition_summary}
+                    </p>
+                  ) : null}
+                  {invs.length > 0 ? (
+                    <ul className="mt-2 flex flex-wrap gap-2 text-xs">
+                      {invs.map((inv) => (
+                        <li key={inv.id}>
+                          <Link
+                            href={inv.admin_path ?? `/admin/invoices/${inv.id}`}
+                            className="text-primary underline underline-offset-2"
+                          >
+                            {inv.invoice_number?.trim() ? inv.invoice_number : "Invoice"}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+        {(k.past_orders ?? []).length > 0 ? (
+          <div className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Orders touched:</span>{" "}
+            {(k.past_orders ?? [])
+              .map((p) => p.order_id.slice(0, 8))
+              .join(", ")}
+          </div>
+        ) : null}
+      </section>
+
       <Separator className="my-8" />
 
       <section>
-        <h2 className="text-sm font-semibold">Damage reports</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Damage reports</h2>
+          <Dialog
+            open={damageOpen}
+            onOpenChange={(open) => {
+              setDamageOpen(open);
+              if (!open) {
+                setDmgDescription("");
+                setDmgInternal("");
+                setDmgSeverity("moderate");
+                setDmgCustomerVisible(false);
+                setDmgCustomerDesc("");
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button type="button" size="sm" variant="secondary" disabled={!k.order_id && !k.order_summary?.id}>
+                New damage report
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create damage report</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <Label>Severity</Label>
+                  <select
+                    className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={dmgSeverity}
+                    onChange={(e) => setDmgSeverity(e.target.value)}
+                  >
+                    {DAMAGE_SEVERITIES.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="dmg-desc">Description (required)</Label>
+                  <Textarea
+                    id="dmg-desc"
+                    value={dmgDescription}
+                    onChange={(e) => setDmgDescription(e.target.value)}
+                    rows={4}
+                    className="resize-y"
+                    placeholder="Workshop-facing description of condition or damage."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="dmg-int">Internal notes</Label>
+                  <Textarea
+                    id="dmg-int"
+                    value={dmgInternal}
+                    onChange={(e) => setDmgInternal(e.target.value)}
+                    rows={3}
+                    className="resize-y"
+                    placeholder="Never shown to customers."
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={dmgCustomerVisible}
+                    onChange={(e) => setDmgCustomerVisible(e.target.checked)}
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  Customer-visible summary
+                </label>
+                {dmgCustomerVisible ? (
+                  <div>
+                    <Label htmlFor="dmg-cust">Customer-facing wording</Label>
+                    <Textarea
+                      id="dmg-cust"
+                      value={dmgCustomerDesc}
+                      onChange={(e) => setDmgCustomerDesc(e.target.value)}
+                      rows={3}
+                      className="resize-y"
+                      placeholder="Plain-language text for the portal when visibility is on."
+                    />
+                  </div>
+                ) : null}
+              </div>
+              <DialogFooter className="gap-2">
+                <Button type="button" variant="outline" onClick={() => setDamageOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="button" disabled={damageCreateMutation.isPending} onClick={() => damageCreateMutation.mutate()}>
+                  {damageCreateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+                  Create
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Structured damage logging. Internal notes never appear in the customer portal.
+        </p>
         <div className="mt-3 space-y-2">
           {(k.damage_reports ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground">None recorded.</p>
           ) : (
             (k.damage_reports ?? []).map((r) => {
               const rid = typeof r.id === "string" ? r.id : String(r.id ?? "");
-              const det = typeof r.details === "string" ? r.details : "";
+              const det = String(r.description ?? r.details ?? "");
               const sev = r.severity !== undefined ? String(r.severity) : "";
-
               const cre = typeof r.created_at === "string" ? r.created_at : "";
+              const archived = typeof r.archived_at === "string" && r.archived_at !== "";
+              const st = typeof r.status === "string" ? r.status : "";
 
               return (
-                <Card key={rid} className="p-3 text-sm">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{new Date(cre).toLocaleString()}</span>
+                <Card key={rid} className={`p-3 text-sm ${archived ? "opacity-60" : ""}`}>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>{cre ? new Date(cre).toLocaleString("en-GB") : "—"}</span>
                     {sev ? <Badge variant="outline">{sev}</Badge> : null}
+                    {st ? <Badge variant="secondary">{st}</Badge> : null}
+                    {r.customer_visible ? <Badge variant="default">Customer-visible</Badge> : null}
+                    {archived ? <Badge variant="destructive">Archived</Badge> : null}
                   </div>
                   <pre className="mt-2 whitespace-pre-wrap font-sans text-sm">{det}</pre>
+                  {typeof r.internal_notes === "string" && r.internal_notes.trim() !== "" ? (
+                    <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">Internal:</span> {r.internal_notes}
+                    </p>
+                  ) : null}
+                  {!archived ? (
+                    <WorkshopEvidenceSection
+                      className="mt-3 border border-dashed bg-muted/30"
+                      title="Photos for this report"
+                      description="Upload images tied to this damage report (private storage; mark customer-visible only when appropriate)."
+                      uploadUrl={`/api/admin/damage-reports/${rid}/evidence-photos`}
+                      photos={Array.isArray(r.evidence_photos) ? r.evidence_photos : []}
+                      settings={k.evidence_settings}
+                      invalidateQueryKeys={[["admin-knife", knifeId]]}
+                      categoryChoices={[
+                        { value: "damage", label: "Damage" },
+                        { value: "knife_detail", label: "Knife detail" },
+                        { value: "before", label: "Before" },
+                        { value: "after", label: "After" },
+                        { value: "general_order", label: "General" },
+                      ]}
+                    />
+                  ) : null}
+                  {!archived ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button type="button" size="sm" variant="outline" onClick={() => openEditDamage(r)}>
+                        Edit
+                      </Button>
+                      {st !== "resolved" ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            openEditDamage(r);
+                            setEditDmgStatus("resolved");
+                          }}
+                        >
+                          Mark resolved
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        disabled={damageArchiveMutation.isPending}
+                        onClick={() => {
+                          if (window.confirm("Archive this damage report?")) {
+                            damageArchiveMutation.mutate(rid);
+                          }
+                        }}
+                      >
+                        Archive
+                      </Button>
+                    </div>
+                  ) : null}
                 </Card>
               );
             })
           )}
         </div>
+
+        <Dialog open={editDamageOpen} onOpenChange={setEditDamageOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit damage report</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              <div>
+                <Label>Status</Label>
+                <select
+                  className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={editDmgStatus}
+                  onChange={(e) => setEditDmgStatus(e.target.value)}
+                >
+                  <option value="open">Open</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              </div>
+              <div>
+                <Label>Severity</Label>
+                <select
+                  className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={editDmgSeverity}
+                  onChange={(e) => setEditDmgSeverity(e.target.value)}
+                >
+                  {DAMAGE_SEVERITIES.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="ed-dmg-desc">Description</Label>
+                <Textarea
+                  id="ed-dmg-desc"
+                  value={editDmgDescription}
+                  onChange={(e) => setEditDmgDescription(e.target.value)}
+                  rows={4}
+                  className="resize-y"
+                />
+              </div>
+              <div>
+                <Label htmlFor="ed-dmg-int">Internal notes</Label>
+                <Textarea
+                  id="ed-dmg-int"
+                  value={editDmgInternal}
+                  onChange={(e) => setEditDmgInternal(e.target.value)}
+                  rows={3}
+                  className="resize-y"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={editDmgCustomerVisible}
+                  onChange={(e) => setEditDmgCustomerVisible(e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                Customer-visible summary
+              </label>
+              {editDmgCustomerVisible ? (
+                <div>
+                  <Label htmlFor="ed-dmg-cust">Customer-facing wording</Label>
+                  <Textarea
+                    id="ed-dmg-cust"
+                    value={editDmgCustomerDesc}
+                    onChange={(e) => setEditDmgCustomerDesc(e.target.value)}
+                    rows={3}
+                    className="resize-y"
+                  />
+                </div>
+              ) : null}
+            </div>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={() => setEditDamageOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" disabled={damageUpdateMutation.isPending} onClick={() => damageUpdateMutation.mutate()}>
+                {damageUpdateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </section>
 
       <Separator className="my-8" />
@@ -603,7 +1146,12 @@ export default function AdminKnifeDetailPage() {
           {(k.timeline ?? []).map((entry, idx) => {
             const record = entry as Record<string, unknown>;
             const actor = record.actor && typeof record.actor === "object" ? (record.actor as { name?: string }) : null;
-            const at = typeof record.created_at === "string" ? record.created_at : "";
+            const at =
+              typeof record.at === "string"
+                ? record.at
+                : typeof record.created_at === "string"
+                  ? record.created_at
+                  : "";
 
             return (
               <li key={idx} className="relative text-sm">

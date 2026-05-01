@@ -68,4 +68,4 @@ PHPUnit only: forwarding header `config('clerk.testing_bypass_header')` (**defau
 
 - **No Clerk webhooks** yet — syncing role changes authored in Laravel back into Clerk public metadata/outbox queues is intentionally deferred (single source remains PostgreSQL users table).
 - **Multi-company impersonation UI** absent — placeholder `CompanySwitcher` documents future states.
-- **Payment overrides**: dedicated permission `payments.override` gated to finance admins *and* audited via Laravel services (see `payments.manage` parity in `Permissions`).
+- **Payment overrides**: `payments.override` is limited to **`super_admin`** / **`admin`** (not **Finance**); overpayment and posting on an already-**paid** invoice require it. Normal recording uses **`payments.manage`** and is audited.

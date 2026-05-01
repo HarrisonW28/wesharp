@@ -9,7 +9,9 @@ use App\Enums\PaymentStatus;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\User;
 use App\Services\Audit\AuditRecorder;
+use App\Support\Invoices\InvoiceStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,9 +24,15 @@ final class MarkInvoicePaidAction
         return DB::transaction(function () use ($invoice, $actor, $request): Invoice {
             $invoice->refresh();
 
-            if ($invoice->invoice_status === InvoiceStatus::Void || $invoice->invoice_status === InvoiceStatus::Paid) {
-                abort(422, 'Invoice cannot be marked paid.');
+            /** @phpstan-ignore-next-line */
+            $st = $invoice->invoice_status;
+            if (! $st instanceof InvoiceStatus) {
+                abort(422, 'Invalid invoice state.');
             }
+            if ($st === InvoiceStatus::Paid) {
+                abort(422, 'Invoice is already marked paid.');
+            }
+            InvoiceStatusTransitions::assertMarkPaid($st);
 
             /** @phpstan-ignore-next-line */
             $received = (int) ($invoice->payments()->sum('amount_pence'));
@@ -52,6 +60,7 @@ final class MarkInvoicePaidAction
                     /** @phpstan-ignore-next-line */
                     'paid_at' => now(),
                     'reference' => 'SETTLE:'.$invoice->invoice_number,
+                    'recorded_by' => $actor instanceof User ? $actor->id : null,
                 ]);
             }
 

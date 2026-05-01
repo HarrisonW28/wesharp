@@ -19,7 +19,6 @@ final class MarkKnifeReturnedAction
         return $this->transitionKnife(
             $knife,
             KnifeStatus::Returned,
-            'knife.mark_returned',
             $actor,
             $request,
             $actorId !== null ? ['returned_by_user_id' => $actorId] : [],

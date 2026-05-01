@@ -138,10 +138,11 @@ Manual:
 1. [ ] **Finance vs route ops** — as **`finance@demo.wesharp.test`** (local bypass header **`X-WeSharp-Test-User-Id`**), **`POST /api/admin/routes`** → **403**; **`GET /api/admin/payments`** → **200**.
 2. [ ] **Route vs finance AR** — as **`driver@demo.wesharp.test`**, **`POST /api/admin/payments/manual`** → **403**; **`POST /api/admin/routes`** with minimal JSON → **201** (same user id used in PHPUnit **`StaffPermissionSeparationTest`**).
 3. [ ] **Tenant isolation** — two portal users on different seeded companies (**or** scripted factories) ⇒ **`GET /api/account/orders/{peer}`** ⇒ **403** (`TenantCompanyIsolationTest` models the curl expectation).
-4. [ ] **`POST /api/webhooks/stripe`** without **`STRIPE_WEBHOOK_SECRET`** ⇒ **503** safe JSON; valid signature ⇒ **200** **`received: true`** (see **`stripe-security.md`**).
-5. [ ] SPA **deep link fence** — open **`/admin/payments`** as route_manager profile ⇒ redirect **`/forbidden`** ( **`ShellPermissionBoundary`** ). Public marketing header has **no** signed-in **`/account`** shortcuts without auth.
-6. [ ] **`APP_DEBUG=false`** on staging — trigger synthetic **500** (optional) ⇒ JSON omits **`trace`** keys ( **`server_error`** envelope ).
-7. [ ] Invoice detail — **Void** / **Mark paid** require confirmation dialogs before mutation.
+4. [ ] **`POST /api/webhooks/stripe`** without **`STRIPE_WEBHOOK_SECRET`** ⇒ **503** safe JSON; valid signature ⇒ **200** **`received: true`**; duplicate **`evt_*`** payload ⇒ **200** with a single **`stripe_webhook_events`** row (see **`docs/integrations/stripe.md`**).
+5. [ ] **`POST /api/admin/invoices/{id}/stripe-checkout-session`** — finance ⇒ **200** with **`hosted_checkout_available: false`** (placeholder); route_manager ⇒ **403**.
+6. [ ] SPA **deep link fence** — open **`/admin/payments`** as route_manager profile ⇒ redirect **`/forbidden`** ( **`ShellPermissionBoundary`** ). Public marketing header has **no** signed-in **`/account`** shortcuts without auth.
+7. [ ] **`APP_DEBUG=false`** on staging — trigger synthetic **500** (optional) ⇒ JSON omits **`trace`** keys ( **`server_error`** envelope ).
+8. [ ] Invoice detail — **Void** / **Mark paid** require confirmation dialogs before mutation.
 
 ---
 

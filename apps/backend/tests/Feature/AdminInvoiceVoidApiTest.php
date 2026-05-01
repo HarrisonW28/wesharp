@@ -14,7 +14,7 @@ final class AdminInvoiceVoidApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_void_requires_reason_and_succeeds_with_payload(): void
+    public function test_void_without_reason_succeeds(): void
     {
         $this->seed(WeSharpDemoSeeder::class);
 
@@ -25,7 +25,18 @@ final class AdminInvoiceVoidApiTest extends TestCase
 
         $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
             ->postJson("/api/admin/invoices/{$invoice->id}/void", [])
-            ->assertUnprocessable();
+            ->assertOk()
+            ->assertJsonPath('data.status', 'void');
+    }
+
+    public function test_void_with_reason_succeeds(): void
+    {
+        $this->seed(WeSharpDemoSeeder::class);
+
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+
+        /** @phpstan-ignore-next-line */
+        $invoice = Invoice::query()->where('invoice_status', 'sent')->firstOrFail();
 
         $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
             ->postJson("/api/admin/invoices/{$invoice->id}/void", [

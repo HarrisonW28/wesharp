@@ -11,6 +11,7 @@ use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CompanyLocation;
 use App\Models\Contact;
+use App\Enums\OrderStatus;
 use App\Models\Knife;
 use App\Models\OperationalRoute;
 use App\Models\Order;
@@ -271,7 +272,7 @@ final class LookupController extends Controller
 
         $id = trim((string) $request->query('id', ''));
         if ($id !== '' && Str::isUuid($id)) {
-            $one = Knife::query()->with('company:id,name')->find($id);
+            $one = Knife::query()->with('company:id,name', 'order:id,order_status')->find($id);
             if ($one !== null) {
                 $this->authorize('view', $one);
                 $items[] = $this->formatKnife($one);
@@ -282,7 +283,7 @@ final class LookupController extends Controller
         $companyId = trim((string) $request->query('company_id', ''));
         $q = trim((string) $request->query('q', ''));
 
-        $query = Knife::query()->with('company:id,name');
+        $query = Knife::query()->with('company:id,name', 'order:id,order_status');
 
         if ($exclude !== []) {
             $query->whereNotIn('id', $exclude);
@@ -292,7 +293,18 @@ final class LookupController extends Controller
             $query->where('company_id', $companyId);
         }
 
-        if ($request->boolean('unassigned_only')) {
+        if ($request->boolean('resharpen_eligible_only')) {
+            $terminal = [
+                OrderStatus::Completed->value,
+                OrderStatus::Invoiced->value,
+                OrderStatus::Returned->value,
+                OrderStatus::Cancelled->value,
+            ];
+            $query->where(function ($sub) use ($terminal): void {
+                $sub->whereNull('order_id')
+                    ->orWhereHas('order', fn ($oq) => $oq->whereIn('order_status', $terminal));
+            });
+        } elseif ($request->boolean('unassigned_only')) {
             $query->whereNull('order_id');
         }
 
@@ -519,7 +531,13 @@ final class LookupController extends Controller
             'id' => (string) $k->id,
             'label' => $primaryLabel,
             'description' => trim(implode(' · ', array_filter([$tag, $k->knife_type, $account]))),
-            'meta' => ['knife_status' => $k->knife_status?->value],
+            'meta' => [
+                'knife_status' => $k->knife_status?->value,
+                'company_id' => (string) $k->company_id,
+                'company_name' => $k->company?->name,
+                'order_id' => $k->order_id !== null ? (string) $k->order_id : null,
+                'order_status' => $k->order?->order_status?->value,
+            ],
         ];
     }
 

@@ -144,7 +144,13 @@ export default function AccountSubscriptionPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="tabular-nums text-sm">{inv.formatted_total ?? formatGBP(inv.total_pence)}</span>
-                        {inv.status ? <CustomerInvoiceStatusBadge status={inv.status} /> : null}
+                        {inv.status ? (
+                            <CustomerInvoiceStatusBadge
+                              status={inv.status}
+                              customerLabel={inv.customer_status_label}
+                              hint={inv.customer_status_hint}
+                            />
+                          ) : null}
                         <Button type="button" variant="link" className="h-auto px-0" asChild>
                           <Link href={`/account/invoices/${inv.id}`}>View</Link>
                         </Button>

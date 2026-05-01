@@ -12,4 +12,7 @@ enum PaymentMethod: string
 
     /** Cash / card / FPS not mapped to a PSP — staff-recorded. */
     case Other = 'other';
+
+    /** Trade credit / deferred settlement — staff-recorded only (no PSP). */
+    case InvoiceLater = 'invoice_later';
 }

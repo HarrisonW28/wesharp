@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Support\Permissions;
@@ -15,7 +16,15 @@ final class InvoicePolicy
 
     public function view(User $user, Invoice $invoice): bool
     {
-        return Permissions::userMayForCompany($user, Permissions::INVOICES_VIEW, (string) $invoice->company_id);
+        if (! Permissions::userMayForCompany($user, Permissions::INVOICES_VIEW, (string) $invoice->company_id)) {
+            return false;
+        }
+
+        if ($user->resolvedRole()->isCustomer() && $invoice->invoice_status === InvoiceStatus::Draft) {
+            return false;
+        }
+
+        return true;
     }
 
     public function create(User $user): bool
@@ -40,6 +49,12 @@ final class InvoicePolicy
     }
 
     public function voidInvoice(User $user, Invoice $invoice): bool
+    {
+        return Permissions::userMayForCompany($user, Permissions::INVOICES_UPDATE, (string) $invoice->company_id);
+    }
+
+    /** Undo “mark sent” when no payments exist — finance correction. */
+    public function reopenDraft(User $user, Invoice $invoice): bool
     {
         return Permissions::userMayForCompany($user, Permissions::INVOICES_UPDATE, (string) $invoice->company_id);
     }

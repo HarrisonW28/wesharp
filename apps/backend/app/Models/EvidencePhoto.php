@@ -23,6 +23,7 @@ class EvidencePhoto extends Model
         'route_stop_id',
         'order_id',
         'knife_id',
+        'damage_report_id',
         'category',
         'visibility',
         'caption',
@@ -63,6 +64,11 @@ class EvidencePhoto extends Model
     public function knife(): BelongsTo
     {
         return $this->belongsTo(Knife::class, 'knife_id');
+    }
+
+    public function damageReport(): BelongsTo
+    {
+        return $this->belongsTo(DamageReport::class, 'damage_report_id');
     }
 
     public function scopeActive($query)

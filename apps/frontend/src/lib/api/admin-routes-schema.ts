@@ -225,6 +225,7 @@ export const EvidencePhotoAdminRowSchema = z
     notes: z.string().nullable().optional(),
     archived_at: z.string().nullable().optional(),
     knife_id: z.string().nullable().optional(),
+    damage_report_id: z.string().nullable().optional(),
     order_id: z.string().nullable().optional(),
     route_stop_id: z.string().nullable().optional(),
     uploaded_by: z
@@ -260,8 +261,11 @@ export const EvidenceSettingsSchema = z
     require_collection_photo: z.boolean().optional(),
     require_return_photo: z.boolean().optional(),
     require_failed_collection_photo: z.boolean().optional(),
+    require_damage_photo_when_damage_report: z.boolean().optional(),
+    require_completion_photo: z.boolean().optional(),
     default_visibility: z.string().optional(),
     allow_customer_visible_photos: z.boolean().optional(),
+    allow_customer_visible_workshop_photos: z.boolean().optional(),
     show_in_customer_portal: z.boolean().optional(),
   })
   .passthrough();

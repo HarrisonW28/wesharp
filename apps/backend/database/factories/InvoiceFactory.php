@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\InvoiceSourceType;
 use App\Enums\InvoiceStatus;
 use App\Models\Company;
 use App\Models\Invoice;
@@ -20,6 +21,10 @@ class InvoiceFactory extends Factory
                 $order = Order::query()->find($invoice->order_id);
                 if ($order !== null) {
                     $invoice->company_id = $order->company_id;
+                }
+                if ($invoice->source_type === null && $invoice->source_id === null) {
+                    $invoice->source_type = InvoiceSourceType::Order->value;
+                    $invoice->source_id = $invoice->order_id;
                 }
             }
         });

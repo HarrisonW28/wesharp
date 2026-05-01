@@ -11,7 +11,10 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 final class InvoiceService
 {
-    public function paginate(Request $request): LengthAwarePaginator
+    /**
+     * @param  bool  $excludeDrafts  When true, omits draft invoices (e.g. tenant portal — customers only see issued bills).
+     */
+    public function paginate(Request $request, bool $excludeDrafts = false): LengthAwarePaginator
     {
         /** @phpstan-ignore-next-line */
         $perPage = min(75, max(1, (int) $request->query('per_page', 25)));
@@ -22,6 +25,10 @@ final class InvoiceService
                 'order:id,booking_id,created_at,order_status',
                 'payments:id,invoice_id,amount_pence,payment_status,payment_method,paid_at,reference',
             ]);
+
+        if ($excludeDrafts) {
+            $query->where('invoice_status', '!=', InvoiceStatus::Draft->value);
+        }
 
         if (($v = trim((string) $request->query('q', ''))) !== '') {
             $needle = '%'.$v.'%';

@@ -68,13 +68,17 @@ function variantInvoice(status: string): Variant {
 function variantKnife(status: string): Variant {
   switch (status.trim()) {
     case "issue_reported":
+    case "cancelled":
       return "destructive";
     case "sharpened":
     case "returned":
     case "quality_checked":
       return "success";
     case "logged":
+    case "received":
       return "secondary";
+    case "sharpening":
+      return "warning";
     default:
       return "default";
   }

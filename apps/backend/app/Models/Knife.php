@@ -33,12 +33,20 @@ class Knife extends Model
         'sharpened_by_user_id',
         'quality_checked_by_user_id',
         'returned_by_user_id',
+        'inspection_condition',
+        'inspection_notes',
+        'inspection_internal_notes',
+        'inspection_customer_visible',
+        'inspected_by_user_id',
+        'inspected_at',
     ];
 
     protected function casts(): array
     {
         return [
             'knife_status' => KnifeStatus::class,
+            'inspection_customer_visible' => 'boolean',
+            'inspected_at' => 'datetime',
         ];
     }
 
@@ -55,6 +63,12 @@ class Knife extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /** @return HasMany<KnifeServiceAssignment, Knife> */
+    public function serviceAssignments(): HasMany
+    {
+        return $this->hasMany(KnifeServiceAssignment::class)->orderByDesc('linked_at');
     }
 
     public function orderItems(): HasMany
@@ -77,6 +91,11 @@ class Knife extends Model
         return $this->belongsTo(User::class, 'returned_by_user_id');
     }
 
+    public function inspectedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'inspected_by_user_id');
+    }
+
     public function photos(): HasMany
     {
         return $this->hasMany(KnifePhoto::class);
@@ -85,6 +104,12 @@ class Knife extends Model
     public function damageReports(): HasMany
     {
         return $this->hasMany(DamageReport::class);
+    }
+
+    /** @return HasMany<EvidencePhoto, Knife> */
+    public function evidencePhotos(): HasMany
+    {
+        return $this->hasMany(EvidencePhoto::class, 'knife_id');
     }
 
     public function uploadedFiles(): MorphMany

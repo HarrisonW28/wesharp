@@ -101,6 +101,7 @@ export default function AdminCrmCompanyPage() {
   const canUpdate = perms.has("companies.update");
   const canCreateBooking = perms.has("bookings.create");
   const canViewInvoices = perms.has("invoices.view");
+  const canViewPayments = perms.has("payments.view");
   const [tab, setTab] = useState<CrmTab>("overview");
 
   const invalidateCompany = async () => {
@@ -307,6 +308,13 @@ export default function AdminCrmCompanyPage() {
   const knifeCols: ColumnDef<KnifeRow>[] = useMemo(
     () => [
       {
+        accessorKey: "tag_id",
+        header: "Tag",
+        cell: ({ row }) => (
+          <span className="font-mono text-xs tabular-nums">{row.original.tag_id ?? "—"}</span>
+        ),
+      },
+      {
         accessorKey: "label",
         header: "Label",
         cell: ({ row }) => (
@@ -319,6 +327,18 @@ export default function AdminCrmCompanyPage() {
         accessorKey: "knife_status_label",
         header: "Status",
         cell: ({ row }) => row.original.knife_status_label ?? row.original.knife_status ?? "—",
+      },
+      {
+        id: "order_col",
+        header: "Order",
+        cell: ({ row }) =>
+          row.original.order_id ? (
+            <Link className="text-primary hover:underline" href={`/admin/orders/${row.original.order_id}`}>
+              Open
+            </Link>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
       },
       { accessorKey: "position", header: "Pos." },
     ],
@@ -508,6 +528,19 @@ export default function AdminCrmCompanyPage() {
                     </p>
                   </CardContent>
                 </Card>
+                {canViewPayments ? (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Payment history</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <p className="text-muted-foreground">Manual and recorded settlements for this account.</p>
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
+                        <Link href={`/admin/payments?company_id=${companyId}&page=1&per_page=30`}>View payments</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : null}
               </section>
             ) : null}
 

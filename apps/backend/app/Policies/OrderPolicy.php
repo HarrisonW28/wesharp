@@ -51,4 +51,5 @@ final class OrderPolicy
     {
         return Permissions::userMayForCompany($user, Permissions::ORDERS_UPDATE, $order->company_id);
     }
+
 }
