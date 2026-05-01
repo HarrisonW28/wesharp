@@ -28,6 +28,7 @@ export type NavItem = {
 export const ADMIN_NAV: NavItem[] = [
   { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, permission: "dashboard.view" },
   { title: "Analytics", href: "/admin/analytics", icon: Activity, permission: "analytics.view" },
+  { title: "Route planning", href: "/admin/routes", icon: Boxes, permission: "routes.view" },
   { title: "CRM", href: "/admin/crm", icon: Users, permission: "companies.view" },
   { title: "Users", href: "/admin/users", icon: UserCog, permission: "users.view" },
   { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },

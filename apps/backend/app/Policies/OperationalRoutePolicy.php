@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\UserRole;
 use App\Models\OperationalRoute;
 use App\Models\User;
 use App\Support\Permissions;
@@ -15,7 +16,25 @@ final class OperationalRoutePolicy
 
     public function view(User $user, OperationalRoute $route): bool
     {
-        return Permissions::userMay($user, Permissions::ROUTES_VIEW);
+        if (! Permissions::userMay($user, Permissions::ROUTES_VIEW)) {
+            return false;
+        }
+
+        $role = $user->resolvedRole();
+
+        if ($role === UserRole::SuperAdmin || $role === UserRole::Admin) {
+            return true;
+        }
+
+        if ($role === UserRole::RouteManager) {
+            if ($route->driver_user_id === null) {
+                return true;
+            }
+
+            return (int) $route->driver_user_id === (int) $user->getKey();
+        }
+
+        return false;
     }
 
     public function create(User $user): bool
@@ -25,18 +44,38 @@ final class OperationalRoutePolicy
 
     public function update(User $user, OperationalRoute $route): bool
     {
-        return Permissions::userMay($user, Permissions::ROUTES_MANAGE);
+        if (! Permissions::userMay($user, Permissions::ROUTES_MANAGE)) {
+            return false;
+        }
+
+        $role = $user->resolvedRole();
+
+        if ($role === UserRole::SuperAdmin || $role === UserRole::Admin) {
+            return true;
+        }
+
+        if ($role === UserRole::RouteManager) {
+            if ($route->driver_user_id === null) {
+                return true;
+            }
+
+            return (int) $route->driver_user_id === (int) $user->getKey();
+        }
+
+        return false;
     }
 
-    /** Start / complete lifecycle + reorder + add stops. */
+    /** Start / complete route run — assigned driver or full admin. */
     public function manage(User $user, OperationalRoute $route): bool
     {
         if (! Permissions::userMay($user, Permissions::ROUTES_VIEW)) {
             return false;
         }
 
-        if (Permissions::userMay($user, Permissions::ROUTES_MANAGE)) {
-            return true;
+        $role = $user->resolvedRole();
+
+        if ($role === UserRole::SuperAdmin || $role === UserRole::Admin) {
+            return Permissions::userMay($user, Permissions::ROUTES_MANAGE);
         }
 
         $driverId = $route->driver_user_id;

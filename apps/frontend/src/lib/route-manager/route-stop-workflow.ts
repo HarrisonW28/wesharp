@@ -1,4 +1,24 @@
-export type RouteStopActionRow = { key: string; path: string; label: string };
+export type RouteStopActionRow = {
+  key: string;
+  path: string;
+  label: string;
+  /** Primary workflow vs secondary destructive action. */
+  variant?: "default" | "destructive" | "outline";
+};
+
+/** Failed / could-not-collect — maps to backend `skipped` stop status. */
+export function visibleRouteStopFailureAction(status: string): RouteStopActionRow | null {
+  const s = status.trim();
+  if (s === "not_started" || s === "travelling" || s === "arrived") {
+    return {
+      key: "skip",
+      path: "mark-skipped",
+      label: "Failed collection",
+      variant: "destructive",
+    };
+  }
+  return null;
+}
 
 /** Mirrors stop workflow buttons on the route-manager stop detail page. */
 export function visibleRouteStopActions(status: string): RouteStopActionRow[] {

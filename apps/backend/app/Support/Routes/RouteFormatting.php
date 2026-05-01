@@ -5,6 +5,7 @@ namespace App\Support\Routes;
 use App\Enums\RouteStopStatus;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
+use Illuminate\Support\Str;
 use App\Models\OperationalRoute;
 use App\Models\RouteStop;
 
@@ -13,14 +14,25 @@ final class RouteFormatting
     /** @return array<string, mixed> */
     public static function listRow(OperationalRoute $r): array
     {
+        $total = isset($r->stops_count) ? (int) $r->stops_count : $r->stops()->count();
+        $completed = isset($r->completed_stops_count)
+            ? (int) $r->completed_stops_count
+            : $r->stops()->where('route_stop_status', RouteStopStatus::Completed)->count();
+
         return [
             'id' => (string) $r->id,
             'name' => $r->name,
             'route_status' => $r->route_status?->value,
+            'route_status_label' => $r->route_status !== null
+                ? Str::headline(str_replace('_', ' ', $r->route_status->value))
+                : null,
             'scheduled_date' => $r->scheduled_date?->format('Y-m-d'),
             'coverage_city' => $r->coverage_city,
+            'driver_user_id' => $r->driver_user_id !== null ? (string) $r->driver_user_id : null,
             'driver_name' => $r->relationLoaded('driver') ? $r->driver?->name : null,
-            'stops_count' => isset($r->stops_count) ? (int) $r->stops_count : $r->stops()->count(),
+            'stops_count' => $total,
+            'completed_stops' => $completed,
+            'incomplete_stops' => max(0, $total - $completed),
         ];
     }
 
@@ -74,7 +86,7 @@ final class RouteFormatting
     {
         $route->loadMissing([
             'driver:id,name',
-            'stops.booking.company:id,name,city,phone,billing_email',
+            'stops.booking.company:id,name,city,phone',
             'stops.booking.location',
             'stops.booking.orders:id,booking_id,total_pence,currency',
         ]);
@@ -111,6 +123,7 @@ final class RouteFormatting
         return [
             'completed' => $completed,
             'total' => $total,
+            'pending' => max(0, $total - $completed),
         ];
     }
 
@@ -123,7 +136,12 @@ final class RouteFormatting
             'id' => (string) $stop->id,
             'sequence' => $stop->sequence,
             'route_stop_status' => $stop->route_stop_status?->value,
+            'route_stop_status_label' => $stop->route_stop_status !== null
+                ? Str::headline(str_replace('_', ' ', $stop->route_stop_status->value))
+                : null,
             'booking_id' => $booking !== null ? (string) $booking->id : null,
+            'booking_reference' => $booking !== null ? BookingResource::reference($booking) : null,
+            'planned_window' => self::plannedWindowLine($booking),
             'expected_arrival_at' => $stop->expected_arrival_at?->toIso8601String(),
             'arrived_at' => $stop->arrived_at?->toIso8601String(),
             'departed_at' => $stop->departed_at?->toIso8601String(),
@@ -142,7 +160,7 @@ final class RouteFormatting
                 $booking?->location?->line_two,
                 $booking?->location?->city,
                 $booking?->location?->postcode,
-            ])->filter()->implode(', '),
+            ])->filter()->values()->implode(', '),
             'postcode' => $booking?->location?->postcode,
         ];
     }
@@ -152,24 +170,14 @@ final class RouteFormatting
     {
         $stop->loadMissing([
             'route.driver:id,name',
-            'booking.company:id,name,city,phone,billing_email',
+            'booking.company:id,name,city,phone',
             'booking.location',
             'booking.contact',
-            'booking.orders.invoices:id,order_id,invoice_status',
+            'booking.orders:id,booking_id,total_pence,currency',
         ]);
 
         $booking = $stop->booking;
         $order = $booking?->orders->first();
-
-        $paymentHint = 'no_order';
-
-        if ($order !== null) {
-            $invoice = $order->invoices->first();
-
-            $paymentHint = $invoice !== null
-                ? ($invoice->invoice_status?->value ?? 'unknown')
-                : 'no_invoice';
-        }
 
         return [
             'id' => (string) $stop->id,
@@ -203,17 +211,21 @@ final class RouteFormatting
                 'actual_knife_count' => $booking->actual_knife_count,
                 'customer_notes' => $booking->customer_notes,
                 'internal_notes' => $booking->internal_notes,
-                'payment_status_hint' => $paymentHint,
+            ] : null,
+            'order' => $order !== null ? [
+                'id' => (string) $order->id,
+                'total_pence' => (int) $order->total_pence,
+                'currency' => $order->currency,
             ] : null,
             'company' => $booking?->company ? [
                 'id' => (string) $booking->company->id,
                 'name' => $booking->company->name,
                 'city' => $booking->company->city,
-                'billing_email' => $booking->company->billing_email,
             ] : null,
             'location' => $booking?->location ? [
                 'label' => $booking->location->label,
                 'line_one' => $booking->location->line_one,
+                'line_two' => $booking->location->line_two,
                 'city' => $booking->location->city,
                 'postcode' => $booking->location->postcode,
             ] : null,
@@ -221,8 +233,26 @@ final class RouteFormatting
                 'first_name' => $booking->contact->first_name,
                 'last_name' => $booking->contact->last_name,
                 'phone' => $booking->contact->phone,
-                'email' => $booking->contact->email,
             ] : null,
         ];
+    }
+
+    private static function plannedWindowLine(?Booking $booking): ?string
+    {
+        if ($booking === null) {
+            return null;
+        }
+
+        $start = BookingResource::formatTimeSlot($booking->requested_time_window_start ?? $booking->time_window_start);
+        $end = BookingResource::formatTimeSlot($booking->requested_time_window_end ?? $booking->time_window_end);
+
+        if ($start === null && $end === null) {
+            return null;
+        }
+
+        $day = $booking->scheduled_date?->format('Y-m-d');
+        $win = ($start ?? '?').'–'.($end ?? '?');
+
+        return $day !== null && $day !== '' ? "{$day} · {$win}" : $win;
     }
 }

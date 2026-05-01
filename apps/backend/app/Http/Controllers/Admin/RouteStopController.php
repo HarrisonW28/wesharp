@@ -6,6 +6,7 @@ use App\Actions\Routes\CompleteRouteStopAction;
 use App\Actions\Routes\MarkRouteStopArrivedAction;
 use App\Actions\Routes\MarkRouteStopCollectedAction;
 use App\Actions\Routes\MarkRouteStopReturnedAction;
+use App\Actions\Routes\MarkRouteStopSkippedAction;
 use App\Actions\Routes\MarkRouteStopTravellingAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateRouteStopRequest;
@@ -23,6 +24,7 @@ final class RouteStopController extends Controller
         private readonly MarkRouteStopArrivedAction $markRouteStopArrivedAction,
         private readonly MarkRouteStopCollectedAction $markRouteStopCollectedAction,
         private readonly MarkRouteStopReturnedAction $markRouteStopReturnedAction,
+        private readonly MarkRouteStopSkippedAction $markRouteStopSkippedAction,
         private readonly CompleteRouteStopAction $completeRouteStopAction,
     ) {}
 
@@ -84,6 +86,15 @@ final class RouteStopController extends Controller
         $this->authorize('manage', $stop);
 
         $stop = $this->markRouteStopReturnedAction->execute($stop, $request->user(), $request);
+
+        return ApiResponses::success(RouteFormatting::stopDetail($stop));
+    }
+
+    public function markSkipped(Request $request, RouteStop $stop): JsonResponse
+    {
+        $this->authorize('manage', $stop);
+
+        $stop = $this->markRouteStopSkippedAction->execute($stop, $request->user(), $request);
 
         return ApiResponses::success(RouteFormatting::stopDetail($stop));
     }

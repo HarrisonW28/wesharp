@@ -19,7 +19,10 @@ export const RouteStopSummarySchema = z
     id: z.string(),
     sequence: z.number(),
     route_stop_status: z.string().nullable(),
+    route_stop_status_label: z.string().nullable().optional(),
     booking_id: z.string().nullable().optional(),
+    booking_reference: z.string().nullable().optional(),
+    planned_window: z.string().nullable().optional(),
     expected_arrival_at: z.string().nullable().optional(),
     arrived_at: z.string().nullable().optional(),
     departed_at: z.string().nullable().optional(),
@@ -41,6 +44,7 @@ export const RouteStopSummarySchema = z
 export const RouteProgressSchema = z.object({
   completed: z.number(),
   total: z.number(),
+  pending: z.number().optional(),
 });
 
 export const RouteDetailDataSchema = z
@@ -77,6 +81,7 @@ export const TodayResponseSchema = z.object({
         })
         .passthrough(),
     ),
+    upcoming_routes: z.array(RouteRowSchema).optional(),
     metrics: RouteMetricsSchema,
   }),
 });
@@ -90,10 +95,28 @@ export const RouteRowSchema = z.object({
   id: z.string(),
   name: z.string(),
   route_status: z.string().nullable().optional(),
+  route_status_label: z.string().nullable().optional(),
   scheduled_date: z.string().nullable().optional(),
   coverage_city: z.string().nullable().optional(),
+  driver_user_id: z.string().nullable().optional(),
   driver_name: z.string().nullable().optional(),
   stops_count: z.number().optional(),
+  completed_stops: z.number().optional(),
+  incomplete_stops: z.number().optional(),
+});
+
+export const RouteDriverLookupItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().nullable().optional(),
+  role: z.string(),
+});
+
+export const RouteDriversLookupResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    items: z.array(RouteDriverLookupItemSchema),
+  }),
 });
 
 export const RoutesListResponseSchema = z.object({
@@ -115,6 +138,12 @@ export const RoutesListResponseSchema = z.object({
     })
     .passthrough()
     .optional(),
+});
+
+export const StopOrderSummarySchema = z.object({
+  id: z.string(),
+  total_pence: z.number(),
+  currency: z.string().nullable().optional(),
 });
 
 export const StopDetailDataSchema = z
@@ -160,6 +189,7 @@ export const StopDetailDataSchema = z
       })
       .nullable()
       .optional(),
+    order: StopOrderSummarySchema.nullable().optional(),
     company: z
       .object({
         id: z.string(),
@@ -173,6 +203,7 @@ export const StopDetailDataSchema = z
       .object({
         label: z.string().nullable().optional(),
         line_one: z.string().nullable().optional(),
+        line_two: z.string().nullable().optional(),
         city: z.string().nullable().optional(),
         postcode: z.string().nullable().optional(),
       })

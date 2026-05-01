@@ -59,6 +59,15 @@ final class StaffPermissionSeparationTest extends TestCase
         $response->assertForbidden();
     }
 
+    public function test_finance_cannot_view_route_planning_list(): void
+    {
+        $finance = User::query()->where('email', 'finance@demo.wesharp.test')->firstOrFail();
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $finance->id)
+            ->getJson('/api/admin/routes')
+            ->assertForbidden();
+    }
+
     public function test_route_manager_can_create_route_manifest(): void
     {
         $routeManager = User::query()->where('email', 'driver@demo.wesharp.test')->firstOrFail();

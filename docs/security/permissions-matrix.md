@@ -22,7 +22,7 @@ Legend:
 | `bookings.create`                | Book visits                                                            | ✅ route_manager + admin combos; ✅ customer_staff (scoped creation) |
 | `bookings.update`                | Scheduling edits                                                       | ✅ operations + route_manager; ⚠ scoped customer_staff              |
 | `bookings.cancel`                | Cancel pickups                                                         | ✅ finance/route_manager/admin tiers; ⚠ scoped customer_owner       |
-| `routes.view`                    | Route boards                                                           | ✅ internal tiers w/logistics exposure                              |
+| `routes.view`                    | Route boards                                                           | ✅ `super_admin` / `admin` / `route_manager`; ⛔ `finance` (Sprint 5.1) |
 | `routes.manage`                  | Mutate manifests                                                       | ✅ route_manager/admin/super_admin                                  |
 | `route_stops.update`             | Stop-level logistics                                                   | ✅ route_manager                                                    |
 | `orders.view`                    | Kitchen order desk                                                     | ✅ staff; ✅ tenant read                                             |

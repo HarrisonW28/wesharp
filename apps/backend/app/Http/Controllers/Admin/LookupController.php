@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Company;
@@ -547,6 +549,47 @@ final class LookupController extends Controller
             'description' => trim(implode(' · ', array_filter([$c->email, $c->phone, $account]))),
             'meta' => [],
         ];
+    }
+
+    /**
+     * Drivers / run leads for route assignment — internal ops roles only (no tenant users).
+     */
+    public function routeDrivers(Request $request): JsonResponse
+    {
+        $this->authorize('create', OperationalRoute::class);
+
+        $q = trim((string) $request->query('q', ''));
+
+        $roles = [
+            UserRole::SuperAdmin->value,
+            UserRole::Admin->value,
+            UserRole::RouteManager->value,
+        ];
+
+        $query = User::query()
+            ->where('status', UserStatus::Active)
+            ->whereIn('role', $roles)
+            ->orderBy('name');
+
+        if ($q !== '') {
+            $needle = '%'.$this->escapeLike($q).'%';
+            $query->where(function ($sub) use ($needle, $q): void {
+                $sub->where('name', 'like', $needle)
+                    ->orWhere('email', 'like', $needle);
+                if (ctype_digit($q)) {
+                    $sub->orWhere('id', (int) $q);
+                }
+            });
+        }
+
+        $items = $query->limit(40)->get()->map(static fn (User $user): array => [
+            'id' => (string) $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->resolvedRole()->value,
+        ])->values()->all();
+
+        return ApiResponses::success(['items' => $items]);
     }
 
     private function escapeLike(string $value): string

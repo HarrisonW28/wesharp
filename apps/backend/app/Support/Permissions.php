@@ -156,7 +156,6 @@ final class Permissions
             self::COMPANIES_VIEW,
             self::BOOKINGS_VIEW,
             self::BOOKINGS_CANCEL,
-            self::ROUTES_VIEW,
             self::ORDERS_VIEW,
             self::ORDERS_UPDATE,
             self::KNIVES_VIEW,

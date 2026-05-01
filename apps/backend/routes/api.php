@@ -98,6 +98,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:users.view')->get('lookups/users', [LookupController::class, 'users'])->name('api.admin.lookups.users');
     Route::middleware('permission:bookings.view')->get('lookups/bookings', [LookupController::class, 'bookings'])->name('api.admin.lookups.bookings');
     Route::middleware('permission:routes.view')->get('lookups/routes', [LookupController::class, 'routes'])->name('api.admin.lookups.routes');
+    Route::middleware('permission:routes.manage')->get('lookups/route-drivers', [LookupController::class, 'routeDrivers'])->name('api.admin.lookups.route_drivers');
     Route::middleware('permission:orders.view')->get('lookups/orders', [LookupController::class, 'orders'])->name('api.admin.lookups.orders');
     Route::middleware('permission:knives.view')->get('lookups/knives', [LookupController::class, 'knives'])->name('api.admin.lookups.knives');
     Route::middleware('permission:companies.view')->get('lookups/locations', [LookupController::class, 'locations'])->name('api.admin.lookups.locations');
@@ -133,6 +134,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::post('routes/{route}/complete', [RouteController::class, 'complete'])->whereUuid('route')->name('api.admin.routes.complete');
     Route::middleware('permission:routes.manage')->post('routes/{route}/stops', [RouteController::class, 'storeStop'])->whereUuid('route')->name('api.admin.routes.stops.store');
     Route::middleware('permission:routes.manage')->put('routes/{route}/reorder-stops', [RouteController::class, 'reorder'])->whereUuid('route')->name('api.admin.routes.stops.reorder');
+    Route::middleware('permission:routes.manage')->delete('routes/{route}/stops/{stop}', [RouteController::class, 'destroyStop'])->whereUuid(['route', 'stop'])->name('api.admin.routes.stops.destroy');
 
     Route::middleware('permission:routes.view')->get('route-stops/{stop}', [RouteStopController::class, 'show'])->whereUuid('stop')->name('api.admin.route_stops.show');
     Route::put('route-stops/{stop}', [RouteStopController::class, 'update'])->whereUuid('stop')->name('api.admin.route_stops.update');
@@ -140,6 +142,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::post('route-stops/{stop}/mark-arrived', [RouteStopController::class, 'markArrived'])->whereUuid('stop')->name('api.admin.route_stops.mark_arrived');
     Route::post('route-stops/{stop}/mark-collected', [RouteStopController::class, 'markCollected'])->whereUuid('stop')->name('api.admin.route_stops.mark_collected');
     Route::post('route-stops/{stop}/mark-returned', [RouteStopController::class, 'markReturned'])->whereUuid('stop')->name('api.admin.route_stops.mark_returned');
+    Route::post('route-stops/{stop}/mark-skipped', [RouteStopController::class, 'markSkipped'])->whereUuid('stop')->name('api.admin.route_stops.mark_skipped');
     Route::post('route-stops/{stop}/complete', [RouteStopController::class, 'complete'])->whereUuid('stop')->name('api.admin.route_stops.complete');
 
     Route::middleware('permission:bookings.view')->get('bookings', [BookingController::class, 'index'])->name('api.admin.bookings.index');
