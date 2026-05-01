@@ -14,6 +14,7 @@ import { coerceGbpInputToMinorUnits, formatGBP, parseGbpInputToMinorUnits } from
 import { KNIFE_TYPE_OPTIONS } from "@/lib/knife-catalog";
 import { useBackendMe } from "@/hooks/use-backend-me";
 
+import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { KnifeLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -858,25 +859,9 @@ export default function AdminOrderDetailPage() {
 
         <Card className="p-4 lg:col-span-3">
           <div className="text-xs font-semibold uppercase text-muted-foreground">Activity &amp; audit</div>
-          {(o.audit_timeline ?? []).length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">No audit entries yet.</p>
-          ) : (
-            <ul className="mt-3 max-h-72 space-y-2 overflow-y-auto text-sm">
-              {(o.audit_timeline ?? []).map((row) => (
-                <li key={row.id} className="rounded-md border bg-muted/15 px-3 py-2">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="font-mono text-xs text-muted-foreground">{row.action}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {row.at ? new Date(row.at).toLocaleString("en-GB") : "—"}
-                    </span>
-                  </div>
-                  {row.actor_name ? (
-                    <div className="text-xs text-muted-foreground">by {row.actor_name}</div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="mt-2">
+            <AuditTimeline items={(o.audit_timeline ?? []) as AuditTimelineRow[]} showPayload />
+          </div>
         </Card>
 
         {canKnives && canOrders && !isCompleted && !isCancelled ? (

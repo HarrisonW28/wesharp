@@ -1,5 +1,8 @@
 /** Map portal URL segments to Laravel permission strings (belt with API + route gates). */
 export function adminPermissionForPath(pathname: string): string {
+  if (pathname.startsWith("/admin/audit")) {
+    return "audit_logs.view";
+  }
   if (pathname.startsWith("/admin/analytics")) {
     return "analytics.view";
   }

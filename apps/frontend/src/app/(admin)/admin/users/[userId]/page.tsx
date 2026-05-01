@@ -15,6 +15,7 @@ import { UserDetailResponseSchema, UserRoleEnum, UserStatusEnum } from "@/lib/ap
 import { USER_ROLE_DESCRIPTIONS, USER_ROLE_LABELS, USER_STATUS_LABELS } from "@/lib/admin-user-role-copy";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
+import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { CompanyLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -58,19 +59,6 @@ const STATUS_OPTIONS: { value: UserStatusValue; label: string }[] = (
 
 function customerRole(role: UserRoleValue): boolean {
   return role === "customer_owner" || role === "customer_staff";
-}
-
-function auditActionLabel(action: string): string {
-  const map: Record<string, string> = {
-    "user.role_changed": "Role changed",
-    "user.status_changed": "Status changed",
-    "user.company_assignment_changed": "Company assignment changed",
-    "user.deactivated": "User suspended",
-    "user.activated": "User activated",
-    "user.admin_updated": "User updated (legacy)",
-    "user.invite_resend_placeholder": "Invite / resend (placeholder)",
-  };
-  return map[action] ?? action;
 }
 
 const editSchema = z
@@ -381,23 +369,11 @@ function ManageUserPanels({ user, userId }: { user: UserDetail; userId: string }
             <CardDescription>Audit events for this user record.</CardDescription>
           </CardHeader>
           <CardContent>
-            {user.recent_activity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No audit entries yet.</p>
-            ) : (
-              <ul className="space-y-3 text-sm">
-                {user.recent_activity.map((row) => (
-                  <li key={row.id} className="rounded-lg border bg-muted/20 px-3 py-2">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <span className="font-medium">{auditActionLabel(row.action)}</span>
-                      <span className="text-xs text-muted-foreground">{row.created_at ?? ""}</span>
-                    </div>
-                    {row.payload != null && typeof row.payload === "object" && Object.keys(row.payload).length > 0 ? (
-                      <pre className="mt-2 max-h-32 overflow-auto rounded bg-muted/40 p-2 text-xs">{JSON.stringify(row.payload, null, 2)}</pre>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <AuditTimeline
+              items={user.recent_activity as AuditTimelineRow[]}
+              showPayload
+              showMeta={false}
+            />
           </CardContent>
         </Card>
 

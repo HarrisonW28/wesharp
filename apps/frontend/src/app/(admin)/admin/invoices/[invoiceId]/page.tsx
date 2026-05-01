@@ -13,6 +13,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP, parseGbpInputToMinorUnits } from "@/lib/format/money";
 import { useBackendMe } from "@/hooks/use-backend-me";
 
+import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -648,21 +649,9 @@ export default function AdminInvoiceDetailPage() {
       <Separator className="my-8" />
 
       <div className="text-base font-semibold">Activity &amp; audit</div>
-      {(inv.audit_timeline ?? []).length === 0 ? (
-        <p className="mt-2 text-sm text-muted-foreground">No audit entries.</p>
-      ) : (
-        <ul className="mt-3 max-h-80 space-y-2 overflow-y-auto text-sm">
-          {(inv.audit_timeline ?? []).map((row) => (
-            <li key={row.id} className="rounded-md border bg-muted/15 px-3 py-2">
-              <div className="flex flex-wrap justify-between gap-2">
-                <span className="font-mono text-xs">{row.action}</span>
-                <span className="text-xs text-muted-foreground">{row.at ? new Date(row.at).toLocaleString("en-GB") : "—"}</span>
-              </div>
-              {row.actor_name ? <div className="text-xs text-muted-foreground">by {row.actor_name}</div> : null}
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="mt-2">
+        <AuditTimeline items={(inv.audit_timeline ?? []) as AuditTimelineRow[]} showPayload />
+      </div>
 
       <AlertDialog open={markPaidOpen} onOpenChange={setMarkPaidOpen}>
         <AlertDialogContent>

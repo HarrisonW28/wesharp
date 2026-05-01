@@ -6,6 +6,7 @@ namespace App\Http\Resources;
 
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\Audit\AuditLogPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -45,22 +46,14 @@ final class AdminUserDetailResource extends JsonResource
     /** @return list<array<string, mixed>> */
     private static function recentAuditPayload(User $u): array
     {
-        return AuditLog::query()
+        $rows = AuditLog::query()
+            ->with('actor:id,name,email')
             ->where('auditable_type', User::class)
             ->where('auditable_id', (string) $u->getKey())
             ->orderByDesc('created_at')
             ->limit(40)
-            ->get()
-            ->map(static function (AuditLog $row): array {
-                return [
-                    'id' => $row->id,
-                    'action' => $row->action,
-                    'payload' => $row->payload ?? [],
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'actor_id' => $row->actor_id !== null ? (string) $row->actor_id : null,
-                ];
-            })
-            ->values()
-            ->all();
+            ->get();
+
+        return AuditLogPresenter::mapTimeline($rows, includeIp: false);
     }
 }

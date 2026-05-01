@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\CompanyContactController;
 use App\Http\Controllers\Admin\CompanyController;
@@ -83,6 +84,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
         Route::get('routes', [AnalyticsController::class, 'routes'])->name('api.admin.analytics.routes');
         Route::get('operations', [AnalyticsController::class, 'operations'])->name('api.admin.analytics.operations');
     });
+
+    Route::middleware('permission:audit_logs.view')->get('audit-logs', [AuditLogController::class, 'index'])->name('api.admin.audit_logs.index');
 
     Route::middleware('permission:users.view')->get('users', [UserDirectoryController::class, 'index'])->name('api.admin.users.index');
     Route::middleware('permission:users.view')->get('users/{target}', [UserDirectoryController::class, 'show'])->whereNumber('target')->name('api.admin.users.show');

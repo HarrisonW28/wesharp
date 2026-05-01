@@ -81,6 +81,9 @@ final class Permissions
 
     public const USERS_MANAGE = 'users.manage';
 
+    /** Internal audit log index and timeline payloads (staff only; never granted to tenant roles). */
+    public const AUDIT_LOGS_VIEW = 'audit_logs.view';
+
     /** Payment overrides and sensitive adjustment flows (refunds, write-offs). */
     public const PAYMENTS_OVERRIDE = 'payments.override';
 
@@ -119,6 +122,7 @@ final class Permissions
         self::SETTINGS_MANAGE,
         self::USERS_VIEW,
         self::USERS_MANAGE,
+        self::AUDIT_LOGS_VIEW,
     ];
 
     /** @var array<string, list<string>> Role value => granted permission keys */
@@ -144,6 +148,7 @@ final class Permissions
             self::KNIVES_UPDATE,
             self::ANALYTICS_VIEW,
             self::SETTINGS_VIEW,
+            self::AUDIT_LOGS_VIEW,
         ],
 
         UserRole::Finance->value => [
@@ -163,6 +168,7 @@ final class Permissions
             self::PAYMENTS_OVERRIDE,
             self::ANALYTICS_VIEW,
             self::SETTINGS_VIEW,
+            self::AUDIT_LOGS_VIEW,
         ],
 
         UserRole::CustomerOwner->value => [

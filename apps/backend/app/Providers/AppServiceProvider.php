@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\Invoice;
@@ -11,6 +12,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\RouteStop;
 use App\Models\User;
+use App\Policies\AuditLogPolicy;
 use App\Policies\BookingPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\InvoicePolicy;
@@ -48,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->ip());
         });
 
+        Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);
         Gate::policy(Booking::class, BookingPolicy::class);
         Gate::policy(OperationalRoute::class, OperationalRoutePolicy::class);

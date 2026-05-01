@@ -27,6 +27,7 @@ use App\Models\Contact;
 use App\Models\Note;
 use App\Services\Audit\AuditRecorder;
 use App\Support\ApiResponses;
+use App\Support\Audit\AuditLogPresenter;
 use App\Support\Permissions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -149,14 +150,10 @@ final class CompanyController extends Controller
         $combined = [];
 
         foreach ($audits as $row) {
-            $combined[] = [
-                'type' => 'audit',
-                'id' => $row->id,
-                'at' => $row->created_at?->toIso8601String(),
-                'action' => $row->action,
-                'actor_name' => $row->actor?->name,
-                'payload' => $row->payload,
-            ];
+            $combined[] = array_merge(
+                ['type' => 'audit'],
+                AuditLogPresenter::toArray($row, includeIp: true),
+            );
         }
 
         foreach ($timelineNotes as $row) {

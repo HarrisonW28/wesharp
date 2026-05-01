@@ -21,6 +21,7 @@ class AuditLogFactory extends Factory
             'auditable_id' => Company::factory(),
             'payload' => ['fixture' => true],
             'ip_address' => fake()->ipv4(),
+            'request_id' => null,
             'created_at' => now(),
         ];
     }

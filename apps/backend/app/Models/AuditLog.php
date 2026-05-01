@@ -25,6 +25,7 @@ class AuditLog extends Model
         'auditable_id',
         'payload',
         'ip_address',
+        'request_id',
         'created_at',
     ];
 

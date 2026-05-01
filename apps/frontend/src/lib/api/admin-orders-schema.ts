@@ -89,13 +89,13 @@ export const OrderItemRowSchema = z.object({
   formatted_line_total: z.string().optional(),
 });
 
-export const OrderAuditEntrySchema = z.object({
-  id: z.string(),
-  at: z.string().nullable().optional(),
-  action: z.string(),
-  actor_name: z.string().nullable().optional(),
-  payload: z.unknown().optional(),
-});
+export const OrderAuditEntrySchema = z
+  .object({
+    id: z.string(),
+    at: z.string().nullable().optional(),
+    action: z.string(),
+  })
+  .passthrough();
 
 export const OrderStatusMilestoneSchema = z.object({
   key: z.string(),

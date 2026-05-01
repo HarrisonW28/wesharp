@@ -26,6 +26,7 @@ import {
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
+import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { LocationLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { CompanyContactsManager } from "@/components/crm/CompanyContactsManager";
 import { CompanyLocationsManager } from "@/components/crm/CompanyLocationsManager";
@@ -752,40 +753,57 @@ export default function AdminCrmCompanyPage() {
         ) : null}
 
         {tab === "subscription" ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Subscription</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {c.subscription ? (
-                <>
-                  <p className="text-base font-semibold">{c.subscription.plan_name}</p>
-                  <p className="text-muted-foreground">
-                    Status · <span className="text-foreground">{c.subscription.status_label}</span>
-                  </p>
-                  {c.subscription.current_period_end ? (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Subscription</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {c.subscription ? (
+                  <>
+                    <p className="text-base font-semibold">{c.subscription.plan_name}</p>
                     <p className="text-muted-foreground">
-                      Current period ends · <span className="text-foreground">{c.subscription.current_period_end}</span>
+                      Status · <span className="text-foreground">{c.subscription.status_label}</span>
                     </p>
-                  ) : null}
-                  {c.subscription.allowance_summary ? (
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Allowance</p>
-                      <p className="whitespace-pre-wrap">{c.subscription.allowance_summary}</p>
-                    </div>
-                  ) : null}
-                  {c.subscription.included_services ? (
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Included services</p>
-                      <p className="whitespace-pre-wrap">{c.subscription.included_services}</p>
-                    </div>
-                  ) : null}
-                </>
-              ) : (
-                <p className="text-muted-foreground">No subscription record for this company.</p>
-              )}
-            </CardContent>
-          </Card>
+                    {c.subscription.current_period_end ? (
+                      <p className="text-muted-foreground">
+                        Current period ends · <span className="text-foreground">{c.subscription.current_period_end}</span>
+                      </p>
+                    ) : null}
+                    {c.subscription.allowance_summary ? (
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Allowance</p>
+                        <p className="whitespace-pre-wrap">{c.subscription.allowance_summary}</p>
+                      </div>
+                    ) : null}
+                    {c.subscription.included_services ? (
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Included services</p>
+                        <p className="whitespace-pre-wrap">{c.subscription.included_services}</p>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="text-muted-foreground">No subscription record for this company.</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Billing audit trail</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                <p>
+                  Subscription lifecycle events are reflected in invoice and payment audit entries. View filtered audit
+                  history for this company in the{" "}
+                  <Link className="font-medium text-primary underline underline-offset-2" href={`/admin/audit?company_id=${companyId}`}>
+                    global audit log
+                  </Link>
+                  .
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         ) : null}
 
         {tab === "notes" ? (
@@ -847,20 +865,20 @@ export default function AdminCrmCompanyPage() {
               ) : activityQuery.data?.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No audit or note timeline entries yet.</p>
               ) : (
-                <ul className="max-h-[520px] space-y-2 overflow-auto text-sm">
-                  {activityQuery.data?.map((row) => (
-                    <li key={`${row.type}-${row.id}`} className="rounded-md border px-3 py-2">
-                      <span className="text-xs text-muted-foreground">{row.at ?? ""}</span>{" "}
-                      <span className="font-medium">
-                        {row.action
-                          ? row.action.replace(/\./g, " ").replace(/_/g, " ")
-                          : row.type}
-                      </span>
-                      <span className="text-muted-foreground"> · {row.actor_name ?? "—"}</span>
-                      {row.type === "note" && row.body ? <p className="mt-1 text-muted-foreground">{row.body}</p> : null}
-                    </li>
-                  ))}
-                </ul>
+                <div className="max-h-[520px] space-y-2 overflow-auto text-sm">
+                  {activityQuery.data?.map((row) =>
+                    row.type === "audit" ? (
+                      <AuditTimeline key={`${row.type}-${row.id}`} items={[row as unknown as AuditTimelineRow]} showPayload />
+                    ) : (
+                      <div key={`${row.type}-${row.id}`} className="rounded-md border px-3 py-2">
+                        <span className="text-xs text-muted-foreground">{row.at ?? ""}</span>{" "}
+                        <span className="font-medium">Note</span>
+                        <span className="text-muted-foreground"> · {(row as { actor_name?: string }).actor_name ?? "—"}</span>
+                        {row.body ? <p className="mt-1 text-muted-foreground">{row.body}</p> : null}
+                      </div>
+                    ),
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>

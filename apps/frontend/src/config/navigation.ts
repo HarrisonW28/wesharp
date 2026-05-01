@@ -9,6 +9,7 @@ import {
   MapPinned,
   Receipt,
   Repeat,
+  ScrollText,
   Settings,
   UserCog,
   Users,
@@ -34,6 +35,7 @@ export const ADMIN_NAV: NavItem[] = [
   { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
   { title: "Invoices", href: "/admin/invoices", icon: Receipt, permission: "invoices.view" },
   { title: "Payments", href: "/admin/payments", icon: Banknote, permission: "payments.view" },
+  { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
   { title: "Routes · Today", href: "/admin/routes/today", icon: MapPinned, permission: "routes.view" },
 ];
 
@@ -54,4 +56,5 @@ export const ROUTE_MANAGER_NAV: NavItem[] = [
   { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
   { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
   { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
+  { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
 ];

@@ -4,6 +4,7 @@ namespace App\Support\Knives;
 
 use App\Models\AuditLog;
 use App\Models\Knife;
+use App\Support\Audit\AuditLogPresenter;
 
 final class KnifeJson
 {
@@ -117,21 +118,15 @@ final class KnifeJson
     /** @return list<array<string, mixed>> */
     public static function timeline(Knife $knife): array
     {
-        return AuditLog::query()
+        $rows = AuditLog::query()
             ->where('auditable_type', Knife::class)
             /** @phpstan-ignore-next-line */
             ->where('auditable_id', $knife->id)
             ->orderByDesc('created_at')
             ->limit(200)
-            ->with('actor:id,name')
-            ->get()
-            ->map(fn (AuditLog $log): array => [
-                'action' => $log->action,
-                'payload' => $log->payload ?? [],
-                'actor' => $log->actor?->only(['id', 'name']),
-                'created_at' => $log->created_at?->toIso8601String(),
-            ])
-            ->values()
-            ->all();
+            ->with('actor:id,name,email')
+            ->get();
+
+        return AuditLogPresenter::mapTimeline($rows, includeIp: true);
     }
 }

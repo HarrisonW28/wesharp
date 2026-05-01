@@ -58,13 +58,13 @@ export const UserCompanySchema = z.object({
   city: z.string().nullable(),
 });
 
-export const UserAuditEntrySchema = z.object({
-  id: z.string(),
-  action: z.string(),
-  payload: z.any().optional(),
-  created_at: z.string().nullable(),
-  actor_id: z.string().nullable(),
-});
+export const UserAuditEntrySchema = z
+  .object({
+    id: z.string(),
+    action: z.string(),
+    at: z.string().nullable().optional(),
+  })
+  .passthrough();
 
 export const UserDetailSchema = z.object({
   id: z.string(),

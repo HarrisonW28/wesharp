@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Support\Audit\AuditLogPresenter;
 use App\Support\Knives\KnifeJson;
 use App\Support\Money\MoneyFormatting;
 use Illuminate\Support\Collection;
@@ -302,7 +303,7 @@ final class OrderJson
     {
         /** @var Collection<int, AuditLog> $audits */
         $audits = AuditLog::query()
-            ->with('actor:id,name')
+            ->with('actor:id,name,email')
             ->where('auditable_type', Order::class)
             ->where('auditable_id', $order->id)
             ->orderByDesc('created_at')
@@ -337,16 +338,7 @@ final class OrderJson
         $payload['completed_at'] = $order->completed_at?->toIso8601String();
         $payload['booking_detail'] = self::bookingAdminEmbed($order);
 
-        $payload['audit_timeline'] = $audits
-            ->map(static fn (AuditLog $row) => [
-                'id' => (string) $row->id,
-                'at' => $row->created_at?->toIso8601String(),
-                'action' => $row->action,
-                'actor_name' => $row->actor?->name,
-                'payload' => $row->payload,
-            ])
-            ->values()
-            ->all();
+        $payload['audit_timeline'] = AuditLogPresenter::mapTimeline($audits, includeIp: true);
         $payload['status_timeline'] = self::statusTimeline($order, $audits);
 
         $activeInvoice = null;

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\AuditLog;
 use App\Models\Booking;
+use App\Support\Audit\AuditLogPresenter;
 use App\Support\Money\MoneyFormatting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -19,20 +20,15 @@ final class BookingDetailResource extends JsonResource
         /** @var Booking $b */
         $b = $this->resource;
 
-        $timeline = AuditLog::query()
-            ->with('actor:id,name')
+        $auditRows = AuditLog::query()
+            ->with('actor:id,name,email')
             ->where('auditable_type', Booking::class)
             ->where('auditable_id', $b->id)
             ->orderByDesc('created_at')
             ->limit(100)
-            ->get()
-            ->map(static fn (AuditLog $row) => [
-                'id' => (string) $row->id,
-                'at' => $row->created_at?->toIso8601String(),
-                'action' => $row->action,
-                'actor_name' => $row->actor?->name,
-                'payload' => $row->payload,
-            ]);
+            ->get();
+
+        $timeline = collect(AuditLogPresenter::mapTimeline($auditRows, includeIp: true));
 
         return [
             'id' => (string) $b->id,
@@ -107,6 +103,7 @@ final class BookingDetailResource extends JsonResource
                 'currency' => $o->currency,
             ]),
             'status_timeline' => $timeline,
+            'audit_timeline' => $timeline,
         ];
     }
 }

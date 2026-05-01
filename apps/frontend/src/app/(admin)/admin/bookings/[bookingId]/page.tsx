@@ -14,6 +14,7 @@ import { BookingDetailResponseSchema } from "@/lib/api/admin-bookings-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
+import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { RouteLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -53,25 +54,6 @@ const assignToRouteSchema = z.object({
   confirmed_time_window_start: z.string().optional(),
   confirmed_time_window_end: z.string().optional(),
 });
-
-function bookingAuditLabel(action: string): string {
-  const map: Record<string, string> = {
-    "booking.created": "Booking created",
-    "booking.confirmed": "Booking confirmed",
-    "booking.cancelled": "Booking cancelled",
-    "booking.converted_to_order": "Converted to order",
-    "booking.hard_deleted": "Booking deleted",
-    "booking.assigned_route": "Assigned to route",
-    "booking.route_unassigned": "Removed from route",
-    "booking.requested_window_changed": "Requested window updated",
-    "booking.confirmed_window_changed": "Confirmed window updated",
-    "booking.fields_updated": "Details updated",
-    "booking.updated": "Updated",
-    "booking.create_route_placeholder": "Create route (placeholder)",
-    "order.created_from_booking": "Order created from booking",
-  };
-  return map[action] ?? action;
-}
 
 type LifecycleGate =
   | "requested"
@@ -923,30 +905,10 @@ export default function AdminBookingDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Status timeline</CardTitle>
+          <CardTitle className="text-base">Activity &amp; audit</CardTitle>
         </CardHeader>
         <CardContent>
-          {b.status_timeline.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No audit entries yet.</p>
-          ) : (
-            <ul className="max-h-[480px] space-y-2 overflow-auto text-sm">
-              {b.status_timeline.map((row) => (
-                <li key={row.id} className="rounded-md border px-3 py-2">
-                  <div className="text-xs text-muted-foreground">{row.at ?? ""}</div>
-                  <div className="font-medium">{bookingAuditLabel(row.action)}</div>
-                  <div className="text-xs text-muted-foreground">{row.actor_name ?? "—"}</div>
-                  {row.payload !== undefined && row.payload !== null ? (
-                    <details className="mt-2 text-xs">
-                      <summary className="cursor-pointer text-muted-foreground">Audit payload</summary>
-                      <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 whitespace-pre-wrap">
-                        {typeof row.payload === "string" ? row.payload : JSON.stringify(row.payload, null, 2)}
-                      </pre>
-                    </details>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
+          <AuditTimeline items={(b.audit_timeline ?? b.status_timeline) as AuditTimelineRow[]} showPayload />
         </CardContent>
       </Card>
 

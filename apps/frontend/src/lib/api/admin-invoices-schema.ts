@@ -58,13 +58,13 @@ const PaymentTinySchema = z
   })
   .passthrough();
 
-export const InvoiceAuditEntrySchema = z.object({
-  id: z.string(),
-  at: z.string().nullable().optional(),
-  action: z.string(),
-  actor_name: z.string().nullable().optional(),
-  payload: z.unknown().optional(),
-});
+export const InvoiceAuditEntrySchema = z
+  .object({
+    id: z.string(),
+    at: z.string().nullable().optional(),
+    action: z.string(),
+  })
+  .passthrough();
 
 export const InvoiceCompanySchema = z.object({
   name: z.string().nullable().optional(),

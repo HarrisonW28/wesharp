@@ -8,6 +8,7 @@ use App\Enums\InvoiceStatus;
 use App\Http\Resources\BookingResource;
 use App\Models\AuditLog;
 use App\Models\Invoice;
+use App\Support\Audit\AuditLogPresenter;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Support\Money\MoneyFormatting;
@@ -159,22 +160,15 @@ final class InvoiceJson
     /** @return list<array<string, mixed>> */
     public static function auditTimeline(Invoice $invoice): array
     {
-        return AuditLog::query()
-            ->with('actor:id,name')
+        $rows = AuditLog::query()
+            ->with('actor:id,name,email')
             ->where('auditable_type', Invoice::class)
             ->where('auditable_id', $invoice->id)
             ->orderByDesc('created_at')
             ->limit(100)
-            ->get()
-            ->map(static fn (AuditLog $row) => [
-                'id' => (string) $row->id,
-                'at' => $row->created_at?->toIso8601String(),
-                'action' => $row->action,
-                'actor_name' => $row->actor?->name,
-                'payload' => $row->payload,
-            ])
-            ->values()
-            ->all();
+            ->get();
+
+        return AuditLogPresenter::mapTimeline($rows, includeIp: true);
     }
 
     /** @return array<string, mixed> */

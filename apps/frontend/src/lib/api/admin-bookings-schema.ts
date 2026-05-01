@@ -83,13 +83,13 @@ export const PaginatedBookingsResponseSchema = z
   })
   .passthrough();
 
-export const BookingTimelineItemSchema = z.object({
-  id: z.string(),
-  at: z.string().nullable().optional(),
-  action: z.string(),
-  actor_name: z.string().nullable().optional(),
-  payload: z.unknown().optional(),
-});
+export const BookingTimelineItemSchema = z
+  .object({
+    id: z.string(),
+    at: z.string().nullable().optional(),
+    action: z.string(),
+  })
+  .passthrough();
 
 export const BookingDetailSchema = z.object({
   id: z.string(),
@@ -171,6 +171,7 @@ export const BookingDetailSchema = z.object({
     }),
   ),
   status_timeline: z.array(BookingTimelineItemSchema),
+  audit_timeline: z.array(BookingTimelineItemSchema).optional(),
 });
 
 export const BookingDetailResponseSchema = z
