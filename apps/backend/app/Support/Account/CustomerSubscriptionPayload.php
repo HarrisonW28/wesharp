@@ -2,6 +2,7 @@
 
 namespace App\Support\Account;
 
+use App\Enums\SubscriptionStatus;
 use App\Models\CompanySubscription;
 use App\Models\Invoice;
 use App\Models\SubscriptionPlan;
@@ -18,7 +19,10 @@ final class CustomerSubscriptionPayload
     public static function forCompany(string $companyId): ?array
     {
         /** @phpstan-ignore-next-line */
-        $sub = CompanySubscription::query()->where('company_id', $companyId)->first();
+        $sub = CompanySubscription::query()
+            ->where('company_id', $companyId)
+            ->where('status', SubscriptionStatus::Active->value)
+            ->first();
 
         if (! $sub instanceof CompanySubscription) {
             return null;

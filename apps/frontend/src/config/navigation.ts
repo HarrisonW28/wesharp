@@ -39,6 +39,7 @@ export const ADMIN_NAV: NavItem[] = [
   { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
   { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
   { title: "Finance", href: "/admin/finance", icon: Landmark, permission: "payments.view" },
+  { title: "Subscription plans", href: "/admin/subscription-plans", icon: Repeat, permission: "subscriptions.view" },
   { title: "Sales report", href: "/admin/reports/sales", icon: LineChart, permission: "reports.finance" },
   {
     title: "Billing report",
@@ -87,6 +88,7 @@ export const ROUTE_MANAGER_NAV: NavItem[] = [
   { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
   { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
   { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
+  { title: "Subscription plans", href: "/admin/subscription-plans", icon: Repeat, permission: "subscriptions.view" },
   {
     title: "Operations reports",
     href: "/admin/reports/operations",

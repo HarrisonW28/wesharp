@@ -96,7 +96,8 @@ final class CompanyController extends Controller
         $this->authorize('view', $company);
 
         $company->load([
-            'subscription',
+            'subscription.plan',
+            'subscriptions' => fn ($q) => $q->with(['plan', 'billingContact'])->limit(50),
             'users' => fn ($q) => $q->orderBy('name')->limit(100),
             'contacts' => fn ($q) => $q
                 ->orderByRaw('CASE WHEN archived_at IS NULL THEN 0 ELSE 1 END')

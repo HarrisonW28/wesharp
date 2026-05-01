@@ -206,31 +206,83 @@ const CrmSubscriptionActionSchema = z.object({
   hint: z.string(),
 });
 
+export const SubscriptionHistoryRowSchema = z.object({
+  id: z.string(),
+  plan_name: z.string(),
+  status: z.string(),
+  status_label: z.string(),
+  starts_at: z.string().nullable().optional(),
+  renews_at: z.string().nullable().optional(),
+  cancelled_at: z.string().nullable().optional(),
+  price_amount_minor_snapshot: z.number().optional(),
+  formatted_price_snapshot_gbp: z.string().nullable().optional(),
+  currency: z.string().optional(),
+  billing_contact: z
+    .object({
+      id: z.string().optional(),
+      name: z.string().nullable().optional(),
+      email: z.string().nullable().optional(),
+      phone: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+export const SubscriptionPlanRowSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  billing_interval: z.string().nullable().optional(),
+  price_amount_minor: z.number(),
+  currency: z.string(),
+  is_active: z.boolean(),
+  sort_order: z.number().optional(),
+});
+
+export const SubscriptionPlansListResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    items: z.array(SubscriptionPlanRowSchema),
+  }),
+});
+
 /** Admin company detail subscription panel — `state: none` until a `company_subscriptions` row exists. */
 export const CompanySubscriptionCrmSchema = z.discriminatedUnion("state", [
   z.object({
     state: z.literal("none"),
     headline: z.string(),
     subheadline: z.string(),
-    plan_management_available: z.literal(false),
-    recurring_amount_pence: z.null(),
+    plan_management_available: z.boolean(),
+    recurring_amount_pence: z.number().nullable(),
     recurring_amount_note: z.string(),
     crm_actions: z.array(CrmSubscriptionActionSchema),
+    subscription_history: z.array(SubscriptionHistoryRowSchema).optional(),
+    billing_visibility: z.enum(["full", "route_manager_limited"]).optional(),
+    billing_restricted_message: z.string().nullable().optional(),
   }),
   z.object({
     state: z.literal("record"),
     headline: z.string(),
     id: z.string(),
+    subscription_plan_id: z.string().optional(),
     plan_name: z.string(),
     status: z.string(),
     status_label: z.string(),
+    starts_at: z.string().nullable().optional(),
+    renews_at: z.string().nullable().optional(),
+    cancelled_at: z.string().nullable().optional(),
     current_period_end: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
     allowance_summary: z.string().nullable().optional(),
     included_services: z.string().nullable().optional(),
-    plan_management_available: z.literal(false),
-    recurring_amount_pence: z.null(),
+    price_amount_minor_snapshot: z.number().optional(),
+    formatted_price_snapshot_gbp: z.string().nullable().optional(),
+    currency: z.string().optional(),
+    plan_management_available: z.boolean(),
+    recurring_amount_pence: z.number().nullable(),
     recurring_amount_note: z.string(),
     crm_actions: z.array(CrmSubscriptionActionSchema),
+    subscription_history: z.array(SubscriptionHistoryRowSchema).optional(),
     billing_visibility: z.enum(["full", "route_manager_limited"]),
     billing_restricted_message: z.string().optional(),
     billing_contact: z
@@ -241,6 +293,7 @@ export const CompanySubscriptionCrmSchema = z.discriminatedUnion("state", [
       })
       .nullable()
       .optional(),
+    billing_contact_id: z.string().nullable().optional(),
     latest_subscription_invoice: z
       .object({
         id: z.string(),

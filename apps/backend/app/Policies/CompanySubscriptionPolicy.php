@@ -31,6 +31,10 @@ final class CompanySubscriptionPolicy
 
     public function update(User $user, CompanySubscription $subscription): bool
     {
-        return Permissions::userMay($user, Permissions::SUBSCRIPTIONS_MANAGE);
+        if (! Permissions::userMay($user, Permissions::SUBSCRIPTIONS_MANAGE)) {
+            return false;
+        }
+
+        return Permissions::userMayForCompany($user, Permissions::COMPANIES_VIEW, $subscription->company_id);
     }
 }

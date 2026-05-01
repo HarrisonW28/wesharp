@@ -30,6 +30,7 @@ import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTi
 import { LocationLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { CompanyContactsManager } from "@/components/crm/CompanyContactsManager";
 import { CompanyLocationsManager } from "@/components/crm/CompanyLocationsManager";
+import { CompanySubscriptionPanel } from "@/components/crm/CompanySubscriptionPanel";
 import { CompanyStatusBadge } from "@/components/crm/CompanyStatusBadge";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -102,6 +103,8 @@ export default function AdminCrmCompanyPage() {
   const canCreateBooking = perms.has("bookings.create");
   const canViewInvoices = perms.has("invoices.view");
   const canViewPayments = perms.has("payments.view");
+  const canManageSubs = perms.has("subscriptions.manage");
+  const canViewSubs = perms.has("subscriptions.view");
   const [tab, setTab] = useState<CrmTab>("overview");
 
   const invalidateCompany = async () => {
@@ -785,191 +788,15 @@ export default function AdminCrmCompanyPage() {
         ) : null}
 
         {tab === "subscription" ? (
-          <div className="space-y-4">
-            <div className="grid gap-4 lg:grid-cols-3">
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-base">Subscription</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                  {c.subscription.state === "none" ? (
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-base font-semibold">{c.subscription.headline}</p>
-                        <p className="mt-2 text-muted-foreground">{c.subscription.subheadline}</p>
-                      </div>
-                      <p className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                        {c.subscription.recurring_amount_note}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-base font-semibold">{c.subscription.plan_name}</p>
-                        <p className="text-muted-foreground">
-                          Status · <span className="text-foreground">{c.subscription.status_label}</span>
-                        </p>
-                        {c.subscription.current_period_end ? (
-                          <p className="text-muted-foreground">
-                            Renewal / period end ·{" "}
-                            <span className="text-foreground">{c.subscription.current_period_end}</span>
-                          </p>
-                        ) : null}
-                      </div>
-                      <div className="rounded-md border bg-muted/30 px-3 py-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          Contract value (recurring)
-                        </p>
-                        <p className="mt-1 text-muted-foreground">{c.subscription.recurring_amount_note}</p>
-                      </div>
-                      {c.subscription.allowance_summary ? (
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Allowance</p>
-                          <p className="whitespace-pre-wrap">{c.subscription.allowance_summary}</p>
-                        </div>
-                      ) : null}
-                      {c.subscription.included_services ? (
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            Included services / plan notes
-                          </p>
-                          <p className="whitespace-pre-wrap">{c.subscription.included_services}</p>
-                        </div>
-                      ) : null}
-                      {c.subscription.billing_visibility === "route_manager_limited" ? (
-                        <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
-                          {c.subscription.billing_restricted_message ??
-                            "Billing details are limited for route managers."}
-                        </p>
-                      ) : (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <div className="rounded-md border px-3 py-2">
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                              Billing contact
-                            </p>
-                            {c.subscription.billing_contact ? (
-                              <div className="mt-2 space-y-1">
-                                {c.subscription.billing_contact.name ? (
-                                  <p className="font-medium">{c.subscription.billing_contact.name}</p>
-                                ) : null}
-                                {c.subscription.billing_contact.email ? (
-                                  <p className="text-muted-foreground">{c.subscription.billing_contact.email}</p>
-                                ) : null}
-                                {c.subscription.billing_contact.phone ? (
-                                  <p className="text-muted-foreground">{c.subscription.billing_contact.phone}</p>
-                                ) : null}
-                              </div>
-                            ) : (
-                              <p className="mt-2 text-muted-foreground">No billing email or primary billing contact.</p>
-                            )}
-                          </div>
-                          <div className="rounded-md border px-3 py-2">
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                              Latest subscription invoice
-                            </p>
-                            {c.subscription.latest_subscription_invoice ? (
-                              <div className="mt-2 space-y-1">
-                                {canViewInvoices ? (
-                                  <Link
-                                    className="font-medium text-primary hover:underline"
-                                    href={`/admin/invoices/${c.subscription.latest_subscription_invoice.id}`}
-                                  >
-                                    {c.subscription.latest_subscription_invoice.invoice_number ?? "View invoice"}
-                                  </Link>
-                                ) : (
-                                  <p className="font-medium">
-                                    {c.subscription.latest_subscription_invoice.invoice_number ?? "Invoice"}
-                                  </p>
-                                )}
-                                <p className="text-muted-foreground">
-                                  {c.subscription.latest_subscription_invoice.invoice_status_label ??
-                                    c.subscription.latest_subscription_invoice.invoice_status ??
-                                    "—"}
-                                  {c.subscription.latest_subscription_invoice.issued_on
-                                    ? ` · ${c.subscription.latest_subscription_invoice.issued_on}`
-                                    : null}
-                                </p>
-                                {canViewInvoices ? (
-                                  <p className="tabular-nums text-muted-foreground">
-                                    {c.subscription.latest_subscription_invoice.formatted_total}
-                                  </p>
-                                ) : (
-                                  <p className="text-xs text-muted-foreground">
-                                    Amount hidden — add <span className="font-mono">invoices.view</span> to see totals
-                                    here.
-                                  </p>
-                                )}
-                              </div>
-                            ) : (
-                              <p className="mt-2 text-muted-foreground">No subscription-flagged invoice yet.</p>
-                            )}
-                          </div>
-                          {typeof c.subscription.outstanding_subscription_invoices_pence === "number" ? (
-                            <div className="rounded-md border px-3 py-2 sm:col-span-2">
-                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                Outstanding on subscription invoices
-                              </p>
-                              <p className="mt-2 text-base font-semibold tabular-nums">
-                                {canViewInvoices
-                                  ? (c.subscription.formatted_outstanding_subscription ?? "—")
-                                  : "—"}
-                              </p>
-                              {!canViewInvoices ? (
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  Requires invoice permission to display balance.
-                                </p>
-                              ) : null}
-                            </div>
-                          ) : null}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Quick actions</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {c.subscription.crm_actions.map((action) => (
-                        <Button
-                          key={action.id}
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="min-h-10"
-                          disabled
-                          title={action.hint}
-                        >
-                          <span className="flex flex-col items-start gap-0.5 text-left">
-                            <span>{action.label}</span>
-                            <span className="text-[10px] font-normal uppercase tracking-wide text-muted-foreground">
-                              TODO · Sprint 9
-                            </span>
-                          </span>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="lg:col-span-1">
-                <CardHeader>
-                  <CardTitle className="text-base">Billing audit trail</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  <p>
-                    Subscription lifecycle events are reflected in invoice and payment audit entries. View filtered audit
-                    history for this company in the{" "}
-                    <Link
-                      className="font-medium text-primary underline underline-offset-2"
-                      href={`/admin/audit?company_id=${companyId}`}
-                    >
-                      global audit log
-                    </Link>
-                    .
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          <CompanySubscriptionPanel
+            companyId={companyId}
+            subscription={c.subscription}
+            contacts={c.contacts}
+            canManageSubs={canManageSubs}
+            canViewSubs={canViewSubs}
+            canViewInvoices={canViewInvoices}
+            onRefresh={invalidateCompany}
+          />
         ) : null}
 
         {tab === "notes" ? (
