@@ -5,12 +5,13 @@ namespace App\Support\Portal;
 use App\Enums\BookingStatus;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
+use App\Policies\BookingPolicy;
 use Illuminate\Http\Request;
 
 final class PortalBookingPayload
 {
     /**
-     * Mirrors {@see \App\Policies\BookingPolicy::cancel()} for tenant customers — single source for the portal UI.
+     * Mirrors {@see BookingPolicy::cancel()} for tenant customers — single source for the portal UI.
      */
     public static function customerCanCancel(Booking $booking): bool
     {
@@ -41,6 +42,14 @@ final class PortalBookingPayload
         );
 
         $row['customer_cancellable'] = self::customerCanCancel($booking);
+
+        $row['display_collection_date'] = ($booking->confirmed_collection_date ?? $booking->requested_collection_date ?? $booking->scheduled_date)?->format('Y-m-d');
+        $row['display_time_window_start'] = $booking->confirmed_time_window_start
+            ?? $booking->requested_time_window_start
+            ?? $booking->time_window_start;
+        $row['display_time_window_end'] = $booking->confirmed_time_window_end
+            ?? $booking->requested_time_window_end
+            ?? $booking->time_window_end;
 
         return $row;
     }

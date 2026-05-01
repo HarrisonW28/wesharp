@@ -19,6 +19,7 @@ export type BookingStatus = (typeof BOOKING_STATUS_VALUES)[number];
 
 export const BookingRowSchema = z.object({
   id: z.string(),
+  reference: z.string().optional(),
   company_id: z.string(),
   location_id: z.string(),
   contact_id: z.string().nullable(),
@@ -50,25 +51,37 @@ export const BookingRowSchema = z.object({
     })
     .optional(),
   venue_city: z.string().nullable().optional(),
+  orders_count: z.number().nullable().optional(),
+  assigned_route: z
+    .object({
+      id: z.string(),
+      name: z.string().nullable(),
+      scheduled_date: z.string().nullable().optional(),
+      route_status: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type BookingRow = z.infer<typeof BookingRowSchema>;
 
-export const PaginatedBookingsResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    items: z.array(BookingRowSchema),
-  }),
-  meta: z.object({
-    pagination: z.object({
-      page: z.number(),
-      per_page: z.number(),
-      total: z.number().optional(),
-      total_pages: z.number().optional(),
-      has_more_pages: z.boolean().optional(),
+export const PaginatedBookingsResponseSchema = z
+  .object({
+    success: z.literal(true),
+    data: z.object({
+      items: z.array(BookingRowSchema),
     }),
-  }),
-});
+    meta: z.object({
+      pagination: z.object({
+        page: z.number(),
+        per_page: z.number(),
+        total: z.number().optional(),
+        total_pages: z.number().optional(),
+        has_more_pages: z.boolean().optional(),
+      }),
+    }),
+  })
+  .passthrough();
 
 export const BookingTimelineItemSchema = z.object({
   id: z.string(),
@@ -80,6 +93,7 @@ export const BookingTimelineItemSchema = z.object({
 
 export const BookingDetailSchema = z.object({
   id: z.string(),
+  reference: z.string().optional(),
   company_id: z.string(),
   location_id: z.string(),
   contact_id: z.string().nullable(),
@@ -159,7 +173,9 @@ export const BookingDetailSchema = z.object({
   status_timeline: z.array(BookingTimelineItemSchema),
 });
 
-export const BookingDetailResponseSchema = z.object({
-  success: z.literal(true),
-  data: BookingDetailSchema,
-});
+export const BookingDetailResponseSchema = z
+  .object({
+    success: z.literal(true),
+    data: BookingDetailSchema,
+  })
+  .passthrough();

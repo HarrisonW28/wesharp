@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\BookingStatus;
+use App\Enums\RouteStopStatus;
 use App\Enums\ServiceType;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CompanyLocation;
 use App\Models\OperationalRoute;
+use App\Models\Order;
 use App\Models\RouteStop;
 use App\Models\User;
 use Database\Seeders\WeSharpDemoSeeder;
@@ -170,6 +172,112 @@ final class AdminBookingsApiTest extends TestCase
         $row = Booking::query()->findOrFail($bookingId);
         self::assertNotNull($row->confirmed_time_window_start);
         self::assertNotNull($row->confirmed_time_window_end);
+    }
+
+    public function test_unassign_route_returns_to_confirmed_when_stop_not_started(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+
+        $route = OperationalRoute::query()->firstOrFail();
+        $booking = Booking::factory()->create([
+            'company_id' => Company::query()->first()->id,
+            'company_location_id' => CompanyLocation::query()->first()->id,
+            'booking_status' => BookingStatus::Confirmed,
+            'scheduled_date' => $route->scheduled_date->format('Y-m-d'),
+            'service_type' => ServiceType::Collection,
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings/'.$booking->id.'/assign-route', [
+                'route_id' => $route->id,
+            ])
+            ->assertOk();
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings/'.$booking->id.'/unassign-route')
+            ->assertOk()
+            ->assertJsonPath('data.status', BookingStatus::Confirmed->value);
+
+        self::assertNull(Booking::query()->find($booking->id)?->assigned_route_id);
+    }
+
+    public function test_unassign_route_blocked_when_stop_in_progress(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+
+        $route = OperationalRoute::query()->firstOrFail();
+        $booking = Booking::factory()->create([
+            'company_id' => Company::query()->first()->id,
+            'company_location_id' => CompanyLocation::query()->first()->id,
+            'booking_status' => BookingStatus::AssignedToRoute,
+            'assigned_route_id' => $route->id,
+            'scheduled_date' => $route->scheduled_date->format('Y-m-d'),
+            'service_type' => ServiceType::Collection,
+        ]);
+
+        RouteStop::query()->create([
+            'route_id' => $route->id,
+            'booking_id' => $booking->id,
+            'route_stop_status' => RouteStopStatus::Travelling,
+            'sequence' => 9,
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings/'.$booking->id.'/unassign-route')
+            ->assertStatus(422);
+    }
+
+    public function test_hard_delete_returns_blockers_when_orders_exist(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+        $booking = Booking::factory()->create([
+            'company_id' => Company::query()->first()->id,
+            'company_location_id' => CompanyLocation::query()->first()->id,
+            'booking_status' => BookingStatus::Requested,
+            'scheduled_date' => now()->addDay()->toDateString(),
+            'service_type' => ServiceType::Collection,
+        ]);
+
+        Order::factory()->create([
+            'company_id' => $booking->company_id,
+            'booking_id' => $booking->id,
+        ]);
+
+        $res = $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->deleteJson('/api/admin/bookings/'.$booking->id);
+
+        $res->assertStatus(422)
+            ->assertJsonPath('error.code', 'booking_delete_blocked');
+
+        /** @phpstan-ignore-next-line */
+        self::assertContains('orders', data_get($res->json(), 'error.details.blockers'));
+    }
+
+    public function test_confirm_writes_booking_confirmed_audit(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+        $company = Company::query()->firstOrFail();
+        $location = CompanyLocation::query()->where('company_id', $company->id)->firstOrFail();
+
+        $create = $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings', [
+                'company_id' => $company->id,
+                'location_id' => $location->id,
+                'requested_date' => now()->addWeek()->toDateString(),
+                'service_type' => ServiceType::Collection->value,
+            ]);
+        $create->assertCreated();
+        $bookingId = $create->json('data.id');
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings/'.$bookingId.'/confirm')
+            ->assertOk();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'auditable_type' => Booking::class,
+            'auditable_id' => $bookingId,
+            'action' => 'booking.confirmed',
+        ]);
     }
 
     public function test_convert_to_order_marks_booking_converted(): void

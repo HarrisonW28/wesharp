@@ -57,6 +57,11 @@ final class BookingPolicy
             && Permissions::userMay($user, Permissions::ROUTES_MANAGE);
     }
 
+    public function unassignRoute(User $user, Booking $booking): bool
+    {
+        return $this->assignRoute($user, $booking);
+    }
+
     public function convertToOrder(User $user, Booking $booking): bool
     {
         if ($booking->booking_status === BookingStatus::ConvertedToOrder) {

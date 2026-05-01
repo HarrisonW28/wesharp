@@ -48,6 +48,15 @@ function formatWindow(a?: string | null, e?: string | null): string {
   return `${a ? f(a) : "?"}–${e ? f(e) : "?"}`;
 }
 
+function formatConfirmedCell(row: BookingRow): string {
+  const date = row.confirmed_collection_date ?? "—";
+  const win = formatWindow(row.confirmed_time_window_start, row.confirmed_time_window_end);
+  if (win === "—") {
+    return date;
+  }
+  return `${date} · ${win}`;
+}
+
 const SERVICE_TYPES = ["collection", "onsite"] as const;
 
 export default function AdminBookingsPage() {
@@ -199,8 +208,19 @@ export default function AdminBookingsPage() {
     [pathname, router, searchParams],
   );
 
+  const companyFilterId = searchParams.get("company_id") ?? "";
+
   const columns: ColumnDef<BookingRow>[] = useMemo(
     () => [
+      {
+        id: "ref",
+        header: "Ref",
+        cell: ({ row }) => (
+          <Link className="font-mono text-xs text-primary hover:underline" href={`/admin/bookings/${row.original.id}`}>
+            {row.original.reference ?? row.original.id.slice(0, 8)}
+          </Link>
+        ),
+      },
       {
         accessorKey: "requested_date",
         header: "Date",
@@ -210,9 +230,14 @@ export default function AdminBookingsPage() {
         accessorKey: "company",
         header: "Account",
         cell: ({ row }) => (
-          <Link className="font-medium text-primary hover:underline" href={`/admin/bookings/${row.original.id}`}>
-            {row.original.company?.name ?? "Account"}
-          </Link>
+          <div className="min-w-[8rem] space-y-0.5">
+            <Link className="font-medium text-primary hover:underline" href={`/admin/bookings/${row.original.id}`}>
+              {row.original.company?.name ?? "Account"}
+            </Link>
+            {(row.original.orders_count ?? 0) > 0 ? (
+              <div className="text-xs text-muted-foreground">Has linked order</div>
+            ) : null}
+          </div>
         ),
       },
       {
@@ -229,11 +254,9 @@ export default function AdminBookingsPage() {
       },
       {
         id: "conf_win",
-        header: "Confirmed window",
+        header: "Confirmed",
         cell: ({ row }) => (
-          <span className="text-muted-foreground tabular-nums">
-            {formatWindow(row.original.confirmed_time_window_start, row.original.confirmed_time_window_end)}
-          </span>
+          <span className="text-muted-foreground tabular-nums text-xs sm:text-sm">{formatConfirmedCell(row.original)}</span>
         ),
       },
       {
@@ -245,10 +268,12 @@ export default function AdminBookingsPage() {
               className="text-primary underline underline-offset-2"
               href={`/admin/routes/${row.original.assigned_route_id}`}
             >
-              Run
+              {row.original.assigned_route?.name?.trim()
+                ? row.original.assigned_route.name
+                : "Open run"}
             </Link>
           ) : (
-            <span className="text-muted-foreground">—</span>
+            <span className="text-muted-foreground">Unassigned</span>
           ),
       },
       {
@@ -422,21 +447,59 @@ export default function AdminBookingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Date</Label>
+            <Label className="text-xs text-muted-foreground">Collection from</Label>
             <Input
               type="date"
-              defaultValue={searchParams.get("date") ?? ""}
+              defaultValue={searchParams.get("date_from") ?? ""}
               onChange={(event) =>
                 updateParam((p) => {
                   const v = event.target.value.trim();
                   if (v) {
-                    p.set("date", v);
+                    p.set("date_from", v);
                   } else {
-                    p.delete("date");
+                    p.delete("date_from");
                   }
                   p.set("page", "1");
                 })
               }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Collection to</Label>
+            <Input
+              type="date"
+              defaultValue={searchParams.get("date_to") ?? ""}
+              onChange={(event) =>
+                updateParam((p) => {
+                  const v = event.target.value.trim();
+                  if (v) {
+                    p.set("date_to", v);
+                  } else {
+                    p.delete("date_to");
+                  }
+                  p.set("page", "1");
+                })
+              }
+            />
+          </div>
+          <div className="space-y-2 xl:col-span-2">
+            <LocationLookup
+              label="Location"
+              value={searchParams.get("location_id") || null}
+              onChange={(id) =>
+                updateParam((p) => {
+                  if (id) {
+                    p.set("location_id", id);
+                  } else {
+                    p.delete("location_id");
+                  }
+                  p.set("page", "1");
+                })
+              }
+              nullable
+              placeholder={companyFilterId ? "Filter by site…" : "Pick an account first to filter by location"}
+              disabled={!companyFilterId}
+              extraParams={companyFilterId ? { company_id: companyFilterId } : undefined}
             />
           </div>
           <div className="space-y-2">
@@ -503,7 +566,9 @@ export default function AdminBookingsPage() {
         </div>
       ) : (
         <>
-          <DataTable columns={columns} data={data?.data.items ?? []} emptyLabel="No bookings match your filters." />
+          <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+            <DataTable columns={columns} data={data?.data.items ?? []} emptyLabel="No bookings match your filters." />
+          </div>
           {data?.meta.pagination ? (
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
               <span>

@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\BookingController;
-use App\Http\Controllers\Admin\UserDirectoryController;
 use App\Http\Controllers\Admin\CompanyContactController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\CompanyLocationController;
@@ -13,6 +12,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\RouteStopController;
+use App\Http\Controllers\Admin\UserDirectoryController;
 use App\Http\Controllers\Api\Account\AccountBookingController;
 use App\Http\Controllers\Api\Account\AccountDashboardController;
 use App\Http\Controllers\Api\Account\AccountInvoiceController;
@@ -89,6 +89,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:users.manage')->put('users/{target}', [UserDirectoryController::class, 'update'])->whereNumber('target')->name('api.admin.users.update');
     Route::middleware('permission:users.manage')->post('users/{target}/deactivate', [UserDirectoryController::class, 'deactivate'])->whereNumber('target')->name('api.admin.users.deactivate');
     Route::middleware('permission:users.manage')->post('users/{target}/activate', [UserDirectoryController::class, 'activate'])->whereNumber('target')->name('api.admin.users.activate');
+    Route::middleware('permission:users.manage')->post('users/{target}/invite-placeholder', [UserDirectoryController::class, 'invitePlaceholder'])->whereNumber('target')->name('api.admin.users.invite_placeholder');
 
     Route::middleware('permission:companies.view')->get('lookups/companies', [LookupController::class, 'companies'])->name('api.admin.lookups.companies');
     Route::middleware('permission:users.view')->get('lookups/users', [LookupController::class, 'users'])->name('api.admin.lookups.users');
@@ -146,6 +147,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:bookings.update')->post('bookings/{booking}/confirm', [BookingController::class, 'confirm'])->whereUuid('booking')->name('api.admin.bookings.confirm');
     Route::middleware('permission:bookings.cancel')->post('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->whereUuid('booking')->name('api.admin.bookings.cancel');
     Route::middleware('permission:routes.manage')->post('bookings/{booking}/assign-route', [BookingController::class, 'assignRoute'])->whereUuid('booking')->name('api.admin.bookings.assign_route');
+    Route::middleware('permission:routes.manage')->post('bookings/{booking}/unassign-route', [BookingController::class, 'unassignRoute'])->whereUuid('booking')->name('api.admin.bookings.unassign_route');
+    Route::middleware('permission:routes.manage')->post('bookings/{booking}/create-route-placeholder', [BookingController::class, 'createRoutePlaceholder'])->whereUuid('booking')->name('api.admin.bookings.create_route_placeholder');
     Route::middleware('permission:orders.create')->post('bookings/{booking}/convert-to-order', [BookingController::class, 'convertToOrder'])->whereUuid('booking')->name('api.admin.bookings.convert_to_order');
 
     Route::middleware('permission:orders.view')->get('orders', [OrderController::class, 'index'])->name('api.admin.orders.index');

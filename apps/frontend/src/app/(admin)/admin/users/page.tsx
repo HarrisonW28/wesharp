@@ -14,8 +14,10 @@ import {
   type UserRoleValue,
   type UserStatusValue,
 } from "@/lib/api/admin-users-schema";
+import { USER_ROLE_LABELS, USER_STATUS_LABELS } from "@/lib/admin-user-role-copy";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
+import { CompanyLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -32,19 +34,25 @@ import {
 
 const ROLE_FILTERS: { label: string; value: UserRoleValue | "all" }[] = [
   { label: "All roles", value: "all" },
-  { label: "Super admin", value: "super_admin" },
-  { label: "Admin", value: "admin" },
-  { label: "Route manager", value: "route_manager" },
-  { label: "Finance", value: "finance" },
-  { label: "Customer owner", value: "customer_owner" },
-  { label: "Customer staff", value: "customer_staff" },
+  { label: USER_ROLE_LABELS.super_admin, value: "super_admin" },
+  { label: USER_ROLE_LABELS.admin, value: "admin" },
+  { label: USER_ROLE_LABELS.route_manager, value: "route_manager" },
+  { label: USER_ROLE_LABELS.finance, value: "finance" },
+  { label: USER_ROLE_LABELS.customer_owner, value: "customer_owner" },
+  { label: USER_ROLE_LABELS.customer_staff, value: "customer_staff" },
 ];
 
 const STATUS_FILTERS: { label: string; value: UserStatusValue | "all" }[] = [
   { label: "All statuses", value: "all" },
-  { label: "Invited", value: "invited" },
-  { label: "Active", value: "active" },
-  { label: "Suspended", value: "suspended" },
+  { label: USER_STATUS_LABELS.invited, value: "invited" },
+  { label: USER_STATUS_LABELS.active, value: "active" },
+  { label: USER_STATUS_LABELS.suspended, value: "suspended" },
+];
+
+const BUCKET_FILTERS: { label: string; value: "all" | "internal" | "customer" }[] = [
+  { label: "All users", value: "all" },
+  { label: "Internal staff", value: "internal" },
+  { label: "Customer / tenant", value: "customer" },
 ];
 
 function roleBadgeVariant(role: UserRoleValue): "default" | "secondary" | "outline" {
@@ -58,7 +66,18 @@ function roleBadgeVariant(role: UserRoleValue): "default" | "secondary" | "outli
 }
 
 function humanRole(role: UserRoleValue): string {
-  return ROLE_FILTERS.find((r) => r.value === role)?.label ?? role;
+  return USER_ROLE_LABELS[role] ?? role;
+}
+
+function formatShortDate(iso: string | null | undefined): string {
+  if (!iso) {
+    return "—";
+  }
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return iso;
+  }
+  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export default function AdminUsersPage() {
@@ -113,6 +132,15 @@ export default function AdminUsersPage() {
 
   const q = query.data;
 
+  const companyIdFilter = searchParams.get("company_id") ?? "";
+  const listCompanyInitial = useMemo(() => {
+    const first = q?.data.items.find((row) => row.company_id === companyIdFilter);
+    if (!first?.company_id || first.company_name == null) {
+      return null;
+    }
+    return { id: first.company_id, label: first.company_name, description: null as string | null };
+  }, [q?.data.items, companyIdFilter]);
+
   const columns: ColumnDef<UserDirectoryRow>[] = useMemo(
     () => [
       {
@@ -138,13 +166,25 @@ export default function AdminUsersPage() {
         ),
       },
       {
+        id: "bucket",
+        header: "Type",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {row.original.role_bucket === "internal" ? "Internal" : "Customer"}
+          </span>
+        ),
+      },
+      {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }) => row.original.status ?? "—",
+        cell: ({ row }) => {
+          const s = row.original.status;
+          return s ? (USER_STATUS_LABELS[s] ?? s) : "—";
+        },
       },
       {
         id: "company",
-        header: "Account",
+        header: "Company",
         cell: ({ row }) => {
           const name = row.original.company_name;
           const id = row.original.company_id;
@@ -153,10 +193,20 @@ export default function AdminUsersPage() {
           }
           return (
             <Link className="text-primary hover:underline" href={`/admin/crm/${id}`}>
-              {name ?? id.slice(0, 8) + "…"}
+              {name ?? "View account"}
             </Link>
           );
         },
+      },
+      {
+        id: "created",
+        header: "Created",
+        cell: ({ row }) => <span className="whitespace-nowrap text-muted-foreground">{formatShortDate(row.original.created_at)}</span>,
+      },
+      {
+        id: "updated",
+        header: "Updated",
+        cell: ({ row }) => <span className="whitespace-nowrap text-muted-foreground">{formatShortDate(row.original.updated_at)}</span>,
       },
     ],
     [],
@@ -167,19 +217,19 @@ export default function AdminUsersPage() {
       <Breadcrumbs items={[{ label: "Users" }]} />
       <PageHeader
         title="Users"
-        description="Directory and access control — sourced from Laravel /api/admin/users. Super admins and admins can view; changes require users.manage."
+        description="Directory and access control — Laravel roles are the source of truth. Clerk handles sign-in only."
       />
 
       <section className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:p-6">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-2">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+          <div className="space-y-2 sm:col-span-2 xl:col-span-1 2xl:col-span-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="user-q">
               Search
             </label>
             <Input
               id="user-q"
               defaultValue={searchParams.get("q") ?? ""}
-              placeholder="Name, email, Clerk ID…"
+              placeholder="Name or email"
               onChange={(event) =>
                 updateParam((params) => {
                   const v = event.target.value.trim();
@@ -192,6 +242,35 @@ export default function AdminUsersPage() {
                 })
               }
             />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground" htmlFor="user-bucket">
+              User type
+            </label>
+            <Select
+              value={searchParams.get("role_bucket") ?? "all"}
+              onValueChange={(value) =>
+                updateParam((params) => {
+                  if (value === "all") {
+                    params.delete("role_bucket");
+                  } else {
+                    params.set("role_bucket", value);
+                  }
+                  params.set("page", "1");
+                })
+              }
+            >
+              <SelectTrigger id="user-bucket">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {BUCKET_FILTERS.map((row) => (
+                  <SelectItem key={row.value} value={row.value}>
+                    {row.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="user-role">
@@ -251,25 +330,24 @@ export default function AdminUsersPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="user-company">
-              Company UUID
-            </label>
-            <Input
-              id="user-company"
-              defaultValue={searchParams.get("company_id") ?? ""}
-              placeholder="Filter by company id"
-              onChange={(event) =>
+          <div className="space-y-2 sm:col-span-2 xl:col-span-2">
+            <CompanyLookup
+              label="Company filter"
+              id="user-company-filter"
+              value={companyIdFilter === "" ? null : companyIdFilter}
+              onChange={(id) =>
                 updateParam((params) => {
-                  const v = event.target.value.trim();
-                  if (v) {
-                    params.set("company_id", v);
+                  if (id) {
+                    params.set("company_id", id);
                   } else {
                     params.delete("company_id");
                   }
                   params.set("page", "1");
                 })
               }
+              nullable
+              placeholder="Search company by name…"
+              initialOption={listCompanyInitial}
             />
           </div>
         </div>
@@ -286,7 +364,9 @@ export default function AdminUsersPage() {
         </div>
       ) : (
         <>
-          <DataTable columns={columns} data={q?.data.items ?? []} emptyLabel="No users match your filters." />
+          <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+            <DataTable columns={columns} data={q?.data.items ?? []} emptyLabel="No users match your filters." />
+          </div>
           {q?.meta.pagination ? (
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
               <span>

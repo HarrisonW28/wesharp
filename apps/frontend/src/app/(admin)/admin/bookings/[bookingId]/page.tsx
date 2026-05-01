@@ -54,6 +54,25 @@ const assignToRouteSchema = z.object({
   confirmed_time_window_end: z.string().optional(),
 });
 
+function bookingAuditLabel(action: string): string {
+  const map: Record<string, string> = {
+    "booking.created": "Booking created",
+    "booking.confirmed": "Booking confirmed",
+    "booking.cancelled": "Booking cancelled",
+    "booking.converted_to_order": "Converted to order",
+    "booking.hard_deleted": "Booking deleted",
+    "booking.assigned_route": "Assigned to route",
+    "booking.route_unassigned": "Removed from route",
+    "booking.requested_window_changed": "Requested window updated",
+    "booking.confirmed_window_changed": "Confirmed window updated",
+    "booking.fields_updated": "Details updated",
+    "booking.updated": "Updated",
+    "booking.create_route_placeholder": "Create route (placeholder)",
+    "order.created_from_booking": "Order created from booking",
+  };
+  return map[action] ?? action;
+}
+
 type LifecycleGate =
   | "requested"
   | "confirmed"
@@ -87,6 +106,7 @@ export default function AdminBookingDetailPage() {
   const canUpdateBooking = perms.has("bookings.update");
   const assignRoute = perms.has("bookings.update") && perms.has("routes.manage");
   const convertOrder = perms.has("bookings.update") && perms.has("orders.create");
+  const canHardDelete = perms.has("bookings.delete");
 
   const bookingQuery = useQuery({
     enabled: Boolean(bookingId),
@@ -116,6 +136,8 @@ export default function AdminBookingDetailPage() {
   const [assignOpen, setAssignOpen] = useState(false);
   const [reassignWarnOpen, setReassignWarnOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [unassignOpen, setUnassignOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
   const confirmExtrasSchema = z.object({
@@ -127,6 +149,21 @@ export default function AdminBookingDetailPage() {
   const confirmExtrasForm = useForm<z.infer<typeof confirmExtrasSchema>>({
     resolver: zodResolver(confirmExtrasSchema),
     defaultValues: {},
+  });
+
+  const requestedWindowSchema = z.object({
+    requested_collection_date: z.string().min(1, "Date required"),
+    requested_time_window_start: z.string().optional(),
+    requested_time_window_end: z.string().optional(),
+  });
+
+  const requestedWindowForm = useForm<z.infer<typeof requestedWindowSchema>>({
+    resolver: zodResolver(requestedWindowSchema),
+    defaultValues: {
+      requested_collection_date: "",
+      requested_time_window_start: "",
+      requested_time_window_end: "",
+    },
   });
 
   const confirmedWindowSchema = z.object({
@@ -224,6 +261,51 @@ export default function AdminBookingDetailPage() {
     });
   }, [assignOpen, bookingQuery.data, assignForm]);
 
+  useEffect(() => {
+    const row = bookingQuery.data;
+    if (!row) return;
+    requestedWindowForm.reset({
+      requested_collection_date:
+        row.requested_collection_date ?? row.requested_date ?? "",
+      requested_time_window_start: (
+        row.requested_time_window_start ??
+        row.time_window_start ??
+        ""
+      ).slice(0, 5),
+      requested_time_window_end: (row.requested_time_window_end ?? row.time_window_end ?? "").slice(0, 5),
+    });
+  }, [bookingQuery.data, requestedWindowForm]);
+
+  const saveRequestedWindow = useMutation({
+    mutationFn: async (values: z.infer<typeof requestedWindowSchema>) => {
+      const body: Record<string, string | null> = {
+        requested_collection_date: values.requested_collection_date,
+        requested_time_window_start: values.requested_time_window_start?.trim()
+          ? values.requested_time_window_start.trim().slice(0, 5)
+          : null,
+        requested_time_window_end: values.requested_time_window_end?.trim()
+          ? values.requested_time_window_end.trim().slice(0, 5)
+          : null,
+      };
+      const res = await admin.json(`/api/admin/bookings/${bookingId}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
+    onSuccess: async () => {
+      toast.success("Requested window updated.");
+      await qc.invalidateQueries({ queryKey: ["admin-booking-detail", bookingId] });
+      await qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Update failed.");
+    },
+  });
+
   const saveConfirmedWindow = useMutation({
     mutationFn: async (values: z.infer<typeof confirmedWindowSchema>) => {
       const res = await admin.json(`/api/admin/bookings/${bookingId}`, {
@@ -296,6 +378,65 @@ export default function AdminBookingDetailPage() {
     },
     onError: (e: unknown) => {
       toast.error(e instanceof Error ? e.message : "Assign route failed.");
+    },
+  });
+
+  const unassignMutation = useMutation({
+    mutationFn: async () => {
+      const res = await admin.json(`/api/admin/bookings/${bookingId}/unassign-route`, { method: "POST" });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
+    onSuccess: async () => {
+      toast.success("Booking removed from route.");
+      setUnassignOpen(false);
+      await qc.invalidateQueries({ queryKey: ["admin-booking-detail", bookingId] });
+      await qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Unassign failed.");
+    },
+  });
+
+  const routePlaceholderMutation = useMutation({
+    mutationFn: async () => {
+      const res = await admin.json(`/api/admin/bookings/${bookingId}/create-route-placeholder`, { method: "POST" });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
+    onSuccess: async () => {
+      toast.message("Logged — create the run from Routes for now.");
+      await qc.invalidateQueries({ queryKey: ["admin-booking-detail", bookingId] });
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Request failed.");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await admin.json(`/api/admin/bookings/${bookingId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const raw = res.payload as { error?: { message?: string; details?: { blockers?: string[] } } } | null;
+        const blockers = raw?.error?.details?.blockers;
+        const msg = raw?.error?.message ?? res.message;
+        const suffix = blockers?.length ? ` Blocked by: ${blockers.join(", ")}.` : "";
+        throw new Error(`${msg}${suffix}`);
+      }
+      return res.data;
+    },
+    onSuccess: async () => {
+      toast.success("Booking deleted.");
+      setDeleteOpen(false);
+      await qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+      router.push("/admin/bookings");
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Delete failed.");
     },
   });
 
@@ -406,6 +547,15 @@ export default function AdminBookingDetailPage() {
     !b?.orders.length &&
     (statusKey === "confirmed" || statusKey === "assigned_to_route" || statusKey === "collected");
 
+  const canUnassignNow = assignRoute && statusKey === "assigned_to_route";
+
+  const showHardDelete =
+    canHardDelete &&
+    statusKey === "requested" &&
+    (b?.orders?.length ?? 0) === 0 &&
+    !b?.assigned_route_id &&
+    !b?.route_stop;
+
   if (!bookingId) {
     return <div className="text-sm text-muted-foreground">Invalid booking id.</div>;
   }
@@ -430,7 +580,7 @@ export default function AdminBookingDetailPage() {
     <div className="space-y-8">
       <Breadcrumbs items={[{ label: "Bookings", href: "/admin/bookings" }, { label: b.company?.name ?? `Booking ${b.id.slice(0, 8)}` }]} />
       <PageHeader
-        title="Booking"
+        title={b.reference ?? "Booking"}
         description={`${b.company?.name ?? "Account"} · collection ${collectionDateForRoute ?? b.requested_date ?? "—"} · ${b.service_type}`}
         actions={
           <div className="flex flex-wrap gap-2">
@@ -472,12 +622,35 @@ export default function AdminBookingDetailPage() {
         </Button>
         <Button
           type="button"
+          variant="outline"
+          size="sm"
+          disabled={!canUnassignNow || unassignMutation.isPending}
+          onClick={() => setUnassignOpen(true)}
+        >
+          Remove from route
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!assignRoute || routePlaceholderMutation.isPending}
+          onClick={() => routePlaceholderMutation.mutate()}
+        >
+          New route (placeholder)
+        </Button>
+        <Button
+          type="button"
           variant="secondary"
           disabled={!canConvertNow || convertMutation.isPending}
           onClick={() => setConvertOpen(true)}
         >
           Convert to order
         </Button>
+        {showHardDelete ? (
+          <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+            Delete booking
+          </Button>
+        ) : null}
       </div>
 
       {canConfirm && canUpdateBooking ? (
@@ -563,6 +736,43 @@ export default function AdminBookingDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {canUpdateBooking && !["cancelled", "converted_to_order", "completed", "no_show"].includes(statusKey) ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Customer-requested window</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              className="grid gap-3 text-sm sm:grid-cols-3"
+              onSubmit={requestedWindowForm.handleSubmit((values) => saveRequestedWindow.mutate(values))}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="req-day">Requested date</Label>
+                <Input id="req-day" type="date" {...requestedWindowForm.register("requested_collection_date")} />
+                {requestedWindowForm.formState.errors.requested_collection_date ? (
+                  <p className="text-xs text-destructive">
+                    {requestedWindowForm.formState.errors.requested_collection_date.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="req-start">Window start</Label>
+                <Input id="req-start" type="time" {...requestedWindowForm.register("requested_time_window_start")} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="req-end">Window end</Label>
+                <Input id="req-end" type="time" {...requestedWindowForm.register("requested_time_window_end")} />
+              </div>
+              <div className="sm:col-span-3">
+                <Button type="submit" size="sm" disabled={saveRequestedWindow.isPending}>
+                  {saveRequestedWindow.isPending ? "Saving…" : "Save requested window"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -723,7 +933,7 @@ export default function AdminBookingDetailPage() {
               {b.status_timeline.map((row) => (
                 <li key={row.id} className="rounded-md border px-3 py-2">
                   <div className="text-xs text-muted-foreground">{row.at ?? ""}</div>
-                  <div className="font-medium">{row.action}</div>
+                  <div className="font-medium">{bookingAuditLabel(row.action)}</div>
                   <div className="text-xs text-muted-foreground">{row.actor_name ?? "—"}</div>
                   {row.payload !== undefined && row.payload !== null ? (
                     <details className="mt-2 text-xs">
@@ -739,6 +949,45 @@ export default function AdminBookingDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={unassignOpen} onOpenChange={setUnassignOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this booking from its route?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The booking returns to confirmed status. Only allowed when the route stop has not started yet.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Back</AlertDialogCancel>
+            <Button type="button" disabled={unassignMutation.isPending} onClick={() => unassignMutation.mutate()}>
+              {unassignMutation.isPending ? "Removing…" : "Remove from route"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently delete this booking?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Only safe for draft requested bookings with no route, orders, or knives. Otherwise cancel the booking instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Back</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate()}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete permanently"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <AlertDialogContent>

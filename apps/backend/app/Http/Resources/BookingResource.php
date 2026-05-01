@@ -20,6 +20,7 @@ final class BookingResource extends JsonResource
 
         return [
             'id' => (string) $b->id,
+            'reference' => self::reference($b),
             'company_id' => (string) $b->company_id,
             'location_id' => (string) $b->company_location_id,
             'contact_id' => $b->contact_id ? (string) $b->contact_id : null,
@@ -54,7 +55,21 @@ final class BookingResource extends JsonResource
                 'city' => $b->relationLoaded('company') ? $b->company?->city : null,
             ],
             'venue_city' => $b->location?->city ?? $b->company?->city,
+            'orders_count' => isset($b->orders_count) ? (int) $b->orders_count : null,
+            'assigned_route' => $b->relationLoaded('assignedRoute') && $b->assignedRoute !== null ? [
+                'id' => (string) $b->assignedRoute->id,
+                'name' => $b->assignedRoute->name,
+                'scheduled_date' => $b->assignedRoute->scheduled_date?->format('Y-m-d'),
+                'route_status' => $b->assignedRoute->route_status?->value,
+            ] : null,
         ];
+    }
+
+    public static function reference(Booking $b): string
+    {
+        $hex = str_replace('-', '', (string) $b->id);
+
+        return 'BK-'.strtoupper(substr($hex, 0, 8));
     }
 
     public static function formatTimeSlot(mixed $raw): ?string

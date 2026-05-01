@@ -27,10 +27,9 @@ final class CancelBookingAction
             }
             $booking->save();
 
-            AuditRecorder::record($actor, $booking, 'booking.status_changed', [
+            AuditRecorder::record($actor, $booking, 'booking.cancelled', [
                 'from' => $from->value,
                 'to' => BookingStatus::Cancelled->value,
-                'via' => 'cancel',
                 'reason' => $reason,
             ], $request);
 

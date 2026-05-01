@@ -2,15 +2,25 @@
 
 namespace App\Support\Orders;
 
+use App\Http\Resources\BookingResource;
+use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Support\Knives\KnifeJson;
 use App\Support\Money\MoneyFormatting;
+use Illuminate\Support\Collection;
 
 final class OrderJson
 {
+    public static function reference(Order $order): string
+    {
+        $hex = str_replace('-', '', (string) $order->id);
+
+        return 'OR-'.strtoupper(substr($hex, 0, 8));
+    }
+
     /** @return array<string, mixed> */
     public static function portalInvoice(Invoice $invoice): array
     {
@@ -119,28 +129,147 @@ final class OrderJson
     /** @return array<string, mixed> */
     public static function invoiceEmbed(Invoice $invoice): array
     {
-        return [
+        $sub = (int) $invoice->subtotal_pence;
+        $tax = (int) $invoice->tax_pence;
+        $tot = (int) $invoice->total_pence;
+
+        $out = [
             'id' => (string) $invoice->id,
             'invoice_number' => $invoice->invoice_number,
             'status' => $invoice->invoice_status?->value,
-            'subtotal_pence' => (int) $invoice->subtotal_pence,
-            'tax_pence' => (int) $invoice->tax_pence,
-            'total_pence' => (int) $invoice->total_pence,
-            'total_amount_minor' => (int) $invoice->total_pence,
-            'formatted_amount' => MoneyFormatting::formatGbpFromPence((int) $invoice->total_pence),
+            'subtotal_pence' => $sub,
+            'tax_pence' => $tax,
+            'total_pence' => $tot,
+            'total_amount_minor' => $tot,
+            'formatted_amount' => MoneyFormatting::formatGbpFromPence($tot),
+            'formatted_subtotal' => MoneyFormatting::formatGbpFromPence($sub),
+            'formatted_tax' => MoneyFormatting::formatGbpFromPence($tax),
+            'formatted_total' => MoneyFormatting::formatGbpFromPence($tot),
+        ];
+
+        if ($invoice->relationLoaded('items') && $invoice->items->isNotEmpty()) {
+            $out['line_items'] = $invoice->items->map(function ($item) {
+                $qty = (int) $item->quantity;
+                $unit = (int) $item->unit_amount_pence;
+                $line = (int) ($item->line_total_pence ?? ($qty * $unit));
+
+                return [
+                    'description' => $item->description,
+                    'quantity' => $qty,
+                    'unit_amount_pence' => $unit,
+                    'line_total_pence' => $line,
+                    'formatted_unit_amount' => MoneyFormatting::formatGbpFromPence($unit),
+                    'formatted_line_total' => MoneyFormatting::formatGbpFromPence($line),
+                ];
+            })->values()->all();
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  Collection<int, AuditLog>  $auditRows  Newest-first audit rows for this order.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function statusTimeline(Order $order, Collection $auditRows): array
+    {
+        $milestones = [
+            [
+                'key' => 'created',
+                'label' => 'Order created',
+                'at' => $order->created_at?->toIso8601String(),
+            ],
+        ];
+
+        $activated = $auditRows->first(fn (AuditLog $r) => $r->action === 'order.activated');
+        if ($activated !== null) {
+            $milestones[] = [
+                'key' => 'active',
+                'label' => 'Marked active',
+                'at' => $activated->created_at?->toIso8601String(),
+            ];
+        }
+
+        $completed = $auditRows->first(fn (AuditLog $r) => $r->action === 'order.completed');
+        if ($completed !== null) {
+            $milestones[] = [
+                'key' => 'completed',
+                'label' => 'Completed',
+                'at' => $completed->created_at?->toIso8601String(),
+            ];
+        } elseif ($order->completed_at !== null) {
+            $milestones[] = [
+                'key' => 'completed',
+                'label' => 'Completed',
+                'at' => $order->completed_at->toIso8601String(),
+            ];
+        }
+
+        $cancelled = $auditRows->first(fn (AuditLog $r) => $r->action === 'order.cancelled');
+        if ($cancelled !== null) {
+            $milestones[] = [
+                'key' => 'cancelled',
+                'label' => 'Cancelled',
+                'at' => $cancelled->created_at?->toIso8601String(),
+            ];
+        }
+
+        return $milestones;
+    }
+
+    /** @return array<string, mixed>|null */
+    public static function bookingAdminEmbed(Order $order): ?array
+    {
+        if (! $order->relationLoaded('booking') || $order->booking === null) {
+            return null;
+        }
+
+        $b = $order->booking;
+
+        $contact = $b->relationLoaded('contact') && $b->contact !== null
+            ? [
+                'name' => trim($b->contact->first_name.' '.$b->contact->last_name),
+                'email' => $b->contact->email,
+                'phone' => $b->contact->phone,
+            ]
+            : null;
+
+        $location = $b->relationLoaded('location') && $b->location !== null
+            ? [
+                'label' => $b->location->label,
+                'line_one' => $b->location->line_one,
+                'city' => $b->location->city,
+                'postcode' => $b->location->postcode,
+            ]
+            : null;
+
+        return [
+            'id' => (string) $b->id,
+            'reference' => BookingResource::reference($b),
+            'scheduled_date' => $b->scheduled_date?->format('Y-m-d'),
+            'status' => $b->booking_status?->value,
+            'contact' => $contact,
+            'location' => $location,
         ];
     }
 
     /** @return array<string, mixed> */
     public static function listRow(Order $order): array
     {
+        $billableLines = isset($order->billable_lines_count) ? (int) $order->billable_lines_count : null;
+        $knivesReg = isset($order->knives_registered_count) ? (int) $order->knives_registered_count : null;
+
         return [
             'id' => (string) $order->id,
+            'reference' => self::reference($order),
             'company_id' => (string) $order->company_id,
             'booking_id' => (string) $order->booking_id,
             'route_id' => $order->route_id !== null ? (string) $order->route_id : null,
             'status' => $order->order_status?->value,
             'knife_count' => $order->knife_count,
+            'billable_lines_count' => $billableLines,
+            'knives_registered_count' => $knivesReg,
             'price_per_knife_pence' => $order->price_per_knife_pence,
             'discount_pence' => $order->discount_pence,
             'subtotal_pence' => $order->subtotal_pence,
@@ -154,6 +283,14 @@ final class OrderJson
                 'name' => $order->company->name,
                 'city' => $order->company->city,
             ] : null,
+            'booking' => $order->relationLoaded('booking') && $order->booking !== null
+                ? [
+                    'id' => (string) $order->booking->id,
+                    'reference' => BookingResource::reference($order->booking),
+                    'scheduled_date' => $order->booking->scheduled_date?->format('Y-m-d'),
+                    'status' => $order->booking->booking_status?->value,
+                ]
+                : null,
             'scheduled_date' => $order->booking?->scheduled_date?->format('Y-m-d'),
             'route_name' => $order->operationalRoute?->name,
             'updated_at' => $order->updated_at?->toIso8601String(),
@@ -163,23 +300,54 @@ final class OrderJson
     /** @return array<string, mixed> */
     public static function detail(Order $order): array
     {
+        /** @var Collection<int, AuditLog> $audits */
+        $audits = AuditLog::query()
+            ->with('actor:id,name')
+            ->where('auditable_type', Order::class)
+            ->where('auditable_id', $order->id)
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
+
         $payload = array_merge(self::listRow($order), [
             'knives' => $order->relationLoaded('knives')
                 ? $order->knives->map(fn (Knife $k) => KnifeJson::summary($k))->values()->all()
                 : [],
             'items' => $order->relationLoaded('items')
-                ? $order->items->map(fn (OrderItem $i): array => [
-                    'id' => (string) $i->id,
-                    'knife_id' => $i->knife_id !== null ? (string) $i->knife_id : null,
-                    'description' => $i->description,
-                    'quantity' => (int) $i->quantity,
-                    'unit_amount_pence' => (int) $i->unit_amount_pence,
-                ])->values()->all()
+                ? $order->items->map(function (OrderItem $i): array {
+                    $qty = (int) $i->quantity;
+                    $unit = (int) $i->unit_amount_pence;
+                    $line = $qty * $unit;
+
+                    return [
+                        'id' => (string) $i->id,
+                        'knife_id' => $i->knife_id !== null ? (string) $i->knife_id : null,
+                        'description' => $i->description,
+                        'quantity' => $qty,
+                        'unit_amount_pence' => $unit,
+                        'line_total_pence' => $line,
+                        'formatted_unit_amount' => MoneyFormatting::formatGbpFromPence($unit),
+                        'formatted_line_total' => MoneyFormatting::formatGbpFromPence($line),
+                    ];
+                })->values()->all()
                 : [],
         ]);
 
         $payload['created_at'] = $order->created_at?->toIso8601String();
         $payload['completed_at'] = $order->completed_at?->toIso8601String();
+        $payload['booking_detail'] = self::bookingAdminEmbed($order);
+
+        $payload['audit_timeline'] = $audits
+            ->map(static fn (AuditLog $row) => [
+                'id' => (string) $row->id,
+                'at' => $row->created_at?->toIso8601String(),
+                'action' => $row->action,
+                'actor_name' => $row->actor?->name,
+                'payload' => $row->payload,
+            ])
+            ->values()
+            ->all();
+        $payload['status_timeline'] = self::statusTimeline($order, $audits);
 
         $activeInvoice = null;
         if ($order->relationLoaded('invoices')) {

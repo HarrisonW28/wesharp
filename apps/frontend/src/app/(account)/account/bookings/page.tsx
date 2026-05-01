@@ -72,12 +72,17 @@ export default function AccountBookingsPage() {
               const row = b as {
                 requested_time_window_start?: string | null;
                 requested_time_window_end?: string | null;
+                display_collection_date?: string | null;
+                display_time_window_start?: string | null;
+                display_time_window_end?: string | null;
                 customer_cancellable?: boolean;
               };
               const requestedWin = formatBookingTimeWindow(
                 row.requested_time_window_start ?? b.time_window_start,
                 row.requested_time_window_end ?? b.time_window_end,
               );
+              const displayWin = formatBookingTimeWindow(row.display_time_window_start, row.display_time_window_end);
+              const displayDay = row.display_collection_date ?? b.requested_date ?? "Date TBC";
               return (
                 <Card key={b.id} className="overflow-hidden border shadow-sm">
                   <CardContent className="p-0">
@@ -86,9 +91,17 @@ export default function AccountBookingsPage() {
                       className="flex items-start justify-between gap-3 p-4 transition-colors hover:bg-muted/40"
                     >
                       <div className="min-w-0 space-y-2">
-                        <div className="font-medium leading-tight">{b.requested_date ?? "Date TBC"}</div>
+                        <div className="font-medium leading-tight">{displayDay}</div>
                         <CustomerBookingStatusBadge status={b.status} />
-                        {requestedWin ? <p className="text-xs text-muted-foreground">Requested window · {requestedWin}</p> : null}
+                        {displayWin ? (
+                          <p className="text-xs text-muted-foreground">
+                            {requestedWin && displayWin !== requestedWin
+                              ? `Confirmed · ${displayWin}`
+                              : `Window · ${displayWin}`}
+                          </p>
+                        ) : requestedWin ? (
+                          <p className="text-xs text-muted-foreground">Requested window · {requestedWin}</p>
+                        ) : null}
                         {b.service_type ? (
                           <p className="text-xs capitalize text-muted-foreground">{b.service_type.replace(/_/g, " ")}</p>
                         ) : null}

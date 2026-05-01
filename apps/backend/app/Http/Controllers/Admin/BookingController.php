@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Bookings\AssignBookingToRouteAction;
@@ -7,6 +9,9 @@ use App\Actions\Bookings\BuildBookingsIndexQuery;
 use App\Actions\Bookings\CancelBookingAction;
 use App\Actions\Bookings\ConfirmBookingAction;
 use App\Actions\Bookings\ConvertBookingToOrderAction;
+use App\Actions\Bookings\CreateRouteFromBookingPlaceholderAction;
+use App\Actions\Bookings\UnassignBookingFromRouteAction;
+use App\Actions\Bookings\UpdateAdminBookingAction;
 use App\Enums\BookingStatus;
 use App\Enums\ServiceType;
 use App\Http\Controllers\Controller;
@@ -21,6 +26,7 @@ use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Models\OperationalRoute;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Bookings\BookingHardDeleteGuard;
 use App\Support\ApiResponses;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +40,9 @@ final class BookingController extends Controller
         private readonly CancelBookingAction $cancelBookingAction,
         private readonly AssignBookingToRouteAction $assignBookingToRouteAction,
         private readonly ConvertBookingToOrderAction $convertBookingToOrderAction,
+        private readonly UpdateAdminBookingAction $updateAdminBookingAction,
+        private readonly UnassignBookingFromRouteAction $unassignBookingFromRouteAction,
+        private readonly CreateRouteFromBookingPlaceholderAction $createRouteFromBookingPlaceholderAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -108,110 +117,14 @@ final class BookingController extends Controller
     {
         $this->authorize('update', $booking);
 
-        $validated = $request->validated();
+        $booking = $this->updateAdminBookingAction->execute(
+            $booking,
+            $request->user(),
+            $request->validated(),
+            $request
+        );
 
-        $capture = [
-            'scheduled_date' => $booking->scheduled_date,
-            'requested_collection_date' => $booking->requested_collection_date,
-            'requested_time_window_start' => $booking->requested_time_window_start,
-            'requested_time_window_end' => $booking->requested_time_window_end,
-            'confirmed_collection_date' => $booking->confirmed_collection_date,
-            'confirmed_time_window_start' => $booking->confirmed_time_window_start,
-            'confirmed_time_window_end' => $booking->confirmed_time_window_end,
-            'contact_id' => $booking->contact_id,
-            'time_window_start' => $booking->time_window_start,
-            'time_window_end' => $booking->time_window_end,
-            'service_type' => $booking->service_type?->value,
-            'estimated_knife_count' => $booking->estimated_knife_count,
-            'actual_knife_count' => $booking->actual_knife_count,
-            'customer_notes' => $booking->customer_notes,
-            'internal_notes' => $booking->internal_notes,
-            'price_estimate_pence' => $booking->price_estimate_pence,
-        ];
-
-        if (array_key_exists('requested_date', $validated)) {
-            $booking->scheduled_date = $validated['requested_date'];
-            $booking->requested_collection_date = $validated['requested_date'];
-        }
-
-        if (array_key_exists('requested_collection_date', $validated)) {
-            $booking->requested_collection_date = $validated['requested_collection_date'];
-            $booking->scheduled_date = $validated['requested_collection_date'];
-        }
-
-        if (array_key_exists('contact_id', $validated)) {
-            $booking->contact_id = $validated['contact_id'];
-        }
-
-        foreach (['requested_time_window_start', 'requested_time_window_end', 'confirmed_collection_date',
-            'confirmed_time_window_start', 'confirmed_time_window_end', 'customer_notes', 'internal_notes'] as $field) {
-            if (array_key_exists($field, $validated)) {
-                $booking->{$field} = $validated[$field];
-                if ($field === 'requested_time_window_start') {
-                    $booking->time_window_start = $validated[$field];
-                }
-                if ($field === 'requested_time_window_end') {
-                    $booking->time_window_end = $validated[$field];
-                }
-                if ($field === 'confirmed_collection_date' && $validated[$field] !== null) {
-                    $booking->scheduled_date = $validated[$field];
-                }
-            }
-        }
-
-        foreach (['time_window_start', 'time_window_end'] as $field) {
-            if (array_key_exists($field, $validated)) {
-                $booking->{$field} = $validated[$field];
-                if ($field === 'time_window_start') {
-                    $booking->requested_time_window_start = $validated[$field];
-                }
-                if ($field === 'time_window_end') {
-                    $booking->requested_time_window_end = $validated[$field];
-                }
-            }
-        }
-
-        foreach (['estimated_knife_count', 'actual_knife_count'] as $field) {
-            if (array_key_exists($field, $validated)) {
-                $booking->{$field} = $validated[$field];
-            }
-        }
-
-        if (array_key_exists('service_type', $validated)) {
-            $booking->service_type = ServiceType::from($validated['service_type']);
-        }
-
-        if (array_key_exists('price_estimate', $validated)) {
-            $booking->price_estimate_pence = $validated['price_estimate'];
-        }
-
-        if ($booking->isDirty()) {
-            $booking->save();
-
-            AuditRecorder::record($request->user(), $booking, 'booking.updated', [
-                'before' => $capture,
-                'after' => [
-                    'scheduled_date' => $booking->scheduled_date,
-                    'requested_collection_date' => $booking->requested_collection_date,
-                    'requested_time_window_start' => $booking->requested_time_window_start,
-                    'requested_time_window_end' => $booking->requested_time_window_end,
-                    'confirmed_collection_date' => $booking->confirmed_collection_date,
-                    'confirmed_time_window_start' => $booking->confirmed_time_window_start,
-                    'confirmed_time_window_end' => $booking->confirmed_time_window_end,
-                    'contact_id' => $booking->contact_id,
-                    'time_window_start' => $booking->time_window_start,
-                    'time_window_end' => $booking->time_window_end,
-                    'service_type' => $booking->service_type->value ?? null,
-                    'estimated_knife_count' => $booking->estimated_knife_count,
-                    'actual_knife_count' => $booking->actual_knife_count,
-                    'customer_notes' => $booking->customer_notes,
-                    'internal_notes' => $booking->internal_notes,
-                    'price_estimate_pence' => $booking->price_estimate_pence,
-                ],
-            ], $request);
-        }
-
-        $booking->load(['company:id,name,city', 'location:id,city']);
+        $booking->load(['company:id,name,city', 'location:id,city', 'assignedRoute:id,name']);
 
         return ApiResponses::success((new BookingResource($booking))->toArray($request));
     }
@@ -221,15 +134,22 @@ final class BookingController extends Controller
         $this->authorize('delete', $booking);
 
         if ($booking->booking_status !== BookingStatus::Requested) {
-            abort(422, 'Only draft requested bookings may be permanently deleted.');
+            return ApiResponses::error(
+                'Only draft requested bookings may be permanently deleted. Cancel the booking instead.',
+                'booking_delete_blocked',
+                422,
+                ['blockers' => ['status_not_requested']],
+            );
         }
 
-        if ($booking->orders()->exists()) {
-            abort(422, 'This booking cannot be deleted while orders exist. Cancel instead.');
-        }
-
-        if ($booking->routeStop()->exists()) {
-            abort(422, 'Bookings tied to routes cannot be hard-deleted.');
+        $blockers = BookingHardDeleteGuard::blockers($booking);
+        if ($blockers !== []) {
+            return ApiResponses::error(
+                'This booking cannot be deleted while linked records exist. Cancel the booking or remove dependencies first.',
+                'booking_delete_blocked',
+                422,
+                ['blockers' => $blockers],
+            );
         }
 
         DB::transaction(function () use ($request, $booking): void {
@@ -304,6 +224,28 @@ final class BookingController extends Controller
         $booking->load(['company:id,name,city', 'location:id,city', 'assignedRoute', 'routeStop']);
 
         return ApiResponses::success((new BookingResource($booking))->toArray($request));
+    }
+
+    public function unassignRoute(Request $request, Booking $booking): JsonResponse
+    {
+        $this->authorize('unassignRoute', $booking);
+
+        $booking = $this->unassignBookingFromRouteAction->execute($booking, $request->user(), $request);
+
+        $booking->load(['company:id,name,city', 'location:id,city', 'assignedRoute', 'routeStop']);
+
+        return ApiResponses::success((new BookingResource($booking))->toArray($request));
+    }
+
+    public function createRoutePlaceholder(Request $request, Booking $booking): JsonResponse
+    {
+        $this->authorize('assignRoute', $booking);
+
+        $this->createRouteFromBookingPlaceholderAction->execute($booking, $request->user(), $request);
+
+        return ApiResponses::success([
+            'message' => 'Logged placeholder — create the run from Routes for now.',
+        ]);
     }
 
     public function convertToOrder(ConvertBookingToOrderRequest $request, Booking $booking): JsonResponse

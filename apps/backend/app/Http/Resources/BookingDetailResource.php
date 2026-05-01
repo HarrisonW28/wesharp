@@ -36,6 +36,7 @@ final class BookingDetailResource extends JsonResource
 
         return [
             'id' => (string) $b->id,
+            'reference' => BookingResource::reference($b),
             'company_id' => (string) $b->company_id,
             'location_id' => (string) $b->company_location_id,
             'contact_id' => $b->contact_id ? (string) $b->contact_id : null,

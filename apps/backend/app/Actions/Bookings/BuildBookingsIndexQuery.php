@@ -33,7 +33,8 @@ final class BuildBookingsIndexQuery
                 'company:id,name,city',
                 'location:id,city,line_one,company_id',
                 'assignedRoute:id,name,route_status,scheduled_date',
-            ]);
+            ])
+            ->withCount('orders');
 
         if ($serviceType !== '') {
             $enumService = ServiceType::tryFrom($serviceType);
@@ -61,8 +62,32 @@ final class BuildBookingsIndexQuery
         if ($dateRaw !== '') {
             $ts = strtotime($dateRaw);
             if ($ts !== false) {
-                $query->whereDate('scheduled_date', date('Y-m-d', $ts));
+                $d = date('Y-m-d', $ts);
+                $query->whereRaw(
+                    'date(coalesce(bookings.confirmed_collection_date, bookings.requested_collection_date, bookings.scheduled_date)) = ?',
+                    [$d]
+                );
             }
+        }
+
+        $dateFrom = trim((string) $request->query('date_from', ''));
+        $dateTo = trim((string) $request->query('date_to', ''));
+        if ($dateFrom !== '' && strtotime($dateFrom) !== false) {
+            $query->whereRaw(
+                'date(coalesce(bookings.confirmed_collection_date, bookings.requested_collection_date, bookings.scheduled_date)) >= ?',
+                [date('Y-m-d', strtotime($dateFrom))]
+            );
+        }
+        if ($dateTo !== '' && strtotime($dateTo) !== false) {
+            $query->whereRaw(
+                'date(coalesce(bookings.confirmed_collection_date, bookings.requested_collection_date, bookings.scheduled_date)) <= ?',
+                [date('Y-m-d', strtotime($dateTo))]
+            );
+        }
+
+        $locationId = trim((string) $request->query('location_id', ''));
+        if ($locationId !== '' && Str::isUuid($locationId)) {
+            $query->where('bookings.company_location_id', $locationId);
         }
 
         $companyId = trim((string) $request->query('company_id', ''));

@@ -45,4 +45,10 @@ final class OrderPolicy
     {
         return Permissions::userMayForCompany($user, Permissions::INVOICES_CREATE, (string) $order->company_id);
     }
+
+    /** Draft → active, or cancel when safe (see CancelOrderAction). */
+    public function transition(User $user, Order $order): bool
+    {
+        return Permissions::userMayForCompany($user, Permissions::ORDERS_UPDATE, $order->company_id);
+    }
 }

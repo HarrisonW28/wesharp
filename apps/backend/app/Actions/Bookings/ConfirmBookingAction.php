@@ -59,10 +59,9 @@ final class ConfirmBookingAction
 
             $booking->save();
 
-            AuditRecorder::record($actor, $booking, 'booking.status_changed', [
+            AuditRecorder::record($actor, $booking, 'booking.confirmed', [
                 'from' => $from->value,
                 'to' => BookingStatus::Confirmed->value,
-                'via' => 'confirm',
                 'confirmed_collection_date' => $booking->confirmed_collection_date?->format('Y-m-d'),
                 'confirmed_time_window_start' => $booking->confirmed_time_window_start,
                 'confirmed_time_window_end' => $booking->confirmed_time_window_end,

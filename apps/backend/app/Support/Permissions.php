@@ -138,6 +138,8 @@ final class Permissions
             self::ROUTES_MANAGE,
             self::ROUTE_STOPS_UPDATE,
             self::ORDERS_VIEW,
+            self::ORDERS_CREATE,
+            self::ORDERS_UPDATE,
             self::KNIVES_VIEW,
             self::KNIVES_UPDATE,
             self::ANALYTICS_VIEW,

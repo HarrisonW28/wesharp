@@ -3,6 +3,7 @@
 namespace App\Services\Orders;
 
 use App\Actions\Orders\CompleteOrderAction;
+use App\Enums\InvoiceStatus;
 use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -34,12 +35,19 @@ final class OrderService
 
         $query = Order::query()
             ->with($with)
+            ->withCount([
+                'items as billable_lines_count',
+                'knives as knives_registered_count',
+            ])
             ->orderByDesc('created_at');
 
         if (($v = trim((string) $request->query('q', ''))) !== '') {
-            $query->where(function ($q) use ($v): void {
+            $needle = '%'.$v.'%';
+            $query->where(function ($q) use ($v, $needle): void {
                 $q->where('id', $v)
-                    ->orWhereHas('knives', fn ($k) => $k->where('tag_id', 'like', '%'.$v.'%'));
+                    ->orWhereHas('knives', fn ($k) => $k->where('tag_id', 'like', $needle))
+                    ->orWhereHas('knives', fn ($k) => $k->where('label', 'like', $needle))
+                    ->orWhereHas('company', fn ($c) => $c->where('name', 'like', $needle));
             });
         }
 
@@ -53,6 +61,26 @@ final class OrderService
 
         if (($cid = trim((string) $request->query('company_id', ''))) !== '') {
             $query->where('company_id', $cid);
+        }
+
+        if (($from = trim((string) $request->query('date_from', ''))) !== '') {
+            $query->whereDate('created_at', '>=', $from);
+        }
+
+        if (($to = trim((string) $request->query('date_to', ''))) !== '') {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
+        $invFilter = trim((string) $request->query('invoice_status', ''));
+        if ($invFilter === 'none') {
+            $query->whereDoesntHave('invoices', fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value));
+        } elseif ($invFilter !== '') {
+            $query->whereHas(
+                'invoices',
+                fn ($q) => $q
+                    ->where('invoice_status', $invFilter)
+                    ->where('invoice_status', '!=', InvoiceStatus::Void->value)
+            );
         }
 
         /** @phpstan-ignore-next-line */
