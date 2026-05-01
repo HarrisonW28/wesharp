@@ -9,4 +9,7 @@ enum PaymentMethod: string
     case Cash = 'cash';
     case Stripe = 'stripe';
     case Manual = 'manual';
+
+    /** Cash / card / FPS not mapped to a PSP — staff-recorded. */
+    case Other = 'other';
 }

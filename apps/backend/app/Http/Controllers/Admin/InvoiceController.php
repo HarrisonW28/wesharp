@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\Invoices\CreateInvoiceFromOrderAction;
 use App\Actions\Invoices\MarkInvoicePaidAction;
 use App\Actions\Invoices\SendInvoicePlaceholderAction;
+use App\Actions\Invoices\UpdateDraftInvoiceLinesAction;
 use App\Actions\Invoices\VoidInvoiceAction;
 use App\Enums\InvoiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
+use App\Http\Requests\VoidInvoiceRequest;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
@@ -28,6 +30,7 @@ final class InvoiceController extends Controller
         private readonly SendInvoicePlaceholderAction $sendInvoicePlaceholderAction,
         private readonly MarkInvoicePaidAction $markInvoicePaidAction,
         private readonly VoidInvoiceAction $voidInvoiceAction,
+        private readonly UpdateDraftInvoiceLinesAction $updateDraftInvoiceLinesAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -73,30 +76,46 @@ final class InvoiceController extends Controller
         $this->authorize('update', $invoice);
 
         if ($invoice->invoice_status === InvoiceStatus::Void || $invoice->invoice_status === InvoiceStatus::Paid) {
-            abort(422, 'Invoice metadata cannot be updated in this status.');
+            abort(422, 'Invoice cannot be updated in this status.');
         }
 
         $validated = $request->validated();
 
-        if (isset($validated['due_date'])) {
-            /** @phpstan-ignore-next-line */
-            $invoice->due_on = new Carbon($validated['due_date']);
+        if (isset($validated['items'])) {
+            if ($invoice->invoice_status !== InvoiceStatus::Draft) {
+                abort(422, 'Line items can only be replaced while the invoice is in draft.');
+            }
+
+            /** @var list<array{description: string, quantity: int, unit_amount_pence: int}> $lines */
+            $lines = $validated['items'];
+            $invoice = $this->updateDraftInvoiceLinesAction->execute(
+                $invoice,
+                $lines,
+                $request->user(),
+                $request
+            );
+            unset($validated['items']);
         }
-        if (isset($validated['issue_date'])) {
-            /** @phpstan-ignore-next-line */
-            $invoice->issued_on = new Carbon($validated['issue_date']);
+
+        $dateKeys = array_intersect_key($validated, array_flip(['issue_date', 'due_date']));
+        if ($dateKeys !== []) {
+            if (isset($dateKeys['due_date'])) {
+                /** @phpstan-ignore-next-line */
+                $invoice->due_on = new Carbon((string) $dateKeys['due_date']);
+            }
+            if (isset($dateKeys['issue_date'])) {
+                /** @phpstan-ignore-next-line */
+                $invoice->issued_on = new Carbon((string) $dateKeys['issue_date']);
+            }
+            $invoice->save();
+
+            AuditRecorder::record($request->user(), $invoice, 'invoice.updated_meta', [
+                'issue_date' => $dateKeys['issue_date'] ?? null,
+                'due_date' => $dateKeys['due_date'] ?? null,
+            ], $request);
         }
 
-        $invoice->save();
-
-        AuditRecorder::record($request->user(), $invoice, 'invoice.updated_meta', [], $request);
-
-        return ApiResponses::success(InvoiceJson::detail($invoice->fresh([
-            'payments',
-            'items',
-            'company:id,name,city',
-            'order:id,booking_id',
-        ])));
+        return ApiResponses::success(InvoiceJson::detail($invoice->fresh()));
     }
 
     public function send(Request $request, Invoice $invoice): JsonResponse
@@ -119,12 +138,15 @@ final class InvoiceController extends Controller
         return ApiResponses::success(InvoiceJson::detail($invoice));
     }
 
-    public function void(Request $request, Invoice $invoice): JsonResponse
+    public function void(VoidInvoiceRequest $request, Invoice $invoice): JsonResponse
     {
         $this->authorize('voidInvoice', $invoice);
 
+        /** @var string $reason */
+        $reason = $request->validated('reason');
+
         /** @phpstan-ignore-next-line */
-        $invoice = $this->voidInvoiceAction->execute($invoice, $request->user(), $request);
+        $invoice = $this->voidInvoiceAction->execute($invoice, $request->user(), $request, $reason);
 
         return ApiResponses::success(InvoiceJson::detail($invoice));
     }

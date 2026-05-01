@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 final class VoidInvoiceAction
 {
-    public function execute(Invoice $invoice, ?Authenticatable $actor, Request $request): Invoice
+    public function execute(Invoice $invoice, ?Authenticatable $actor, Request $request, ?string $reason = null): Invoice
     {
-        return DB::transaction(function () use ($invoice, $actor, $request): Invoice {
+        return DB::transaction(function () use ($invoice, $actor, $request, $reason): Invoice {
             $invoice->refresh();
 
             /** @phpstan-ignore-next-line */
@@ -38,6 +38,7 @@ final class VoidInvoiceAction
             AuditRecorder::record($actor, $invoice, 'invoice.void', [
                 'before' => $before,
                 'after' => InvoiceStatus::Void->value,
+                'reason' => $reason,
             ], $request);
 
             return $invoice->fresh([

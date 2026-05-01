@@ -123,6 +123,17 @@ final class RecordManualPaymentAction
                 'method' => $method->value,
             ], $request);
 
+            AuditRecorder::record($actor, $invoice, 'invoice.payment_recorded', [
+                /** @phpstan-ignore-next-line */
+                'payment_id' => (string) $payment->id,
+                'amount_pence' => $incoming,
+                'method' => $method->value,
+                'received_total_pence' => $received + $incoming,
+                /** @phpstan-ignore-next-line */
+                'invoice_total_pence' => $total,
+                'settled' => ($received + $incoming) >= $total,
+            ], $request);
+
             /** @phpstan-ignore-next-line */
             return $payment->fresh([
                 /** @phpstan-ignore-next-line */

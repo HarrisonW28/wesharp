@@ -36,7 +36,7 @@ final class InvoicePolicy
     public function markPaid(User $user, Invoice $invoice): bool
     {
         return Permissions::userMayForCompany($user, Permissions::INVOICES_UPDATE, (string) $invoice->company_id)
-            && Permissions::userMayForCompany($user, Permissions::PAYMENTS_VIEW, (string) $invoice->company_id);
+            && Permissions::userMayForCompany($user, Permissions::PAYMENTS_MANAGE, (string) $invoice->company_id);
     }
 
     public function voidInvoice(User $user, Invoice $invoice): bool

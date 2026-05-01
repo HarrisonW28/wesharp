@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { Loader2, Plus } from "lucide-react";
@@ -10,11 +10,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { InvoiceDetailResponseSchema, InvoiceRowSchema, PaginatedInvoicesResponseSchema } from "@/lib/api/admin-invoices-schema";
+import {
+  InvoiceDetailResponseSchema,
+  InvoiceRowSchema,
+  PaginatedInvoicesResponseSchema,
+} from "@/lib/api/admin-invoices-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
-import { OrderLookup } from "@/components/admin/lookups/AsyncEntityLookup";
+import { CompanyLookup, OrderLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -22,8 +26,33 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/tables/DataTable";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type InvoiceRow = z.infer<typeof InvoiceRowSchema>;
+
+const STATUS_OPTIONS = [
+  { value: "__any__", label: "Any invoice status" },
+  { value: "draft", label: "Draft" },
+  { value: "sent", label: "Sent" },
+  { value: "paid", label: "Paid" },
+  { value: "overdue", label: "Overdue" },
+  { value: "void", label: "Void" },
+];
+
+const SETTLEMENT_OPTIONS = [
+  { value: "__any__", label: "Any settlement" },
+  { value: "unpaid", label: "Unpaid balance" },
+  { value: "partial", label: "Partially paid" },
+  { value: "paid", label: "Fully settled" },
+];
 
 export default function AdminInvoicesPage() {
   const admin = useAdminApi();
@@ -33,6 +62,13 @@ export default function AdminInvoicesPage() {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+
+  const qFromUrl = searchParams.get("q") ?? "";
+  const [qDraft, setQDraft] = useState(qFromUrl);
+
+  useEffect(() => {
+    setQDraft(qFromUrl);
+  }, [qFromUrl]);
 
   useEffect(() => {
     const p = new URLSearchParams(searchParams.toString());
@@ -50,6 +86,37 @@ export default function AdminInvoicesPage() {
     }
   }, [pathname, router, searchParams]);
 
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      const next = qDraft.trim();
+      const cur = qFromUrl.trim();
+      if (next === cur) return;
+      const nextParams = new URLSearchParams(searchParams.toString());
+      if (next) {
+        nextParams.set("q", next);
+      } else {
+        nextParams.delete("q");
+      }
+      nextParams.set("page", "1");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [qDraft, qFromUrl, pathname, router, searchParams]);
+
+  const setParam = useCallback(
+    (key: string, value: string | null) => {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      if (value === null || value === "") {
+        nextParams.delete(key);
+      } else {
+        nextParams.set(key, value);
+      }
+      nextParams.set("page", "1");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
   const listKey = searchParams.toString();
 
   const listQuery = useQuery({
@@ -60,7 +127,10 @@ export default function AdminInvoicesPage() {
       if (!res.ok) throw new Error(res.message);
       const parsed = PaginatedInvoicesResponseSchema.safeParse(res.data);
       if (!parsed.success) throw new Error("Unexpected invoices payload.");
-      return parsed.data.data.items;
+      return {
+        items: parsed.data.data.items,
+        pagination: parsed.data.meta?.pagination,
+      };
     },
   });
 
@@ -92,21 +162,45 @@ export default function AdminInvoicesPage() {
   const columns = useMemo<ColumnDef<InvoiceRow>[]>(
     () => [
       {
-        accessorKey: "invoice_number",
+        id: "ref",
         header: "Invoice",
-        cell: ({ row }) => (
-          <div>
-            <div className="font-mono text-sm">{row.original.invoice_number}</div>
-            <div className="text-xs text-muted-foreground">{row.original.company_name ?? "—"}</div>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const label = row.original.display_reference ?? row.original.invoice_number ?? "Invoice";
+          return (
+            <div>
+              <Link
+                className="text-base font-semibold text-primary underline underline-offset-2"
+                href={`/admin/invoices/${row.original.id}`}
+              >
+                {label}
+              </Link>
+              <div className="text-xs text-muted-foreground">{row.original.company_name ?? "—"}</div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "source",
+        header: "Source",
+        cell: ({ row }) => {
+          const lo = row.original.linked_order;
+          if (!lo?.reference && !lo?.display_reference) {
+            return <span className="text-sm text-muted-foreground">—</span>;
+          }
+          return (
+            <div className="text-sm">
+              <span className="text-muted-foreground">Order </span>
+              <span className="font-medium">{lo.reference ?? lo.display_reference}</span>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-1">
-            <StatusBadge kind="invoice" status={row.original.status} />
+            <StatusBadge kind="invoice" status={row.original.status ?? ""} />
             {row.original.overdue ? <Badge variant="destructive">Overdue</Badge> : null}
           </div>
         ),
@@ -126,13 +220,24 @@ export default function AdminInvoicesPage() {
       {
         accessorKey: "total",
         header: "Total",
-        cell: ({ row }) => <span className="tabular-nums">{formatGBP(row.original.total ?? 0)}</span>,
+        cell: ({ row }) => (
+          <span className="text-base font-medium tabular-nums">{formatGBP(row.original.total ?? 0)}</span>
+        ),
+      },
+      {
+        id: "out",
+        header: "Outstanding",
+        cell: ({ row }) => (
+          <span className="tabular-nums text-sm font-medium">
+            {row.original.formatted_outstanding ?? formatGBP(row.original.outstanding_pence ?? 0)}
+          </span>
+        ),
       },
       {
         id: "actions",
         header: "",
         cell: ({ row }) => (
-          <Button asChild size="sm" variant="outline">
+          <Button asChild size="lg" variant="default" className="min-w-[7rem]">
             <Link href={`/admin/invoices/${row.original.id}`}>Open</Link>
           </Button>
         ),
@@ -141,9 +246,15 @@ export default function AdminInvoicesPage() {
     [],
   );
 
-  const page = Number(searchParams.get("page") ?? "1");
-  const prevHref = `/admin/invoices?page=${Math.max(1, page - 1)}&per_page=${searchParams.get("per_page") ?? "25"}`;
-  const nextHref = `/admin/invoices?page=${page + 1}&per_page=${searchParams.get("per_page") ?? "25"}`;
+  const page = listQuery.data?.pagination?.page ?? Number(searchParams.get("page") ?? "1");
+  const totalPages = listQuery.data?.pagination?.total_pages ?? 1;
+  const hasMore = listQuery.data?.pagination?.has_more_pages ?? false;
+
+  const goPage = (p: number) => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("page", String(Math.max(1, p)));
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+  };
 
   if (listQuery.isPending) {
     return (
@@ -163,7 +274,7 @@ export default function AdminInvoicesPage() {
         <PageHeader title="Invoices" description="Charge documents linked to orders." />
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">{(listQuery.error as Error).message}</p>
-          <Button className="mt-3" type="button" variant="outline" size="sm" onClick={() => void listQuery.refetch()}>
+          <Button className="mt-3" type="button" variant="outline" size="default" onClick={() => void listQuery.refetch()}>
             Retry
           </Button>
         </div>
@@ -171,18 +282,20 @@ export default function AdminInvoicesPage() {
     );
   }
 
-  const rows = (listQuery.data ?? []) as InvoiceRow[];
+  const rows = listQuery.data?.items ?? [];
+  const filterCompanyId = searchParams.get("company_id");
+  const overdueOnly = searchParams.get("overdue") === "1" || searchParams.get("overdue") === "true";
 
   return (
     <>
       <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Invoices" }]} />
       <PageHeader
         title="Invoices"
-        description="Create from fulfilment orders, send (placeholder), mark paid, and void."
+        description="Search, filter, and manage AR documents — totals and settlement at a glance."
         actions={
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button type="button" className="gap-2">
+              <Button type="button" size="lg" className="gap-2">
                 <Plus className="h-4 w-4" aria-hidden />
                 New invoice
               </Button>
@@ -196,7 +309,7 @@ export default function AdminInvoicesPage() {
                 <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="button" disabled={createMutation.isPending} onClick={() => createMutation.mutate()}>
+                <Button type="button" size="lg" disabled={createMutation.isPending} onClick={() => createMutation.mutate()}>
                   {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
                   Create
                 </Button>
@@ -206,18 +319,118 @@ export default function AdminInvoicesPage() {
         }
       />
 
+      <div className="flex flex-col gap-4 rounded-xl border bg-card/50 p-4 shadow-sm lg:flex-row lg:flex-wrap lg:items-end">
+        <div className="min-w-[200px] flex-1 space-y-1">
+          <Label htmlFor="inv-q">Search</Label>
+          <Input
+            id="inv-q"
+            value={qDraft}
+            onChange={(e) => setQDraft(e.target.value)}
+            placeholder="Invoice #, company…"
+          />
+        </div>
+        <div className="w-full min-w-[180px] space-y-1 lg:w-52">
+          <Label>Invoice status</Label>
+          <Select
+            value={searchParams.get("status") || "__any__"}
+            onValueChange={(v) => setParam("status", v === "__any__" ? "" : v)}
+          >
+            <SelectTrigger className="h-11">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-full min-w-[180px] space-y-1 lg:w-52">
+          <Label>Settlement</Label>
+          <Select
+            value={searchParams.get("settlement") || "__any__"}
+            onValueChange={(v) => setParam("settlement", v === "__any__" ? "" : v)}
+          >
+            <SelectTrigger className="h-11">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SETTLEMENT_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
+          <input
+            id="overdue-only"
+            type="checkbox"
+            className="h-4 w-4"
+            checked={overdueOnly}
+            onChange={(e) => setParam("overdue", e.target.checked ? "1" : "")}
+          />
+          <Label htmlFor="overdue-only" className="cursor-pointer text-sm font-normal">
+            Overdue only
+          </Label>
+        </div>
+        <div className="grid w-full grid-cols-2 gap-3 lg:w-auto lg:min-w-[280px]">
+          <div className="space-y-1">
+            <Label htmlFor="idf">Issued from</Label>
+            <Input
+              id="idf"
+              type="date"
+              className="h-11"
+              value={searchParams.get("date_from") ?? ""}
+              onChange={(e) => setParam("date_from", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="idt">Issued to</Label>
+            <Input
+              id="idt"
+              type="date"
+              className="h-11"
+              value={searchParams.get("date_to") ?? ""}
+              onChange={(e) => setParam("date_to", e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="w-full min-w-[220px] flex-1 space-y-1">
+          <CompanyLookup
+            label="Account"
+            value={filterCompanyId}
+            onChange={(id) => setParam("company_id", id ?? "")}
+            nullable
+            placeholder="All accounts"
+          />
+        </div>
+      </div>
+
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No invoices yet.</p>
+        <p className="mt-6 text-sm text-muted-foreground">No invoices match these filters.</p>
       ) : (
-        <DataTable<InvoiceRow> columns={columns} data={rows} />
+        <div className="mt-6 overflow-x-auto">
+          <DataTable<InvoiceRow> columns={columns} data={rows} />
+        </div>
       )}
-      <div className="mt-4 flex gap-3 text-sm">
-        <Link className={page <= 1 ? "pointer-events-none text-muted-foreground" : "text-primary underline"} href={prevHref}>
-          Previous
-        </Link>
-        <Link className="text-primary underline" href={nextHref}>
-          Next
-        </Link>
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div className="text-muted-foreground">
+          Page {page}
+          {listQuery.data?.pagination?.total !== undefined ? ` · ${listQuery.data.pagination.total} invoices` : null}
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" size="lg" disabled={page <= 1} onClick={() => goPage(page - 1)}>
+            Previous
+          </Button>
+          <Button type="button" variant="outline" size="lg" disabled={!hasMore && page >= totalPages} onClick={() => goPage(page + 1)}>
+            Next
+          </Button>
+        </div>
       </div>
     </>
   );

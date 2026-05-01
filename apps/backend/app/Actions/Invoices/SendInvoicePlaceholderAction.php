@@ -24,6 +24,9 @@ final class SendInvoicePlaceholderAction
             }
 
             /** @phpstan-ignore-next-line */
+            $fromStatus = $invoice->invoice_status->value;
+
+            /** @phpstan-ignore-next-line */
             $invoice->invoice_status = InvoiceStatus::Sent;
 
             /** @phpstan-ignore-next-line */
@@ -35,6 +38,8 @@ final class SendInvoicePlaceholderAction
             $invoice->save();
 
             AuditRecorder::record($actor, $invoice, 'invoice.send_placeholder', [
+                'from' => $fromStatus,
+                'to' => InvoiceStatus::Sent->value,
                 /** @phpstan-ignore-next-line */
                 'delivery' => 'pending_integration',
                 'invoice_number' => $invoice->invoice_number,
