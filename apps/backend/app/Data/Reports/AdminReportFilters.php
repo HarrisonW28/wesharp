@@ -17,6 +17,9 @@ final readonly class AdminReportFilters
      * @param  non-empty-string|null  $invoiceStatus
      * @param  non-empty-string|null  $paymentStatus  Payment row status filter (payments.payment_status)
      * @param  non-empty-string|null  $routeStatus
+     * @param  non-empty-string|null  $knifeStatus  Raw `knife_status` enum value
+     * @param  non-empty-string|null  $knifeType  Exact `knives.knife_type` match
+     * @param  non-empty-string|null  $serviceType  Booking `service_type` (collection / onsite)
      */
     public function __construct(
         public CarbonInterface $from,
@@ -32,6 +35,9 @@ final readonly class AdminReportFilters
         public ?string $routeStatus,
         /** Filter route reports to routes that have a skipped stop with this failure_reason. */
         public ?string $failureReason,
+        public ?string $knifeStatus,
+        public ?string $knifeType,
+        public ?string $serviceType,
         public ?string $routeId,
         public ?int $driverUserId,
         public int $perPage,
@@ -59,6 +65,9 @@ final readonly class AdminReportFilters
             'payment_status' => $this->paymentStatus,
             'route_status' => $this->routeStatus,
             'failure_reason' => $this->failureReason,
+            'knife_status' => $this->knifeStatus,
+            'knife_type' => $this->knifeType,
+            'service_type' => $this->serviceType,
             'route_id' => $this->routeId,
             'driver_user_id' => $this->driverUserId,
             'bookings_page' => $this->bookingsPage,

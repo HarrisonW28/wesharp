@@ -8,11 +8,18 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\UserRole;
+use App\Enums\DamageReportStatus;
+use App\Enums\KnifeServiceKind;
+use App\Enums\KnifeStatus;
 use App\Enums\OperationalRouteStatus;
 use App\Enums\RouteStopStatus;
+use App\Enums\ServiceType;
 use App\Models\Booking;
 use App\Models\Company;
+use App\Models\DamageReport;
 use App\Models\Invoice;
+use App\Models\Knife;
+use App\Models\KnifeServiceAssignment;
 use App\Models\Order;
 use App\Models\OperationalRoute;
 use App\Models\RouteStop;
@@ -240,6 +247,102 @@ final class AdminReportingApiTest extends TestCase
         $res->assertOk();
         self::assertSame(7_500, (int) $res->json('data.kpis.paid_revenue_pence'));
         self::assertSame(1, (int) $res->json('data.kpis.payments_received_count'));
+    }
+
+    public function test_route_manager_can_access_knives_report_empty(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::RouteManager]);
+
+        $res = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/reports/knives');
+
+        $res->assertOk()
+            ->assertJsonPath('data.report', 'knives')
+            ->assertJsonPath('data.kpis.knives_activity_count', 0)
+            ->assertJsonPath('data.series.knives_by_day', [])
+            ->assertJsonPath('data.series.knife_status_breakdown', [])
+            ->assertJsonPath('data.table.rows', []);
+    }
+
+    public function test_finance_cannot_access_operations_knives_report(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Finance]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/reports/knives')
+            ->assertForbidden();
+    }
+
+    public function test_knives_report_counts_activity_reservice_and_damage(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::RouteManager]);
+        $company = Company::factory()->create();
+
+        $booking = Booking::factory()->create([
+            'company_id' => $company->id,
+            'service_type' => ServiceType::Collection,
+        ]);
+        $order = Order::factory()->create([
+            'company_id' => $company->id,
+            'booking_id' => $booking->id,
+        ]);
+
+        $at = Carbon::parse('2026-03-15 12:00:00', 'UTC');
+
+        /** @phpstan-ignore-next-line */
+        $knifeChef = Knife::factory()->create([
+            'company_id' => $company->id,
+            'booking_id' => $booking->id,
+            'order_id' => $order->id,
+            'knife_type' => 'chef',
+            'knife_status' => KnifeStatus::Sharpened,
+            'updated_at' => $at,
+        ]);
+        /** @phpstan-ignore-next-line */
+        $knifeParing = Knife::factory()->create([
+            'company_id' => $company->id,
+            'booking_id' => $booking->id,
+            'order_id' => $order->id,
+            'knife_type' => 'paring',
+            'knife_status' => KnifeStatus::Received,
+            'updated_at' => $at,
+        ]);
+
+        KnifeServiceAssignment::query()->create([
+            'knife_id' => $knifeChef->id,
+            'order_id' => $order->id,
+            'company_id' => $company->id,
+            'service_kind' => KnifeServiceKind::Reservice,
+            'linked_at' => $at,
+            'unlinked_at' => null,
+        ]);
+
+        DamageReport::factory()->create([
+            'knife_id' => $knifeChef->id,
+            'company_id' => $company->id,
+            'order_id' => $order->id,
+            'status' => DamageReportStatus::Open,
+            'created_at' => $at,
+            'updated_at' => $at,
+        ]);
+
+        $qs = 'date_from=2026-03-01&date_to=2026-03-31&company_id='.$company->id;
+
+        $res = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/reports/knives?'.$qs);
+
+        $res->assertOk();
+        self::assertSame(2, (int) $res->json('data.kpis.knives_activity_count'));
+        self::assertSame(1, (int) $res->json('data.kpis.knives_completed_workshop_count'));
+        self::assertSame(1, (int) $res->json('data.kpis.reservice_assignments_count'));
+        self::assertSame(1, (int) $res->json('data.kpis.damage_reports_created_count'));
+        self::assertSame(2.0, (float) $res->json('data.kpis.average_knives_per_order'));
+
+        $filtered = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/reports/knives?'.$qs.'&knife_type=chef');
+
+        $filtered->assertOk();
+        self::assertSame(1, (int) $filtered->json('data.kpis.knives_activity_count'));
     }
 
     public function test_export_placeholder_requires_finance_reports(): void
