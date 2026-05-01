@@ -34,10 +34,10 @@ export function UserMenu({ variant }: UserMenuProps) {
       {variant === "internal" ? <CompanySwitcher /> : null}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="max-w-[14rem] gap-2">
-            <User className="h-4 w-4 shrink-0" aria-hidden />
+          <Button variant="outline" size="sm" className="max-w-[min(18rem,85vw)] gap-2 px-3 md:max-w-[14rem]">
+            <User className="h-[1.125rem] w-[1.125rem] shrink-0 md:h-4 md:w-4" aria-hidden />
             <span className="hidden min-w-0 truncate sm:inline">{label}</span>
-            <ChevronDown className="h-4 w-4 shrink-0 opacity-60" aria-hidden />
+            <ChevronDown className="h-[1.125rem] w-[1.125rem] shrink-0 opacity-60 md:h-4 md:w-4" aria-hidden />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
@@ -61,7 +61,7 @@ export function UserMenu({ variant }: UserMenuProps) {
           <SignOutButton signOutOptions={{ redirectUrl: "/" }}>
             <button
               type="button"
-              className="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="relative flex min-h-11 w-full cursor-default select-none items-center gap-2 rounded-sm px-3 py-2.5 text-base outline-none transition-colors hover:bg-accent hover:text-accent-foreground md:min-h-0 md:px-2 md:py-1.5 md:text-sm"
             >
               <LogOut className="h-4 w-4" aria-hidden />
               Sign out
