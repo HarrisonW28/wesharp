@@ -560,7 +560,12 @@ export default function AdminBookingDetailPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs items={[{ label: "Bookings", href: "/admin/bookings" }, { label: b.company?.name ?? `Booking ${b.id.slice(0, 8)}` }]} />
+      <Breadcrumbs
+        items={[
+          { label: "Bookings", href: "/admin/bookings" },
+          { label: b.reference?.trim() ? b.reference : (b.company?.name ?? "Booking") },
+        ]}
+      />
       <PageHeader
         title={b.reference ?? "Booking"}
         description={`${b.company?.name ?? "Account"} · collection ${collectionDateForRoute ?? b.requested_date ?? "—"} · ${b.service_type}`}

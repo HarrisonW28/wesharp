@@ -142,3 +142,19 @@ Manual:
 5. [ ] SPA **deep link fence** — open **`/admin/payments`** as route_manager profile ⇒ redirect **`/forbidden`** ( **`ShellPermissionBoundary`** ). Public marketing header has **no** signed-in **`/account`** shortcuts without auth.
 6. [ ] **`APP_DEBUG=false`** on staging — trigger synthetic **500** (optional) ⇒ JSON omits **`trace`** keys ( **`server_error`** envelope ).
 7. [ ] Invoice detail — **Void** / **Mark paid** require confirmation dialogs before mutation.
+
+---
+
+## Sprint 4.10 — Admin operations QA (recorded)
+
+**Automated (agent run, local repo):**
+
+- [x] **`php artisan test`** (apps/backend) — **86** passed.
+- [x] **`npm run lint`** — clean.
+- [x] **`npm run typecheck`** — clean.
+- [x] **`npm run build`** — clean.
+- [x] **`npm run test`** (Vitest) — **10** passed.
+
+**Manual / browser still required** for acceptance items 1–37 in the Sprint 4.10 brief (Clerk sessions per role, responsive widths **375 / 390 / 430 / 768 / desktop**, horizontal scroll audit, full booking→order→invoice chain in UI). Use **`WeSharpDemoSeeder`** identities where documented; **`npm run test:e2e`** covers marketing + optional API health when env is set — it does **not** replace signed-in admin matrix QA.
+
+**UI tweaks shipped with 4.10 pass:** admin list/detail copy avoids **partial UUID** fallbacks where a human label exists (bookings ref column, booking breadcrumb, knife→order link, payments invoice link, order invoice chip + draft toast).

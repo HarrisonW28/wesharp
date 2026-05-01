@@ -74,7 +74,7 @@ export default function AdminPaymentsPage() {
         cell: ({ row }) =>
           row.original.invoice_id ? (
             <Link href={`/admin/invoices/${row.original.invoice_id}`} className="text-primary underline">
-              {row.original.invoice?.invoice_number ?? row.original.invoice_id?.slice(0, 8)}
+              {row.original.invoice?.invoice_number ?? "View invoice"}
             </Link>
           ) : (
             "—"

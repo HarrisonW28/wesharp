@@ -5,7 +5,6 @@ namespace App\Http\Resources;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CompanyLocation;
-use App\Models\CompanySubscription;
 use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\Knife;
@@ -13,6 +12,7 @@ use App\Models\Note;
 use App\Models\Order;
 use App\Models\User;
 use App\Support\Crm\CompanyCrmOverview;
+use App\Support\Crm\CompanySubscriptionCrmPayload;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
@@ -28,6 +28,9 @@ class CompanyDetailResource extends JsonResource
         /** @var Company $c */
         $c = $this->resource;
 
+        $viewer = $request->user();
+        \assert($viewer instanceof User);
+
         return [
             'id' => (string) $c->id,
             'name' => $c->name,
@@ -37,9 +40,7 @@ class CompanyDetailResource extends JsonResource
             'billing_email' => $c->billing_email,
             'city' => $c->city,
             'overview' => CompanyCrmOverview::toArray($c),
-            'subscription' => self::subscriptionDetail(
-                $c->relationLoaded('subscription') ? $c->subscription : $c->subscription()->first()
-            ),
+            'subscription' => CompanySubscriptionCrmPayload::build($c, $viewer),
             'users' => $c->relationLoaded('users')
                 ? $c->users->map(static fn (User $u) => self::userRow($u))->values()->all()
                 : $c->users()->orderBy('name')->limit(100)->get()->map(static fn (User $u) => self::userRow($u))->values()->all(),
@@ -110,24 +111,6 @@ class CompanyDetailResource extends JsonResource
             ]),
             'created_at' => $c->created_at?->toIso8601String(),
             'updated_at' => $c->updated_at?->toIso8601String(),
-        ];
-    }
-
-    /** @return array<string, mixed>|null */
-    private static function subscriptionDetail(?CompanySubscription $sub): ?array
-    {
-        if ($sub === null) {
-            return null;
-        }
-
-        return [
-            'id' => (string) $sub->id,
-            'plan_name' => $sub->plan_name,
-            'status' => $sub->status,
-            'status_label' => Str::headline(str_replace('_', ' ', $sub->status)),
-            'current_period_end' => $sub->current_period_end?->format('Y-m-d'),
-            'allowance_summary' => $sub->allowance_summary,
-            'included_services' => $sub->included_services,
         ];
     }
 

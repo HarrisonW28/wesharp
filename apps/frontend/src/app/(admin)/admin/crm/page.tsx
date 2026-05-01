@@ -64,6 +64,13 @@ const SORT_LABELS: Record<(typeof SORTS)[number], string> = {
   city: "City",
 };
 
+function formatCrmListSubscriptionStatus(raw: string | null | undefined): string {
+  if (raw == null || raw === "") {
+    return "—";
+  }
+  return raw.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
 const createCompanySchema = z.object({
   name: z.string().min(2, "Name is required."),
 });
@@ -176,6 +183,13 @@ export default function AdminCrmPage() {
         accessorKey: "company_status",
         header: "Status",
         cell: ({ row }) => <CompanyStatusBadge status={row.original.company_status} />,
+      },
+      {
+        id: "subscription_status",
+        header: "Subscription",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">{formatCrmListSubscriptionStatus(row.original.subscription_status)}</span>
+        ),
       },
       {
         id: "spend",

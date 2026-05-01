@@ -257,9 +257,10 @@ export default function AdminOrderDetailPage() {
       return parsed.data.data;
     },
     onSuccess: (data) => {
-      const ref = data.invoice.invoice_number ?? data.invoice.id.slice(0, 8);
       toast.success(
-        data.already_existed ? `Invoice already on file (${ref}).` : `Draft invoice ${ref} created.`,
+        data.already_existed
+          ? `Invoice already on file${data.invoice.invoice_number ? ` (${data.invoice.invoice_number})` : ""}.`
+          : `Draft invoice created${data.invoice.invoice_number ? `: ${data.invoice.invoice_number}` : "."}`,
       );
       void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
@@ -741,7 +742,9 @@ export default function AdminOrderDetailPage() {
             <>
               <div className="flex flex-wrap items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" aria-hidden />
-                <span className="font-mono text-sm">{o.invoice.invoice_number ?? o.invoice.id.slice(0, 8)}</span>
+                <span className={o.invoice.invoice_number ? "font-mono text-sm" : "text-sm"}>
+                  {o.invoice.invoice_number ?? "Unnumbered invoice"}
+                </span>
                 <StatusBadge kind="invoice" status={o.invoice.status ?? ""} />
               </div>
               <dl className="grid gap-2 text-sm">

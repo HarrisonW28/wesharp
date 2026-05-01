@@ -9,7 +9,7 @@ Operational CRM for internal staff: browse **companies (accounts)**, filter and 
 | Route | Description |
 | --- | --- |
 | `/admin/crm` | List: search, city + status + subscription + unpaid/active booking filters, sort, pagination, DataTable, “New account” modal (POST create). Status and CRM signal badges. |
-| `/admin/crm/[companyId]` | Profile: tabbed CRM (**Overview**, **Contacts**, **Locations**, users, bookings, orders, knives, invoices, subscription, notes, activity). Overview uses summary KPIs + snapshot (default site, primary billing contact, etc.). **Contacts** and **Locations** support add, edit, archive/restore, primary billing / default site. Bookings table shows site and contact context when present. |
+| `/admin/crm/[companyId]` | Profile: tabbed CRM (**Overview**, **Contacts**, **Locations**, users, bookings, orders, knives, invoices, **subscription** (CRM readiness panel), notes, activity). Overview uses summary KPIs + snapshot (default site, primary billing contact, etc.). **Contacts** and **Locations** support add, edit, archive/restore, primary billing / default site. Bookings table shows site and contact context when present. |
 
 ## API endpoints (backend)
 
@@ -51,6 +51,13 @@ Middleware: **`clerk.auth`**, **`staff`**. Responses use **`App\Support\ApiRespo
 
 See `App\Actions\Companies\BuildCompaniesIndexQuery` for `q`, `city`, `status`, subscription and invoice/booking filters, `sort`, `direction`, `page`, `per_page`.
 
+### Subscription (Sprint 4.9 CRM readiness → Sprint 9)
+
+- **List:** `subscription_status` on each row is the raw `company_subscriptions.status` when a row exists, otherwise JSON **`null`** (UI shows “—”). Filters **`subscription_status=none`** / **`active`** apply against the same source — **no MRR or revenue columns**.
+- **Detail:** `GET /companies/{id}` includes **`data.subscription`** from **`App\Support\Crm\CompanySubscriptionCrmPayload`**: discriminated by **`state`** — **`none`** (no DB row, placeholder + Sprint 9 copy) or **`record`** (real `plan_name`, `status`, `current_period_end`, allowance text). **Recurring commercial value** is explicitly **not** stored yet (`recurring_amount_pence` is always **`null`** with an explanatory note).
+- **Billing block** (billing contact, latest `is_subscription_billing` invoice, outstanding subscription-invoice balance) is returned only when **`billing_visibility`** is **`full`** (**super_admin**, **admin**, **finance**). **Route managers** get **`route_manager_limited`** — plan/status/dates only; no billing contact, invoice rows, or balances.
+- **Actions:** `crm_actions[]` are UI stubs (**`available: false`**) until Sprint 9 (assign/change/cancel plan, subscription invoice list).
+
 ## Permissions required
 
 | Capability | Permission | Notes |
@@ -82,3 +89,7 @@ Contact and location mutations record **`AuditLog`** rows on the **company** (sa
 3. Attempt **booking** with archived `company_location_id` → **422**.
 4. **Route manager**: can open company detail; **cannot** PUT contact/location (403).
 5. **Mobile**: contacts/locations tabs — actions stack, minimum button height respected.
+6. **Subscription tab**: company **without** `company_subscriptions` row → **`state: none`** placeholder; **with** row → plan, status, renewal, allowance text; **no** fabricated recurring GBP.
+7. **Route manager**: subscription tab shows plan/status only — **no** billing contact, latest subscription invoice, or outstanding balance in JSON.
+8. **Finance / admin**: full billing block when subscription + `is_subscription_billing` invoices exist; invoice links respect **`invoices.view`** on the SPA.
+9. **CRM list**: Subscription column shows status label or “—”; filter **Active** / **No subscription** still works.

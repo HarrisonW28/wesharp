@@ -170,13 +170,112 @@ final class AdminCompaniesCrmFiltersApiTest extends TestCase
                     ],
                     'users' => [],
                     'subscription' => [
-                        'id',
-                        'plan_name',
-                        'status',
-                        'status_label',
+                        'state',
+                        'headline',
+                        'crm_actions',
                     ],
                 ],
             ]);
+
+        $payload = $response->json('data.subscription');
+        self::assertSame('record', $payload['state']);
+        self::assertArrayHasKey('plan_name', $payload);
+        self::assertSame('full', $payload['billing_visibility']);
+        self::assertIsArray($payload['crm_actions']);
+        self::assertGreaterThanOrEqual(4, count($payload['crm_actions']));
+    }
+
+    public function test_show_subscription_payload_none_without_company_subscription_row(): void
+    {
+        $admin = User::factory()->create([
+            'role' => UserRole::SuperAdmin,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+        ]);
+
+        $company = Company::factory()->create();
+
+        $response = $this->withHeaders($this->adminHeaders($admin))
+            ->getJson('/api/admin/companies/'.$company->id);
+
+        $response->assertOk();
+        $payload = $response->json('data.subscription');
+        self::assertSame('none', $payload['state']);
+        self::assertSame('No active subscription', $payload['headline']);
+        self::assertNull($payload['recurring_amount_pence']);
+    }
+
+    public function test_show_subscription_route_manager_payload_omits_billing_fields(): void
+    {
+        $routeManager = User::factory()->create([
+            'role' => UserRole::RouteManager,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+        ]);
+
+        $company = Company::factory()->create();
+        $loc = CompanyLocation::factory()->create(['company_id' => $company->id]);
+        $booking = Booking::factory()->create([
+            'company_id' => $company->id,
+            'company_location_id' => $loc->id,
+        ]);
+        $order = Order::factory()->create([
+            'company_id' => $company->id,
+            'booking_id' => $booking->id,
+        ]);
+        CompanySubscription::factory()->create(['company_id' => $company->id]);
+        Invoice::factory()->create([
+            'company_id' => $company->id,
+            'order_id' => $order->id,
+            'is_subscription_billing' => true,
+            'invoice_status' => InvoiceStatus::Sent,
+        ]);
+
+        $response = $this->withHeaders($this->adminHeaders($routeManager))
+            ->getJson('/api/admin/companies/'.$company->id);
+
+        $response->assertOk();
+        $payload = $response->json('data.subscription');
+        self::assertSame('record', $payload['state']);
+        self::assertSame('route_manager_limited', $payload['billing_visibility']);
+        self::assertArrayNotHasKey('billing_contact', $payload);
+        self::assertArrayNotHasKey('latest_subscription_invoice', $payload);
+        self::assertArrayNotHasKey('outstanding_subscription_invoices_pence', $payload);
+    }
+
+    public function test_show_subscription_finance_sees_billing_block(): void
+    {
+        $finance = User::factory()->create([
+            'role' => UserRole::Finance,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+        ]);
+
+        $company = Company::factory()->create();
+        $loc = CompanyLocation::factory()->create(['company_id' => $company->id]);
+        $booking = Booking::factory()->create([
+            'company_id' => $company->id,
+            'company_location_id' => $loc->id,
+        ]);
+        $order = Order::factory()->create([
+            'company_id' => $company->id,
+            'booking_id' => $booking->id,
+        ]);
+        CompanySubscription::factory()->create(['company_id' => $company->id]);
+        Invoice::factory()->create([
+            'company_id' => $company->id,
+            'order_id' => $order->id,
+            'is_subscription_billing' => true,
+            'invoice_status' => InvoiceStatus::Sent,
+        ]);
+
+        $response = $this->withHeaders($this->adminHeaders($finance))
+            ->getJson('/api/admin/companies/'.$company->id);
+
+        $response->assertOk();
+        $payload = $response->json('data.subscription');
+        self::assertSame('full', $payload['billing_visibility']);
+        self::assertArrayHasKey('latest_subscription_invoice', $payload);
     }
 
     public function test_summary_includes_overview_blob(): void

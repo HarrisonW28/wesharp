@@ -284,7 +284,7 @@ export default function AdminKnifeDetailPage() {
 
   const orderLink = k.order_summary?.id ? (
     <Button asChild variant="link" className="h-auto px-0">
-      <Link href={`/admin/orders/${k.order_summary.id}`}>Open order #{k.order_summary.id.slice(0, 8)}…</Link>
+      <Link href={`/admin/orders/${k.order_summary.id}`}>Open linked order</Link>
     </Button>
   ) : null;
 

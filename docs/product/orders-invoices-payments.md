@@ -128,6 +128,7 @@ Detail adds **`items[]`** and nested **`payments[]`** summaries.
 
 ## Related docs
 
+- **Admin CRM subscription panel (readiness, no MRR):** `docs/product/admin-crm.md` — uses **`invoices.is_subscription_billing`** for latest/outstanding subscription billing context; full subscription lifecycle is **Sprint 9**.
 - **Enums & workflow tables:** `docs/product/status-workflows.md`
 - **Security / permissions:** `docs/security/security-model.md`, `docs/security/permissions-matrix.md`
 - **Data model:** `docs/architecture/data-model.md`

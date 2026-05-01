@@ -215,11 +215,17 @@ export default function AdminBookingsPage() {
       {
         id: "ref",
         header: "Ref",
-        cell: ({ row }) => (
-          <Link className="font-mono text-xs text-primary hover:underline" href={`/admin/bookings/${row.original.id}`}>
-            {row.original.reference ?? row.original.id.slice(0, 8)}
-          </Link>
-        ),
+        cell: ({ row }) => {
+          const ref = row.original.reference?.trim();
+          return (
+            <Link
+              className={ref ? "font-mono text-xs text-primary hover:underline" : "text-sm font-medium text-primary hover:underline"}
+              href={`/admin/bookings/${row.original.id}`}
+            >
+              {ref || "View"}
+            </Link>
+          );
+        },
       },
       {
         accessorKey: "requested_date",

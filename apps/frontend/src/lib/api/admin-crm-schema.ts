@@ -196,15 +196,66 @@ export const CompanyUserSchema = z.object({
   status_label: z.string().nullable().optional(),
 });
 
-export const CompanySubscriptionDetailSchema = z.object({
+const CrmSubscriptionActionSchema = z.object({
   id: z.string(),
-  plan_name: z.string(),
-  status: z.string(),
-  status_label: z.string(),
-  current_period_end: z.string().nullable().optional(),
-  allowance_summary: z.string().nullable().optional(),
-  included_services: z.string().nullable().optional(),
+  label: z.string(),
+  available: z.boolean(),
+  hint: z.string(),
 });
+
+/** Admin company detail subscription panel — `state: none` until a `company_subscriptions` row exists. */
+export const CompanySubscriptionCrmSchema = z.discriminatedUnion("state", [
+  z.object({
+    state: z.literal("none"),
+    headline: z.string(),
+    subheadline: z.string(),
+    plan_management_available: z.literal(false),
+    recurring_amount_pence: z.null(),
+    recurring_amount_note: z.string(),
+    crm_actions: z.array(CrmSubscriptionActionSchema),
+  }),
+  z.object({
+    state: z.literal("record"),
+    headline: z.string(),
+    id: z.string(),
+    plan_name: z.string(),
+    status: z.string(),
+    status_label: z.string(),
+    current_period_end: z.string().nullable().optional(),
+    allowance_summary: z.string().nullable().optional(),
+    included_services: z.string().nullable().optional(),
+    plan_management_available: z.literal(false),
+    recurring_amount_pence: z.null(),
+    recurring_amount_note: z.string(),
+    crm_actions: z.array(CrmSubscriptionActionSchema),
+    billing_visibility: z.enum(["full", "route_manager_limited"]),
+    billing_restricted_message: z.string().optional(),
+    billing_contact: z
+      .object({
+        name: z.string().nullable().optional(),
+        email: z.string().nullable().optional(),
+        phone: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
+    latest_subscription_invoice: z
+      .object({
+        id: z.string(),
+        invoice_number: z.string().nullable().optional(),
+        invoice_status: z.string().nullable().optional(),
+        invoice_status_label: z.string().nullable().optional(),
+        issued_on: z.string().nullable().optional(),
+        total_pence: z.number(),
+        formatted_total: z.string(),
+      })
+      .nullable()
+      .optional(),
+    outstanding_subscription_invoices_pence: z.number().optional(),
+    formatted_outstanding_subscription: z.string().optional(),
+  }),
+]);
+
+export type CompanySubscriptionCrm = z.infer<typeof CompanySubscriptionCrmSchema>;
 
 export const CompanyDetailResponseSchema = z.object({
   success: z.literal(true),
@@ -217,7 +268,7 @@ export const CompanyDetailResponseSchema = z.object({
     billing_email: z.string().nullable(),
     city: z.string().nullable(),
     overview: CompanyOverviewSnapshotSchema,
-    subscription: CompanySubscriptionDetailSchema.nullable(),
+    subscription: CompanySubscriptionCrmSchema,
     users: z.array(CompanyUserSchema),
     contacts: z.array(ContactSchema),
     locations: z.array(LocationSchema),
