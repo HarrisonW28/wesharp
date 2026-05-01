@@ -20,6 +20,11 @@ class Order extends Model
     protected $fillable = [
         'company_id',
         'booking_id',
+        'company_subscription_id',
+        'subscription_coverage',
+        'subscription_coverage_computed_at',
+        'subscription_coverage_overridden',
+        'subscription_coverage_override_reason',
         'route_id',
         'order_status',
         'subtotal_pence',
@@ -40,6 +45,9 @@ class Order extends Model
             'payment_status' => OrderPaymentStatus::class,
             'route_id' => 'string',
             'completed_at' => 'datetime',
+            'subscription_coverage' => 'array',
+            'subscription_coverage_computed_at' => 'datetime',
+            'subscription_coverage_overridden' => 'boolean',
         ];
     }
 
@@ -51,6 +59,11 @@ class Order extends Model
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    public function companySubscription(): BelongsTo
+    {
+        return $this->belongsTo(CompanySubscription::class, 'company_subscription_id');
     }
 
     public function operationalRoute(): BelongsTo

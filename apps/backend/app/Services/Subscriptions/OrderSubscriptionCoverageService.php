@@ -31,6 +31,10 @@ final class OrderSubscriptionCoverageService
             return;
         }
 
+        if ($order->order_status !== OrderStatus::Completed) {
+            return;
+        }
+
         $order->loadMissing(['booking', 'items', 'knives', 'company']);
 
         DB::transaction(function () use ($order): void {
@@ -172,6 +176,19 @@ final class OrderSubscriptionCoverageService
     /**
      * @return array<string, mixed>
      */
+    /**
+     * @return array{collection_units: int, knife_units: int}
+     */
+    public function measureOrderUnits(Order $order): array
+    {
+        $order->loadMissing(['booking', 'items', 'knives']);
+
+        return [
+            'collection_units' => $this->collectionUnitsForOrder($order),
+            'knife_units' => $this->knifeUnitsForOrder($order),
+        ];
+    }
+
     public function usageSummaryForSubscription(CompanySubscription $sub): array
     {
         $sub->loadMissing('plan');

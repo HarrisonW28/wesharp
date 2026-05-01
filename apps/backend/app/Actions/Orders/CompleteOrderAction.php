@@ -5,6 +5,7 @@ namespace App\Actions\Orders;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Subscriptions\OrderSubscriptionCoverageService;
 use App\Support\Orders\OrderStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -37,6 +38,11 @@ final class CompleteOrderAction
                 'from' => $from->value,
                 'to' => OrderStatus::Completed->value,
             ], $request);
+
+            $order->refresh();
+            app(OrderSubscriptionCoverageService::class)->computeAndPersist(
+                $order->load(['booking', 'items', 'knives', 'company']),
+            );
 
             return $order->fresh();
         });

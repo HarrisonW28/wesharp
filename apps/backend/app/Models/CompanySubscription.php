@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CompanySubscription extends Model
@@ -64,6 +65,12 @@ class CompanySubscription extends Model
     public function billingContact(): BelongsTo
     {
         return $this->belongsTo(Contact::class, 'billing_contact_id');
+    }
+
+    /** @return HasMany<Order, CompanySubscription> */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'company_subscription_id');
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Enums\SubscriptionStatus;
 use App\Models\CompanySubscription;
 use App\Models\Invoice;
 use App\Models\SubscriptionPlan;
+use App\Services\Subscriptions\OrderSubscriptionCoverageService;
 use App\Support\Money\MoneyFormatting;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -39,6 +40,9 @@ final class CustomerSubscriptionPayload
 
         $plan = $sub->plan;
 
+        $usage = app(OrderSubscriptionCoverageService::class)->usageSummaryForSubscription($sub);
+        $ovEst = (int) ($usage['estimated_overage_pence'] ?? 0);
+
         return [
             'plan_name' => $plan !== null ? $plan->name : $sub->planName(),
             'status' => $sub->status?->value ?? (string) $sub->status,
@@ -52,6 +56,20 @@ final class CustomerSubscriptionPayload
                 : null,
             'summary' => self::summaryLine($plan, $sub),
             'recent_invoices' => self::formatInvoices($recentInvoices),
+            'period_usage' => [
+                'billing_period' => $usage['billing_period'],
+                'included_collections' => $usage['included_collections'],
+                'included_knife_allowance' => $usage['included_knife_allowance'],
+                'collections_used' => $usage['collections_used'],
+                'knives_used' => $usage['knives_used'],
+                'collections_overage_units' => $usage['collections_overage_units'],
+                'knives_overage_units' => $usage['knives_overage_units'],
+                'estimated_overage_pence' => $ovEst,
+                'formatted_estimated_overage_gbp' => MoneyFormatting::formatGbpFromPence($ovEst),
+            ],
+            'overage_warning' => $ovEst > 0
+                ? 'Some completed work this period may be billed as subscription overage. Check your latest invoice for line-by-line detail.'
+                : null,
         ];
     }
 

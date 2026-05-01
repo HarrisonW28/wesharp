@@ -3,24 +3,25 @@
 namespace App\Support\Orders;
 
 use App\Enums\EvidencePhotoVisibility;
+use App\Enums\KnifeStatus;
+use App\Enums\OrderStatus;
 use App\Http\Resources\BookingResource;
 use App\Models\AuditLog;
 use App\Models\CustomerPortalUpdate;
-use App\Models\Invoice;
 use App\Models\DamageReport;
+use App\Models\Invoice;
 use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Support\Audit\AuditLogPresenter;
-use App\Enums\OrderStatus;
 use App\Support\Evidence\EvidencePhotoJson;
-use App\Enums\KnifeStatus;
 use App\Support\Knives\KnifeJson;
 use App\Support\Knives\KnifeStatusPresentation;
+use App\Support\Money\MoneyFormatting;
 use App\Support\Portal\PortalCustomerUpdateJson;
 use App\Support\Portal\PortalFulfilmentPresenter;
-use App\Support\Money\MoneyFormatting;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 final class OrderJson
 {
@@ -116,6 +117,8 @@ final class OrderJson
                 $eff = self::orderItemEffectiveStatus($i);
                 $labelStatus = $eff ?? ($i->knife_id === null ? KnifeStatus::Logged : null);
 
+                $bk = $i->subscription_billing_kind?->value;
+
                 return [
                     'description' => $i->description,
                     'quantity' => $qty,
@@ -125,6 +128,12 @@ final class OrderJson
                     'formatted_line_total' => MoneyFormatting::formatGbpFromPence($line),
                     'status' => $labelStatus?->value,
                     'status_label' => KnifeStatusPresentation::customerLabel($labelStatus),
+                    'subscription_billing_kind' => $bk,
+                    'subscription_billing_note' => match ($bk) {
+                        'included' => 'Included in your subscription allowance for this period.',
+                        'overage' => 'This line may be billed as subscription overage — see your invoice.',
+                        default => null,
+                    },
                 ];
             })->values()->all()
             : [];
@@ -161,6 +170,15 @@ final class OrderJson
 
         $payload['fulfilment'] = PortalFulfilmentPresenter::forOrder($order);
         $payload['workshop_progress'] = self::workshopProgress($order);
+
+        $payload['subscription_coverage'] = is_array($order->subscription_coverage)
+            ? [
+                'mode' => $order->subscription_coverage['mode'] ?? null,
+                'included_summary' => $order->subscription_coverage['included_summary'] ?? null,
+                'collections_overage_for_order' => (int) ($order->subscription_coverage['collections_overage_for_order'] ?? 0),
+                'knives_overage_for_order' => (int) ($order->subscription_coverage['knives_overage_for_order'] ?? 0),
+            ]
+            : null;
 
         if (config('wesharp_evidence.show_in_customer_portal', true)) {
             $payload['customer_messages'] = CustomerPortalUpdate::query()
@@ -219,6 +237,10 @@ final class OrderJson
                     'line_total_pence' => $line,
                     'formatted_unit_amount' => MoneyFormatting::formatGbpFromPence($unit),
                     'formatted_line_total' => MoneyFormatting::formatGbpFromPence($line),
+                    'line_item_type' => $item->line_item_type?->value,
+                    'line_item_type_label' => $item->line_item_type !== null
+                        ? Str::headline(str_replace('_', ' ', $item->line_item_type->value))
+                        : null,
                 ];
             })->values()->all();
         }
@@ -228,7 +250,6 @@ final class OrderJson
 
     /**
      * @param  Collection<int, AuditLog>  $auditRows  Newest-first audit rows for this order.
-     *
      * @return list<array<string, mixed>>
      */
     public static function statusTimeline(Order $order, Collection $auditRows): array
@@ -449,6 +470,10 @@ final class OrderJson
                         'service_status' => $i->service_status?->value,
                         'effective_status' => $eff?->value,
                         'status_label' => KnifeStatusPresentation::adminLabel($eff),
+                        'subscription_billing_kind' => $i->subscription_billing_kind?->value,
+                        'subscription_billing_kind_label' => $i->subscription_billing_kind !== null
+                            ? Str::headline($i->subscription_billing_kind->value)
+                            : null,
                         'allowed_next_service_statuses' => $i->knife_id === null
                             ? KnifeJson::allowedNextFromKnifeStatus($i->service_status ?? KnifeStatus::Logged)
                             : [],
@@ -486,6 +511,14 @@ final class OrderJson
         }
 
         $payload['evidence_settings'] = self::adminEvidenceSettings();
+
+        $payload['company_subscription_id'] = $order->company_subscription_id !== null
+            ? (string) $order->company_subscription_id
+            : null;
+        $payload['subscription_coverage'] = $order->subscription_coverage;
+        $payload['subscription_coverage_computed_at'] = $order->subscription_coverage_computed_at?->toIso8601String();
+        $payload['subscription_coverage_overridden'] = (bool) $order->subscription_coverage_overridden;
+        $payload['subscription_coverage_override_reason'] = $order->subscription_coverage_override_reason;
 
         return $payload;
     }

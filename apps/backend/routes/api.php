@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\KnifeController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\OrderSubscriptionCoverageController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\ReportingController;
@@ -131,6 +132,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:companies.create')->post('companies', [CompanyController::class, 'store'])->name('api.admin.companies.store');
     Route::middleware('permission:companies.view')->get('companies/{company}', [CompanyController::class, 'show'])->whereUuid('company')->name('api.admin.companies.show');
     Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscriptions', [CompanySubscriptionController::class, 'index'])->whereUuid('company')->name('api.admin.companies.subscriptions.index');
+    Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscription-usage', [CompanySubscriptionController::class, 'usage'])->whereUuid('company')->name('api.admin.companies.subscription_usage');
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions', [CompanySubscriptionController::class, 'store'])->whereUuid('company')->name('api.admin.companies.subscriptions.store');
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions/change-plan', [CompanySubscriptionController::class, 'changePlan'])->whereUuid('company')->name('api.admin.companies.subscriptions.change_plan');
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions/cancel', [CompanySubscriptionController::class, 'cancel'])->whereUuid('company')->name('api.admin.companies.subscriptions.cancel');
@@ -202,6 +204,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:orders.create')->post('orders', [OrderController::class, 'store'])->name('api.admin.orders.store');
     Route::middleware('permission:orders.view')->get('orders/{order}', [OrderController::class, 'show'])->whereUuid('order')->name('api.admin.orders.show');
     Route::middleware('permission:orders.update')->put('orders/{order}', [OrderController::class, 'update'])->whereUuid('order')->name('api.admin.orders.update');
+    Route::middleware('permission:orders.update')->post('orders/{order}/subscription-coverage/recompute', [OrderSubscriptionCoverageController::class, 'recompute'])->whereUuid('order')->name('api.admin.orders.subscription_coverage.recompute');
+    Route::middleware('permission:orders.update')->post('orders/{order}/subscription-coverage/override-one-off', [OrderSubscriptionCoverageController::class, 'overrideOneOff'])->whereUuid('order')->name('api.admin.orders.subscription_coverage.override_one_off');
     Route::middleware('permission:orders.update')->post('orders/{order}/transition', [OrderController::class, 'transition'])->whereUuid('order')->name('api.admin.orders.transition');
     Route::middleware('permission:orders.update')->post('orders/{order}/complete', [OrderController::class, 'complete'])->whereUuid('order')->name('api.admin.orders.complete');
     Route::middleware('permission:invoices.create')->post('orders/{order}/invoice-draft', [OrderController::class, 'storeInvoiceDraft'])->whereUuid('order')->name('api.admin.orders.invoice_draft');

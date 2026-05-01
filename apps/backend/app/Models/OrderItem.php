@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\KnifeStatus;
+use App\Enums\SubscriptionOrderItemBillingKind;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,12 +22,14 @@ class OrderItem extends Model
         'quantity',
         'unit_amount_pence',
         'service_status',
+        'subscription_billing_kind',
     ];
 
     protected function casts(): array
     {
         return [
             'service_status' => KnifeStatus::class,
+            'subscription_billing_kind' => SubscriptionOrderItemBillingKind::class,
         ];
     }
 

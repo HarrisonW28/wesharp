@@ -17,6 +17,7 @@ use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Subscriptions\CompanySubscriptionProvisioningService;
+use App\Services\Subscriptions\OrderSubscriptionCoverageService;
 use App\Support\ApiResponses;
 use App\Support\Permissions;
 use Carbon\CarbonImmutable;
@@ -252,6 +253,37 @@ final class CompanySubscriptionController extends Controller
 
         return ApiResponses::success([
             'subscription' => CompanySubscriptionResource::make($updated),
+        ]);
+    }
+
+    public function usage(Request $request, Company $company): JsonResponse
+    {
+        $this->authorize('view', $company);
+
+        $user = $request->user();
+        \assert($user instanceof User);
+        if (! Permissions::userMay($user, Permissions::SUBSCRIPTIONS_VIEW)) {
+            abort(403);
+        }
+
+        $sub = $company->subscription()->with('plan')->first();
+        if ($sub === null) {
+            return ApiResponses::success([
+                'active_subscription' => null,
+                'usage' => null,
+            ]);
+        }
+
+        $usage = app(OrderSubscriptionCoverageService::class)->usageSummaryForSubscription($sub);
+
+        return ApiResponses::success([
+            'active_subscription' => [
+                'id' => (string) $sub->id,
+                'plan_name' => $sub->plan?->name,
+                'starts_at' => $sub->starts_at?->format('Y-m-d'),
+                'renews_at' => $sub->renews_at?->format('Y-m-d'),
+            ],
+            'usage' => $usage,
         ]);
     }
 }
