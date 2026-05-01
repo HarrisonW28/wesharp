@@ -3,16 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Invoices\GenerateInvoiceDraftFromOrderAction;
+use App\Actions\Orders\ActivateOrderAction;
+use App\Actions\Orders\CancelOrderAction;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AddKnifeToOrderRequest;
 use App\Http\Requests\AttachKnifeToOrderRequest;
-use App\Http\Requests\BulkAddOrderItemsRequest;
 use App\Http\Requests\BulkAddKnivesRequest;
+use App\Http\Requests\BulkAddOrderItemsRequest;
 use App\Http\Requests\CompleteOrderRequest;
 use App\Http\Requests\StoreOrderRequest;
+use App\Http\Requests\TransitionOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Order;
 use App\Services\Orders\OrderService;
@@ -27,6 +30,8 @@ final class OrderController extends Controller
     public function __construct(
         private readonly OrderService $orderService,
         private readonly GenerateInvoiceDraftFromOrderAction $generateInvoiceDraftFromOrderAction,
+        private readonly ActivateOrderAction $activateOrderAction,
+        private readonly CancelOrderAction $cancelOrderAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -71,7 +76,12 @@ final class OrderController extends Controller
         /** @phpstan-ignore-next-line */
         $order = $this->orderService->create($payload, $request->user(), $request);
         $order->loadMissing([
-            'invoices' => fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value)->orderByDesc('created_at')->limit(1),
+            'booking' => fn ($q) => $q->with(['contact', 'location']),
+            'invoices' => fn ($q) => $q
+                ->where('invoice_status', '!=', InvoiceStatus::Void->value)
+                ->orderByDesc('created_at')
+                ->with('items')
+                ->limit(1),
         ]);
 
         return ApiResponses::success(OrderJson::detail($order), 201);
@@ -84,11 +94,47 @@ final class OrderController extends Controller
         /** @phpstan-ignore-next-line */
         $order->loadMissing([
             'company:id,name,city',
-            'booking:id,scheduled_date',
+            'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at'),
             'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
-            'invoices' => fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value)->orderByDesc('created_at')->limit(1),
+            'invoices' => fn ($q) => $q
+                ->where('invoice_status', '!=', InvoiceStatus::Void->value)
+                ->orderByDesc('created_at')
+                ->with('items')
+                ->limit(1),
+        ]);
+
+        return ApiResponses::success(OrderJson::detail($order));
+    }
+
+    public function transition(TransitionOrderRequest $request, Order $order): JsonResponse
+    {
+        $this->authorize('transition', $order);
+
+        $target = OrderStatus::from($request->validated('target_status'));
+
+        if ($target === OrderStatus::Active) {
+            $order = $this->activateOrderAction->execute($order, $request->user(), $request);
+        } elseif ($target === OrderStatus::Cancelled) {
+            /** @var string|null $reason */
+            $reason = $request->validated('reason');
+            $order = $this->cancelOrderAction->execute($order, $request->user(), $request, $reason);
+        } else {
+            abort(422, 'Unsupported status target.');
+        }
+
+        $order->loadMissing([
+            'company:id,name,city',
+            'booking' => fn ($q) => $q->with(['contact', 'location']),
+            'operationalRoute:id,name,route_status,scheduled_date',
+            'items' => fn ($q) => $q->orderBy('created_at'),
+            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+            'invoices' => fn ($q) => $q
+                ->where('invoice_status', '!=', InvoiceStatus::Void->value)
+                ->orderByDesc('created_at')
+                ->with('items')
+                ->limit(1),
         ]);
 
         return ApiResponses::success(OrderJson::detail($order));
@@ -102,10 +148,14 @@ final class OrderController extends Controller
 
         $order->loadMissing([
             'company:id,name,city',
-            'booking:id,scheduled_date',
+            'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name',
             'knives' => fn ($q) => $q->orderBy('position')->limit(250),
-            'invoices' => fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value)->orderByDesc('created_at')->limit(1),
+            'invoices' => fn ($q) => $q
+                ->where('invoice_status', '!=', InvoiceStatus::Void->value)
+                ->orderByDesc('created_at')
+                ->with('items')
+                ->limit(1),
         ]);
 
         return ApiResponses::success(OrderJson::detail($order));
@@ -118,11 +168,16 @@ final class OrderController extends Controller
         /** @phpstan-ignore-next-line */
         $order = $this->orderService->complete($order->fresh(['items', 'knives']), $request->user(), $request)->loadMissing([
             /** @phpstan-ignore-next-line */
+            'company:id,name,city',
             'knives' => fn ($q) => $q->latest()->limit(250),
             'items' => fn ($q) => $q->orderBy('created_at'),
-            'booking:id',
-            'operationalRoute:id',
-            'invoices' => fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value)->orderByDesc('created_at')->limit(1),
+            'booking' => fn ($q) => $q->with(['contact', 'location']),
+            'operationalRoute:id,name,route_status,scheduled_date',
+            'invoices' => fn ($q) => $q
+                ->where('invoice_status', '!=', InvoiceStatus::Void->value)
+                ->orderByDesc('created_at')
+                ->with('items')
+                ->limit(1),
         ]);
 
         return ApiResponses::success(OrderJson::detail($order));
@@ -139,8 +194,11 @@ final class OrderController extends Controller
             $request,
         );
 
+        /** @phpstan-ignore-next-line */
+        $invoice = $result['invoice']->loadMissing('items');
+
         return ApiResponses::success([
-            'invoice' => OrderJson::invoiceEmbed($result['invoice']),
+            'invoice' => OrderJson::invoiceEmbed($invoice),
             'already_existed' => $result['already_existed'],
         ]);
     }
@@ -183,11 +241,15 @@ final class OrderController extends Controller
 
         $fresh->loadMissing([
             'company:id,name,city',
-            'booking:id,scheduled_date',
+            'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at'),
             'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
-            'invoices' => fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value)->orderByDesc('created_at')->limit(1),
+            'invoices' => fn ($q) => $q
+                ->where('invoice_status', '!=', InvoiceStatus::Void->value)
+                ->orderByDesc('created_at')
+                ->with('items')
+                ->limit(1),
         ]);
 
         return ApiResponses::success(OrderJson::detail($fresh));
@@ -208,7 +270,7 @@ final class OrderController extends Controller
         $freshOrder->loadMissing([
             'knives' => fn ($q) => $q->latest()->limit(200),
             'company:id,name,city',
-            'booking:id,scheduled_date',
+            'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name',
         ]);
 

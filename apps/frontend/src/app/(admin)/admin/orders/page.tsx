@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { Loader2, Plus } from "lucide-react";
@@ -10,7 +10,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { OrderDetailResponseSchema, OrderRowSchema, PaginatedOrdersResponseSchema } from "@/lib/api/admin-orders-schema";
+import {
+  OrderDetailResponseSchema,
+  OrderRowSchema,
+  PaginatedOrdersResponseSchema,
+} from "@/lib/api/admin-orders-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { parseGbpInputToMinorUnits, formatGBP } from "@/lib/format/money";
 
@@ -23,6 +27,13 @@ import { DataTable } from "@/components/tables/DataTable";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type OrderRow = z.infer<typeof OrderRowSchema>;
 
@@ -30,6 +41,32 @@ const createOrderSchema = z.object({
   company_id: z.string().uuid("Company must be a valid UUID."),
   booking_id: z.string().uuid("Booking must be a valid UUID."),
 });
+
+const ORDER_STATUS_OPTIONS = [
+  { value: "", label: "Any order status" },
+  { value: "draft", label: "Draft" },
+  { value: "active", label: "Active" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+const PAYMENT_OPTIONS = [
+  { value: "", label: "Any payment" },
+  { value: "unpaid", label: "Unpaid" },
+  { value: "partial", label: "Partial" },
+  { value: "paid", label: "Paid" },
+  { value: "waived", label: "Waived" },
+  { value: "refunded", label: "Refunded" },
+];
+
+const INVOICE_FILTER_OPTIONS = [
+  { value: "", label: "Any invoice" },
+  { value: "none", label: "No invoice on file" },
+  { value: "draft", label: "Invoice: draft" },
+  { value: "sent", label: "Invoice: sent" },
+  { value: "paid", label: "Invoice: paid" },
+  { value: "overdue", label: "Invoice: overdue" },
+];
 
 export default function AdminOrdersPage() {
   const admin = useAdminApi();
@@ -41,6 +78,13 @@ export default function AdminOrdersPage() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [priceGbp, setPriceGbp] = useState("");
+
+  const qFromUrl = searchParams.get("q") ?? "";
+  const [qDraft, setQDraft] = useState(qFromUrl);
+
+  useEffect(() => {
+    setQDraft(qFromUrl);
+  }, [qFromUrl]);
 
   useEffect(() => {
     const p = new URLSearchParams(searchParams.toString());
@@ -58,6 +102,37 @@ export default function AdminOrdersPage() {
     }
   }, [pathname, router, searchParams]);
 
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      const next = qDraft.trim();
+      const cur = qFromUrl.trim();
+      if (next === cur) return;
+      const nextParams = new URLSearchParams(searchParams.toString());
+      if (next) {
+        nextParams.set("q", next);
+      } else {
+        nextParams.delete("q");
+      }
+      nextParams.set("page", "1");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [qDraft, qFromUrl, pathname, router, searchParams]);
+
+  const setParam = useCallback(
+    (key: string, value: string | null) => {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      if (value === null || value === "") {
+        nextParams.delete(key);
+      } else {
+        nextParams.set(key, value);
+      }
+      nextParams.set("page", "1");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
   const listKey = searchParams.toString();
 
   const listQuery = useQuery({
@@ -72,7 +147,10 @@ export default function AdminOrdersPage() {
       if (!parsed.success) {
         throw new Error("Unexpected orders payload.");
       }
-      return parsed.data.data.items;
+      return {
+        items: parsed.data.data.items,
+        pagination: parsed.data.meta?.pagination,
+      };
     },
   });
 
@@ -146,43 +224,74 @@ export default function AdminOrdersPage() {
   const columns = useMemo<ColumnDef<OrderRow>[]>(
     () => [
       {
-        accessorKey: "company",
-        header: "Account",
-        cell: ({ row }) => <div className="font-medium">{row.original.company?.name ?? "—"}</div>,
+        id: "reference",
+        header: "Order",
+        cell: ({ row }) => {
+          const ref = row.original.reference ?? "Order";
+          return (
+            <div className="space-y-1">
+              <Link
+                className="text-base font-semibold text-primary underline underline-offset-2"
+                href={`/admin/orders/${row.original.id}`}
+              >
+                {ref}
+              </Link>
+              <div className="text-xs text-muted-foreground">{row.original.company?.name ?? "—"}</div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "booking",
+        header: "Booking",
+        cell: ({ row }) => {
+          const b = row.original.booking;
+          if (!b?.id) {
+            return <span className="text-sm text-muted-foreground">—</span>;
+          }
+          return (
+            <Link className="text-sm font-medium text-primary underline" href={`/admin/bookings/${b.id}`}>
+              {b.reference}
+            </Link>
+          );
+        },
       },
       {
         accessorKey: "status",
-        header: "Order",
+        header: "Status",
         cell: ({ row }) => (
-          <div className="space-y-1">
+          <div className="flex flex-col gap-1">
             <StatusBadge kind="order" status={row.original.status} />
-            <div className="text-xs text-muted-foreground">{row.original.scheduled_date ?? "—"}</div>
+            <span className="text-xs capitalize text-muted-foreground">{row.original.payment_status ?? "—"}</span>
           </div>
         ),
       },
       {
-        accessorKey: "payment_status",
-        header: "Payment",
-        cell: ({ row }) => <span className="text-sm capitalize">{row.original.payment_status ?? "—"}</span>,
-      },
-      {
-        accessorKey: "knife_count",
-        header: "Knives",
-        cell: ({ row }) => <span className="tabular-nums">{row.original.knife_count ?? "—"}</span>,
+        id: "counts",
+        header: "Lines / blades",
+        cell: ({ row }) => {
+          const lines = row.original.billable_lines_count;
+          const blades = row.original.knives_registered_count ?? row.original.knife_count;
+          return (
+            <span className="tabular-nums text-sm">
+              {lines ?? 0} lines · {blades ?? 0} blades
+            </span>
+          );
+        },
       },
       {
         accessorKey: "total_pence",
         header: "Total",
         cell: ({ row }) => (
-          <span className="tabular-nums">{formatGBP(row.original.total_pence ?? 0)}</span>
+          <span className="text-base font-medium tabular-nums">{formatGBP(row.original.total_pence ?? 0)}</span>
         ),
       },
       {
         id: "actions",
         header: "",
         cell: ({ row }) => (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/orders/${row.original.id}`}>Open</Link>
+          <Button asChild variant="default" size="default" className="min-w-[7rem]">
+            <Link href={`/admin/orders/${row.original.id}`}>Open order</Link>
           </Button>
         ),
       },
@@ -190,9 +299,15 @@ export default function AdminOrdersPage() {
     [],
   );
 
-  const page = Number(searchParams.get("page") ?? "1");
-  const prevHref = `/admin/orders?page=${Math.max(1, page - 1)}&per_page=${searchParams.get("per_page") ?? "20"}`;
-  const nextHref = `/admin/orders?page=${page + 1}&per_page=${searchParams.get("per_page") ?? "20"}`;
+  const page = listQuery.data?.pagination?.page ?? Number(searchParams.get("page") ?? "1");
+  const totalPages = listQuery.data?.pagination?.total_pages ?? 1;
+  const hasMore = listQuery.data?.pagination?.has_more_pages ?? false;
+
+  const goPage = (p: number) => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("page", String(Math.max(1, p)));
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+  };
 
   if (listQuery.status === "pending") {
     return (
@@ -212,7 +327,7 @@ export default function AdminOrdersPage() {
         <PageHeader title="Orders" description="Charges linked to bookings and per-blade workshop tracking." />
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">{(listQuery.error as Error).message}</p>
-          <Button className="mt-3" type="button" variant="outline" size="sm" onClick={() => void listQuery.refetch()}>
+          <Button className="mt-3" type="button" variant="outline" size="default" onClick={() => void listQuery.refetch()}>
             Retry
           </Button>
         </div>
@@ -220,18 +335,20 @@ export default function AdminOrdersPage() {
     );
   }
 
-  const rows = (listQuery.data ?? []) as OrderRow[];
+  const rows = listQuery.data?.items ?? [];
+
+  const filterCompanyId = searchParams.get("company_id");
 
   return (
     <>
       <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Orders" }]} />
       <PageHeader
         title="Orders"
-        description="Charges linked to bookings and per-blade workshop tracking."
+        description="Search and filter fulfilment charges from booking conversion through completion."
         actions={
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button type="button" className="gap-2">
+              <Button type="button" size="lg" className="gap-2">
                 <Plus className="h-4 w-4" aria-hidden />
                 New order
               </Button>
@@ -276,7 +393,7 @@ export default function AdminOrdersPage() {
                 <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="button" disabled={createMutation.isPending} onClick={() => createMutation.mutate()}>
+                <Button type="button" size="lg" disabled={createMutation.isPending} onClick={() => createMutation.mutate()}>
                   {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
                   Create
                 </Button>
@@ -286,19 +403,124 @@ export default function AdminOrdersPage() {
         }
       />
 
+      <div className="flex flex-col gap-4 rounded-xl border bg-card/50 p-4 shadow-sm md:flex-row md:flex-wrap md:items-end">
+        <div className="min-w-[200px] flex-1 space-y-1">
+          <Label htmlFor="order-q">Search</Label>
+          <Input
+            id="order-q"
+            value={qDraft}
+            onChange={(e) => setQDraft(e.target.value)}
+            placeholder="Company, tag, label…"
+          />
+        </div>
+        <div className="w-full min-w-[160px] space-y-1 md:w-48">
+          <Label>Order status</Label>
+          <Select
+            value={searchParams.get("status") || "__any__"}
+            onValueChange={(v) => setParam("status", v === "__any__" ? "" : v)}
+          >
+            <SelectTrigger className="h-11">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              {ORDER_STATUS_OPTIONS.map((o) => (
+                <SelectItem key={o.value || "any"} value={o.value || "__any__"}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-full min-w-[160px] space-y-1 md:w-48">
+          <Label>Payment</Label>
+          <Select
+            value={searchParams.get("payment_status") || "__any__"}
+            onValueChange={(v) => setParam("payment_status", v === "__any__" ? "" : v)}
+          >
+            <SelectTrigger className="h-11">
+              <SelectValue placeholder="Payment" />
+            </SelectTrigger>
+            <SelectContent>
+              {PAYMENT_OPTIONS.map((o) => (
+                <SelectItem key={o.value || "any-pay"} value={o.value || "__any__"}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-full min-w-[180px] space-y-1 md:w-52">
+          <Label>Invoice</Label>
+          <Select
+            value={searchParams.get("invoice_status") || "__any__"}
+            onValueChange={(v) => setParam("invoice_status", v === "__any__" ? "" : v)}
+          >
+            <SelectTrigger className="h-11">
+              <SelectValue placeholder="Invoice" />
+            </SelectTrigger>
+            <SelectContent>
+              {INVOICE_FILTER_OPTIONS.map((o) => (
+                <SelectItem key={o.value || "any-inv"} value={o.value || "__any__"}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid w-full grid-cols-2 gap-3 md:w-auto md:min-w-[280px]">
+          <div className="space-y-1">
+            <Label htmlFor="df">From</Label>
+            <Input
+              id="df"
+              type="date"
+              className="h-11"
+              value={searchParams.get("date_from") ?? ""}
+              onChange={(e) => setParam("date_from", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="dt">To</Label>
+            <Input
+              id="dt"
+              type="date"
+              className="h-11"
+              value={searchParams.get("date_to") ?? ""}
+              onChange={(e) => setParam("date_to", e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="w-full min-w-[220px] flex-1 space-y-1">
+          <CompanyLookup
+            label="Account filter"
+            value={filterCompanyId}
+            onChange={(id) => setParam("company_id", id ?? "")}
+            nullable
+            placeholder="All accounts"
+          />
+        </div>
+      </div>
+
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No orders yet.</p>
+        <p className="mt-6 text-sm text-muted-foreground">No orders match these filters.</p>
       ) : (
-        <DataTable<OrderRow> columns={columns} data={rows} emptyDescription="Create an order from a booking or use New order." />
+        <div className="mt-6 overflow-x-auto">
+          <DataTable<OrderRow> columns={columns} data={rows} emptyDescription="Adjust filters or create an order." />
+        </div>
       )}
 
-      <div className="mt-4 flex gap-3 text-sm">
-        <Link className={page <= 1 ? "pointer-events-none text-muted-foreground" : "text-primary underline"} href={prevHref}>
-          Previous
-        </Link>
-        <Link className="text-primary underline" href={nextHref}>
-          Next
-        </Link>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div className="text-muted-foreground">
+          Page {page}
+          {listQuery.data?.pagination?.total !== undefined ? ` · ${listQuery.data.pagination.total} orders` : null}
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" size="lg" disabled={page <= 1} onClick={() => goPage(page - 1)}>
+            Previous
+          </Button>
+          <Button type="button" variant="outline" size="lg" disabled={!hasMore && page >= totalPages} onClick={() => goPage(page + 1)}>
+            Next
+          </Button>
+        </div>
       </div>
     </>
   );

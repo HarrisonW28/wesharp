@@ -155,6 +155,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:orders.create')->post('orders', [OrderController::class, 'store'])->name('api.admin.orders.store');
     Route::middleware('permission:orders.view')->get('orders/{order}', [OrderController::class, 'show'])->whereUuid('order')->name('api.admin.orders.show');
     Route::middleware('permission:orders.update')->put('orders/{order}', [OrderController::class, 'update'])->whereUuid('order')->name('api.admin.orders.update');
+    Route::middleware('permission:orders.update')->post('orders/{order}/transition', [OrderController::class, 'transition'])->whereUuid('order')->name('api.admin.orders.transition');
     Route::middleware('permission:orders.update')->post('orders/{order}/complete', [OrderController::class, 'complete'])->whereUuid('order')->name('api.admin.orders.complete');
     Route::middleware('permission:invoices.create')->post('orders/{order}/invoice-draft', [OrderController::class, 'storeInvoiceDraft'])->whereUuid('order')->name('api.admin.orders.invoice_draft');
     Route::middleware('permission:knives.update')->post('orders/{order}/attach-knife', [OrderController::class, 'attachKnife'])->whereUuid('order')->name('api.admin.orders.attach_knife');
