@@ -5,6 +5,7 @@ namespace App\Actions\Bookings;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\BookingEmailService;
 use App\Support\Bookings\BookingStatusTransitions;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -13,12 +14,16 @@ use Illuminate\Support\Facades\DB;
 
 final class ConfirmBookingAction
 {
+    public function __construct(
+        private readonly BookingEmailService $bookingEmails,
+    ) {}
+
     /**
      * @param  array<string, mixed>|null  $overrides  Optional confirmed date / window from admin (validated).
      */
     public function execute(Booking $booking, ?Authenticatable $actor, ?Request $request, ?array $overrides = null): Booking
     {
-        return DB::transaction(function () use ($booking, $actor, $request, $overrides): Booking {
+        $out = DB::transaction(function () use ($booking, $actor, $request, $overrides): Booking {
             $from = $booking->booking_status;
             BookingStatusTransitions::assertCanTransition($from, BookingStatus::Confirmed);
 
@@ -69,5 +74,9 @@ final class ConfirmBookingAction
 
             return $booking->fresh();
         });
+
+        $this->bookingEmails->sendBookingConfirmed($out);
+
+        return $out;
     }
 }

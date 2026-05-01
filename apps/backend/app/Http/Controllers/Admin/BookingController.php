@@ -27,6 +27,7 @@ use App\Models\Booking;
 use App\Models\OperationalRoute;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Bookings\BookingHardDeleteGuard;
+use App\Services\Notifications\BookingEmailService;
 use App\Support\ApiResponses;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,6 +44,7 @@ final class BookingController extends Controller
         private readonly UpdateAdminBookingAction $updateAdminBookingAction,
         private readonly UnassignBookingFromRouteAction $unassignBookingFromRouteAction,
         private readonly CreateRouteFromBookingPlaceholderAction $createRouteFromBookingPlaceholderAction,
+        private readonly BookingEmailService $bookingEmails,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -93,6 +95,9 @@ final class BookingController extends Controller
         ], $request);
 
         $booking->load(['company:id,name,city', 'location:id,city', 'assignedRoute:id,name']);
+
+        // Email: booking requested (admin-created bookings still notify the customer; idempotent & logged).
+        $this->bookingEmails->sendBookingRequested($booking);
 
         return ApiResponses::success((new BookingResource($booking))->toArray($request), 201);
     }

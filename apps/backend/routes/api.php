@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\FinanceDashboardController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\KnifeController;
 use App\Http\Controllers\Admin\LookupController;
+use App\Http\Controllers\Admin\NotificationDeliveryController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\OrderSubscriptionCoverageController;
 use App\Http\Controllers\Admin\PaymentController;
@@ -198,6 +199,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:bookings.delete')->delete('bookings/{booking}', [BookingController::class, 'destroy'])->whereUuid('booking')->name('api.admin.bookings.destroy');
     Route::middleware('permission:bookings.update')->post('bookings/{booking}/confirm', [BookingController::class, 'confirm'])->whereUuid('booking')->name('api.admin.bookings.confirm');
     Route::middleware('permission:bookings.cancel')->post('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->whereUuid('booking')->name('api.admin.bookings.cancel');
+    Route::middleware('permission:bookings.view')->get('bookings/{booking}/notifications', [NotificationDeliveryController::class, 'bookingIndex'])->whereUuid('booking')->name('api.admin.bookings.notifications.index');
     Route::middleware('permission:routes.manage')->post('bookings/{booking}/assign-route', [BookingController::class, 'assignRoute'])->whereUuid('booking')->name('api.admin.bookings.assign_route');
     Route::middleware('permission:routes.manage')->post('bookings/{booking}/unassign-route', [BookingController::class, 'unassignRoute'])->whereUuid('booking')->name('api.admin.bookings.unassign_route');
     Route::middleware('permission:routes.manage')->post('bookings/{booking}/create-route-placeholder', [BookingController::class, 'createRoutePlaceholder'])->whereUuid('booking')->name('api.admin.bookings.create_route_placeholder');

@@ -37,6 +37,18 @@ final class NotificationService
         array $viewData,
         array $ctx = [],
     ): NotificationDelivery {
+        if ($idempotencyKey !== null && $idempotencyKey !== '') {
+            $existing = NotificationDelivery::query()
+                ->where('channel', 'email')
+                ->where('type', $type)
+                ->where('idempotency_key', $idempotencyKey)
+                ->first();
+
+            if ($existing instanceof NotificationDelivery) {
+                return $existing;
+            }
+        }
+
         $enabled = (bool) Config::get('notifications.enabled', false);
         $queue = (bool) Config::get('notifications.email.queue', true);
         $queueName = (string) Config::get('notifications.email.queue_name', 'notifications');
@@ -77,6 +89,42 @@ final class NotificationService
     }
 
     /**
+     * Record a delivery row without attempting to send (eg. missing recipient, placeholder jobs).
+     *
+     * @param  array<string, mixed>|null  $meta
+     * @param  array{
+     *   company_id?: string|null,
+     *   recipient_user_id?: int|null,
+     *   recipient_email?: string|null,
+     *   recipient_name?: string|null,
+     *   source_type?: string|null,
+     *   source_id?: string|null,
+     *   meta?: array<string, mixed>|null,
+     * }  $ctx
+     */
+    public function recordEmailDelivery(
+        string $type,
+        ?string $idempotencyKey,
+        array $ctx,
+        string $status,
+        ?string $failureReason = null,
+        ?array $meta = null,
+    ): NotificationDelivery {
+        return $this->createDeliveryRow(
+            channel: 'email',
+            type: $type,
+            idempotencyKey: $idempotencyKey,
+            ctx: $ctx,
+            status: $status,
+            meta: $meta,
+            failureReason: $failureReason,
+            queuedAt: null,
+            sentAt: null,
+            failedAt: $status === 'failed' ? now() : null,
+        );
+    }
+
+    /**
      * @param  array<string, mixed>|null  $meta
      * @param  array{
      *   company_id?: string|null,
@@ -98,7 +146,13 @@ final class NotificationService
         ?string $failureReason,
         $queuedAt,
         $sentAt,
+        $failedAt = null,
     ): NotificationDelivery {
+        $ctxMeta = Arr::get($ctx, 'meta');
+        if (is_array($ctxMeta)) {
+            $meta = array_merge($ctxMeta, $meta ?? []);
+        }
+
         $payload = [
             'company_id' => Arr::get($ctx, 'company_id'),
             'recipient_user_id' => Arr::get($ctx, 'recipient_user_id'),
@@ -112,7 +166,7 @@ final class NotificationService
             'idempotency_key' => $idempotencyKey !== null && $idempotencyKey !== '' ? $idempotencyKey : null,
             'queued_at' => $queuedAt,
             'sent_at' => $sentAt,
-            'failed_at' => null,
+            'failed_at' => $failedAt,
             'failure_reason' => $failureReason,
             'meta' => $meta,
         ];

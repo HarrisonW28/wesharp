@@ -8,6 +8,7 @@ use App\Enums\BookingStatus;
 use App\Enums\ServiceType;
 use App\Models\Booking;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\BookingEmailService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -16,6 +17,10 @@ use Illuminate\Http\Request;
  */
 final class CreateCustomerPortalBookingAction
 {
+    public function __construct(
+        private readonly BookingEmailService $bookingEmails,
+    ) {}
+
     /**
      * @param  array{
      *   location_id: string,
@@ -61,6 +66,9 @@ final class CreateCustomerPortalBookingAction
         ], $request);
 
         $booking->load(['company:id,name,city', 'location:id,city,line_one']);
+
+        // Email: booking requested (customer-safe; idempotent; logged).
+        $this->bookingEmails->sendBookingRequested($booking);
 
         return $booking;
     }

@@ -42,6 +42,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useBackendMe } from "@/hooks/use-backend-me";
+import { NotificationHistoryCard } from "@/components/notifications/NotificationHistoryCard";
 
 const notesSchema = z.object({
   internal_notes: z.string().optional(),
@@ -916,6 +917,8 @@ export default function AdminBookingDetailPage() {
           <AuditTimeline items={(b.audit_timeline ?? b.status_timeline) as AuditTimelineRow[]} showPayload />
         </CardContent>
       </Card>
+
+      <NotificationHistoryCard scopeLabel="this booking" fetchPath={`/api/admin/bookings/${bookingId}/notifications`} />
 
       <AlertDialog open={unassignOpen} onOpenChange={setUnassignOpen}>
         <AlertDialogContent>

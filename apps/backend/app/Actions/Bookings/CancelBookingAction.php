@@ -5,6 +5,7 @@ namespace App\Actions\Bookings;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\BookingEmailService;
 use App\Support\Bookings\BookingStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -12,9 +13,13 @@ use Illuminate\Support\Facades\DB;
 
 final class CancelBookingAction
 {
+    public function __construct(
+        private readonly BookingEmailService $bookingEmails,
+    ) {}
+
     public function execute(Booking $booking, ?Authenticatable $actor, ?Request $request, ?string $reason = null): Booking
     {
-        return DB::transaction(function () use ($booking, $actor, $request, $reason): Booking {
+        $out = DB::transaction(function () use ($booking, $actor, $request, $reason): Booking {
             $from = $booking->booking_status;
             BookingStatusTransitions::assertCanTransition($from, BookingStatus::Cancelled);
 
@@ -35,5 +40,9 @@ final class CancelBookingAction
 
             return $booking->fresh();
         });
+
+        $this->bookingEmails->sendBookingCancelled($out);
+
+        return $out;
     }
 }
