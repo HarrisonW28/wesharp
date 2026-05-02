@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Copy, FileText, ListChecks, ListPlus, Loader2, Plus, PackagePlus, Pencil } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -37,6 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -116,6 +117,14 @@ export default function AdminOrderDetailPage() {
   const [bulkCount, setBulkCount] = useState(5);
   const [bulkKnifeConfirmOpen, setBulkKnifeConfirmOpen] = useState(false);
   const [bulkLinesOpen, setBulkLinesOpen] = useState(false);
+  const [bulkLinesThresholdOpen, setBulkLinesThresholdOpen] = useState(false);
+  const pendingBulkLinesRef = useRef<Record<string, unknown>[] | null>(null);
+  const [riskyBladeConfirmOpen, setRiskyBladeConfirmOpen] = useState(false);
+  const [pendingRiskyBlade, setPendingRiskyBlade] = useState<
+    | { kind: "knife"; knifeId: string; target_status: string; label: string }
+    | { kind: "line"; itemId: string; target_status: string; label: string }
+    | null
+  >(null);
   const [bulkLines, setBulkLines] = useState<BulkLineRow[]>([makeEmptyBulkRow()]);
   const [addOpen, setAddOpen] = useState(false);
   const [attachOpen, setAttachOpen] = useState(false);
@@ -504,46 +513,56 @@ export default function AdminOrderDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const bulkLinesMutation = useMutation({
-    mutationFn: async () => {
-      const items: Record<string, unknown>[] = [];
-      let totalQty = 0;
-      for (const row of bulkLines) {
-        const unit_amount_pence = coerceGbpInputToMinorUnits(row.unitPounds);
-        if (row.knifeId) {
-          items.push({
-            knife_id: row.knifeId,
-            quantity: row.quantity,
-            unit_amount_pence,
-            notes: row.notes.trim() || undefined,
-          });
-          totalQty += row.quantity;
-          continue;
-        }
-        if (!row.label.trim() && !row.knifeType.trim()) {
-          continue;
-        }
+  const buildBulkOrderLineItems = (): { items: Record<string, unknown>[]; totalQty: number } => {
+    const items: Record<string, unknown>[] = [];
+    let totalQty = 0;
+    for (const row of bulkLines) {
+      const unit_amount_pence = coerceGbpInputToMinorUnits(row.unitPounds);
+      if (row.knifeId) {
         items.push({
-          knife_type: row.knifeType.trim() || undefined,
-          label: row.label.trim() || undefined,
-          brand: row.brand.trim() || undefined,
-          notes: row.notes.trim() || undefined,
+          knife_id: row.knifeId,
           quantity: row.quantity,
           unit_amount_pence,
+          notes: row.notes.trim() || undefined,
         });
         totalQty += row.quantity;
+        continue;
       }
-      if (items.length === 0) {
-        throw new Error("Add at least one row with an existing knife or a new name/type.");
+      if (!row.label.trim() && !row.knifeType.trim()) {
+        continue;
       }
+      items.push({
+        knife_type: row.knifeType.trim() || undefined,
+        label: row.label.trim() || undefined,
+        brand: row.brand.trim() || undefined,
+        notes: row.notes.trim() || undefined,
+        quantity: row.quantity,
+        unit_amount_pence,
+      });
+      totalQty += row.quantity;
+    }
+    if (items.length === 0) {
+      throw new Error("Add at least one row with an existing knife or a new name/type.");
+    }
+    return { items, totalQty };
+  };
+
+  const requestBulkLinesSubmit = () => {
+    try {
+      const { items, totalQty } = buildBulkOrderLineItems();
       if (totalQty > BULK_CONFIRM_THRESHOLD) {
-        const ok = window.confirm(
-          `You are adding ${totalQty} billable units across ${items.length} row(s). Continue?`,
-        );
-        if (!ok) {
-          throw new Error("Cancelled.");
-        }
+        pendingBulkLinesRef.current = items;
+        setBulkLinesThresholdOpen(true);
+        return;
       }
+      bulkLinesMutation.mutate(items);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Invalid rows.");
+    }
+  };
+
+  const bulkLinesMutation = useMutation({
+    mutationFn: async (items: Record<string, unknown>[]) => {
       const res = await admin.json<unknown>(`/api/admin/orders/${orderId}/bulk-order-items`, {
         method: "POST",
         body: JSON.stringify({ items }),
@@ -560,15 +579,15 @@ export default function AdminOrderDetailPage() {
     onSuccess: () => {
       toast.success("Order lines added.");
       setBulkLinesOpen(false);
+      setBulkLinesThresholdOpen(false);
+      pendingBulkLinesRef.current = null;
       setBulkLines([makeEmptyBulkRow()]);
       void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
     },
     onError: (e: Error) => {
-      if (e.message !== "Cancelled.") {
-        toast.error(e.message);
-      }
+      toast.error(e.message);
     },
   });
 
@@ -798,6 +817,20 @@ export default function AdminOrderDetailPage() {
         }
       />
 
+      {o.staff_next_actions && o.staff_next_actions.length > 0 ? (
+        <Alert className="mt-6 border-primary/25 bg-primary/5">
+          <ListChecks className="h-4 w-4" aria-hidden />
+          <AlertTitle>Next steps</AlertTitle>
+          <AlertDescription>
+            <ul className="mt-2 list-inside list-disc space-y-1">
+              {o.staff_next_actions.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <AlertDialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -918,6 +951,92 @@ export default function AdminOrderDetailPage() {
             <Button type="button" size="lg" disabled={bulkMutation.isPending} onClick={() => bulkMutation.mutate()}>
               {bulkMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
               Yes, add knives
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={bulkLinesThresholdOpen}
+        onOpenChange={(open) => {
+          setBulkLinesThresholdOpen(open);
+          if (!open) {
+            pendingBulkLinesRef.current = null;
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add many billable units?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are adding more than {BULK_CONFIRM_THRESHOLD} billable units in one submission. Continue only if the quantities are
+              correct.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Back</AlertDialogCancel>
+            <Button
+              type="button"
+              size="lg"
+              disabled={bulkLinesMutation.isPending || pendingBulkLinesRef.current === null}
+              onClick={() => {
+                const items = pendingBulkLinesRef.current;
+                if (items) {
+                  bulkLinesMutation.mutate(items);
+                }
+              }}
+            >
+              {bulkLinesMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+              Add lines
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={riskyBladeConfirmOpen}
+        onOpenChange={(open) => {
+          setRiskyBladeConfirmOpen(open);
+          if (!open) {
+            setPendingRiskyBlade(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingRiskyBlade ? `Confirm: ${pendingRiskyBlade.label}?` : "Confirm blade step"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This workshop status change may be significant. Continue only if the physical state matches.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Back</AlertDialogCancel>
+            <Button
+              type="button"
+              size="lg"
+              variant="destructive"
+              disabled={
+                pendingRiskyBlade === null ||
+                knifeTransitionMutation.isPending ||
+                orderItemTransitionMutation.isPending
+              }
+              onClick={() => {
+                const p = pendingRiskyBlade;
+                if (p?.kind === "knife") {
+                  knifeTransitionMutation.mutate({ knifeId: p.knifeId, target_status: p.target_status });
+                } else if (p?.kind === "line") {
+                  orderItemTransitionMutation.mutate({ itemId: p.itemId, target_status: p.target_status });
+                }
+                setRiskyBladeConfirmOpen(false);
+                setPendingRiskyBlade(null);
+              }}
+            >
+              {knifeTransitionMutation.isPending || orderItemTransitionMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              ) : null}
+              Confirm
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1337,15 +1456,15 @@ export default function AdminOrderDetailPage() {
                     Add one knife
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+                <DialogContent className="max-h-[min(90vh,calc(100dvh-2rem))] overflow-y-auto sm:max-w-lg">
                   <DialogHeader>
-                    <DialogTitle>Register a single blade</DialogTitle>
+                    <DialogTitle>Quick add blade</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-3 text-sm">
                     <div className="space-y-1">
                       <Label>Type / category</Label>
                       <Select value={addKnifeType} onValueChange={setAddKnifeType}>
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-12">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent className="max-h-72">
@@ -1359,37 +1478,56 @@ export default function AdminOrderDetailPage() {
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="add-label">Label (customer-visible)</Label>
-                      <Input id="add-label" value={addLabel} onChange={(e) => setAddLabel(e.target.value)} placeholder="e.g. Head chef primary" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="add-desc">Service / work description</Label>
-                      <Textarea
-                        id="add-desc"
-                        rows={2}
-                        value={addDescription}
-                        onChange={(e) => setAddDescription(e.target.value)}
-                        placeholder="What we are doing on this visit…"
+                      <Input
+                        id="add-label"
+                        className="h-12"
+                        value={addLabel}
+                        onChange={(e) => setAddLabel(e.target.value)}
+                        placeholder="e.g. Head chef primary"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="add-cond">Condition before</Label>
-                      <Textarea id="add-cond" rows={2} value={addCondition} onChange={(e) => setAddCondition(e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="add-dmg">Damage / internal notes</Label>
-                      <Textarea id="add-dmg" rows={2} value={addDamageNotes} onChange={(e) => setAddDamageNotes(e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="add-notes">Staff notes</Label>
-                      <Textarea id="add-notes" rows={2} value={addNotes} onChange={(e) => setAddNotes(e.target.value)} />
-                    </div>
-                    <p className="text-xs text-muted-foreground">A unique tag_id is allocated automatically.</p>
+                    <details className="rounded-lg border border-border/80 bg-muted/20 [&_summary::-webkit-details-marker]:hidden">
+                      <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-foreground">
+                        More detail — optional
+                      </summary>
+                      <div className="space-y-3 border-t border-border/80 px-3 pb-3 pt-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="add-desc">Service / work description</Label>
+                          <Textarea
+                            id="add-desc"
+                            rows={2}
+                            value={addDescription}
+                            onChange={(e) => setAddDescription(e.target.value)}
+                            placeholder="What we are doing on this visit…"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="add-cond">Condition before</Label>
+                          <Textarea id="add-cond" rows={2} value={addCondition} onChange={(e) => setAddCondition(e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="add-dmg">Damage / internal notes</Label>
+                          <Textarea id="add-dmg" rows={2} value={addDamageNotes} onChange={(e) => setAddDamageNotes(e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="add-notes">Staff notes</Label>
+                          <Textarea id="add-notes" rows={2} value={addNotes} onChange={(e) => setAddNotes(e.target.value)} />
+                        </div>
+                      </div>
+                    </details>
+                    <p className="text-xs text-muted-foreground">Tag ID is allocated automatically.</p>
                   </div>
-                  <DialogFooter className="gap-2">
-                    <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                  <DialogFooter className="gap-2 pt-1">
+                    <Button type="button" variant="outline" className="min-h-12 w-full sm:w-auto" onClick={() => setAddOpen(false)}>
                       Close
                     </Button>
-                    <Button type="button" size="lg" disabled={addKnifeMutation.isPending} onClick={() => addKnifeMutation.mutate()}>
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="min-h-12 w-full sm:w-auto"
+                      disabled={addKnifeMutation.isPending}
+                      onClick={() => addKnifeMutation.mutate()}
+                    >
                       {addKnifeMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
                       Add knife
                     </Button>
@@ -1556,7 +1694,7 @@ export default function AdminOrderDetailPage() {
                     <Button type="button" variant="outline" onClick={() => setBulkLinesOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="button" size="lg" disabled={bulkLinesMutation.isPending} onClick={() => bulkLinesMutation.mutate()}>
+                    <Button type="button" size="lg" disabled={bulkLinesMutation.isPending} onClick={requestBulkLinesSubmit}>
                       {bulkLinesMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
                       Submit lines
                     </Button>
@@ -2058,10 +2196,14 @@ export default function AdminOrderDetailPage() {
                                 disabled={busyLine}
                                 onClick={() => {
                                   if (step.risky || isRiskyKnifeTransition(step.value)) {
-                                    const ok = window.confirm(`Confirm: ${step.label}?`);
-                                    if (!ok) {
-                                      return;
-                                    }
+                                    setPendingRiskyBlade({
+                                      kind: "line",
+                                      itemId: line.id,
+                                      target_status: step.value,
+                                      label: step.label,
+                                    });
+                                    setRiskyBladeConfirmOpen(true);
+                                    return;
                                   }
                                   orderItemTransitionMutation.mutate({ itemId: line.id, target_status: step.value });
                                 }}
@@ -2129,10 +2271,14 @@ export default function AdminOrderDetailPage() {
                           disabled={busyLine}
                           onClick={() => {
                             if (step.risky || isRiskyKnifeTransition(step.value)) {
-                              const ok = window.confirm(`Confirm: ${step.label}?`);
-                              if (!ok) {
-                                return;
-                              }
+                              setPendingRiskyBlade({
+                                kind: "line",
+                                itemId: line.id,
+                                target_status: step.value,
+                                label: step.label,
+                              });
+                              setRiskyBladeConfirmOpen(true);
+                              return;
                             }
                             orderItemTransitionMutation.mutate({ itemId: line.id, target_status: step.value });
                           }}
@@ -2205,10 +2351,14 @@ export default function AdminOrderDetailPage() {
                       disabled={busyKnife}
                       onClick={() => {
                         if (step.risky || isRiskyKnifeTransition(step.value)) {
-                          const ok = window.confirm(`Confirm: ${step.label}?`);
-                          if (!ok) {
-                            return;
-                          }
+                          setPendingRiskyBlade({
+                            kind: "knife",
+                            knifeId: k.id,
+                            target_status: step.value,
+                            label: step.label,
+                          });
+                          setRiskyBladeConfirmOpen(true);
+                          return;
                         }
                         knifeTransitionMutation.mutate({ knifeId: k.id, target_status: step.value });
                       }}

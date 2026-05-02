@@ -78,6 +78,23 @@ final class OrderService
             $query->whereDate('created_at', '<=', $to);
         }
 
+        if ($request->query('needs_knives') === '1' || $request->query('needs_knives') === 'true') {
+            $query->whereIn('order_status', [
+                OrderStatus::Received->value,
+                OrderStatus::Inspection->value,
+                OrderStatus::InProgress->value,
+                OrderStatus::QualityCheck->value,
+            ])->whereDoesntHave('knives');
+        }
+
+        if ($request->query('needs_workshop_photos') === '1' || $request->query('needs_workshop_photos') === 'true') {
+            $query->whereIn('order_status', [
+                OrderStatus::Inspection->value,
+                OrderStatus::InProgress->value,
+                OrderStatus::QualityCheck->value,
+            ])->whereDoesntHave('evidencePhotos', fn ($q) => $q->whereNull('archived_at'));
+        }
+
         $invFilter = trim((string) $request->query('invoice_status', ''));
         if ($invFilter === 'none') {
             $query->whereDoesntHave('invoices', fn ($q) => $q->where('invoice_status', '!=', InvoiceStatus::Void->value));

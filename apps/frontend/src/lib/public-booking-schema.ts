@@ -45,6 +45,8 @@ const publicBookingBaseSchema = z.object({
   service_type: z.enum(["collection", "onsite"]),
   message: z.string().trim().min(10, "Add a short description (at least 10 characters).").max(20000),
   terms_accepted: z.boolean(),
+  /** Optional: captured by the guided wizard; merged into customer notes on the server. */
+  programme_interest: z.enum(["one_off", "subscription", "unsure"]).optional(),
 });
 
 export const PUBLIC_BOOKING_ENQUIRY_SCHEMA = publicBookingBaseSchema
@@ -58,4 +60,73 @@ export const PUBLIC_BOOKING_ENQUIRY_SCHEMA = publicBookingBaseSchema
   });
 
 export type PublicBookingFormValues = z.infer<typeof publicBookingBaseSchema>;
+
+export type PublicBookingFieldErrors = Partial<Record<keyof PublicBookingFormValues | "root", string>>;
+
+const step0Schema = publicBookingBaseSchema.pick({ message: true, service_type: true });
+
+const step1Schema = publicBookingBaseSchema.pick({ estimated_knife_count: true });
+
+const step2Schema = publicBookingBaseSchema.pick({
+  business_name: true,
+  address_line_1: true,
+  address_line_2: true,
+  city: true,
+  postcode: true,
+});
+
+const step3Schema = publicBookingBaseSchema
+  .pick({ preferred_date: true, time_window_preference: true })
+  .refine((data) => preferredDateNotInPast(data.preferred_date), {
+    path: ["preferred_date"],
+    message: "Preferred date cannot be in the past.",
+  });
+
+const step4Schema = z.object({
+  programme_interest: z.enum(["one_off", "subscription", "unsure"], {
+    required_error: "Choose how you’d like to work with us.",
+  }),
+});
+
+const step5Schema = publicBookingBaseSchema.pick({
+  contact_name: true,
+  email: true,
+  phone: true,
+  terms_accepted: true,
+}).refine((data) => data.terms_accepted === true, {
+  path: ["terms_accepted"],
+  message: "Acknowledge the enquiry terms to continue.",
+});
+
+const WIZARD_STEP_SCHEMAS = [step0Schema, step1Schema, step2Schema, step3Schema, step4Schema, step5Schema] as const;
+
+export const PUBLIC_BOOKING_WIZARD_STEP_COUNT = WIZARD_STEP_SCHEMAS.length;
+
+export function validatePublicBookingWizardStep(
+  stepIndex: number,
+  values: PublicBookingFormValues,
+):
+  | { ok: true }
+  | {
+      ok: false;
+      errors: PublicBookingFieldErrors;
+    } {
+  if (stepIndex < 0 || stepIndex >= WIZARD_STEP_SCHEMAS.length) {
+    return { ok: true };
+  }
+  const schema = WIZARD_STEP_SCHEMAS[stepIndex];
+  const parsed = schema.safeParse(values);
+  if (parsed.success) {
+    return { ok: true };
+  }
+  const flat = parsed.error.flatten().fieldErrors;
+  const errors: PublicBookingFieldErrors = {};
+  for (const k of Object.keys(flat) as (keyof typeof flat)[]) {
+    const msg = flat[k];
+    if (msg?.[0]) {
+      errors[k as keyof PublicBookingFormValues] = msg[0];
+    }
+  }
+  return { ok: false, errors };
+}
 

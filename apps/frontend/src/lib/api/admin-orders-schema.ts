@@ -217,6 +217,7 @@ export const OrderDetailSchema = OrderRowSchema.extend({
   evidence_photos: z.array(EvidencePhotoAdminRowSchema).optional(),
   evidence_settings: EvidenceSettingsSchema.optional(),
   bulk_workshop_summary: BulkWorkshopSummarySchema.optional(),
+  staff_next_actions: z.array(z.string()).optional(),
 });
 
 export const OrderDetailResponseSchema = z.object({

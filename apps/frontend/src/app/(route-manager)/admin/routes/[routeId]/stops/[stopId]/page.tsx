@@ -25,6 +25,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 import { visibleRouteStopActions, visibleRouteStopFailureAction } from "@/lib/route-manager/route-stop-workflow";
 
+import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { RouteManagerShell } from "@/components/layout/RouteManagerShell";
 import { RouteStopCustomerPortalSection } from "@/components/route-manager/RouteStopCustomerPortalSection";
 import { RouteStopEvidenceSection } from "@/components/route-manager/RouteStopEvidenceSection";
@@ -478,6 +479,17 @@ export default function RouteStopDetailPage() {
           updates={stop.customer_portal_updates ?? []}
           settings={stop.evidence_settings}
         />
+
+        <Card className="border-white/10 bg-white/[0.04] p-4 md:border-border md:bg-card">
+          <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Activity</div>
+          <div className="mt-3 text-sm text-slate-200 md:text-foreground">
+            <AuditTimeline
+              items={((stop as { audit_timeline?: AuditTimelineRow[] }).audit_timeline ?? [])}
+              emptyLabel="No stop activity recorded yet."
+              showPayload={false}
+            />
+          </div>
+        </Card>
 
         <div className="grid grid-cols-2 gap-4">
           <div>

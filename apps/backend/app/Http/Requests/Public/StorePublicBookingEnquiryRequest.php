@@ -31,6 +31,7 @@ class StorePublicBookingEnquiryRequest extends FormRequest
             'service_type' => ['required', Rule::enum(ServiceType::class)],
             'message' => ['required', 'string', 'max:20000'],
             'terms_accepted' => ['accepted'],
+            'programme_interest' => ['sometimes', 'nullable', 'string', Rule::in(['one_off', 'subscription', 'unsure'])],
         ];
     }
 

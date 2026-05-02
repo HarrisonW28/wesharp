@@ -2,14 +2,16 @@ import Link from "next/link";
 
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { Button } from "@/components/ui/button";
+import { fetchPublicSiteContent } from "@/lib/site-content/fetch-site-content";
 
-export default function ServicesPage() {
+export const revalidate = 60;
+
+export default async function ServicesPage() {
+  const site = await fetchPublicSiteContent();
+  const s = site.services;
+
   return (
-    <MarketingArticle
-      showFooterCtas={false}
-      title="Services"
-      lead="Door-to-door knife sharpening for busy kitchens. You keep cooking — we handle collection, workshop sharpening, quality checks, and safe return."
-    >
+    <MarketingArticle showFooterCtas={false} title={s.title} lead={s.lead}>
       <section className="space-y-4">
         <h2 className="text-base font-semibold text-foreground">What we do</h2>
         <ul className="list-disc space-y-2 pl-5">

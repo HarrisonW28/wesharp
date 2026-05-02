@@ -349,7 +349,7 @@ export default function AdminOrdersPage() {
       <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Orders" }]} />
       <PageHeader
         title="Orders"
-        description="Search and filter fulfilment charges from booking conversion through completion."
+        description="Workshop desk — open a booking’s order in two picks; search and manage fulfilment below."
         actions={
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
@@ -358,14 +358,12 @@ export default function AdminOrdersPage() {
                 New order
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[min(90vh,calc(100dvh-2rem))] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create order</DialogTitle>
+                <DialogTitle>New order from booking</DialogTitle>
               </DialogHeader>
               <div className="space-y-3 text-sm">
-                <p className="text-muted-foreground">
-                  Requires a booking belonging to the same company. Prefer converting from a booking where possible.
-                </p>
+                <p className="text-muted-foreground">Account, then booking — both must match. Skip price to use defaults.</p>
                 <CompanyLookup
                   label="Account"
                   value={companyId}
@@ -383,24 +381,43 @@ export default function AdminOrdersPage() {
                   extraParams={companyId ? { company_id: companyId } : undefined}
                   placeholder={companyId ? "Search bookings for this account…" : "Select an account first"}
                 />
-                <div className="space-y-1">
-                  <Label htmlFor="ppp">Price per knife (£, optional, ex VAT)</Label>
-                  <Input
-                    id="ppp"
-                    inputMode="decimal"
-                    value={priceGbp}
-                    onChange={(e) => setPriceGbp(e.target.value)}
-                    placeholder="e.g. 12.00"
-                  />
-                </div>
+                <details className="rounded-lg border border-border/80 bg-muted/20 [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-foreground">
+                    Price per knife — optional (£ ex VAT)
+                  </summary>
+                  <div className="border-t border-border/80 px-3 pb-3 pt-2">
+                    <Label htmlFor="ppp" className="sr-only">
+                      Price per knife (£, ex VAT)
+                    </Label>
+                    <Input
+                      id="ppp"
+                      inputMode="decimal"
+                      className="h-11"
+                      value={priceGbp}
+                      onChange={(e) => setPriceGbp(e.target.value)}
+                      placeholder="e.g. 12.00 — leave empty for default"
+                    />
+                  </div>
+                </details>
               </div>
               <DialogFooter className="gap-2">
-                <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-12 w-full sm:w-auto"
+                  onClick={() => setCreateOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button type="button" size="lg" disabled={createMutation.isPending} onClick={() => createMutation.mutate()}>
+                <Button
+                  type="button"
+                  size="lg"
+                  className="min-h-12 w-full sm:w-auto"
+                  disabled={createMutation.isPending}
+                  onClick={() => createMutation.mutate()}
+                >
                   {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
-                  Create
+                  Create order
                 </Button>
               </DialogFooter>
             </DialogContent>

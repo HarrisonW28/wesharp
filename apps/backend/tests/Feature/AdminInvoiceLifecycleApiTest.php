@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\OrderStatus;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
+use App\Models\CompanyLocation;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\User;
@@ -18,6 +20,42 @@ use Tests\TestCase;
 final class AdminInvoiceLifecycleApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_store_invoice_rejects_zero_total_non_complimentary_workshop_order(): void
+    {
+        $this->seed(WeSharpDemoSeeder::class);
+        $ops = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+        /** @phpstan-ignore-next-line */
+        $company = Company::query()->firstOrFail();
+        /** @phpstan-ignore-next-line */
+        $location = CompanyLocation::query()->where('company_id', $company->id)->firstOrFail();
+        /** @phpstan-ignore-next-line */
+        $booking = Booking::factory()->create([
+            'company_id' => $company->id,
+            'company_location_id' => $location->id,
+        ]);
+        /** @phpstan-ignore-next-line */
+        $order = Order::factory()->create([
+            'company_id' => $company->id,
+            'booking_id' => $booking->id,
+            'order_status' => OrderStatus::Draft,
+            'subtotal_pence' => 0,
+            'tax_pence' => 0,
+            'total_pence' => 0,
+            'knife_count' => 0,
+            'is_complimentary' => false,
+            'company_subscription_id' => null,
+            'subscription_coverage' => null,
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $ops->id)
+            ->postJson('/api/admin/invoices', ['order_id' => $order->id])
+            ->assertStatus(422)
+            ->assertJsonPath(
+                'message',
+                'Cannot create an invoice until this order has a billable total. Add blades or lines, set per-blade pricing, add a manual charge, or mark the order complimentary.',
+            );
+    }
 
     public function test_send_is_blocked_when_not_draft(): void
     {

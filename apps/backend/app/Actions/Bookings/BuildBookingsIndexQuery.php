@@ -102,6 +102,18 @@ final class BuildBookingsIndexQuery
             $query->whereNull('bookings.assigned_route_id');
         }
 
+        $collectionWindow = strtolower(trim((string) $request->query('collection_window', '')));
+        if ($collectionWindow === 'missing') {
+            $query->whereIn('booking_status', [
+                BookingStatus::Confirmed->value,
+                BookingStatus::AssignedToRoute->value,
+            ])->where(function (Builder $sub): void {
+                $sub->whereNull('confirmed_collection_date')
+                    ->orWhereNull('confirmed_time_window_start')
+                    ->orWhereNull('confirmed_time_window_end');
+            });
+        }
+
         $qRaw = trim((string) $request->query('q', ''));
         if ($qRaw !== '') {
             $needle = '%'.addcslashes($qRaw, '%_\\').'%';

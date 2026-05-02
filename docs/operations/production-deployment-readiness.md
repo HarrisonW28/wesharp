@@ -135,3 +135,4 @@ Track open items explicitly (copy into issue tracker or edit as you close).
 - **`docs/operations/gitlab-environments-and-deployment.md`** — GitLab, staging checklist, related links  
 - **`docs/testing/qa-checklist.md`** — deeper functional QA  
 - **`docs/security/permission-matrix.md`** — roles and API segments  
+- **`docs/roadmap/sprint-12.8-qa-report.md`** — Sprint 12.8 final automated QA + **READY** verdict (repo/CI gate)

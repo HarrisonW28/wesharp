@@ -136,7 +136,7 @@ final class PortalFulfilmentPresenter
             ],
             [
                 'step_key' => 'booking_confirmed',
-                'label' => 'Collection confirmed',
+                'label' => 'Booking confirmed',
                 'description' => 'Your appointment is locked in.',
                 'at' => static fn (): ?string => ! in_array($bs, [BookingStatus::Requested], true)
                     ? $booking->updated_at?->toIso8601String()
@@ -153,6 +153,15 @@ final class PortalFulfilmentPresenter
                 ], true),
             ],
             [
+                'step_key' => 'collection_scheduled',
+                'label' => 'Collection scheduled',
+                'description' => 'Your pickup date and time window are set.',
+                'at' => static fn (): ?string => self::collectionScheduledDone($booking, $bs)
+                    ? $booking->updated_at?->toIso8601String()
+                    : null,
+                'done' => static fn (): bool => self::collectionScheduledDone($booking, $bs),
+            ],
+            [
                 'step_key' => 'driver_en_route',
                 'label' => 'Driver on the way',
                 'description' => 'Our driver is travelling to you.',
@@ -163,7 +172,7 @@ final class PortalFulfilmentPresenter
             ],
             [
                 'step_key' => 'collected',
-                'label' => 'Collected',
+                'label' => 'Collected · knives received',
                 'description' => 'Knives have been collected from site.',
                 'at' => static fn (): ?string => $stop?->departed_at?->toIso8601String(),
                 'done' => static fn (): bool => $st !== null && in_array($st, [
@@ -184,7 +193,7 @@ final class PortalFulfilmentPresenter
             ],
             [
                 'step_key' => 'sharpening',
-                'label' => 'Sharpening in progress',
+                'label' => 'In sharpening',
                 'description' => 'Our team is working through your batch.',
                 'at' => static fn (): ?string => $order->order_status === OrderStatus::InProgress
                     ? $order->updated_at?->toIso8601String()
@@ -192,8 +201,26 @@ final class PortalFulfilmentPresenter
                 'done' => static fn (): bool => self::orderSharpeningDone($order, $bs),
             ],
             [
+                'step_key' => 'quality_checked',
+                'label' => 'Quality checked',
+                'description' => 'Your blades have passed our final quality check.',
+                'at' => static fn (): ?string => self::qualityCheckedDone($order, $bs)
+                    ? ($order->updated_at?->toIso8601String() ?? $booking->updated_at?->toIso8601String())
+                    : null,
+                'done' => static fn (): bool => self::qualityCheckedDone($order, $bs),
+            ],
+            [
+                'step_key' => 'ready_for_return',
+                'label' => 'Ready for return',
+                'description' => 'Your items are packed for the journey back to you.',
+                'at' => static fn (): ?string => self::readyForReturnDone($order, $stop, $bs)
+                    ? ($order->completed_at?->toIso8601String() ?? $order->updated_at?->toIso8601String())
+                    : null,
+                'done' => static fn (): bool => self::readyForReturnDone($order, $stop, $bs),
+            ],
+            [
                 'step_key' => 'returned',
-                'label' => 'Returned to you',
+                'label' => 'Returned / completed',
                 'description' => 'Handover back at your site is complete.',
                 'at' => static fn (): ?string => $stop?->return_completed_at?->toIso8601String(),
                 'done' => static fn (): bool => $st !== null && in_array($st, [RouteStopStatus::Returned, RouteStopStatus::Completed], true)
@@ -230,7 +257,7 @@ final class PortalFulfilmentPresenter
             ],
             [
                 'step_key' => 'booking_confirmed',
-                'label' => 'Collection confirmed',
+                'label' => 'Booking confirmed',
                 'description' => 'Your appointment is locked in.',
                 'at' => static fn (): ?string => ! in_array($bs, [BookingStatus::Requested], true)
                     ? $booking->updated_at?->toIso8601String()
@@ -247,6 +274,15 @@ final class PortalFulfilmentPresenter
                 ], true),
             ],
             [
+                'step_key' => 'collection_scheduled',
+                'label' => 'Collection scheduled',
+                'description' => 'Your pickup date and time window are set.',
+                'at' => static fn (): ?string => self::collectionScheduledDone($booking, $bs)
+                    ? $booking->updated_at?->toIso8601String()
+                    : null,
+                'done' => static fn (): bool => self::collectionScheduledDone($booking, $bs),
+            ],
+            [
                 'step_key' => 'driver_en_route',
                 'label' => 'Driver on the way',
                 'description' => 'Our driver is travelling to you.',
@@ -257,7 +293,7 @@ final class PortalFulfilmentPresenter
             ],
             [
                 'step_key' => 'collected',
-                'label' => 'Collected',
+                'label' => 'Collected · knives received',
                 'description' => 'Knives have been collected from site.',
                 'at' => static fn (): ?string => $stop?->departed_at?->toIso8601String(),
                 'done' => static fn (): bool => $st !== null && in_array($st, [
@@ -278,7 +314,7 @@ final class PortalFulfilmentPresenter
             ],
             [
                 'step_key' => 'returned',
-                'label' => 'Returned to you',
+                'label' => 'Returned / completed',
                 'description' => 'Handover back at your site is complete.',
                 'at' => static fn (): ?string => $stop?->return_completed_at?->toIso8601String(),
                 'done' => static fn (): bool => $st !== null && in_array($st, [RouteStopStatus::Returned, RouteStopStatus::Completed], true)
@@ -311,12 +347,21 @@ final class PortalFulfilmentPresenter
             ],
             [
                 'step_key' => 'sharpening',
-                'label' => 'Sharpening in progress',
+                'label' => 'In sharpening',
                 'description' => 'Our team is working through your batch.',
                 'at' => static fn (): ?string => $order->order_status === OrderStatus::InProgress
                     ? $order->updated_at?->toIso8601String()
                     : null,
                 'done' => static fn (): bool => self::orderSharpeningDoneOrderOnly($order),
+            ],
+            [
+                'step_key' => 'quality_checked',
+                'label' => 'Quality checked',
+                'description' => 'Your blades have passed our final quality check.',
+                'at' => static fn (): ?string => self::orderQualityCheckedDoneOrderOnly($order)
+                    ? $order->updated_at?->toIso8601String()
+                    : null,
+                'done' => static fn (): bool => self::orderQualityCheckedDoneOrderOnly($order),
             ],
             [
                 'step_key' => 'fulfilment_complete',
@@ -412,13 +457,89 @@ final class PortalFulfilmentPresenter
 
     private static function orderSharpeningDone(Order $order, BookingStatus $bs): bool
     {
-        return self::orderInSharpeningOrLater($order->order_status)
-            || self::bookingAtLeast($bs, BookingStatus::InSharpening);
+        if (self::bookingAtLeast($bs, BookingStatus::QualityChecked)) {
+            return true;
+        }
+
+        return in_array($order->order_status, [
+            OrderStatus::QualityCheck,
+            OrderStatus::Completed,
+            OrderStatus::Invoiced,
+            OrderStatus::Returned,
+        ], true);
     }
 
     private static function orderSharpeningDoneOrderOnly(Order $order): bool
     {
-        return self::orderInSharpeningOrLater($order->order_status);
+        return in_array($order->order_status, [
+            OrderStatus::QualityCheck,
+            OrderStatus::Completed,
+            OrderStatus::Invoiced,
+            OrderStatus::Returned,
+        ], true);
+    }
+
+    private static function orderQualityCheckedDoneOrderOnly(Order $order): bool
+    {
+        return in_array($order->order_status, [
+            OrderStatus::Completed,
+            OrderStatus::Invoiced,
+            OrderStatus::Returned,
+        ], true);
+    }
+
+    private static function qualityCheckedDone(Order $order, BookingStatus $bs): bool
+    {
+        if (self::bookingAtLeast($bs, BookingStatus::QualityChecked)) {
+            return true;
+        }
+
+        return in_array($order->order_status, [
+            OrderStatus::Completed,
+            OrderStatus::Invoiced,
+            OrderStatus::Returned,
+        ], true);
+    }
+
+    private static function readyForReturnDone(Order $order, $stop, BookingStatus $bs): bool
+    {
+        if (! in_array($order->order_status, [
+            OrderStatus::Completed,
+            OrderStatus::Invoiced,
+            OrderStatus::Returned,
+        ], true)) {
+            return false;
+        }
+
+        if ($stop === null) {
+            return true;
+        }
+
+        return ! in_array($stop->route_stop_status, [
+            RouteStopStatus::Returned,
+            RouteStopStatus::Completed,
+        ], true);
+    }
+
+    private static function collectionScheduledDone(Booking $booking, BookingStatus $bs): bool
+    {
+        if ($booking->assigned_route_id !== null) {
+            return true;
+        }
+
+        return in_array($bs, [
+            BookingStatus::AssignedToRoute,
+            BookingStatus::Collected,
+            BookingStatus::InSharpening,
+            BookingStatus::QualityChecked,
+            BookingStatus::Returned,
+            BookingStatus::Completed,
+            BookingStatus::ConvertedToOrder,
+        ], true)
+            || (
+                $booking->confirmed_collection_date !== null
+                && ($booking->confirmed_time_window_start !== null || $booking->confirmed_time_window_end !== null)
+            );
     }
 
     private static function orderInSharpeningOrLater(?OrderStatus $status): bool

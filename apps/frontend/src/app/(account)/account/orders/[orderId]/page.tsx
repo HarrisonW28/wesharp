@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 import { CustomerOrderStatusBadge } from "@/components/orders/CustomerOrderStatusBadge";
 import { TenantFulfilmentUpdatesCard } from "@/components/orders/TenantFulfilmentUpdatesCard";
+import { CustomerActivityTimeline } from "@/components/account/CustomerActivityTimeline";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CustomerInvoiceStatusBadge } from "@/components/invoices/CustomerInvoiceStatusBadge";
@@ -251,6 +252,12 @@ export default function TenantOrderDetailPage() {
             fulfilment={o.fulfilment}
             customerMessages={o.customer_messages}
             photos={o.photos}
+          />
+
+          <CustomerActivityTimeline
+            title="What we’ve recorded"
+            emptyHint="Updates to this order — workshop progress, invoicing, and payments — show here in plain language."
+            items={o.activity_timeline ?? []}
           />
 
           <Card className="rounded-xl lg:col-span-3">

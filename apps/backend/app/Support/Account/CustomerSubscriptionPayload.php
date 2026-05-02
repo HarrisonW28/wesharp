@@ -9,6 +9,7 @@ use App\Models\SubscriptionPlan;
 use App\Services\Subscriptions\OrderSubscriptionCoverageService;
 use App\Services\Subscriptions\SubscriptionBillingPeriodService;
 use App\Support\Invoices\InvoiceJson;
+use App\Support\Portal\CustomerActivityTimelinePresenter;
 use App\Support\Invoices\InvoicePresentation;
 use App\Support\Money\MoneyFormatting;
 use Carbon\CarbonImmutable;
@@ -54,6 +55,7 @@ final class CustomerSubscriptionPayload
         $periodLedger = app(SubscriptionBillingPeriodService::class)->periodsWithUsageSummaries($sub, 6);
 
         return [
+            'activity_timeline' => CustomerActivityTimelinePresenter::forCompanySubscription($sub),
             'plan_name' => $plan !== null ? $plan->name : $sub->planName(),
             'status' => $sub->status?->value ?? (string) $sub->status,
             'status_label' => self::customerStatusLabel($sub),

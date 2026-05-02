@@ -2,26 +2,37 @@ import Link from "next/link";
 
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { Button } from "@/components/ui/button";
+import { fetchPublicSiteContent } from "@/lib/site-content/fetch-site-content";
 
-export default function ContactPage() {
+export const revalidate = 60;
+
+export default async function ContactPage() {
+  const site = await fetchPublicSiteContent();
+  const c = site.contact;
+  const email = c.support_email || "hello@wesharp.uk";
+  const phone = (c.support_phone ?? "").trim();
+
   return (
-    <MarketingArticle
-      showFooterCtas={false}
-      title="Contact"
-      lead="Tell us what you need — new site, urgent collection, or a question about coverage and pricing. We reply during business hours."
-    >
+    <MarketingArticle showFooterCtas={false} title={c.title} lead={c.lead}>
       <p>
         Email:&nbsp;
-        <a href="mailto:hello@wesharp.uk" className="font-medium text-foreground underline underline-offset-4">
-          hello@wesharp.uk
+        <a href={`mailto:${email}`} className="font-medium text-foreground underline underline-offset-4">
+          {email}
         </a>
       </p>
-      <p>
-        For the fastest route to a slot, include your postcode, roughly how many knives need attention, and when you need us.
-      </p>
+      {phone ? (
+        <p>
+          Phone:&nbsp;
+          <a href={`tel:${phone.replace(/\s+/g, "")}`} className="font-medium text-foreground underline underline-offset-4">
+            {phone}
+          </a>
+        </p>
+      ) : null}
+      <p>{c.hint_paragraph}</p>
+      <p className="text-sm text-muted-foreground">{site.business.hours_line}</p>
       <div className="pt-2">
         <Button className="rounded-lg" asChild>
-          <Link href="/book">Book a collection</Link>
+          <Link href="/book">{c.cta_book}</Link>
         </Button>
       </div>
     </MarketingArticle>

@@ -126,4 +126,14 @@ final class EvidencePhotoPolicy
 
         return (bool) config('wesharp_evidence.allow_customer_visible_photos', true);
     }
+
+    /** Upload or create with customer_visible visibility (same gate as {@see setCustomerVisible()}). */
+    public function chooseCustomerVisibleOnCreate(User $user): bool
+    {
+        if ($user->resolvedRole()->isCustomer()) {
+            return false;
+        }
+
+        return (bool) config('wesharp_evidence.allow_customer_visible_photos', true);
+    }
 }

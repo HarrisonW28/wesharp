@@ -25,7 +25,15 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/tables/DataTable";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -300,18 +308,30 @@ export default function AdminInvoicesPage() {
                 New invoice
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[min(90vh,calc(100dvh-2rem))] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create from order</DialogTitle>
+                <DialogTitle>Invoice from order</DialogTitle>
+                <DialogDescription>Pick one order — a draft invoice is created from its lines and totals.</DialogDescription>
               </DialogHeader>
               <OrderLookup label="Order" value={orderId} onChange={setOrderId} placeholder="Search by account or order…" />
               <DialogFooter className="gap-2">
-                <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-12 w-full sm:w-auto"
+                  onClick={() => setCreateOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button type="button" size="lg" disabled={createMutation.isPending} onClick={() => createMutation.mutate()}>
+                <Button
+                  type="button"
+                  size="lg"
+                  className="min-h-12 w-full sm:w-auto"
+                  disabled={createMutation.isPending}
+                  onClick={() => createMutation.mutate()}
+                >
                   {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
-                  Create
+                  Create draft
                 </Button>
               </DialogFooter>
             </DialogContent>

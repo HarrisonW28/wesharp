@@ -223,8 +223,8 @@ export function RouteStopEvidenceSection({
         Photos & evidence
       </div>
       <p className="mt-2 text-base text-slate-300 md:text-muted-foreground">
-        Timestamped images for collection, returns, or failed visits. Files stay private; customers only see photos you mark
-        visible.
+        Photos are optional unless ops settings require them for a step. Pick a file and upload with defaults, or open fine-tune
+        below. Customer-visible only when you choose that visibility.
       </p>
 
       <div className="mt-4 space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 md:border-border md:bg-muted/20">
@@ -261,80 +261,84 @@ export function RouteStopEvidenceSection({
           </div>
         ) : null}
 
-        <div>
-          <Label className="text-base">Category</Label>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="mt-2 h-12 rounded-xl text-base">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STOP_CATEGORIES.map((c) => (
-                <SelectItem key={c.value} value={c.value} className="text-base">
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <details className="rounded-xl border border-white/10 bg-white/[0.02] [&_summary::-webkit-details-marker]:hidden md:border-border">
+          <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-slate-200 md:text-foreground">
+            Fine-tune before upload — optional
+          </summary>
+          <div className="space-y-3 border-t border-white/10 px-3 pb-3 pt-3 md:border-border">
+            <div>
+              <Label className="text-base">Category</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="mt-2 h-12 rounded-xl text-base">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STOP_CATEGORIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value} className="text-base">
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {orderKnives.length > 0 ? (
-          <div>
-            <Label className="text-base">Link to knife (optional)</Label>
-            <Select
-              value={knifeId || "__none__"}
-              onValueChange={(v) => setKnifeId(v === "__none__" ? "" : v)}
-            >
-              <SelectTrigger className="mt-2 h-12 rounded-xl text-base">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__" className="text-base">
-                  Not linked to a blade line
-                </SelectItem>
-                {orderKnives.map((k) => (
-                  <SelectItem key={k.id} value={k.id} className="text-base">
-                    {k.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="mt-1.5 text-xs text-slate-400 md:text-muted-foreground">
-              Tie proof photos to a knife when the order is registered — helps workshop and customer timelines match up.
-            </p>
+            {orderKnives.length > 0 ? (
+              <div>
+                <Label className="text-base">Link to knife (optional)</Label>
+                <Select value={knifeId || "__none__"} onValueChange={(v) => setKnifeId(v === "__none__" ? "" : v)}>
+                  <SelectTrigger className="mt-2 h-12 rounded-xl text-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__" className="text-base">
+                      Not linked to a blade line
+                    </SelectItem>
+                    {orderKnives.map((k) => (
+                      <SelectItem key={k.id} value={k.id} className="text-base">
+                        {k.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1.5 text-xs text-slate-400 md:text-muted-foreground">
+                  Tie proof to a blade line when the order is registered — timelines stay aligned.
+                </p>
+              </div>
+            ) : null}
+
+            <div>
+              <Label htmlFor={`${idPrefix}-cap`} className="text-base">
+                Caption / notes (optional)
+              </Label>
+              <Input
+                id={`${idPrefix}-cap`}
+                className="mt-2 h-12 rounded-xl text-base"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Short description"
+              />
+            </div>
+
+            {allowCustomerVisible ? (
+              <div>
+                <Label className="text-base">Visibility</Label>
+                <Select value={visibility} onValueChange={setVisibility}>
+                  <SelectTrigger className="mt-2 h-12 rounded-xl text-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="internal_only" className="text-base">
+                      Internal only
+                    </SelectItem>
+                    <SelectItem value="customer_visible" className="text-base">
+                      Customer-visible
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-
-        <div>
-          <Label htmlFor={`${idPrefix}-cap`} className="text-base">
-            Caption / notes (optional)
-          </Label>
-          <Input
-            id={`${idPrefix}-cap`}
-            className="mt-2 h-12 rounded-xl text-base"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Short description"
-          />
-        </div>
-
-        {allowCustomerVisible ? (
-          <div>
-            <Label className="text-base">Visibility</Label>
-            <Select value={visibility} onValueChange={setVisibility}>
-              <SelectTrigger className="mt-2 h-12 rounded-xl text-base">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="internal_only" className="text-base">
-                  Internal only
-                </SelectItem>
-                <SelectItem value="customer_visible" className="text-base">
-                  Customer-visible
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        ) : null}
+        </details>
 
         {uploadError ? (
           <p className="text-sm font-medium text-amber-100 md:text-destructive" role="alert">
@@ -344,7 +348,7 @@ export function RouteStopEvidenceSection({
 
         <Button
           type="button"
-          className="h-12 w-full rounded-xl text-base font-semibold"
+          className="h-14 w-full rounded-xl text-base font-semibold"
           disabled={!draftFile || uploadMutation.isPending}
           onClick={() => uploadMutation.mutate()}
         >

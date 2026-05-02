@@ -120,6 +120,7 @@ final class AuditActionLabels
         'company_subscription.billing_period_renewed' => 'Subscription billing period renewed',
         'note.created' => 'Note',
         'demo.audit.event' => 'Demo audit event',
+        'site_content.updated' => 'Site content updated',
     ];
 
     public static function label(string $action): string

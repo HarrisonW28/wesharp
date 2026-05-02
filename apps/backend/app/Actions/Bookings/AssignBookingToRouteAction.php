@@ -30,6 +30,10 @@ final class AssignBookingToRouteAction
         ?array $confirmWindow = null,
     ): Booking {
         return DB::transaction(function () use ($booking, $route, $actor, $request, $requestedSequence, $confirmWindow): Booking {
+            if (in_array($booking->booking_status, [BookingStatus::Cancelled, BookingStatus::NoShow], true)) {
+                abort(422, 'Cancelled or no-show bookings cannot be assigned to a route.');
+            }
+
             $routeDateStr = optional($route->scheduled_date)?->format('Y-m-d');
 
             if ($confirmWindow !== null) {

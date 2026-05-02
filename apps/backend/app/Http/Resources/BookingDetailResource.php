@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Support\Audit\AuditLogPresenter;
 use App\Support\Money\MoneyFormatting;
+use App\Support\Workflow\StaffWorkflowNextActions;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -104,6 +105,7 @@ final class BookingDetailResource extends JsonResource
             ]),
             'status_timeline' => $timeline,
             'audit_timeline' => $timeline,
+            'staff_next_actions' => StaffWorkflowNextActions::forBooking($b),
         ];
     }
 }

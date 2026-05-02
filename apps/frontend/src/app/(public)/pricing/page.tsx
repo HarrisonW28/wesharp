@@ -3,22 +3,22 @@ import Link from "next/link";
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { PRICING } from "@/config/pricing";
 import { formatGBP } from "@/lib/format/money";
+import { fetchPublicSiteContent } from "@/lib/site-content/fetch-site-content";
 
-export default function PricingPage() {
+export const revalidate = 60;
+
+export default async function PricingPage() {
+  const site = await fetchPublicSiteContent();
+  const p = site.pricing_page;
   const paygFromMinor = Math.min(...PRICING.tiers.map((t) => t.unitAmountMinor));
 
   return (
-    <MarketingArticle
-      title="Pricing"
-      lead="Every kitchen is different — we price by volume, how often we visit, and turnaround. Figures below are guide rates in GBP; we confirm a written quote before you commit."
-    >
+    <MarketingArticle title={p.title} lead={p.lead}>
       <div className="rounded-2xl border bg-muted/40 p-6 text-foreground">
         <div className="grid gap-6 md:grid-cols-2">
           <div>
             <div className="text-sm font-semibold">Pay-as-you-go (guide)</div>
-            <div className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">
-              From {formatGBP(paygFromMinor)}
-            </div>
+            <div className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">From {formatGBP(paygFromMinor)}</div>
             <p className="mt-2 text-xs text-muted-foreground">Per knife on a typical ad-hoc collection — confirmed on quote.</p>
             <ul className="mt-4 space-y-1.5 border-t border-border/60 pt-4 text-xs text-muted-foreground">
               {PRICING.tiers.map((t) => (

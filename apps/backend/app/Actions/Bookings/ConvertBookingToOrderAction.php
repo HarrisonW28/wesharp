@@ -25,6 +25,10 @@ final class ConvertBookingToOrderAction
     public function execute(Booking $booking, ?Authenticatable $actor, ?Request $request): Order
     {
         $order = DB::transaction(function () use ($booking, $actor, $request): Order {
+            if (in_array($booking->booking_status, [BookingStatus::Cancelled, BookingStatus::NoShow], true)) {
+                abort(422, 'Cancelled or no-show bookings cannot be converted to an order.');
+            }
+
             if ($booking->orders()->exists()) {
                 abort(422, 'An order already exists for this booking.');
             }

@@ -40,10 +40,12 @@ use App\Policies\WebhookInboxPolicy;
 use App\Services\Clerk\ClerkJwtVerifier;
 use App\Services\Clerk\ClerkUserSynchronizer;
 use App\Services\Payments\StripePaymentProvider;
+use App\Services\SiteContent\SiteContentService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -56,7 +58,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ClerkJwtVerifier::class);
         $this->app->singleton(ClerkUserSynchronizer::class);
         $this->app->singleton(StripePaymentProvider::class);
-        $this->app->bind(PaymentProviderInterface::class, StripePaymentProvider::class);
+        $this->app->singleton(PaymentProviderInterface::class, StripePaymentProvider::class);
+        $this->app->singleton(SiteContentService::class);
     }
 
     /**
@@ -64,8 +67,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        View::composer('emails.notifications.*', static function ($view): void {
+            $line = app(SiteContentService::class)->resolved()['email']['footer_line'] ?? '';
+            $view->with('siteEmailFooterLine', is_string($line) ? $line : '');
+        });
+
         RateLimiter::for('booking-enquiries', static function (Request $request): Limit {
             return Limit::perMinute(10)->by($request->ip());
+        });
+
+        RateLimiter::for('site-content-public', static function (Request $request): Limit {
+            return Limit::perMinute(120)->by($request->ip());
+        });
+
+        RateLimiter::for('tracking-public', static function (Request $request): Limit {
+            return Limit::perMinute(60)->by($request->ip());
         });
 
         RateLimiter::for('provider-webhooks', static function (Request $request): Limit {

@@ -172,6 +172,7 @@ export const BookingDetailSchema = z.object({
   ),
   status_timeline: z.array(BookingTimelineItemSchema),
   audit_timeline: z.array(BookingTimelineItemSchema).optional(),
+  staff_next_actions: z.array(z.string()).optional(),
 });
 
 export const BookingDetailResponseSchema = z

@@ -94,7 +94,9 @@ final class RouteController extends Controller
         }
 
         $driverUserId = trim((string) $request->query('driver_user_id', ''));
-        if ($driverUserId !== '' && ctype_digit($driverUserId)) {
+        if (strtolower($driverUserId) === 'unassigned') {
+            $base->whereNull('driver_user_id');
+        } elseif ($driverUserId !== '' && ctype_digit($driverUserId)) {
             $base->where('driver_user_id', (int) $driverUserId);
         }
 

@@ -2,7 +2,11 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 
-import { ADMIN_NAV, ROUTE_MANAGER_NAV, type NavItem } from "@/config/navigation";
+import {
+  ADMIN_NAV_SECTIONS,
+  ROUTE_MANAGER_NAV_SECTIONS,
+  filterNavSections,
+} from "@/config/navigation";
 
 import { Toaster } from "sonner";
 
@@ -16,10 +20,6 @@ import { TopBar } from "@/components/navigation/TopBar";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
 
-function filterNav(items: NavItem[], permissions: Set<string>): NavItem[] {
-  return items.filter((item) => !item.permission || permissions.has(item.permission));
-}
-
 export function AdminShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { data } = useBackendMe();
@@ -27,8 +27,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const permissions = useMemo(() => new Set(data?.data?.permissions ?? []), [data?.data?.permissions]);
 
   const role = data?.data?.user.role;
-  const navItems =
-    role === "route_manager" ? filterNav(ROUTE_MANAGER_NAV, permissions) : filterNav(ADMIN_NAV, permissions);
+  const navSections = useMemo(
+    () =>
+      filterNavSections(
+        role === "route_manager" ? ROUTE_MANAGER_NAV_SECTIONS : ADMIN_NAV_SECTIONS,
+        permissions,
+      ),
+    [role, permissions],
+  );
 
   return (
     <StaffRouteGate>
@@ -39,7 +45,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <div className="flex h-14 items-center border-b px-4">
               <WeSharpLogo className="h-10" />
             </div>
-            <SidebarNav items={navItems} />
+            <SidebarNav sections={navSections} />
             <div className="mt-auto border-t p-4 text-xs text-muted-foreground">
               Manchester · Liverpool coverage · Internal console
             </div>
@@ -57,7 +63,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="app-chrome print:hidden">
-            <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} items={navItems} />
+            <MobileDrawer
+              open={drawerOpen}
+              onOpenChange={setDrawerOpen}
+              sections={navSections}
+              brandSuffix="Ops"
+              quickLinks={[{ href: "/admin/dashboard", label: "Dashboard home" }]}
+            />
           </div>
         </div>
       </ShellPermissionBoundary>

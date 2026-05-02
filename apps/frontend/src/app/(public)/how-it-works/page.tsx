@@ -1,47 +1,47 @@
 import Link from "next/link";
 
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
+import { fetchPublicSiteContent } from "@/lib/site-content/fetch-site-content";
 
-export default function HowItWorksPage() {
+export const revalidate = 60;
+
+export default async function HowItWorksPage() {
+  const site = await fetchPublicSiteContent();
+  const h = site.how_it_works;
+
   return (
-    <MarketingArticle
-      title="How it works"
-      lead="You book a collection. We collect your knives, sharpen and inspect them in our workshop, then return them — with plain-English updates in your account so you always know what’s happening."
-    >
+    <MarketingArticle title={h.title} lead={h.lead}>
       <ol className="list-decimal space-y-4 pl-5">
-        <li>
-          <strong className="font-medium text-foreground">Book</strong> —{" "}
-          <Link href="/book" className="font-medium text-foreground underline underline-offset-4">
-            Request a collection
-          </Link>
-          . No account is required for your first enquiry.
-        </li>
-        <li>
-          <strong className="font-medium text-foreground">Collect</strong> — We arrive in an agreed window, log each blade, and
-          transport everything safely to our workshop.
-        </li>
-        <li>
-          <strong className="font-medium text-foreground">Sharpen &amp; check</strong> — Professional edges and a quality pass
-          before anything leaves the workshop.
-        </li>
-        <li>
-          <strong className="font-medium text-foreground">Return</strong> — Your knives come back ready to use. With an
-          account you can follow bookings and orders — and see customer-visible photos when they’re part of your programme.
-        </li>
+        {(h.steps ?? []).map((step, idx) => (
+          <li key={`${step.title}-${idx}`}>
+            <strong className="font-medium text-foreground">{step.title}</strong>
+            {" — "}
+            {idx === 0 ? (
+              <>
+                <Link href="/book" className="font-medium text-foreground underline underline-offset-4">
+                  Request a collection
+                </Link>
+                . {step.body}
+              </>
+            ) : (
+              step.body
+            )}
+          </li>
+        ))}
       </ol>
       <p>
-        Interested in rolling visits? Read{" "}
+        {h.subscriptions_prompt}{" "}
         <Link href="/subscriptions" className="font-medium text-foreground underline underline-offset-4">
-          subscriptions &amp; programmes
+          {h.subscriptions_link_label}
         </Link>
         .
       </p>
       <p>
-        Already a customer?{" "}
+        {h.customer_signin_prompt}{" "}
         <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
-          Sign in
+          {h.customer_signin_link_label}
         </Link>{" "}
-        to manage bookings, orders, and invoices.
+        {h.customer_signin_suffix}
       </p>
     </MarketingArticle>
   );

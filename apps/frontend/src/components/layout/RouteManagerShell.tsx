@@ -1,15 +1,20 @@
 "use client";
 
+"use client";
+
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 
 import Link from "next/link";
 
 import { Bell } from "lucide-react";
 
-import { ROUTE_MANAGER_NAV } from "@/config/navigation";
+import { ROUTE_MANAGER_BOTTOM_NAV, filterNav } from "@/config/navigation";
 
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { Button } from "@/components/ui/button";
+
+import { useBackendMe } from "@/hooks/use-backend-me";
 
 export function RouteManagerShell({
   title,
@@ -23,6 +28,10 @@ export function RouteManagerShell({
   stickyFooter?: ReactNode;
   children: ReactNode;
 }) {
+  const { data } = useBackendMe();
+  const permissions = useMemo(() => new Set(data?.data?.permissions ?? []), [data?.data?.permissions]);
+  const bottomItems = useMemo(() => filterNav(ROUTE_MANAGER_BOTTOM_NAV, permissions), [permissions]);
+
   return (
     <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-x-hidden bg-slate-950 text-slate-50 md:max-w-none md:bg-background md:text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/85 backdrop-blur-xl md:border-border md:bg-background/85 md:text-foreground">
@@ -67,7 +76,7 @@ export function RouteManagerShell({
       </div>
 
       <div className="md:hidden">
-        <MobileBottomNav items={ROUTE_MANAGER_NAV} />
+        <MobileBottomNav items={bottomItems} />
       </div>
 
       <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-1/2 hidden -translate-x-1/2 md:block">

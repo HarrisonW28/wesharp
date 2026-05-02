@@ -60,7 +60,7 @@ final class EvidencePhotoController extends Controller
             ? $stop->booking->orders()->orderBy('created_at')->value('id')
             : null;
 
-        $visibility = $this->normalizeVisibility($request->input('visibility'));
+        $visibility = $this->visibilityForCreate($request);
 
         /** @phpstan-ignore-next-line */
         $knifeId = isset($data['knife_id']) && $data['knife_id'] !== '' ? $data['knife_id'] : null;
@@ -119,7 +119,7 @@ final class EvidencePhotoController extends Controller
             'byte_size' => (int) $file->getSize(),
         ]);
 
-        $visibility = $this->normalizeVisibility($request->input('visibility'));
+        $visibility = $this->visibilityForCreate($request);
 
         /** @phpstan-ignore-next-line */
         $knifeId = isset($data['knife_id']) && $data['knife_id'] !== '' ? $data['knife_id'] : null;
@@ -182,7 +182,7 @@ final class EvidencePhotoController extends Controller
             'byte_size' => (int) $file->getSize(),
         ]);
 
-        $visibility = $this->normalizeVisibility($request->input('visibility'));
+        $visibility = $this->visibilityForCreate($request);
         $orderId = $knife->order_id;
 
         /** @var EvidencePhoto $photo */
@@ -242,7 +242,7 @@ final class EvidencePhotoController extends Controller
             'byte_size' => (int) $file->getSize(),
         ]);
 
-        $visibility = $this->normalizeVisibility($request->input('visibility'));
+        $visibility = $this->visibilityForCreate($request);
         $orderId = $damageReport->order_id ?? $damageReport->knife?->order_id;
         $knifeId = (string) $damageReport->knife_id;
 
@@ -324,6 +324,19 @@ final class EvidencePhotoController extends Controller
         $photo->load(['uploadedBy:id,name']);
 
         return ApiResponses::success(EvidencePhotoJson::adminRow($photo));
+    }
+
+    private function visibilityForCreate(Request $request): EvidencePhotoVisibility
+    {
+        $raw = $request->input('visibility');
+        if (is_string($raw) && $raw !== '') {
+            $parsed = EvidencePhotoVisibility::tryFrom($raw);
+            if ($parsed === EvidencePhotoVisibility::CustomerVisible) {
+                $this->authorize('chooseCustomerVisibleOnCreate', EvidencePhoto::class);
+            }
+        }
+
+        return $this->normalizeVisibility(is_string($raw) ? $raw : null);
     }
 
     public function showFile(Request $request, EvidencePhoto $photo): StreamedResponse

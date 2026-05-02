@@ -229,7 +229,7 @@ export default function RoutesListPage() {
             <Input
               id="r-driver"
               inputMode="numeric"
-              placeholder="Optional"
+              placeholder="Numeric id or unassigned"
               className="bg-white/5 md:bg-background"
               defaultValue={searchParams.get("driver_user_id") ?? ""}
               onBlur={(e) => {

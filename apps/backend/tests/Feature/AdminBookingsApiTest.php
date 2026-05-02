@@ -101,6 +101,45 @@ final class AdminBookingsApiTest extends TestCase
         self::assertSame((string) $route->id, Booking::query()->find($booking->id)?->assigned_route_id);
     }
 
+    public function test_assign_route_rejects_cancelled_booking(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+
+        $route = OperationalRoute::query()->firstOrFail();
+        $booking = Booking::factory()->create([
+            'company_id' => Company::query()->first()->id,
+            'company_location_id' => CompanyLocation::query()->first()->id,
+            'booking_status' => BookingStatus::Cancelled,
+            'scheduled_date' => $route->scheduled_date->format('Y-m-d'),
+            'service_type' => ServiceType::Collection,
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings/'.$booking->id.'/assign-route', [
+                'route_id' => $route->id,
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Cancelled or no-show bookings cannot be assigned to a route.');
+    }
+
+    public function test_convert_to_order_rejects_cancelled_booking(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+
+        $booking = Booking::factory()->create([
+            'company_id' => Company::query()->first()->id,
+            'company_location_id' => CompanyLocation::query()->first()->id,
+            'booking_status' => BookingStatus::Cancelled,
+            'scheduled_date' => now()->addWeek()->toDateString(),
+            'service_type' => ServiceType::Collection,
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings/'.$booking->id.'/convert-to-order', [])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Cancelled or no-show bookings cannot be converted to an order.');
+    }
+
     public function test_assign_route_accepts_sequence_and_optional_confirm_window(): void
     {
         $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();

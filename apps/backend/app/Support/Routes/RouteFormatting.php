@@ -4,10 +4,12 @@ namespace App\Support\Routes;
 
 use App\Enums\RouteStopStatus;
 use App\Http\Resources\BookingResource;
+use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\CustomerPortalUpdate;
 use App\Models\OperationalRoute;
 use App\Models\RouteStop;
+use App\Support\Audit\AuditLogPresenter;
 use App\Support\Evidence\EvidencePhotoJson;
 use App\Support\Knives\KnifeJson;
 use App\Support\Portal\PortalCustomerUpdateJson;
@@ -112,6 +114,14 @@ final class RouteFormatting
             'stops.booking.orders:id,booking_id,total_pence,currency',
         ]);
 
+        $routeAudits = AuditLog::query()
+            ->with('actor:id,name')
+            ->where('auditable_type', OperationalRoute::class)
+            ->where('auditable_id', $route->id)
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
+
         return [
             'id' => (string) $route->id,
             'name' => $route->name,
@@ -127,6 +137,7 @@ final class RouteFormatting
             ] : null,
             'stops' => $route->stops->map(fn (RouteStop $s) => self::stopSummary($s))->values()->all(),
             'progress' => self::routeProgress($route),
+            'audit_timeline' => AuditLogPresenter::mapTimeline($routeAudits, includeIp: true),
         ];
     }
 
@@ -221,6 +232,14 @@ final class RouteFormatting
         $booking = $stop->booking;
         $order = $booking?->orders->first();
 
+        $stopAudits = AuditLog::query()
+            ->with('actor:id,name')
+            ->where('auditable_type', RouteStop::class)
+            ->where('auditable_id', $stop->id)
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
+
         return [
             'id' => (string) $stop->id,
             'sequence' => $stop->sequence,
@@ -302,6 +321,7 @@ final class RouteFormatting
             'customer_portal_updates' => $portalUpdates->map(
                 static fn ($u): array => PortalCustomerUpdateJson::adminRow($u)
             )->values()->all(),
+            'audit_timeline' => AuditLogPresenter::mapTimeline($stopAudits, includeIp: true),
         ];
     }
 

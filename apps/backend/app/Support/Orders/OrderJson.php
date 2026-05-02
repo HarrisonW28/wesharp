@@ -19,8 +19,10 @@ use App\Support\Evidence\EvidencePhotoJson;
 use App\Support\Knives\KnifeJson;
 use App\Support\Knives\KnifeStatusPresentation;
 use App\Support\Money\MoneyFormatting;
+use App\Support\Portal\CustomerActivityTimelinePresenter;
 use App\Support\Portal\PortalCustomerUpdateJson;
 use App\Support\Portal\PortalFulfilmentPresenter;
+use App\Support\Workflow\StaffWorkflowNextActions;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -203,6 +205,8 @@ final class OrderJson
         } else {
             $payload['customer_messages'] = [];
         }
+
+        $payload['activity_timeline'] = CustomerActivityTimelinePresenter::forOrder($order);
 
         return $payload;
     }
@@ -544,6 +548,7 @@ final class OrderJson
             ? (int) $order->manual_charge_subtotal_pence
             : null;
         $payload['manual_charge_reason'] = $order->manual_charge_reason;
+        $payload['staff_next_actions'] = StaffWorkflowNextActions::forOrder($order);
 
         return $payload;
     }

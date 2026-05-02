@@ -48,7 +48,12 @@ export function AccountShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="app-chrome print:hidden">
-            <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} items={navItems} />
+            <MobileDrawer
+              open={drawerOpen}
+              onOpenChange={setDrawerOpen}
+              items={navItems}
+              quickLinks={[{ href: "/account/dashboard", label: "Account home" }]}
+            />
           </div>
         </div>
       </ShellPermissionBoundary>

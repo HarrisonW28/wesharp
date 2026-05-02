@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomerInvoiceStatusBadge } from "@/components/invoices/CustomerInvoiceStatusBadge";
+import { CustomerActivityTimeline } from "@/components/account/CustomerActivityTimeline";
 
 function invoiceTitle(inv: {
   display_reference?: string | null;
@@ -156,6 +157,13 @@ export default function AccountSubscriptionPage() {
               </CardContent>
             </Card>
           </div>
+
+          <CustomerActivityTimeline
+            className="lg:col-span-3"
+            title="Programme activity"
+            emptyHint="When your plan changes or renews, you’ll see it listed here."
+            items={sub.activity_timeline ?? []}
+          />
 
           <Card className="rounded-xl border shadow-sm">
             <CardHeader>

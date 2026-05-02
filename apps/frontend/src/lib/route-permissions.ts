@@ -12,6 +12,9 @@ export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/analytics")) {
     return "analytics.view";
   }
+  if (pathname.startsWith("/admin/work-queue")) {
+    return "dashboard.view";
+  }
   if (pathname.startsWith("/admin/crm")) {
     return "companies.view";
   }

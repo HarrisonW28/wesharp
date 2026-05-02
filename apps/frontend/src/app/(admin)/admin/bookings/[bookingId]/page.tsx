@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, ListChecks } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,7 @@ import { RouteLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -578,6 +579,20 @@ export default function AdminBookingDetailPage() {
           </div>
         }
       />
+
+      {b.staff_next_actions && b.staff_next_actions.length > 0 ? (
+        <Alert className="border-primary/25 bg-primary/5">
+          <ListChecks className="h-4 w-4" aria-hidden />
+          <AlertTitle>Next steps</AlertTitle>
+          <AlertDescription>
+            <ul className="mt-2 list-inside list-disc space-y-1">
+              {b.staff_next_actions.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge kind="booking" status={b.status} className="text-xs" />

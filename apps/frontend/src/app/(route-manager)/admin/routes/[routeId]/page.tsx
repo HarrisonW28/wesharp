@@ -17,6 +17,7 @@ import { PaginatedBookingsResponseSchema } from "@/lib/api/admin-bookings-schema
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { useBackendMe } from "@/hooks/use-backend-me";
 
+import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { RouteManagerShell } from "@/components/layout/RouteManagerShell";
 import { MobileNextStopBanner } from "@/components/route-manager/MobileNextStopBanner";
 import { MobileRouteProgress } from "@/components/route-manager/MobileRouteProgress";
@@ -563,6 +564,17 @@ export default function RouteDetailPage() {
             );
           })}
         </ol>
+
+        <Card className="border-white/10 bg-white/[0.04] p-4 md:border-border md:bg-card">
+          <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Activity</div>
+          <div className="mt-3 text-sm text-slate-200 md:text-foreground">
+            <AuditTimeline
+              items={((route as { audit_timeline?: AuditTimelineRow[] }).audit_timeline ?? [])}
+              emptyLabel="No route activity recorded yet."
+              showPayload={false}
+            />
+          </div>
+        </Card>
       </div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

@@ -31,6 +31,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
 import { AdminQuickActionsCard } from "@/components/admin/AdminQuickActionsCard";
+import { WorkQueueAttentionCard } from "@/components/admin/WorkQueueAttentionCard";
 import { ChartCard } from "@/components/cards/ChartCard";
 import { StatCard } from "@/components/cards/StatCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -142,6 +143,8 @@ export default function AdminDashboardPage() {
       />
 
       <AdminQuickActionsCard />
+
+      <WorkQueueAttentionCard />
 
       {fault ? (
         <Alert variant="destructive">

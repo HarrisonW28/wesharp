@@ -71,6 +71,12 @@ export const TenantSubscriptionInvoiceRowSchema = z.object({
   formatted_total: z.string(),
 });
 
+/** Customer portal activity / audit-derived milestones (safe fields only). */
+export const CustomerPortalActivityStepSchema = z.object({
+  at: z.string().nullable(),
+  label: z.string(),
+});
+
 /** Full portal subscription payload (dashboard, settings, subscription page). */
 export const TenantSubscriptionDetailSchema = TenantSubscriptionSummarySchema.extend({
   included_services: z.string().nullable().optional(),
@@ -93,6 +99,7 @@ export const TenantSubscriptionDetailSchema = TenantSubscriptionSummarySchema.ex
     )
     .optional(),
   recent_invoices: z.array(TenantSubscriptionInvoiceRowSchema).optional(),
+  activity_timeline: z.array(CustomerPortalActivityStepSchema).optional(),
 }).passthrough();
 
 export const DashboardResponseSchema = z.object({
@@ -246,6 +253,7 @@ export const AccountBookingDetailDataSchema = BookingRowSchema.extend({
     .optional(),
   fulfilment: AccountFulfilmentSchema.optional(),
   customer_messages: z.array(AccountCustomerMessageSchema).optional(),
+  activity_timeline: z.array(CustomerPortalActivityStepSchema).optional(),
 }).passthrough();
 
 export const AccountBookingDetailResponseSchema = z.object({
@@ -380,6 +388,7 @@ export const AccountOrderDetailDataSchema = OrderRowTenantSchema.extend({
     })
     .nullable()
     .optional(),
+  activity_timeline: z.array(CustomerPortalActivityStepSchema).optional(),
 }).passthrough();
 
 export const AccountOrderDetailResponseSchema = z.object({

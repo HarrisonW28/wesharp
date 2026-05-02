@@ -26,9 +26,11 @@ use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\ReportingController;
 use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\RouteStopController;
+use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserDirectoryController;
 use App\Http\Controllers\Admin\WebhookInboxController;
+use App\Http\Controllers\Admin\WorkQueueController;
 use App\Http\Controllers\Api\Account\AccountBookingController;
 use App\Http\Controllers\Api\Account\AccountDashboardController;
 use App\Http\Controllers\Api\Account\AccountInvoiceController;
@@ -44,11 +46,23 @@ use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\TenantSmokeController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\Public\PublicBookingEnquiryController;
+use App\Http\Controllers\Public\PublicSiteContentController;
+use App\Http\Controllers\Public\PublicTrackingController;
 use App\Http\Controllers\Webhooks\ClerkWebhookController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('health', HealthController::class)->name('api.health');
+
+Route::prefix('public')->middleware('throttle:site-content-public')->group(function (): void {
+    Route::get('site-content', [PublicSiteContentController::class, 'show'])->name('api.public.site_content.show');
+});
+
+Route::prefix('public')->middleware('throttle:tracking-public')->group(function (): void {
+    Route::get('track/{token}', [PublicTrackingController::class, 'show'])
+        ->where('token', '[A-Za-z0-9_-]+')
+        ->name('api.public.track.show');
+});
 
 /** Tenant portal — Bearer + EnsureTenantCustomer + per-route permission belt (policies retain company scope). */
 Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (): void {
@@ -58,6 +72,7 @@ Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (
     Route::middleware('permission:bookings.view')->get('bookings', [AccountBookingController::class, 'index'])->name('api.account.bookings.index');
     Route::middleware('permission:bookings.create')->post('bookings', [AccountBookingController::class, 'store'])->name('api.account.bookings.store');
     Route::middleware('permission:bookings.view')->get('bookings/{booking}', [AccountBookingController::class, 'show'])->whereUuid('booking')->name('api.account.bookings.show');
+    Route::middleware('permission:bookings.view')->get('bookings/{booking}/tracking-link', [AccountBookingController::class, 'trackingLink'])->whereUuid('booking')->name('api.account.bookings.tracking_link');
     Route::middleware('permission:bookings.cancel')->post('bookings/{booking}/cancel', [AccountBookingController::class, 'cancel'])->whereUuid('booking')->name('api.account.bookings.cancel');
 
     Route::middleware('permission:orders.view')->get('orders', [AccountOrderController::class, 'index'])->name('api.account.orders.index');
@@ -106,6 +121,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
         Route::get('operations', [AnalyticsController::class, 'operations'])->name('api.admin.analytics.operations');
     });
 
+    Route::middleware('permission:dashboard.view')->get('work-queue', [WorkQueueController::class, 'index'])->name('api.admin.work_queue.index');
+
     Route::middleware('permission:audit_logs.view')->get('audit-logs', [AuditLogController::class, 'index'])->name('api.admin.audit_logs.index');
 
     Route::middleware('permission:audit_logs.view')->get('webhooks/inbox', [WebhookInboxController::class, 'index'])->name('api.admin.webhooks.inbox.index');
@@ -118,6 +135,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
         Route::get('notifications/settings', [NotificationAdminSettingController::class, 'show'])->name('api.admin.notifications.settings.show');
         Route::put('notifications/settings', [NotificationAdminSettingController::class, 'update'])->name('api.admin.notifications.settings.update');
         Route::get('notifications/email-preview', [NotificationEmailPreviewController::class, 'show'])->name('api.admin.notifications.email_preview.show');
+        Route::get('site-content', [SiteContentController::class, 'show'])->name('api.admin.site_content.show');
+        Route::put('site-content', [SiteContentController::class, 'update'])->name('api.admin.site_content.update');
     });
 
     Route::middleware('permission:subscriptions.view')->prefix('subscription-plans')->group(function (): void {
@@ -159,6 +178,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:subscriptions.view')->get('subscription-billing/dashboard', [AdminSubscriptionDashboardController::class, 'index'])->name('api.admin.subscription_billing.dashboard');
     Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscription-billing-periods', [CompanySubscriptionController::class, 'billingPeriods'])->whereUuid('company')->name('api.admin.companies.subscription_billing_periods.index');
     Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscriptions', [CompanySubscriptionController::class, 'index'])->whereUuid('company')->name('api.admin.companies.subscriptions.index');
+    Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscriptions/{subscription}/activity', [CompanySubscriptionController::class, 'activity'])->whereUuid(['company', 'subscription'])->name('api.admin.companies.subscriptions.activity');
     Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscription-usage', [CompanySubscriptionController::class, 'usage'])->whereUuid('company')->name('api.admin.companies.subscription_usage');
     Route::middleware('permission:invoices.create')->post('companies/{company}/subscriptions/{subscription}/invoice-draft', [CompanySubscriptionController::class, 'generateInvoiceDraft'])
         ->whereUuid(['company', 'subscription'])

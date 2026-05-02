@@ -384,7 +384,7 @@ End with:
 - **Deployment checklist / rollback / smoke / launch blockers:** see **§§1–7** in that document; **verdict** in **§8**.
 - **Launch blockers (repo):** template table only — fill with real IDs before go-live (`LB-1` examples are placeholders).
 - **Production readiness verdict:** *Documented process ready; operational sign-off pending team completion of §6–8 with real environments.*
-- **Next:** Sprint **12.8** (final production readiness QA).
+- **Next:** Completed — **§ Sprint 12.8 — Done** at end of this file.
 
 ---
 
@@ -543,3 +543,12 @@ At the end, provide:
 - post-launch backlog
 - production risks
 - final production readiness verdict: READY / NOT READY
+
+### Sprint 12.8 — Done (implementation summary)
+
+- **Deliverable:** `docs/roadmap/sprint-12.8-qa-report.md` — journey mapping to PHPUnit/Vitest/build; **243** backend + **10** Vitest + **typecheck/lint/build** green; no `dd`/`dump`/`migrate:fresh` in app sources; deployment docs cross-checked.
+- **Launch blockers found/fixed:** **None** (no code changes required).
+- **Explicitly deferred (pre-cutover):** live browser sign-up, real mobile hardware, live SMTP — same as 12.3; run **`production-deployment-readiness.md`** smoke on staging before prod.
+- **Post-launch backlog / risks:** See **§5–6** in `sprint-12.8-qa-report.md`.
+- **Final verdict:** **READY** (launch candidate from code + CI; operational sign-off per runbook).
+- **Sprint 12:** Complete through **12.8**.

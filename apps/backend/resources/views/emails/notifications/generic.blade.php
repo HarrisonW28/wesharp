@@ -35,7 +35,7 @@
         @endif
       </div>
       <p style="margin:16px 0 0 0;font-size:12px;color:#6b7280;text-align:center;">
-        {{ config('app.name', 'WeSharp') }}
+        {{ config('app.name', 'WeSharp') }}@if(!empty($siteEmailFooterLine))<br /><span style="display:block;margin-top:6px;">{{ $siteEmailFooterLine }}</span>@endif
       </p>
     </div>
   </body>

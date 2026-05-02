@@ -9,6 +9,7 @@ use App\Http\Requests\CancelBookingRequest;
 use App\Models\Booking;
 use App\Support\ApiResponses;
 use App\Support\Portal\PortalBookingPayload;
+use App\Support\Portal\BookingTrackingToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -54,6 +55,23 @@ final class AccountBookingController extends TenantAccountController
         $this->authorize('view', $booking);
 
         return ApiResponses::success(PortalBookingPayload::detail($request, $booking));
+    }
+
+    public function trackingLink(Request $request, Booking $booking): JsonResponse
+    {
+        $this->authorize('view', $booking);
+
+        if ((string) $booking->company_id !== $this->tenantCompanyId($request)) {
+            abort(403);
+        }
+
+        $token = BookingTrackingToken::mint($booking);
+        $base = rtrim((string) config('wesharp.customer_portal_base_url'), '/');
+        $path = '/track/'.$token;
+
+        return ApiResponses::success([
+            'tracking_url' => $base !== '' ? $base.$path : $path,
+        ]);
     }
 
     public function cancel(CancelBookingRequest $request, Booking $booking, CancelBookingAction $cancelBookingAction): JsonResponse

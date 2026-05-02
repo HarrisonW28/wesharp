@@ -15,6 +15,7 @@ use App\Http\Requests\Admin\ReactivateCompanySubscriptionRequest;
 use App\Http\Requests\Admin\RenewCompanySubscriptionBillingPeriodRequest;
 use App\Http\Requests\Admin\UpdateCompanySubscriptionBillingContactRequest;
 use App\Http\Resources\CompanySubscriptionResource;
+use App\Models\AuditLog;
 use App\Models\Company;
 use App\Models\CompanySubscription;
 use App\Models\Invoice;
@@ -26,6 +27,7 @@ use App\Services\Subscriptions\CompanySubscriptionProvisioningService;
 use App\Services\Subscriptions\OrderSubscriptionCoverageService;
 use App\Services\Subscriptions\SubscriptionBillingPeriodService;
 use App\Support\ApiResponses;
+use App\Support\Audit\AuditLogPresenter;
 use App\Support\Invoices\InvoiceJson;
 use App\Support\Permissions;
 use Carbon\CarbonImmutable;
@@ -58,6 +60,27 @@ final class CompanySubscriptionController extends Controller
 
         return ApiResponses::success([
             'items' => CompanySubscriptionResource::collection($items),
+        ]);
+    }
+
+    public function activity(Request $request, Company $company, CompanySubscription $subscription): JsonResponse
+    {
+        if ((string) $subscription->company_id !== (string) $company->id) {
+            abort(404);
+        }
+
+        $this->authorize('view', $subscription);
+
+        $audits = AuditLog::query()
+            ->with('actor:id,name')
+            ->where('auditable_type', CompanySubscription::class)
+            ->where('auditable_id', $subscription->id)
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
+
+        return ApiResponses::success([
+            'items' => AuditLogPresenter::mapTimeline($audits, includeIp: true),
         ]);
     }
 

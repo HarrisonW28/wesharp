@@ -8,6 +8,7 @@ use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Models\CustomerPortalUpdate;
 use App\Policies\BookingPolicy;
+use App\Support\Portal\CustomerActivityTimelinePresenter;
 use Illuminate\Http\Request;
 
 final class PortalBookingPayload
@@ -91,6 +92,7 @@ final class PortalBookingPayload
         }
 
         return array_merge($compact, [
+            'activity_timeline' => CustomerActivityTimelinePresenter::forBooking($booking),
             'company' => $booking->company ? [
                 'id' => (string) $booking->company->id,
                 'name' => $booking->company->name,
@@ -124,5 +126,46 @@ final class PortalBookingPayload
             'fulfilment' => $fulfilment,
             'customer_messages' => $customerMessages,
         ]);
+    }
+
+    /**
+     * Guest-safe booking detail for the public tracking API (no entity UUIDs).
+     *
+     * @return array<string, mixed>
+     */
+    public static function publicTracking(Request $request, Booking $booking): array
+    {
+        $data = self::detail($request, $booking);
+
+        foreach (['id', 'company_id', 'location_id', 'contact_id', 'assigned_route_id'] as $key) {
+            unset($data[$key]);
+        }
+
+        unset($data['assigned_route']);
+
+        if (isset($data['company']) && is_array($data['company'])) {
+            unset($data['company']['id']);
+        }
+
+        if (isset($data['location']) && is_array($data['location'])) {
+            unset($data['location']['id']);
+        }
+
+        if (isset($data['contact']) && is_array($data['contact'])) {
+            unset($data['contact']['id']);
+        }
+
+        if (isset($data['orders']) && is_array($data['orders'])) {
+            $data['orders'] = array_values(array_map(static function (array $row): array {
+                unset($row['id']);
+
+                return $row;
+            }, $data['orders']));
+        }
+
+        $data['customer_cancellable'] = false;
+        unset($data['activity_timeline']);
+
+        return $data;
     }
 }

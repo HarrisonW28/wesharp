@@ -360,4 +360,24 @@ final class EvidencePhotoApiTest extends TestCase
             AuditLog::query()->where('action', 'evidence_photo.visibility_changed')->exists()
         );
     }
+
+    public function test_order_evidence_rejects_customer_visible_upload_when_disabled(): void
+    {
+        Storage::fake('local');
+        Config::set('wesharp_evidence.allow_customer_visible_photos', false);
+
+        $headers = $this->opsStaffHeaders();
+        /** @phpstan-ignore-next-line */
+        $order = Order::factory()->create();
+
+        $file = HttpUploadedFile::fake()->image('proof.jpg', 320, 240);
+
+        $this->withHeaders($headers)
+            ->post('/api/admin/orders/'.$order->id.'/evidence-photos', [
+                'photo' => $file,
+                'category' => EvidencePhotoCategory::GeneralOrder->value,
+                'visibility' => EvidencePhotoVisibility::CustomerVisible->value,
+            ])
+            ->assertForbidden();
+    }
 }

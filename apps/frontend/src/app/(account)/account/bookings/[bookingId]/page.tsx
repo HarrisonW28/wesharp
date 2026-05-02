@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, Loader2, MapPin, StickyNote, User } from "lucide-react";
+import { CalendarClock, Link2, Loader2, MapPin, StickyNote, User } from "lucide-react";
 
 import { AccountBookingDetailResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
@@ -18,6 +18,7 @@ import {
 
 import { CustomerBookingStatusBadge } from "@/components/bookings/CustomerBookingStatusBadge";
 import { TenantFulfilmentUpdatesCard } from "@/components/orders/TenantFulfilmentUpdatesCard";
+import { CustomerActivityTimeline } from "@/components/account/CustomerActivityTimeline";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
@@ -35,6 +36,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { toast } from "sonner";
+import { z } from "zod";
 
 export default function TenantBookingDetailPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -57,6 +60,34 @@ export default function TenantBookingDetailPage() {
       }
       return parsed.data.data;
     },
+  });
+
+  const copyTrackingMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.json<unknown>(`/api/account/bookings/${bookingId}/tracking-link`);
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = z
+        .object({
+          success: z.literal(true),
+          data: z.object({ tracking_url: z.string() }),
+        })
+        .safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected tracking link response.");
+      }
+      return parsed.data.data.tracking_url;
+    },
+    onSuccess: async (url) => {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Tracking link copied");
+      } catch {
+        toast.message("Copy this link", { description: url });
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const cancelMutation = useMutation({
@@ -121,9 +152,29 @@ export default function TenantBookingDetailPage() {
         title="Booking details"
         description="Everything you need to know about this collection — in plain language."
         actions={
-          <Button type="button" variant="outline" size="sm" className="rounded-lg" asChild>
-            <Link href="/account/bookings">Back to list</Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="outline" size="sm" className="rounded-lg" asChild>
+              <Link href={`/account/bookings/${bookingId}/track`}>Track progress</Link>
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="rounded-lg gap-2"
+              disabled={copyTrackingMutation.isPending}
+              onClick={() => copyTrackingMutation.mutate()}
+            >
+              {copyTrackingMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Link2 className="h-4 w-4" aria-hidden />
+              )}
+              Copy guest link
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="rounded-lg" asChild>
+              <Link href="/account/bookings">Back to list</Link>
+            </Button>
+          </div>
         }
       />
 
@@ -241,6 +292,12 @@ export default function TenantBookingDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          <CustomerActivityTimeline
+            title="What we’ve recorded"
+            emptyHint="When we update this booking, you’ll see milestones here — confirmations, schedule changes, and when it’s linked to a visit."
+            items={d.activity_timeline ?? []}
+          />
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className="border shadow-sm">

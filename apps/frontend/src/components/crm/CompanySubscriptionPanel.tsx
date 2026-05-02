@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { z } from "zod";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import type { CompanySubscriptionCrm } from "@/lib/api/admin-crm-schema";
@@ -14,6 +15,7 @@ import {
   SubscriptionPlansListResponseSchema,
 } from "@/lib/api/admin-crm-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
+import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { formatGBP } from "@/lib/format/money";
 import {
   AlertDialog,
@@ -44,7 +46,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { z } from "zod";
 
 type ContactRow = z.infer<typeof ContactSchema>;
 type HistoryRow = z.infer<typeof SubscriptionHistoryRowSchema>;
@@ -127,6 +128,55 @@ export function CompanySubscriptionPanel({
         throw new Error("Unexpected subscription plans payload.");
       }
       return parsed.data.data.items;
+    },
+  });
+
+  const activityQuery = useQuery({
+    enabled: canViewSubs && sub.state === "record",
+    queryKey: ["admin-subscription-activity", companyId, sub.state === "record" ? sub.id : null],
+    queryFn: async () => {
+      if (sub.state !== "record") return [];
+      const res = await admin.json<unknown>(
+        `/api/admin/companies/${companyId}/subscriptions/${sub.id}/activity`,
+      );
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = z
+        .object({
+          success: z.literal(true),
+          data: z.object({
+            items: z.array(
+              z
+                .object({
+                  id: z.string(),
+                  at: z.string().nullable().optional(),
+                  action: z.string(),
+                  action_label: z.string().optional(),
+                  actor: z
+                    .object({
+                      id: z.string().nullable().optional(),
+                      name: z.string().nullable().optional(),
+                      email: z.string().nullable().optional(),
+                    })
+                    .nullable()
+                    .optional(),
+                  subject_type: z.string().optional(),
+                  subject_id: z.string().optional(),
+                  payload: z.unknown().optional(),
+                  changed_fields: z.array(z.string()).nullable().optional(),
+                  ip_address: z.string().nullable().optional(),
+                  request_id: z.string().nullable().optional(),
+                })
+                .passthrough(),
+            ),
+          }),
+        })
+        .safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected subscription activity payload.");
+      }
+      return parsed.data.data.items as AuditTimelineRow[];
     },
   });
 
@@ -692,6 +742,40 @@ export function CompanySubscriptionPanel({
             </p>
           </CardContent>
         </Card>
+        {canViewSubs && sub.state === "record" ? (
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle className="text-base">Subscription activity</CardTitle>
+              <p className="text-sm font-normal text-muted-foreground">
+                Recent changes to this subscription record.{" "}
+                <Link
+                  className="font-medium text-primary underline underline-offset-2"
+                  href={`/admin/audit?company_id=${companyId}`}
+                >
+                  Open company audit log
+                </Link>
+                .
+              </p>
+            </CardHeader>
+            <CardContent>
+              {activityQuery.isPending ? (
+                <p className="text-sm text-muted-foreground">Loading activity…</p>
+              ) : null}
+              {activityQuery.isError ? (
+                <p className="text-sm text-destructive">
+                  {activityQuery.error instanceof Error ? activityQuery.error.message : "Could not load activity."}
+                </p>
+              ) : null}
+              {activityQuery.isSuccess ? (
+                <AuditTimeline
+                  items={activityQuery.data}
+                  emptyLabel="No subscription activity recorded yet."
+                  showPayload={false}
+                />
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
 
       {canViewSubs && sub.state === "record" && Array.isArray(sub.billing_periods) && sub.billing_periods.length > 0 ? (

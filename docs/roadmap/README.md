@@ -1,6 +1,6 @@
 # WeSharp Sprint Roadmap
 
-Current status: Completed up to Sprint 12.7 (production deployment readiness — **§ Sprint 12.7 — Done** in `docs/roadmap/sprint-12.md`; runbook `docs/operations/production-deployment-readiness.md`).
+Current status: **Sprint 13.3 complete** (content settings foundation — **§ Sprint 13.3 — Done** in `docs/roadmap/sprint-13.md`). Sprint 13.2: fast-entry polish; 13.1: grouped admin navigation. Prior release gate: Sprint **12** (`sprint-12.8-qa-report.md`, `production-deployment-readiness.md`).
 
 Use this roadmap one sprint at a time. The roadmap is context; the Cursor chat prompt is the command.
 
@@ -26,4 +26,5 @@ Use this roadmap one sprint at a time. The roadmap is context; the Cursor chat p
 
 - sprint-10.md — notification, pricing and subscription revenue sprints
 - sprint-11.md — trust polish, admin polish, route/photo, reporting, webhooks and deployment workflow
-- sprint-12.md — audit, bug fixing, QA, production cleanup and launch readiness
+- sprint-12.md — audit, bug fixing, QA, production cleanup and launch readiness (**12.8 report:** `sprint-12.8-qa-report.md`)
+- sprint-13.md — navigation, guided workflows, platform usability (**13.1:** grouped IA; **13.2:** fast-entry polish; **13.3:** site content settings)

@@ -161,6 +161,17 @@ TXT,
             $lines[] = 'Estimated knives: '.$validated['estimated_knife_count'];
         }
 
+        $interest = isset($validated['programme_interest']) ? (string) $validated['programme_interest'] : '';
+        if ($interest !== '') {
+            $label = match ($interest) {
+                'one_off' => 'One-off visit',
+                'subscription' => 'Ongoing programme / subscription',
+                'unsure' => 'Not sure — please advise',
+                default => $interest,
+            };
+            $lines[] = 'Programme preference: '.$label;
+        }
+
         $lines[] = '[Source: wesharp.app public booking form]';
 
         return implode("\n", $lines);

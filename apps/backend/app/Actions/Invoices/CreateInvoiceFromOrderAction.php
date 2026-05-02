@@ -43,7 +43,17 @@ final class CreateInvoiceFromOrderAction
                 abort(422, 'A non-void invoice already exists for this order.');
             }
 
-            $order->loadMissing(['items']);
+            $order->loadMissing(['items', 'knives']);
+
+            if (! $this->shouldUseSubscriptionInvoiceLines($order)
+                && ! (bool) $order->is_complimentary
+                && (int) $order->total_pence <= 0
+            ) {
+                abort(
+                    422,
+                    'Cannot create an invoice until this order has a billable total. Add blades or lines, set per-blade pricing, add a manual charge, or mark the order complimentary.',
+                );
+            }
 
             /** @phpstan-ignore-next-line */
             $number = AllocateInvoiceNumber::generate();
