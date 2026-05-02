@@ -138,6 +138,7 @@ Quick pass after deploy or config change:
 ## 8. Related documents
 
 - `docs/operations/deployment.md` — build/migrate commands and short env table  
+- `docs/operations/production-deployment-readiness.md` — production deploy runbook, backups, rollback, smoke tests, launch checklist (Sprint 12.7)  
 - `docs/security/auth-sso.md` — Clerk + Laravel JWT behaviour  
 - `docs/security/stripe-security.md` — Stripe handling  
 - `docs/roadmap/sprint-11.md` — Sprint 11.6 acceptance context  

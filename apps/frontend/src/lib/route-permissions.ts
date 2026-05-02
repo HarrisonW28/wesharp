@@ -33,6 +33,9 @@ export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/reports/sales")) {
     return "reports.finance";
   }
+  if (pathname.startsWith("/admin/reports/recurring-revenue")) {
+    return "reports.finance";
+  }
   if (pathname.startsWith("/admin/reports/operations")) {
     return "reports.operations";
   }

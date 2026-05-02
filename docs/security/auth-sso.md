@@ -1,6 +1,6 @@
 # Authentication — Clerk + Laravel JWT verification
 
-WeSharp ships **two layers**:
+WeSharp ships **two layers** (see also [permission matrix](./permission-matrix.md)):
 
 1. **Clerk** — identity for the SPA (Next.js) with hosted sign-in/register UI and JWT session tokens (`Authorization: Bearer …`).
 2. **Laravel** — canonical authorisation mapping every request to `users.role`, permissions (`App\Support\Permissions`), policies, and tenant `company_id` scoping.

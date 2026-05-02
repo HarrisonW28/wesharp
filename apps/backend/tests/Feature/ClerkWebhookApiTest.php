@@ -83,6 +83,35 @@ final class ClerkWebhookApiTest extends TestCase
         $response->assertStatus(503)->assertJsonPath('error.code', 'webhook_not_configured');
     }
 
+    public function test_rejects_when_webhook_secret_missing_without_echoing_config_hints_when_not_debugging(): void
+    {
+        Config::set('clerk.webhook_signing_secret', '');
+        Config::set('app.debug', false);
+
+        $raw = '{"type":"user.created","data":{}}';
+        $response = $this->call(
+            'POST',
+            '/api/webhooks/clerk',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_SVIX_ID' => 'msg_1',
+                'HTTP_SVIX_TIMESTAMP' => (string) time(),
+                'HTTP_SVIX_SIGNATURE' => 'v1,abc',
+            ],
+            $raw
+        );
+
+        $response->assertStatus(503)->assertJsonPath('error.code', 'webhook_not_configured');
+
+        $message = $response->json('error.message');
+        self::assertIsString($message);
+        self::assertStringNotContainsStringIgnoringCase('secret', $message);
+        self::assertStringNotContainsStringIgnoringCase('whsec', $message);
+    }
+
     public function test_rejects_invalid_signature(): void
     {
         $whsec = $this->sampleWhsecSecret();

@@ -162,6 +162,14 @@ End with:
 - remaining issues
 - production readiness view
 
+### Sprint 12.3 — Done (implementation summary)
+
+- **Deliverable:** `docs/roadmap/sprint-12.3-qa-report.md` — journey coverage map (vs PHPUnit + build), bugs with severity, one shell permission fix, deferred manual/mobile/Clerk E2E, production readiness view.
+- **Fix:** `adminPermissionForPath` — **`/admin/reports/recurring-revenue`** → **`reports.finance`** (was defaulting to `dashboard.view`).
+- **QA:** `php artisan test` (241 OK); frontend `typecheck`, `lint`, `vitest`, `build` OK.
+- **Acceptance:** No **P0**; no **P1** logged — B-1 classified **P2** and fixed. Subjective criteria (empty states, dead buttons, UUIDs in UI, mobile usability) **partially** covered by automation; full sign-off still benefits from manual pass (documented in report).
+- **Next:** Sprint **12.4** (UX/UI polish).
+
 ---
 
 ## Sprint 12.4 — UX/UI Production Polish
@@ -214,6 +222,14 @@ End with:
 - polish summary
 - QA checklist
 - known limitations
+
+### Sprint 12.4 — Done (implementation summary)
+
+- **Polish (focused pass):** Public shell mobile nav — larger tap targets; **Create account** (`/register`) in sheet and on `md+` next to sign-in. Customer account dashboard — error state uses **Alert** + warmer copy and **Try again**. Admin dashboard — removed stack jargon from KPI description (booking/order/invoice totals).
+- **Files:** `apps/frontend/src/components/layout/PublicShell.tsx`, `apps/frontend/src/app/(account)/account/dashboard/page.tsx`, `apps/frontend/src/app/(admin)/admin/dashboard/page.tsx`, `docs/roadmap/sprint-12.md`, `docs/roadmap/README.md`.
+- **QA checklist:** `npm run typecheck`, `npm run lint`, `npm run build` (frontend); spot-check public mobile sheet, `/register` link, account dashboard error (simulate network/API failure if needed), admin dashboard header copy.
+- **Known limitations:** Email copy, full-table polish, badge consistency, and broad form spacing were not exhaustively revised in this slice; further passes can follow the same checklist in §12.4.
+- **Next:** Sprint **12.5** (security / permissions).
 
 ---
 
@@ -270,6 +286,17 @@ End with:
 - QA checklist
 - remaining risks
 
+### Sprint 12.5 — Done (implementation summary)
+
+- **Permission matrix:** `docs/security/permission-matrix.md` — roles, API segments, isolation notes, pointers to `Permissions` and `auth-sso.md`.
+- **Defense in depth (admin API):** Explicit `permission:routes.view` on `POST …/routes/{route}/start|complete`; `permission:route_stops.update` on route-stop mutators, stop evidence upload, and stop-scoped customer portal updates (policies unchanged).
+- **Webhook / error hygiene:** Clerk + Stripe webhook controllers return generic messages when `APP_DEBUG` is false; `/api/*` HTTP exceptions with status ≥ 500 are sanitized when not debugging (`bootstrap/app.php`).
+- **Abuse:** Named rate limiter `provider-webhooks` (120/min/IP) on `/api/webhooks/clerk` and `/api/webhooks/stripe`.
+- **Files:** `apps/backend/bootstrap/app.php`, `apps/backend/routes/api.php`, `apps/backend/app/Providers/AppServiceProvider.php`, `apps/backend/app/Http/Controllers/Webhooks/ClerkWebhookController.php`, `apps/backend/app/Http/Controllers/Webhooks/StripeWebhookController.php`, `docs/security/permission-matrix.md`, `docs/roadmap/sprint-12.md`, `docs/roadmap/README.md`, `apps/backend/tests/Feature/Security/StripeWebhookSecurityTest.php`, `apps/backend/tests/Feature/ClerkWebhookApiTest.php`.
+- **QA:** `php artisan test` (targeted webhook + full suite); manual: tenant token → `/api/admin/*` → 403; finance token → route start → 403; CORS origins in prod env.
+- **Remaining risks:** Full OWASP pass not claimed; some `PATCH` routes (e.g. generic evidence photo) still rely on policy-only checks + single permission elsewhere; model-binding 4xx messages on `/api/*` not fully redacted (by design for this slice).
+- **Next:** Sprint **12.6** (production cleanup).
+
 ---
 
 ## Sprint 12.6 — Production Cleanup
@@ -308,6 +335,17 @@ End with:
 - production risks
 - QA checklist
 
+### Sprint 12.6 — Done (implementation summary)
+
+- **Cleanup summary:** No `dd()` / `dump()` / frontend `console.log` spam found in tracked app sources. **Demo data:** `DatabaseSeeder` returns immediately when `APP_ENV=production` so `migrate --seed` does not load `WeSharpDemoSeeder` in production. **Debug-style API routes:** `GET /api/v1/admin/smoke` and `GET /api/v1/account/smoke` are registered only when not `production`.
+- **Env / deploy:** `apps/backend/.env.example` production reminders; **`docs/operations/deployment.md`** — migrate without seed in prod, production checklist table ( **`APP_DEBUG=false`**, CORS, health vs smoke, storage link).
+- **Docs alignment:** `docs/product/mvp-scope.md`, `docs/product/customer-portal.md`, `docs/security/security-model.md`, `docs/security/permission-matrix.md` — smoke routes non-production only.
+- **Files:** `apps/backend/database/seeders/DatabaseSeeder.php`, `apps/backend/routes/api.php`, `apps/backend/.env.example`, `docs/operations/deployment.md`, `docs/product/mvp-scope.md`, `docs/product/customer-portal.md`, `docs/security/security-model.md`, `docs/security/permission-matrix.md`, `docs/roadmap/sprint-12.md`, `docs/roadmap/README.md`.
+- **Env checklist (prod):** `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY` set, `FRONTEND_ORIGIN` / `CORS_ALLOWED_ORIGINS`, Clerk + Stripe secrets + webhook signing secrets, `NEXT_PUBLIC_*` production Clerk + API origin for frontend build.
+- **Production risks:** Staging named `production` in Laravel would disable smoke routes and demo seed — use `staging` or `local` for those needs. Backup / full runbook: **`docs/operations/production-deployment-readiness.md`** (Sprint **12.7**).
+- **QA:** `php artisan test` (backend); `npm run build` optional sanity for frontend; verify `APP_ENV=production` route:list omits v1 smoke names.
+- **Next:** Sprint **12.7** (production deployment readiness).
+
 ---
 
 ## Sprint 12.7 — Production Deployment Readiness
@@ -337,6 +375,16 @@ End with:
 - smoke test checklist
 - launch blockers
 - production readiness verdict
+
+### Sprint 12.7 — Done (implementation summary)
+
+- **Deliverable:** **`docs/operations/production-deployment-readiness.md`** — repeatable production deploy steps (composer, migrate, caches, frontend build, queue/schedule, nginx/Plesk notes); **backup** (DB, uploads, env); **rollback** procedure; **post-deploy smoke** table (health, Clerk, `/api/v1/me`, portals, booking, pricing, invoice, email, webhooks, mobile); **monitoring/logs**; **launch checklist**; **launch blockers** template; **readiness verdict** template.
+- **Cross-links:** `docs/operations/deployment.md` and `docs/operations/gitlab-environments-and-deployment.md` point to the runbook; sprint **12.6** note updated to reference it.
+- **Files:** `docs/operations/production-deployment-readiness.md`, `docs/operations/deployment.md`, `docs/operations/gitlab-environments-and-deployment.md`, `docs/roadmap/sprint-12.md`, `docs/roadmap/README.md`.
+- **Deployment checklist / rollback / smoke / launch blockers:** see **§§1–7** in that document; **verdict** in **§8**.
+- **Launch blockers (repo):** template table only — fill with real IDs before go-live (`LB-1` examples are placeholders).
+- **Production readiness verdict:** *Documented process ready; operational sign-off pending team completion of §6–8 with real environments.*
+- **Next:** Sprint **12.8** (final production readiness QA).
 
 ---
 

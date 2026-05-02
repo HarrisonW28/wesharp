@@ -44,7 +44,14 @@ final class ClerkWebhookController extends Controller
                 default => 'webhook_bad_request',
             };
 
-            return ApiResponses::error($e->getMessage(), $code, $e->getStatusCode());
+            $safeMessage = config('app.debug')
+                ? $e->getMessage()
+                : match ($e->getStatusCode()) {
+                    SymfonyResponse::HTTP_SERVICE_UNAVAILABLE => 'This webhook endpoint is not configured.',
+                    default => 'Invalid webhook request.',
+                };
+
+            return ApiResponses::error($safeMessage, $code, $e->getStatusCode());
         } catch (Throwable) {
             return ApiResponses::error('Webhook validation failed.', 'webhook_error', SymfonyResponse::HTTP_BAD_REQUEST);
         }

@@ -86,13 +86,15 @@ Route::prefix('v1')->group(function (): void {
             ->name('api.v1.account.bootstrap_organisation');
     });
 
-    Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): void {
-        Route::get('smoke', InternalSmokeController::class)->name('api.v1.admin.smoke');
-    });
+    if (! app()->environment('production')) {
+        Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): void {
+            Route::get('smoke', InternalSmokeController::class)->name('api.v1.admin.smoke');
+        });
 
-    Route::prefix('account')->middleware(['clerk.auth', 'tenant'])->group(function (): void {
-        Route::middleware('permission:dashboard.view')->get('smoke', TenantSmokeController::class)->name('api.v1.account.smoke');
-    });
+        Route::prefix('account')->middleware(['clerk.auth', 'tenant'])->group(function (): void {
+            Route::middleware('permission:dashboard.view')->get('smoke', TenantSmokeController::class)->name('api.v1.account.smoke');
+        });
+    }
 });
 
 /** Internal ops API — Bearer + EnsureInternalStaff + permission belt on mutators / sensitive reads. Route lifecycle remains policy-aware for driver-as-signing-user. */
@@ -194,29 +196,29 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:routes.view')->get('routes/{route}', [RouteController::class, 'show'])->whereUuid('route')->name('api.admin.routes.show');
     Route::middleware('permission:routes.manage')->put('routes/{route}', [RouteController::class, 'update'])->whereUuid('route')->name('api.admin.routes.update');
     Route::middleware('permission:routes.view')->get('routes/{route}/completion-summary', [RouteController::class, 'completionSummary'])->whereUuid('route')->name('api.admin.routes.completion_summary');
-    Route::post('routes/{route}/start', [RouteController::class, 'start'])->whereUuid('route')->name('api.admin.routes.start');
-    Route::post('routes/{route}/complete', [RouteController::class, 'complete'])->whereUuid('route')->name('api.admin.routes.complete');
+    Route::middleware('permission:routes.view')->post('routes/{route}/start', [RouteController::class, 'start'])->whereUuid('route')->name('api.admin.routes.start');
+    Route::middleware('permission:routes.view')->post('routes/{route}/complete', [RouteController::class, 'complete'])->whereUuid('route')->name('api.admin.routes.complete');
     Route::middleware('permission:routes.manage')->post('routes/{route}/stops', [RouteController::class, 'storeStop'])->whereUuid('route')->name('api.admin.routes.stops.store');
     Route::middleware('permission:routes.manage')->put('routes/{route}/reorder-stops', [RouteController::class, 'reorder'])->whereUuid('route')->name('api.admin.routes.stops.reorder');
     Route::middleware('permission:routes.manage')->delete('routes/{route}/stops/{stop}', [RouteController::class, 'destroyStop'])->whereUuid(['route', 'stop'])->name('api.admin.routes.stops.destroy');
 
     Route::middleware('permission:routes.view')->get('route-stops/{stop}', [RouteStopController::class, 'show'])->whereUuid('stop')->name('api.admin.route_stops.show');
-    Route::put('route-stops/{stop}', [RouteStopController::class, 'update'])->whereUuid('stop')->name('api.admin.route_stops.update');
-    Route::post('route-stops/{stop}/mark-travelling', [RouteStopController::class, 'markTravelling'])->whereUuid('stop')->name('api.admin.route_stops.mark_travelling');
-    Route::post('route-stops/{stop}/mark-arrived', [RouteStopController::class, 'markArrived'])->whereUuid('stop')->name('api.admin.route_stops.mark_arrived');
-    Route::post('route-stops/{stop}/mark-collected', [RouteStopController::class, 'markCollected'])->whereUuid('stop')->name('api.admin.route_stops.mark_collected');
-    Route::post('route-stops/{stop}/mark-returned', [RouteStopController::class, 'markReturned'])->whereUuid('stop')->name('api.admin.route_stops.mark_returned');
-    Route::post('route-stops/{stop}/mark-skipped', [RouteStopController::class, 'markSkipped'])->whereUuid('stop')->name('api.admin.route_stops.mark_skipped');
-    Route::post('route-stops/{stop}/complete', [RouteStopController::class, 'complete'])->whereUuid('stop')->name('api.admin.route_stops.complete');
+    Route::middleware('permission:route_stops.update')->put('route-stops/{stop}', [RouteStopController::class, 'update'])->whereUuid('stop')->name('api.admin.route_stops.update');
+    Route::middleware('permission:route_stops.update')->post('route-stops/{stop}/mark-travelling', [RouteStopController::class, 'markTravelling'])->whereUuid('stop')->name('api.admin.route_stops.mark_travelling');
+    Route::middleware('permission:route_stops.update')->post('route-stops/{stop}/mark-arrived', [RouteStopController::class, 'markArrived'])->whereUuid('stop')->name('api.admin.route_stops.mark_arrived');
+    Route::middleware('permission:route_stops.update')->post('route-stops/{stop}/mark-collected', [RouteStopController::class, 'markCollected'])->whereUuid('stop')->name('api.admin.route_stops.mark_collected');
+    Route::middleware('permission:route_stops.update')->post('route-stops/{stop}/mark-returned', [RouteStopController::class, 'markReturned'])->whereUuid('stop')->name('api.admin.route_stops.mark_returned');
+    Route::middleware('permission:route_stops.update')->post('route-stops/{stop}/mark-skipped', [RouteStopController::class, 'markSkipped'])->whereUuid('stop')->name('api.admin.route_stops.mark_skipped');
+    Route::middleware('permission:route_stops.update')->post('route-stops/{stop}/complete', [RouteStopController::class, 'complete'])->whereUuid('stop')->name('api.admin.route_stops.complete');
 
-    Route::post('route-stops/{stop}/evidence-photos', [EvidencePhotoController::class, 'storeForRouteStop'])->whereUuid('stop')->name('api.admin.route_stops.evidence_photos.store');
+    Route::middleware('permission:route_stops.update')->post('route-stops/{stop}/evidence-photos', [EvidencePhotoController::class, 'storeForRouteStop'])->whereUuid('stop')->name('api.admin.route_stops.evidence_photos.store');
     Route::middleware('permission:orders.update')->post('orders/{order}/evidence-photos', [EvidencePhotoController::class, 'storeForOrder'])->whereUuid('order')->name('api.admin.orders.evidence_photos.store');
     Route::middleware('permission:knives.update')->post('knives/{knife}/evidence-photos', [EvidencePhotoController::class, 'storeForKnife'])->whereUuid('knife')->name('api.admin.knives.evidence_photos.store');
     Route::middleware('permission:knives.update')->post('damage-reports/{damageReport}/evidence-photos', [EvidencePhotoController::class, 'storeForDamageReport'])->whereUuid('damageReport')->name('api.admin.damage_reports.evidence_photos.store');
     Route::patch('evidence-photos/{photo}', [EvidencePhotoController::class, 'update'])->whereUuid('photo')->name('api.admin.evidence_photos.update');
     Route::middleware('permission:routes.view')->get('evidence-photos/{photo}/file', [EvidencePhotoController::class, 'showFile'])->whereUuid('photo')->name('api.admin.evidence_photos.file');
 
-    Route::post('route-stops/{stop}/customer-portal-updates', [CustomerPortalUpdateController::class, 'storeForRouteStop'])->whereUuid('stop')->name('api.admin.route_stops.customer_portal_updates.store');
+    Route::middleware('permission:route_stops.update')->post('route-stops/{stop}/customer-portal-updates', [CustomerPortalUpdateController::class, 'storeForRouteStop'])->whereUuid('stop')->name('api.admin.route_stops.customer_portal_updates.store');
     Route::middleware('permission:orders.update')->post('orders/{order}/customer-portal-updates', [CustomerPortalUpdateController::class, 'storeForOrder'])->whereUuid('order')->name('api.admin.orders.customer_portal_updates.store');
     Route::patch('customer-portal-updates/{update}', [CustomerPortalUpdateController::class, 'update'])->whereUuid('update')->name('api.admin.customer_portal_updates.update');
 
@@ -322,5 +324,7 @@ Route::prefix('public')->middleware('throttle:booking-enquiries')->group(functio
 });
 
 /** Provider webhooks — unauthenticated; each controller verifies signatures and returns safe JSON errors. */
-Route::post('webhooks/clerk', ClerkWebhookController::class)->name('api.webhooks.clerk');
-Route::post('webhooks/stripe', StripeWebhookController::class)->name('api.webhooks.stripe');
+Route::middleware('throttle:provider-webhooks')->group(function (): void {
+    Route::post('webhooks/clerk', ClerkWebhookController::class)->name('api.webhooks.clerk');
+    Route::post('webhooks/stripe', StripeWebhookController::class)->name('api.webhooks.stripe');
+});

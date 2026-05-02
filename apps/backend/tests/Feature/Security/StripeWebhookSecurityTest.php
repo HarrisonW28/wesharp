@@ -23,6 +23,24 @@ final class StripeWebhookSecurityTest extends TestCase
             ->assertJsonPath('error.code', 'webhook_not_configured');
     }
 
+    public function test_rejects_when_webhook_secret_missing_without_echoing_config_hints_when_not_debugging(): void
+    {
+        Config::set('stripe.webhook_secret', '');
+        Config::set('app.debug', false);
+
+        $response = $this->postJson('/api/webhooks/stripe', [], [
+            'Stripe-Signature' => 't=1,v1=abc',
+        ]);
+
+        $response->assertStatus(503)
+            ->assertJsonPath('error.code', 'webhook_not_configured');
+
+        $message = $response->json('error.message');
+        self::assertIsString($message);
+        self::assertStringNotContainsStringIgnoringCase('secret', $message);
+        self::assertStringNotContainsStringIgnoringCase('signing', $message);
+    }
+
     public function test_accepts_valid_signature(): void
     {
         $secret = 'whsec_test_key_for_unit';

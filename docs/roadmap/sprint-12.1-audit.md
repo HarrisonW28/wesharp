@@ -95,7 +95,7 @@ WeSharp is a **coherent Laravel 13 + Next.js 15** monolith: tenant portal (`/acc
 
 1. **Staging verify** Clerk middleware redirects on `/admin` & `/account` with production keys.
 2. ~~**Refresh `mvp-scope.md`**~~ — aligned in 12.1 (see `docs/product/mvp-scope.md`); keep other docs in sync over time.
-3. **Admin UI** for webhook inbox (or link + copy from audit/logs doc).
+3. ~~**Admin UI** for webhook inbox~~ — **`/admin/webhooks/inbox`** (Sprint 12.2).
 4. **Invoice email / PDF** (product decision — P2 backlog).
 5. **Playwright** Clerk fixtures when stable.
 6. **12.4** polish items.

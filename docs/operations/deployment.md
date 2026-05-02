@@ -4,6 +4,8 @@ Minimal guidance for standing up **frontend** + **API** environments. Tune for y
 
 **Environments, GitLab workflow, checklists and CI:** see **`docs/operations/gitlab-environments-and-deployment.md`** (Sprint 11.6).
 
+**Production deploy, backup, rollback, smoke tests, monitoring, launch gate:** **`docs/operations/production-deployment-readiness.md`** (Sprint 12.7).
+
 ---
 
 ## Environment variables
@@ -39,10 +41,24 @@ cd apps/backend
 composer install --no-dev --optimize-autoloader
 php artisan config:cache
 php artisan migrate --force
-# Optional demo data (non-prod): php artisan migrate --seed
 ```
 
+Do **not** run **`php artisan migrate --seed`** against production: **`DatabaseSeeder`** intentionally skips **`WeSharpDemoSeeder`** when **`APP_ENV=production`**. Use **`migrate --seed`** only in local/staging when demo fixtures are required.
+
 Run **`php artisan test`** in CI before promote (see **`.gitlab-ci.yml`** on GitLab).
+
+### Production checklist
+
+| Item | Note |
+| --- | --- |
+| **`APP_ENV`** | **`production`** |
+| **`APP_DEBUG`** | **`false`** (no stack traces in browser/API) |
+| **`APP_KEY`** | Set (`php artisan key:generate` once per env) |
+| **Database** | **`migrate --force`** only; no demo seed in prod |
+| **Clerk / Stripe** | Production keys + webhook signing secrets |
+| **CORS** | **`FRONTEND_ORIGIN`** or **`CORS_ALLOWED_ORIGINS`** — avoid wildcard in prod (`config/cors.php`) |
+| **Smoke URLs** | **`GET /api/v1/admin/smoke`** and **`GET /api/v1/account/smoke`** are **not registered** in production — use **`GET /api/health`** and authenticated reads (e.g. **`/api/v1/me`**, **`/api/admin/analytics/overview`**) |
+| **Storage** | **`php artisan storage:link`** if serving user uploads from `public` disk |
 
 ### Frontend
 
@@ -64,6 +80,7 @@ npm run build
 
 ## Related documents
 
+- **`docs/operations/production-deployment-readiness.md`** — step-by-step prod deploy, backups, rollback, post-deploy smoke, monitoring, launch checklist  
 - **`docs/operations/gitlab-environments-and-deployment.md`** — staging/prod URLs, env reference, GitLab branches, deploy/rollback/smoke checklists, CI  
 - **`docs/product/mvp-scope.md`** — feature list & known gaps  
 - **`docs/testing/qa-checklist.md`** — pre-release checklist  

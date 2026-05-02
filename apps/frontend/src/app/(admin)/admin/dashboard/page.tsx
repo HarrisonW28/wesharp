@@ -133,7 +133,7 @@ export default function AdminDashboardPage() {
       <Breadcrumbs items={[{ label: "Dashboard" }]} />
       <PageHeader
         title="Operations dashboard"
-        description="Headline volumes and cash position for roughly the last 90 days — figures come from your live Laravel totals."
+        description="Headline volumes and cash position for roughly the last 90 days — from your live booking, order and invoice totals."
         actions={
           <Button type="button" variant="outline" size="sm" asChild className="shrink-0">
             <Link href="/admin/analytics">Deep-dive analytics</Link>

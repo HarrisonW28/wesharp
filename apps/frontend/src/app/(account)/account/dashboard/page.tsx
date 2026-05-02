@@ -201,15 +201,20 @@ export default function AccountDashboardPage() {
   }
 
   if (dashQuery.isError || !dashQuery.data) {
+    const errMsg =
+      dashQuery.error instanceof Error ? dashQuery.error.message : "Something went wrong on our side.";
     return (
       <div className="space-y-6">
         <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Overview" }]} />
-        <PageHeader title="Overview" description="We could not load your dashboard just now." />
-        <p className="text-sm text-destructive">
-          {dashQuery.error instanceof Error ? dashQuery.error.message : "Something went wrong."}
-        </p>
+        <PageHeader title="Overview" description="Your bookings, orders and account activity in one place." />
+        <Alert variant="destructive" className="max-w-xl">
+          <AlertTitle>We couldn’t load your overview</AlertTitle>
+          <AlertDescription>
+            {errMsg} If it keeps happening, wait a moment and try again — or contact us and we’ll help.
+          </AlertDescription>
+        </Alert>
         <Button type="button" variant="outline" size="sm" onClick={() => void dashQuery.refetch()}>
-          Retry
+          Try again
         </Button>
       </div>
     );

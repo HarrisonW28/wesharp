@@ -18,6 +18,8 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
 
   const navLinkClass =
     "text-sm text-muted-foreground transition-colors hover:text-foreground aria-[current]:font-medium aria-[current]:text-foreground";
+  /** Mobile sheet: comfortable tap targets */
+  const navLinkMobileClass = `${navLinkClass} inline-flex min-h-10 items-center py-1.5`;
   /** Desktop header: keep labels on one row between logo and CTAs */
   const navLinkDesktopClass = `${navLinkClass} whitespace-nowrap`;
 
@@ -61,19 +63,22 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                 </SheetHeader>
                 <nav className="mt-6 flex flex-col gap-4 text-base" aria-label="Mobile">
                   {PUBLIC_SITE_NAV_LINKS.map((l) => (
-                    <Link key={l.href} href={l.href} className={navLinkClass} onClick={() => setOpen(false)}>
+                    <Link key={l.href} href={l.href} className={navLinkMobileClass} onClick={() => setOpen(false)}>
                       {l.label}
                     </Link>
                   ))}
                   <SignedOut>
-                    <Link href="/login" className={navLinkClass} onClick={() => setOpen(false)}>
+                    <Link href="/login" className={navLinkMobileClass} onClick={() => setOpen(false)}>
                       Sign in
+                    </Link>
+                    <Link href="/register" className={navLinkMobileClass} onClick={() => setOpen(false)}>
+                      Create account
                     </Link>
                   </SignedOut>
                   <SignedIn>
                     <Link
                       href="/auth/continue"
-                      className={`${navLinkClass} inline-flex items-center gap-2`}
+                      className={`${navLinkMobileClass} gap-2`}
                       onClick={() => setOpen(false)}
                     >
                       <LayoutDashboard className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
@@ -94,6 +99,9 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
             </Sheet>
 
             <SignedOut>
+              <Button variant="outline" size="sm" asChild className="hidden md:inline-flex">
+                <Link href="/register">Create account</Link>
+              </Button>
               <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
                 <Link href="/login">Sign in</Link>
               </Button>

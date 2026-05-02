@@ -38,7 +38,14 @@ final class StripeWebhookController extends Controller
                 default => 'webhook_error',
             };
 
-            return ApiResponses::error($e->getMessage(), $code, $e->getStatusCode());
+            $safeMessage = config('app.debug')
+                ? $e->getMessage()
+                : match ($e->getStatusCode()) {
+                    503 => 'This webhook endpoint is not configured.',
+                    default => 'Invalid webhook request.',
+                };
+
+            return ApiResponses::error($safeMessage, $code, $e->getStatusCode());
         } catch (Throwable) {
             return ApiResponses::error('Webhook validation failed.', 'webhook_error', SymfonyResponse::HTTP_BAD_REQUEST);
         }

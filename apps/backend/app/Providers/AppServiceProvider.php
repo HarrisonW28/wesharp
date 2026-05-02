@@ -68,6 +68,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->ip());
         });
 
+        RateLimiter::for('provider-webhooks', static function (Request $request): Limit {
+            return Limit::perMinute(120)->by($request->ip());
+        });
+
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
         Gate::policy(WebhookInbox::class, WebhookInboxPolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);

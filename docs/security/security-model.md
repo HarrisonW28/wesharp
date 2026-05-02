@@ -33,8 +33,8 @@ Existing examples:
 
 ```
 GET /api/v1/me            → clerk.auth
-GET /api/v1/admin/smoke   → clerk.auth + staff
-GET /api/v1/account/smoke → clerk.auth + tenant
+GET /api/v1/admin/smoke   → clerk.auth + staff (omitted when APP_ENV=production)
+GET /api/v1/account/smoke → clerk.auth + tenant (omitted when APP_ENV=production)
 GET /api/account/dashboard → clerk.auth + tenant
 ```
 

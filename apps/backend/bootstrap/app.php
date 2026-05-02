@@ -82,6 +82,30 @@ return Application::configure(basePath: dirname(__DIR__))
             return ApiResponses::forbidden();
         });
 
+        /**
+         * Avoid returning raw `abort(5xx, …)` messages from `/api/*` when APP_DEBUG is false
+         * (policy/controller diagnostics should stay in logs, not JSON).
+         */
+        $exceptions->renderable(function (HttpExceptionInterface $e, Request $request) {
+            if (! $request->is(['api', 'api/*'])) {
+                return null;
+            }
+
+            if (config('app.debug')) {
+                return null;
+            }
+
+            if ($e->getStatusCode() < 500) {
+                return null;
+            }
+
+            return ApiResponses::error(
+                'Something went wrong.',
+                'server_error',
+                $e->getStatusCode(),
+            );
+        });
+
         /** Never leak stack traces for unexpected failures on `/api/*` when debug is disabled. */
         $exceptions->renderable(function (Throwable $e, Request $request) {
             if (! $request->is(['api', 'api/*'])) {

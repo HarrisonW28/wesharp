@@ -76,7 +76,7 @@ Owners retain **`knives.update`** for escalation flows; tenants never receive ad
 | `GET /api/account/settings` | `AccountSettingsController@show` | Returns user + tenant metadata snapshot (read-only email + Clerk-bound fields). |
 | `PUT /api/account/settings` | `AccountSettingsController@update` | Whitelisted keys only; invokes `UserPolicy::updateOwnBasicProfile` before mutating **`users.name`**. |
 
-`GET /api/v1/account/smoke` remains for backwards-compat smoke probes.
+`GET /api/v1/account/smoke` is registered only when **`APP_ENV` is not `production`** (local/staging smoke probe). In production use **`GET /api/health`** and real authenticated routes.
 
 ---
 

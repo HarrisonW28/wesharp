@@ -1,6 +1,6 @@
 # WeSharp Sprint Roadmap
 
-Current status: Completed up to Sprint 12.2 (critical bug fixing — see **§ Sprint 12.2 — Done** in `sprint-12.md`).
+Current status: Completed up to Sprint 12.7 (production deployment readiness — **§ Sprint 12.7 — Done** in `docs/roadmap/sprint-12.md`; runbook `docs/operations/production-deployment-readiness.md`).
 
 Use this roadmap one sprint at a time. The roadmap is context; the Cursor chat prompt is the command.
 
