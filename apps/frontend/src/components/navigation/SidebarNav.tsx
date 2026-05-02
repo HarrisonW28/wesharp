@@ -49,9 +49,8 @@ function NavLeafLinkRow({ leaf, onNavigate }: { leaf: NavLeaf; onNavigate?: () =
 function NavBranch({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
   const pathname = usePathname();
   const children = item.children ?? [];
-  if (children.length === 0) return null;
 
-  const childActive = children.some((c) => navHrefIsActive(pathname, c.href));
+  const childActive = children.length > 0 && children.some((c) => navHrefIsActive(pathname, c.href));
   const parentActive = item.href ? navHrefIsActive(pathname, item.href) : false;
   const branchActive = childActive || parentActive;
 
@@ -59,6 +58,8 @@ function NavBranch({ item, onNavigate }: { item: NavItem; onNavigate?: () => voi
   useEffect(() => {
     setOpen(branchActive);
   }, [branchActive]);
+
+  if (children.length === 0) return null;
 
   const Icon = item.icon;
 

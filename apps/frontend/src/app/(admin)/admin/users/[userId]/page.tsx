@@ -167,10 +167,7 @@ function ManageUserPanels({ user, userId }: { user: UserDetail; userId: string }
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
 
-  const editFormValues = useMemo(
-    () => formDefaults(user),
-    [user.id, user.updated_at, user.company_id, user.company?.id, user.role, user.status],
-  );
+  const editFormValues = useMemo(() => formDefaults(user), [user]);
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),

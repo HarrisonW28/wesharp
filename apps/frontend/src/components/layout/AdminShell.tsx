@@ -9,6 +9,7 @@ import {
 } from "@/config/navigation";
 
 import { Toaster } from "sonner";
+import { AdminDashboardSearch } from "@/components/admin/AdminDashboardSearch";
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
 import { StaffRouteGate } from "@/components/auth/StaffRouteGate";
 import { ShellPermissionBoundary } from "@/components/auth/ShellPermissionBoundary";
@@ -58,7 +59,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
               title="Operations console"
               showMenu
               onMenuClick={() => setDrawerOpen(true)}
-              trailing={<UserMenu variant="internal" />}
+              trailing={
+                <div className="flex items-center gap-2">
+                  <AdminDashboardSearch />
+                  <UserMenu variant="internal" />
+                </div>
+              }
             />
             <main className="flex-1 space-y-8 px-4 py-6 print:px-4 print:py-3 md:px-8">{children}</main>
           </div>

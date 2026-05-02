@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\CompanyLocationController;
 use App\Http\Controllers\Admin\CompanySubscriptionController;
 use App\Http\Controllers\Admin\CustomerPortalUpdateController;
 use App\Http\Controllers\Admin\DamageReportController;
+use App\Http\Controllers\Admin\DashboardSearchController;
 use App\Http\Controllers\Admin\EvidencePhotoController;
 use App\Http\Controllers\Admin\FinanceDashboardController;
 use App\Http\Controllers\Admin\InvoiceController;
@@ -122,6 +123,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     });
 
     Route::middleware('permission:dashboard.view')->get('work-queue', [WorkQueueController::class, 'index'])->name('api.admin.work_queue.index');
+
+    Route::middleware('permission:dashboard.view')->get('dashboard-search', DashboardSearchController::class)->name('api.admin.dashboard_search');
 
     Route::middleware('permission:audit_logs.view')->get('audit-logs', [AuditLogController::class, 'index'])->name('api.admin.audit_logs.index');
 
