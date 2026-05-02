@@ -9,8 +9,6 @@ import {
 } from "@/config/navigation";
 
 import { Toaster } from "sonner";
-import Link from "next/link";
-
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
 import { StaffRouteGate } from "@/components/auth/StaffRouteGate";
 import { ShellPermissionBoundary } from "@/components/auth/ShellPermissionBoundary";
@@ -43,14 +41,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <ShellPermissionBoundary scope="admin" label="Checking operations permissions…">
         <div className="flex min-h-screen bg-gradient-to-br from-muted/35 via-background to-muted/20 print:min-h-0 print:bg-white">
           <aside className="app-chrome hidden h-svh shrink-0 print:hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95 md:backdrop-blur">
-            <div className="flex shrink-0 flex-col gap-1 border-b px-4 py-3">
+            <div className="flex shrink-0 flex-col border-b px-4 py-3">
               <WeSharpLogo className="h-9" href="/admin/dashboard" />
-              <Link
-                href="/"
-                className="w-fit text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                Public site
-              </Link>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
               <SidebarNav sections={navSections} className="p-2 md:p-3" />
@@ -78,10 +70,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
               sections={navSections}
               brandSuffix="Ops"
               logoHref="/admin/dashboard"
-              quickLinks={[
-            { href: "/", label: "Back to home" },
-            { href: "/admin/dashboard", label: "Dashboard home" },
-          ]}
             />
           </div>
         </div>

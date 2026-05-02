@@ -26,12 +26,28 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-export type NavItem = {
+/** Leaf link (sidebar row or bottom tab). */
+export type NavLeaf = {
   title: string;
   href: string;
   icon: LucideIcon;
   /** Server permission key from Laravel — optional for purely cosmetic links. */
   permission?: string;
+  /** Optional one-line hint; shown on nested “card” links in the admin sidebar. */
+  description?: string;
+};
+
+/**
+ * Sidebar entry: either a single link or a parent with card-style child links.
+ * Parents may omit `href` when they only act as a group label.
+ */
+export type NavItem = {
+  title: string;
+  icon: LucideIcon;
+  href?: string;
+  permission?: string;
+  description?: string;
+  children?: NavLeaf[];
 };
 
 /** Grouped navigation (Sprint 13.1 IA). Empty sections are omitted after permission filtering. */
@@ -39,6 +55,73 @@ export type NavSection = {
   label: string;
   items: NavItem[];
 };
+
+/** Flatten one nav item into leaf links (parent `href` first, then children). */
+export function navItemToLeaves(item: NavItem): NavLeaf[] {
+  const out: NavLeaf[] = [];
+  if (item.href) {
+    out.push({
+      title: item.title,
+      href: item.href,
+      icon: item.icon,
+      permission: item.permission,
+      description: item.description,
+    });
+  }
+  if (item.children?.length) {
+    out.push(...item.children);
+  }
+  return out;
+}
+
+export function navSectionsToLeaves(sections: NavSection[]): NavLeaf[] {
+  return sections.flatMap((s) => s.items.flatMap(navItemToLeaves));
+}
+
+function filterNavItem(item: NavItem, permissions: Set<string>): NavItem | null {
+  if (item.children?.length) {
+    const kids = item.children.filter((c) => !c.permission || permissions.has(c.permission));
+    const parentLinkOk =
+      Boolean(item.href) && (!item.permission || permissions.has(item.permission));
+
+    if (kids.length === 0) {
+      if (parentLinkOk && item.href) {
+        return {
+          title: item.title,
+          href: item.href,
+          icon: item.icon,
+          permission: item.permission,
+          description: item.description,
+        };
+      }
+      return null;
+    }
+
+    const result: NavItem = {
+      title: item.title,
+      icon: item.icon,
+      children: kids,
+    };
+    if (parentLinkOk && item.href) {
+      result.href = item.href;
+      result.permission = item.permission;
+      result.description = item.description;
+    }
+    return result;
+  }
+
+  if (!item.href) return null;
+  if (!item.permission || permissions.has(item.permission)) {
+    return {
+      title: item.title,
+      href: item.href,
+      icon: item.icon,
+      permission: item.permission,
+      description: item.description,
+    };
+  }
+  return null;
+}
 
 export const ADMIN_NAV_SECTIONS: NavSection[] = [
   {
@@ -50,77 +133,112 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "CRM",
-    items: [{ title: "Companies & CRM", href: "/admin/crm", icon: Users, permission: "companies.view" }],
-  },
-  {
     label: "Operations",
     items: [
+      { title: "Companies", href: "/admin/crm", icon: Users, permission: "companies.view" },
       { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
       { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
       { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
-    ],
-  },
-  {
-    label: "Routes",
-    items: [
-      { title: "Route planner", href: "/admin/routes", icon: Boxes, permission: "routes.view" },
-      { title: "Today's routes", href: "/admin/routes/today", icon: MapPinned, permission: "routes.view" },
-    ],
-  },
-  {
-    label: "Sales & pricing",
-    items: [
       {
-        title: "Plans & price rules",
-        href: "/admin/subscription-plans",
-        icon: ShoppingCart,
-        permission: "subscriptions.view",
+        title: "Routes",
+        icon: Boxes,
+        permission: "routes.view",
+        children: [
+          {
+            title: "Today's routes",
+            href: "/admin/routes/today",
+            icon: MapPinned,
+            permission: "routes.view",
+            description: "Drivers, stops, and completion for today",
+          },
+          {
+            title: "Route planner",
+            href: "/admin/routes",
+            icon: Boxes,
+            permission: "routes.view",
+            description: "Build schedules and manage routes",
+          },
+        ],
       },
     ],
   },
   {
     label: "Finance",
     items: [
-      { title: "Finance", href: "/admin/finance", icon: Landmark, permission: "payments.view" },
-      { title: "Invoices", href: "/admin/invoices", icon: Receipt, permission: "invoices.view" },
+      { title: "Overview", href: "/admin/finance", icon: Landmark, permission: "payments.view" },
       { title: "Payments", href: "/admin/payments", icon: Banknote, permission: "payments.view" },
-      { title: "Sales report", href: "/admin/reports/sales", icon: LineChart, permission: "reports.finance" },
+      { title: "Invoices", href: "/admin/invoices", icon: Receipt, permission: "invoices.view" },
       {
-        title: "Billing report",
-        href: "/admin/reports/billing",
-        icon: CircleDollarSign,
-        permission: "reports.finance",
+        title: "Plans & subscriptions",
+        icon: ShoppingCart,
+        permission: "subscriptions.view",
+        children: [
+          {
+            title: "Plans & pricing",
+            href: "/admin/subscription-plans",
+            icon: ShoppingCart,
+            permission: "subscriptions.view",
+            description: "Catalogue, tiers, and price rules",
+          },
+          {
+            title: "Active subscriptions",
+            href: "/admin/subscriptions",
+            icon: Repeat,
+            permission: "subscriptions.view",
+            description: "Live subscriptions across tenants",
+          },
+        ],
       },
-      { title: "Recurring revenue", href: "/admin/reports/recurring-revenue", icon: Repeat, permission: "reports.finance" },
-    ],
-  },
-  {
-    label: "Subscriptions",
-    items: [
-      { title: "Active subscriptions", href: "/admin/subscriptions", icon: Repeat, permission: "subscriptions.view" },
     ],
   },
   {
     label: "Reports",
     items: [
       {
-        title: "Operations overview",
+        title: "Operations",
         href: "/admin/reports/operations",
         icon: BarChart3,
         permission: "reports.operations",
       },
       {
-        title: "Route performance",
+        title: "Routes",
         href: "/admin/reports/routes",
         icon: Gauge,
         permission: "reports.operations",
       },
       {
-        title: "Knife & service",
+        title: "Knives & services",
         href: "/admin/reports/knives",
         icon: Utensils,
         permission: "reports.operations",
+      },
+      {
+        title: "Finance",
+        icon: LineChart,
+        permission: "reports.finance",
+        children: [
+          {
+            title: "Sales report",
+            href: "/admin/reports/sales",
+            icon: LineChart,
+            permission: "reports.finance",
+            description: "Revenue and sales trends",
+          },
+          {
+            title: "Billing report",
+            href: "/admin/reports/billing",
+            icon: CircleDollarSign,
+            permission: "reports.finance",
+            description: "Invoicing and cash collection",
+          },
+          {
+            title: "Recurring revenue",
+            href: "/admin/reports/recurring-revenue",
+            icon: Repeat,
+            permission: "reports.finance",
+            description: "MRR and subscription momentum",
+          },
+        ],
       },
     ],
   },
@@ -130,19 +248,33 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
       { title: "Users", href: "/admin/users", icon: UserCog, permission: "users.view" },
       { title: "Site content", href: "/admin/content-settings", icon: Newspaper, permission: "settings.manage" },
       { title: "Notifications", href: "/admin/notifications", icon: Bell, permission: "notifications.deliveries.view" },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
-      { title: "Webhook inbox", href: "/admin/webhooks/inbox", icon: Webhook, permission: "audit_logs.view" },
+      {
+        title: "System",
+        icon: Settings,
+        permission: "audit_logs.view",
+        children: [
+          {
+            title: "Audit log",
+            href: "/admin/audit",
+            icon: ScrollText,
+            permission: "audit_logs.view",
+            description: "Who changed what, with immutable history",
+          },
+          {
+            title: "Webhook inbox",
+            href: "/admin/webhooks/inbox",
+            icon: Webhook,
+            permission: "audit_logs.view",
+            description: "Inbound integration and Stripe events",
+          },
+        ],
+      },
     ],
   },
 ];
 
-/** Full admin flat list — useful for tests or legacy imports. */
-export const ADMIN_NAV: NavItem[] = ADMIN_NAV_SECTIONS.flatMap((s) => s.items);
+/** Full admin flat list — every navigable href (tests / legacy helpers). */
+export const ADMIN_NAV: NavLeaf[] = navSectionsToLeaves(ADMIN_NAV_SECTIONS);
 
 /** Tenant account — grouped for collapsible mobile / narrow sidebars. */
 export const ACCOUNT_NAV_SECTIONS: NavSection[] = [
@@ -171,7 +303,7 @@ export const ACCOUNT_NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-export const ACCOUNT_NAV: NavItem[] = ACCOUNT_NAV_SECTIONS.flatMap((s) => s.items);
+export const ACCOUNT_NAV: NavLeaf[] = navSectionsToLeaves(ACCOUNT_NAV_SECTIONS);
 
 export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
   {
@@ -239,10 +371,10 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-export const ROUTE_MANAGER_NAV: NavItem[] = ROUTE_MANAGER_NAV_SECTIONS.flatMap((s) => s.items);
+export const ROUTE_MANAGER_NAV: NavLeaf[] = navSectionsToLeaves(ROUTE_MANAGER_NAV_SECTIONS);
 
 /** Mobile field mode — fewer tabs so taps stay large (Sprint 13.1). */
-export const ROUTE_MANAGER_BOTTOM_NAV: NavItem[] = [
+export const ROUTE_MANAGER_BOTTOM_NAV: NavLeaf[] = [
   { title: "Today", href: "/admin/routes/today", icon: MapPinned, permission: "routes.view" },
   { title: "Routes", href: "/admin/routes", icon: Boxes, permission: "routes.view" },
   { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
@@ -254,11 +386,13 @@ export function filterNavSections(sections: NavSection[], permissions: Set<strin
   return sections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => !item.permission || permissions.has(item.permission)),
+      items: section.items
+        .map((item) => filterNavItem(item, permissions))
+        .filter((item): item is NavItem => item !== null),
     }))
     .filter((section) => section.items.length > 0);
 }
 
-export function filterNav(items: NavItem[], permissions: Set<string>): NavItem[] {
+export function filterNav(items: NavLeaf[], permissions: Set<string>): NavLeaf[] {
   return items.filter((item) => !item.permission || permissions.has(item.permission));
 }

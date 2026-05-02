@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import type { NavItem } from "@/config/navigation";
+import type { NavLeaf } from "@/config/navigation";
 import { navHrefIsActive } from "@/lib/nav-href-active";
 import { cn } from "@/lib/utils";
 
 type MobileBottomNavProps = {
-  items: NavItem[];
+  items: NavLeaf[];
 };
 
 export function MobileBottomNav({ items }: MobileBottomNavProps) {

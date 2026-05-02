@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 
 import { ACCOUNT_NAV_SECTIONS, filterNavSections } from "@/config/navigation";
@@ -30,14 +29,8 @@ export function AccountShell({ children }: { children: ReactNode }) {
       <ShellPermissionBoundary scope="account" label="Checking your account access…">
         <div className="flex min-h-screen bg-muted/25 print:min-h-0 print:bg-white">
           <aside className="app-chrome hidden h-svh shrink-0 print:hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
-            <div className="flex shrink-0 flex-col gap-1 border-b px-4 py-3">
+            <div className="flex shrink-0 flex-col border-b px-4 py-3">
               <WeSharpLogo className="h-8" href="/" />
-              <Link
-                href="/"
-                className="w-fit text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                Back to home
-              </Link>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
               <SidebarNav sections={navSections} className="p-2 md:p-3" />
@@ -56,16 +49,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="app-chrome print:hidden">
-            <MobileDrawer
-              open={drawerOpen}
-              onOpenChange={setDrawerOpen}
-              sections={navSections}
-              logoHref="/"
-              quickLinks={[
-                { href: "/", label: "Back to home" },
-                { href: "/account/dashboard", label: "Account home" },
-              ]}
-            />
+            <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} sections={navSections} logoHref="/" />
           </div>
         </div>
       </ShellPermissionBoundary>
