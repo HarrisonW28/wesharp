@@ -8,6 +8,7 @@ use App\Enums\BookingStatus;
 use App\Enums\CompanyStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\KnifeStatus;
+use App\Enums\NoteVisibility;
 use App\Enums\OperationalRouteStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
@@ -454,6 +455,7 @@ final class WeSharpDemoSeeder extends Seeder
             'noteable_id' => $company->id,
             'author_id' => $operatorId,
             'body' => sprintf('Demo profile for %s: confirm stainless vs carbon knives before batch filing.', $company->name),
+            'visibility' => NoteVisibility::Internal,
         ]);
 
         $bookings = collect([

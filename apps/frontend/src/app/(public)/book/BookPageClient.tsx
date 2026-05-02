@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChevronLeft, Loader2 } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -72,6 +73,8 @@ const initialValues: PublicBookingFormValues = {
 };
 
 export function BookPageClient({ booking }: { booking: SiteContent["booking"] }) {
+  const searchParams = useSearchParams();
+  const seededPlanMessageRef = useRef(false);
   const [values, setValues] = useState<PublicBookingFormValues>(initialValues);
   const [fieldErrors, setFieldErrors] = useState<PublicBookingFieldErrors>({});
   const [globalMessage, setGlobalMessage] = useState<string | null>(null);
@@ -79,6 +82,64 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
   const [step, setStep] = useState(0);
 
   const endpoint = useMemo(() => `${apiOrigin()}/api/public/booking-enquiries`, []);
+
+  useEffect(() => {
+    const kn = searchParams.get("knives");
+    const pc = searchParams.get("postcode");
+    const prog = searchParams.get("programme");
+    const svc = searchParams.get("service");
+    const planNameRaw = searchParams.get("plan_name");
+    const customPlanRaw = searchParams.get("custom_plan");
+    if (
+      kn === null &&
+      pc === null &&
+      prog === null &&
+      svc === null &&
+      planNameRaw === null &&
+      customPlanRaw === null
+    ) {
+      return;
+    }
+    setValues((prev) => {
+      const next = { ...prev };
+      if (kn !== null && /^\d+$/.test(kn)) {
+        const n = Number(kn);
+        if (n >= 1 && n <= 50000) {
+          next.estimated_knife_count = n;
+        }
+      }
+      if (pc !== null && pc.trim() !== "") {
+        next.postcode = pc.trim().slice(0, 24);
+      }
+      if (svc === "onsite" || svc === "collection") {
+        next.service_type = svc;
+      }
+      if (prog === "subscription") {
+        next.programme_interest = "subscription";
+      } else if (prog === "one_off") {
+        next.programme_interest = "one_off";
+      } else if (prog === "unsure") {
+        next.programme_interest = "unsure";
+      }
+
+      if (!seededPlanMessageRef.current && prev.message === "") {
+        const planName = planNameRaw?.trim() ?? "";
+        if (planName !== "") {
+          const safe = planName.slice(0, 120);
+          next.message = `I'm interested in the "${safe}" subscription programme. Please share next steps.`;
+          next.programme_interest = "subscription";
+          seededPlanMessageRef.current = true;
+        } else if (customPlanRaw !== null && /^(1|true|yes)$/i.test(customPlanRaw.trim())) {
+          next.message =
+            "I'd like to discuss a custom / bespoke subscription or programme for our volumes and schedule. Please get in touch.";
+          next.programme_interest = "subscription";
+          seededPlanMessageRef.current = true;
+        }
+      }
+
+      return next;
+    });
+  }, [searchParams]);
 
   const patch =
     <K extends keyof PublicBookingFormValues>(key: K) =>

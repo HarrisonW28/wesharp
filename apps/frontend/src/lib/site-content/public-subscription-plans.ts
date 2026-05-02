@@ -10,9 +10,21 @@ export const PublicSubscriptionPlanSchema = z.object({
   included_collections: z.number().int().nullable().optional(),
   included_knife_allowance: z.number().int().nullable().optional(),
   overage_price_amount_minor: z.number().int().nullable().optional(),
+  is_active: z.boolean().optional(),
+  sort_order: z.number().int().optional(),
+  recommended: z.boolean().optional(),
+  public_highlights: z.array(z.string()).optional(),
+  public_cta_label: z.string().nullable().optional(),
 });
 
 export type PublicSubscriptionPlan = z.infer<typeof PublicSubscriptionPlanSchema>;
+
+export const PublicSubscriptionPlansListResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    items: z.array(PublicSubscriptionPlanSchema),
+  }),
+});
 
 const BILLING_LABEL: Record<string, string> = {
   weekly: "per week",

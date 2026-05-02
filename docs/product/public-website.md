@@ -1,4 +1,39 @@
-# Public website — booking enquiries
+# Public website — booking enquiries & area check
+
+## Service area check and waitlist
+
+Visitors can check whether a postcode falls inside an active **`service_areas`** row (longest **`postcode_prefix`** match) and, if not covered, join a waitlist.
+
+| Item | Detail |
+| --- | --- |
+| Check | **`POST /api/public/service-area/check`** — body `{ "postcode": "…" }`; **`200`** returns **`data.covered`**, optional **`data.area`** (`id`, `label`, `city`), and **`data.next_collection_date`** (next future non-completed route date, or **`null`**) when covered. |
+| Waitlist | **`POST /api/public/service-area/waitlist`** — **`name`**, **`email`**, **`postcode`**, **`customer_type`** (`home` \| `business` \| `other`), optional **`estimated_knife_count`**, optional **`notes`**; **`422`** with code **`in_service_area`** if the postcode is already covered. **`201`** returns **`data.accepted`** + **`message`** only (no row UUID). |
+| Rate limit | **`throttle:service-area-public`** — **20 requests per minute per IP** (`RateLimiter::for('service-area-public')`). |
+| Audit | **`AuditRecorder::record(null, signup, 'public.service_area_waitlist_signup', …)`**. |
+| Marketing UI | **`/service-areas`** — `ServiceAreaCheckerSection` (see `apps/frontend/src/components/marketing/ServiceAreaCheckerSection.tsx`). |
+| Admin | **`GET /api/admin/service-area-waitlist`** — **`companies.view`**; paginated **`data.items`**. Next.js **`/admin/waitlist`**. |
+
+## Public pricing calculator (Sprint 14.2)
+
+| Item | Detail |
+| --- | --- |
+| Endpoint | **`POST /api/public/pricing-estimate`** — **`knife_count`**, **`programme_mode`** (`pay_as_you_go` \| `subscription`), **`service_type`** (`collection` \| `onsite`), **`visit_pattern`** (`single` \| `regular`), **`customer_kind`** (`home` \| `business`), optional **`postcode`**. |
+| Pay-as-you-go | Resolves the same active **`pricing_rules`** rows as workshop pricing (by **service type** + **postcode / service area prefix**). Supports **`per_knife`** (incl. **`minimum_units`** in **`constraints`**) and **`flat_visit`**. |
+| Subscription | Picks the smallest **`included_knife_allowance`** that still covers **`knife_count`** (else the largest allowance plan), adds **overage** from **`overage_price_amount_minor`** when needed. Plans limited to **`show_on_public_site`** + **`is_active`** (same idea as **`GET /api/public/site-content`**). |
+| Rate limit | **`throttle:pricing-estimate-public`** — **30/min/IP**. |
+| Marketing UI | **`/pricing`** — `PublicPricingCalculator`; **Book a collection** links into **`/book`** with query hints (`knives`, `postcode`, `programme`, `service`). |
+
+## Public subscription cards (Sprint 14.2b)
+
+| Item | Detail |
+| --- | --- |
+| Endpoint | **`GET /api/public/subscription-plans`** — **`200`** with **`data.items`**: marketed plans (**`is_active`**, **`show_on_public_site`**, not soft-deleted), ordered **`recommended` DESC**, then **`sort_order`**, **`name`**. Same rows as **`public_subscription_plans`** on **`GET /api/public/site-content`**. |
+| Rate limit | **`throttle:site-content-public`** (same bucket as site-content). |
+| Marketing UI | **`PublicSubscriptionPlansCatalog`** on **`/`**, **`/pricing`**, **`/subscriptions`** — fetches the endpoint client-side (loading / empty / error); always includes a **Custom / bespoke** card; plan CTAs link to **`/book`** with **`plan_name`**; bespoke uses **`custom_plan=1`**. |
+
+---
+
+## Booking enquiries (existing)
 
 Marketing visitors can submit a **booking enquiry** without signing in. The Next.js route **`/book`** posts JSON to Laravel **`POST /api/public/booking-enquiries`**.
 
@@ -36,7 +71,8 @@ Handled by **`CreatePublicBookingEnquiryAction`**:
 1. Set **`NEXT_PUBLIC_API_ORIGIN`** (e.g. `http://127.0.0.1:8000`) and run Laravel + Next dev servers.
 2. Open **`http://localhost:3000/book`**, fill the form, tick terms, submit — expect success screen with next steps copy.
 3. In admin CRM, locate the **lead** company and **requested** booking created from the enquiry.
-4. Automated: **`php artisan test tests/Feature/PublicBookingEnquiryApiTest.php`**.
+4. On **`/service-areas`**, run postcode check (covered vs not); submit waitlist only when not covered; confirm row in **`/admin/waitlist`**.
+5. Automated: **`php artisan test tests/Feature/ServiceAreaPublicApiTest.php`**, **`tests/Feature/PublicBookingEnquiryApiTest.php`**.
 
 ## Known gaps
 

@@ -29,6 +29,7 @@ Criteria below assume Clerk auth, internal **`staff`** middleware, and permissio
 - [ ] Quick status buttons call **`PUT .../status`** `{ company_status }` for active / at risk / lost (disabled when redundant or lacking `companies.update`).
 - [ ] “Request review” only shows **toast** acknowledgement (integration not wired).
 - [ ] Embed tables list bookings / orders / knives / invoices with stable columns consistent with Laravel resources.
+- [ ] **Portal invitations (Sprint 14.3):** staff with `companies.update` can POST **`/api/admin/companies/{id}/portal-invites`** and resend **`POST .../portal-invites/{invite}/resend`**; company detail includes **`portal_invites`**; customer sign-in auto-links **customer** users with pending invites (see **`CustomerPortalInviteFulfillment`**).
 
 ## Bookings (`/admin/bookings`)
 
@@ -109,13 +110,17 @@ Criteria below assume Clerk auth, internal **`staff`** middleware, and permissio
 ## Public enquiry (`/` + `/book`)
 
 - [ ] **`/book`** uses Zod (`PUBLIC_BOOKING_ENQUIRY_SCHEMA`) aligned with Laravel **`StorePublicBookingEnquiryRequest`**; accessible labels **`htmlFor` / `id`** and **`aria-invalid`** wired for errors.
+- [ ] **`POST /api/public/pricing-estimate`** returns marketing-safe totals from **`pricing_rules`** / **`subscription_plans`** (no client-side fabrication); **`429`** when throttle exceeded.
+- [ ] **`GET /api/public/subscription-plans`** returns **`data.items`** for active, marketed, non-deleted plans (**`throttle:site-content-public`**); **`429`** when throttle exceeded.
+- [ ] **`POST /api/public/service-area/check`** returns **`data.covered`** using active service area prefixes; **`POST /api/public/service-area/waitlist`** creates a waitlist row when the postcode is **not** covered (**`201`**, safe body); **`429`** when **`service-area-public`** throttle exceeded.
+- [ ] Ops can open **`/admin/waitlist`** ( **`companies.view`** ) and see entries from **`GET /api/admin/service-area-waitlist`**.
 - [ ] **`POST /api/public/booking-enquiries`** succeeds without Bearer token when payload is valid and **`terms_accepted`** is accepted; **`201`** returns **`data.accepted`** + **`message`** only (no internal IDs).
 - [ ] Repeated rapid submits from one IP exceed limit → **`429`** (throttle **`booking-enquiries`**).
 - [ ] Laravel creates **`CompanyStatus::Lead`** when email does not match an existing **`billing_email`** / contact email; **`CompanyLocation`**, **`Contact`**, **`BookingStatus::Requested`**, CRM **note**, and **audit** rows (`public.booking_enquiry`, `booking.created_from_public_enquiry`) are recorded (see **`docs/product/public-website.md`**).
 
 ## Security & permissions MVP
 
-- [ ] **`routes/api.php`** exposes **no** unauthenticated **`/api/admin/*`** or **`/api/account/*`** routes (beyond **`health`**, **`/api/public/booking-enquiries`**, **`/api/webhooks/stripe`**).
+- [ ] **`routes/api.php`** exposes **no** unauthenticated **`/api/admin/*`** or **`/api/account/*`** routes (beyond **`health`**, **`/api/public/booking-enquiries`**, **`/api/public/service-area/check`**, **`/api/public/service-area/waitlist`**, **`/api/public/pricing-estimate`**, **`/api/public/subscription-plans`**, **`/api/webhooks/stripe`**).
 - [ ] Internal role separation: **`StaffPermissionSeparationTest`** asserts route_manager ⇒ **payments/manual** forbidden, finance ⇒ **POST /routes** forbidden.
 - [ ] Tenant scoping: **`TenantCompanyIsolationTest`** covers cross-company **`GET /api/account/orders/{id}`**.
 - [ ] Frontend gates: **`StaffRouteGate`**, **`TenantRouteGate`**, **`ShellPermissionBoundary`**, **`/forbidden`** for unknown roles; **`safeApiErrorMessage`** surfaces **`error.message`** / first **`error.errors`** field only — no dumping raw payloads into banners.

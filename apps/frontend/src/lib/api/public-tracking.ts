@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { apiOrigin } from "@/lib/env";
 import { safeApiErrorMessage } from "@/lib/api/safe-api-error-message";
-import { AccountCustomerMessageSchema, AccountFulfilmentSchema } from "@/lib/api/account-schema";
+import { AccountCustomerMessageSchema, AccountCompanyCustomerNoteSchema, AccountFulfilmentSchema } from "@/lib/api/account-schema";
 
 const PublicTrackingBookingDataSchema = z
   .object({
@@ -27,6 +27,7 @@ const PublicTrackingBookingDataSchema = z
     confirmed_time_window_end: z.string().nullable().optional(),
     requested_collection_date: z.string().nullable().optional(),
     customer_notes: z.string().nullable().optional(),
+    customer_company_notes: z.array(AccountCompanyCustomerNoteSchema).optional(),
   })
   .passthrough();
 

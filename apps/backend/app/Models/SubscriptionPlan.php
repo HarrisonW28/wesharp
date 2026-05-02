@@ -33,6 +33,9 @@ class SubscriptionPlan extends Model
         'is_active',
         'show_on_public_site',
         'sort_order',
+        'public_highlights',
+        'public_cta_label',
+        'recommended',
     ];
 
     protected function casts(): array
@@ -46,6 +49,8 @@ class SubscriptionPlan extends Model
             'is_active' => 'boolean',
             'show_on_public_site' => 'boolean',
             'sort_order' => 'integer',
+            'public_highlights' => 'array',
+            'recommended' => 'boolean',
         ];
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\Companies\BuildCompaniesIndexQuery;
 use App\Enums\BookingStatus;
 use App\Enums\CompanyStatus;
+use App\Enums\NoteVisibility;
 use App\Enums\ServiceType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCompanyBookingRequest;
@@ -25,9 +26,11 @@ use App\Models\Company;
 use App\Models\CompanyLocation;
 use App\Models\Contact;
 use App\Models\Note;
+use App\Models\User;
 use App\Services\Audit\AuditRecorder;
 use App\Support\ApiResponses;
 use App\Support\Audit\AuditLogPresenter;
+use App\Support\Notes\NoteStaffVisibility;
 use App\Support\Permissions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -112,10 +115,18 @@ final class CompanyController extends Controller
                 'location:id,label,line_one,city,postcode,archived_at',
                 'contact:id,first_name,last_name,email,archived_at',
             ])->latest('scheduled_date')->limit(75),
-            'notes' => fn ($q) => $q->with('author:id,name')->latest()->limit(75),
+            'notes' => function ($q) use ($request): void {
+                $u = $request->user();
+                \assert($u instanceof User);
+                NoteStaffVisibility::applyStaffScope(
+                    $q->with('author:id,name'),
+                    $u,
+                )->latest()->limit(75);
+            },
             'orders' => fn ($q) => $q->latest()->limit(50),
             'knives' => fn ($q) => $q->latest()->limit(60),
             'invoices' => fn ($q) => $q->latest('issued_on')->limit(60),
+            'portalInvites' => fn ($q) => $q->with('invitedBy:id,name')->orderByDesc('last_sent_at')->limit(50),
         ]);
 
         return ApiResponses::success((new CompanyDetailResource($company))->resolve());
@@ -140,10 +151,16 @@ final class CompanyController extends Controller
             ->limit(100)
             ->get();
 
-        $timelineNotes = Note::query()
-            ->with('author:id,name')
-            ->where('noteable_type', Company::class)
-            ->where('noteable_id', $company->id)
+        $viewer = $request->user();
+        \assert($viewer instanceof User);
+
+        $timelineNotes = NoteStaffVisibility::applyStaffScope(
+            Note::query()
+                ->with('author:id,name')
+                ->where('noteable_type', Company::class)
+                ->where('noteable_id', $company->id),
+            $viewer,
+        )
             ->orderByDesc('created_at')
             ->limit(50)
             ->get();
@@ -158,6 +175,7 @@ final class CompanyController extends Controller
         }
 
         foreach ($timelineNotes as $row) {
+            $vis = $row->visibility instanceof NoteVisibility ? $row->visibility : NoteVisibility::Internal;
             $combined[] = [
                 'type' => 'note',
                 'id' => $row->id,
@@ -165,6 +183,8 @@ final class CompanyController extends Controller
                 'action' => 'note.created',
                 'actor_name' => $row->author?->name,
                 'body' => $row->body,
+                'visibility' => $vis->value,
+                'visibility_label' => $vis->staffLabel(),
             ];
         }
 
@@ -235,16 +255,27 @@ final class CompanyController extends Controller
     {
         $this->authorize('update', $company);
 
-        $note = DB::transaction(function () use ($request, $company): Note {
+        $actor = $request->user();
+        \assert($actor instanceof User);
+
+        /** @var NoteVisibility $visibility */
+        $visibility = $request->enum('visibility', NoteVisibility::class);
+        if (! NoteStaffVisibility::mayCreate($actor, $visibility)) {
+            abort(403, 'You cannot create notes with this visibility.');
+        }
+
+        $note = DB::transaction(function () use ($request, $company, $visibility, $actor): Note {
             $note = Note::query()->create([
                 'noteable_type' => Company::class,
                 'noteable_id' => $company->id,
-                'author_id' => $request->user()?->getAuthIdentifier(),
+                'author_id' => $actor->getAuthIdentifier(),
                 'body' => $request->validated('body'),
+                'visibility' => $visibility,
             ]);
 
-            AuditRecorder::record($request->user(), $company, 'company.note_added', [
+            AuditRecorder::record($actor, $company, 'company.note_added', [
                 'note_id' => $note->id,
+                'visibility' => $visibility->value,
             ], $request);
 
             return $note;
@@ -253,6 +284,8 @@ final class CompanyController extends Controller
         return ApiResponses::success([
             'id' => $note->id,
             'body' => $note->body,
+            'visibility' => $note->visibility instanceof NoteVisibility ? $note->visibility->value : NoteVisibility::Internal->value,
+            'visibility_label' => $note->visibility instanceof NoteVisibility ? $note->visibility->staffLabel() : NoteVisibility::Internal->staffLabel(),
             'created_at' => $note->created_at?->toIso8601String(),
         ], 201);
     }

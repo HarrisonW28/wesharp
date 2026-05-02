@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Pricing;
 
 use App\Enums\PricingRuleKind;
+use App\Enums\ServiceType;
 use App\Models\Company;
 use App\Models\CompanyLocation;
 use App\Models\Order;
@@ -80,11 +81,25 @@ final class PricingRuleResolver
 
     private function ruleMatchesServiceArea(PricingRule $rule, ?CompanyLocation $location): bool
     {
+        $norm = null;
+        if ($location !== null) {
+            $pc = strtoupper(preg_replace('/\s+/', '', (string) $location->postcode) ?? '');
+            $norm = $pc !== '' ? $pc : null;
+        }
+
+        return self::ruleMatchesNormalizedPostcode($rule, $norm);
+    }
+
+    /**
+     * @param  non-empty-string|null  $normalizedPostcode  Uppercase outbound code without spaces (e.g. M11AA).
+     */
+    public static function ruleMatchesNormalizedPostcode(PricingRule $rule, ?string $normalizedPostcode): bool
+    {
         if ($rule->service_area_id === null) {
             return true;
         }
 
-        if ($location === null) {
+        if ($normalizedPostcode === null || $normalizedPostcode === '') {
             return false;
         }
 
@@ -102,8 +117,34 @@ final class PricingRuleResolver
             return false;
         }
 
-        $pc = strtoupper(preg_replace('/\s+/', '', (string) $location->postcode) ?? '');
+        return str_starts_with($normalizedPostcode, $prefix);
+    }
 
-        return $pc !== '' && str_starts_with($pc, $prefix);
+    /**
+     * First matching active rule for anonymous / marketing estimates (postcode only).
+     */
+    public function resolveActiveRuleForServiceTypeAndPostcode(ServiceType $serviceType, ?string $normalizedPostcode): ?PricingRule
+    {
+        $rules = PricingRule::query()
+            ->where('active', true)
+            ->orderByDesc('priority')
+            ->orderByDesc('created_at')
+            ->get();
+
+        foreach ($rules as $rule) {
+            if (! $rule instanceof PricingRule) {
+                continue;
+            }
+            if ($rule->service_type !== null && $rule->service_type !== $serviceType) {
+                continue;
+            }
+            if (! self::ruleMatchesNormalizedPostcode($rule, $normalizedPostcode)) {
+                continue;
+            }
+
+            return $rule;
+        }
+
+        return null;
     }
 }

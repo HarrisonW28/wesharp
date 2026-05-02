@@ -66,6 +66,9 @@ final class SubscriptionPlanController extends Controller
             'is_active' => (bool) $plan->is_active,
             'show_on_public_site' => (bool) $plan->show_on_public_site,
             'sort_order' => (int) $plan->sort_order,
+            'public_highlights' => $plan->public_highlights,
+            'public_cta_label' => $plan->public_cta_label,
+            'recommended' => (bool) $plan->recommended,
         ];
 
         $plan->fill($request->planPayload());
@@ -82,6 +85,9 @@ final class SubscriptionPlanController extends Controller
             'is_active' => (bool) $plan->is_active,
             'show_on_public_site' => (bool) $plan->show_on_public_site,
             'sort_order' => (int) $plan->sort_order,
+            'public_highlights' => $plan->public_highlights,
+            'public_cta_label' => $plan->public_cta_label,
+            'recommended' => (bool) $plan->recommended,
         ];
 
         AuditRecorder::record($request->user(), $plan, 'subscription_plan.updated', [

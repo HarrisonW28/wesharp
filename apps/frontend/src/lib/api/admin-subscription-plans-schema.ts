@@ -14,6 +14,10 @@ export const SubscriptionPlanRowSchema = z.object({
   /** Newer API; default false for older deploys. */
   show_on_public_site: z.boolean().optional().default(false),
   sort_order: z.number().int(),
+  /** Marketing card bullets and CTA — present after Sprint 14.2b migration. */
+  public_highlights: z.array(z.string()).optional(),
+  public_cta_label: z.string().nullable().optional(),
+  recommended: z.boolean().optional(),
   created_at: z.string().nullable().optional(),
   updated_at: z.string().nullable().optional(),
 });

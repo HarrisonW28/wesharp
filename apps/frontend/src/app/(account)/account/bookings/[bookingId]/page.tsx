@@ -397,6 +397,33 @@ export default function TenantBookingDetailPage() {
             </CardContent>
           </Card>
 
+          {d.customer_company_notes && d.customer_company_notes.length > 0 ? (
+            <Card className="border border-primary/20 bg-primary/5 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">From your account team</CardTitle>
+                <CardDescription>Messages shared for your organisation in the customer portal.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                {d.customer_company_notes.map((note, idx) => (
+                  <blockquote
+                    key={`${note.created_at ?? "note"}-${idx}`}
+                    className="border-l-2 border-primary/50 py-1 pl-3 text-foreground"
+                  >
+                    <p className="whitespace-pre-wrap leading-relaxed">{note.body}</p>
+                    {note.created_at ? (
+                      <footer className="mt-2 text-xs text-muted-foreground tabular-nums">
+                        {new Date(note.created_at).toLocaleString("en-GB", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </footer>
+                    ) : null}
+                  </blockquote>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
+
           {hasOrders ? (
             <Card className="border shadow-sm">
               <CardHeader className="pb-2">

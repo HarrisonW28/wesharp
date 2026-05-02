@@ -30,6 +30,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -53,6 +54,10 @@ type PlanDraft = {
   sort_order: number;
   /** When true, plan appears on public marketing pages (home / pricing / subscriptions) if also active. */
   show_on_public_site: boolean;
+  /** One bullet per line for public programme cards. */
+  public_highlights_text: string;
+  public_cta_label: string;
+  recommended: boolean;
 };
 
 const INTERVALS = [
@@ -96,6 +101,9 @@ function defaultDraft(): PlanDraft {
     is_active: true,
     sort_order: 0,
     show_on_public_site: false,
+    public_highlights_text: "",
+    public_cta_label: "",
+    recommended: false,
   };
 }
 
@@ -113,6 +121,9 @@ function toDraft(p: SubscriptionPlanRow): PlanDraft {
     is_active: Boolean(p.is_active),
     sort_order: p.sort_order ?? 0,
     show_on_public_site: Boolean(p.show_on_public_site),
+    public_highlights_text: (p.public_highlights ?? []).join("\n"),
+    public_cta_label: p.public_cta_label ?? "",
+    recommended: Boolean(p.recommended),
   };
 }
 
@@ -134,6 +145,12 @@ function draftToApiPayload(d: PlanDraft): Record<string, unknown> {
     is_active: d.is_active,
     sort_order: Number.isFinite(d.sort_order) ? Math.max(0, Math.floor(d.sort_order)) : 0,
     show_on_public_site: d.show_on_public_site,
+    public_highlights: d.public_highlights_text
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s !== ""),
+    public_cta_label: d.public_cta_label.trim() === "" ? null : d.public_cta_label.trim(),
+    recommended: d.recommended,
   };
 }
 
@@ -318,6 +335,11 @@ export default function AdminSubscriptionPlansPage() {
                               }
                             >
                               {p.is_active ? "Marketing site" : "Marketing (inactive)"}
+                            </span>
+                          ) : null}
+                          {p.recommended ? (
+                            <span className="inline-flex items-center rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-800 dark:bg-violet-950/50 dark:text-violet-200">
+                              Featured on marketing cards
                             </span>
                           ) : null}
                         </div>
@@ -617,9 +639,49 @@ function PlanEditor(props: {
             <span className="text-sm">Show on marketing site</span>
           </label>
           <p className="text-xs text-muted-foreground">
-            Public pages only list plans that are active and have this option on. Home, pricing, and subscriptions use
-            the catalogue from the API.
+            Public pages only list plans that are active and have this option on. Home, pricing, and subscriptions load
+            the live catalogue from <span className="font-medium text-foreground">GET /api/public/subscription-plans</span>.
           </p>
+        </div>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-4">
+        <div className="text-sm font-medium text-foreground">Public programme cards</div>
+        <p className="text-xs text-muted-foreground">
+          Optional bullets and CTA label appear on marketing subscription cards. Leave blank to use sensible defaults.
+        </p>
+        <div className="space-y-2">
+          <Label htmlFor="plan-highlights">Highlight bullets (one per line)</Label>
+          <Textarea
+            id="plan-highlights"
+            value={d.public_highlights_text}
+            onChange={(e) => update({ public_highlights_text: e.target.value })}
+            placeholder="One bullet per line, e.g. Rolling route priority"
+            rows={4}
+            className="min-h-[100px] resize-y font-mono text-sm"
+          />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="plan-cta-label">Button label (optional)</Label>
+            <Input
+              id="plan-cta-label"
+              value={d.public_cta_label}
+              onChange={(e) => update({ public_cta_label: e.target.value.slice(0, 80) })}
+              placeholder="Choose plan"
+            />
+          </div>
+          <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 md:mt-7">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={d.recommended}
+              onChange={(e) => update({ recommended: e.target.checked })}
+            />
+            <span className="text-sm">Featured (recommended) on marketing cards</span>
+          </label>
         </div>
       </div>
 

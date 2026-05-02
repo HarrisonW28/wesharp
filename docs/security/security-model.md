@@ -76,8 +76,8 @@ Internal-only collections stay under **`/api/admin/*`** with explicit **`staff`*
 
 ## Public booking enquiries (`/api/public/*`)
 
-1. **`POST /api/public/booking-enquiries`** is **unauthenticated** by design — it must never trust role headers from the client; validation + business rules live in **`StorePublicBookingEnquiryRequest`** and **`CreatePublicBookingEnquiryAction`**.
-2. **Rate limiting** — **`throttle:booking-enquiries`** caps abuse (**10/min/IP**); **429** is expected when exceeded.
+1. **`POST /api/public/booking-enquiries`**, **`POST /api/public/service-area/check`** / **`…/waitlist`**, and **`POST /api/public/pricing-estimate`** are **unauthenticated** by design — they must never trust role headers from the client; validation + business rules live in form requests and actions.
+2. **Rate limiting** — **`throttle:booking-enquiries`** caps booking submissions (**10/min/IP**); **`throttle:service-area-public`** caps area check/waitlist (**20/min/IP**); **`throttle:pricing-estimate-public`** caps the marketing calculator (**30/min/IP**); **429** when exceeded.
 3. **Response shape** — success returns only **`accepted`** + a friendly **`message`** (no CRM/booking IDs) to reduce enumeration and scraping value.
 4. **Audit** — events are recorded with **null actor**; treat as **`system`/anonymous** attribution in reporting.
 

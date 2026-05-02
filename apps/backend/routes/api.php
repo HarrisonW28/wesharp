@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\CompanyContactController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\CompanyLocationController;
+use App\Http\Controllers\Admin\CompanyPortalInviteController;
 use App\Http\Controllers\Admin\CompanySubscriptionController;
 use App\Http\Controllers\Admin\CustomerPortalUpdateController;
 use App\Http\Controllers\Admin\DamageReportController;
@@ -48,9 +49,11 @@ use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\TenantSmokeController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\Public\PublicBookingEnquiryController;
+use App\Http\Controllers\Public\PublicPricingEstimateController;
 use App\Http\Controllers\Public\PublicServiceAreaCheckController;
 use App\Http\Controllers\Public\PublicServiceAreaWaitlistController;
 use App\Http\Controllers\Public\PublicSiteContentController;
+use App\Http\Controllers\Public\PublicSubscriptionPlansController;
 use App\Http\Controllers\Public\PublicTrackingController;
 use App\Http\Controllers\Webhooks\ClerkWebhookController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
@@ -60,6 +63,8 @@ Route::get('health', HealthController::class)->name('api.health');
 
 Route::prefix('public')->middleware('throttle:site-content-public')->group(function (): void {
     Route::get('site-content', [PublicSiteContentController::class, 'show'])->name('api.public.site_content.show');
+    Route::get('subscription-plans', [PublicSubscriptionPlansController::class, 'index'])
+        ->name('api.public.subscription_plans.index');
 });
 
 Route::prefix('public')->middleware('throttle:tracking-public')->group(function (): void {
@@ -204,6 +209,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:companies.view')->get('companies/{company}/summary', [CompanyController::class, 'summary'])->whereUuid('company')->name('api.admin.companies.summary');
     Route::middleware('permission:companies.view')->get('companies/{company}/activity', [CompanyController::class, 'activity'])->whereUuid('company')->name('api.admin.companies.activity');
     Route::middleware('permission:companies.update')->post('companies/{company}/notes', [CompanyController::class, 'storeNote'])->whereUuid('company')->name('api.admin.companies.notes.store');
+    Route::middleware('permission:companies.update')->post('companies/{company}/portal-invites', [CompanyPortalInviteController::class, 'store'])->whereUuid('company')->name('api.admin.companies.portal_invites.store');
+    Route::middleware('permission:companies.update')->post('companies/{company}/portal-invites/{invite}/resend', [CompanyPortalInviteController::class, 'resend'])->whereUuid(['company', 'invite'])->name('api.admin.companies.portal_invites.resend');
     Route::middleware('permission:companies.update')->post('companies/{company}/contacts', [CompanyController::class, 'storeContact'])->whereUuid('company')->name('api.admin.companies.contacts.store');
     Route::middleware('permission:companies.update')->put('companies/{company}/contacts/{contact}', [CompanyContactController::class, 'update'])->whereUuid('company')->whereUuid('contact')->name('api.admin.companies.contacts.update');
     Route::middleware('permission:companies.update')->post('companies/{company}/contacts/{contact}/archive', [CompanyContactController::class, 'archive'])->whereUuid('company')->whereUuid('contact')->name('api.admin.companies.contacts.archive');
@@ -349,6 +356,10 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
 Route::prefix('public')->middleware('throttle:service-area-public')->group(function (): void {
     Route::post('service-area/check', [PublicServiceAreaCheckController::class, 'store'])->name('api.public.service_area.check');
     Route::post('service-area/waitlist', [PublicServiceAreaWaitlistController::class, 'store'])->name('api.public.service_area.waitlist.store');
+});
+
+Route::prefix('public')->middleware('throttle:pricing-estimate-public')->group(function (): void {
+    Route::post('pricing-estimate', [PublicPricingEstimateController::class, 'store'])->name('api.public.pricing_estimate.store');
 });
 
 Route::prefix('public')->middleware('throttle:booking-enquiries')->group(function (): void {

@@ -4,11 +4,12 @@ namespace App\Support\Portal;
 
 use App\Enums\BookingStatus;
 use App\Enums\EvidencePhotoVisibility;
+use App\Enums\NoteVisibility;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
+use App\Models\Company;
 use App\Models\CustomerPortalUpdate;
-use App\Policies\BookingPolicy;
-use App\Support\Portal\CustomerActivityTimelinePresenter;
+use App\Models\Note;
 use Illuminate\Http\Request;
 
 final class PortalBookingPayload
@@ -93,6 +94,7 @@ final class PortalBookingPayload
 
         return array_merge($compact, [
             'activity_timeline' => CustomerActivityTimelinePresenter::forBooking($booking),
+            'customer_company_notes' => self::customerVisibleCompanyNotes($booking),
             'company' => $booking->company ? [
                 'id' => (string) $booking->company->id,
                 'name' => $booking->company->name,
@@ -167,5 +169,29 @@ final class PortalBookingPayload
         unset($data['activity_timeline']);
 
         return $data;
+    }
+
+    /**
+     * @return list<array{body: string, created_at: string|null}>
+     */
+    private static function customerVisibleCompanyNotes(Booking $booking): array
+    {
+        if ($booking->company_id === null) {
+            return [];
+        }
+
+        return Note::query()
+            ->where('noteable_type', Company::class)
+            ->where('noteable_id', $booking->company_id)
+            ->where('visibility', NoteVisibility::Customer->value)
+            ->orderByDesc('created_at')
+            ->limit(40)
+            ->get()
+            ->map(static fn (Note $n): array => [
+                'body' => $n->body,
+                'created_at' => $n->created_at?->toIso8601String(),
+            ])
+            ->values()
+            ->all();
     }
 }

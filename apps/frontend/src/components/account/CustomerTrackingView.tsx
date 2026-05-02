@@ -4,13 +4,14 @@ import Link from "next/link";
 import { CheckCircle2, Circle, CircleDashed } from "lucide-react";
 
 import { CustomerBookingStatusBadge } from "@/components/bookings/CustomerBookingStatusBadge";
-import { AccountCustomerMessageSchema, AccountFulfilmentSchema } from "@/lib/api/account-schema";
+import { AccountCustomerMessageSchema, AccountCompanyCustomerNoteSchema, AccountFulfilmentSchema } from "@/lib/api/account-schema";
 import type { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type Fulfilment = z.infer<typeof AccountFulfilmentSchema>;
 type Message = z.infer<typeof AccountCustomerMessageSchema>;
+type CompanyCustomerNote = z.infer<typeof AccountCompanyCustomerNoteSchema>;
 
 export type CustomerTrackingData = {
   reference?: string;
@@ -31,6 +32,7 @@ export type CustomerTrackingData = {
   confirmed_time_window_end?: string | null;
   requested_collection_date?: string | null;
   customer_notes?: string | null;
+  customer_company_notes?: CompanyCustomerNote[];
 };
 
 function formatAt(iso?: string | null): string | null {
@@ -175,6 +177,30 @@ export function CustomerTrackingView(props: {
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">{data.customer_notes}</p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {data.customer_company_notes && data.customer_company_notes.length > 0 ? (
+        <Card className="rounded-xl border-primary/25 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">From your account team</CardTitle>
+            <CardDescription>Shared notes for your organisation.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {data.customer_company_notes.map((note, idx) => (
+              <blockquote
+                key={`${note.created_at ?? "n"}-${idx}`}
+                className="border-l-2 border-primary/40 py-1 pl-3 text-sm leading-relaxed text-foreground"
+              >
+                <p>{note.body}</p>
+                {note.created_at ? (
+                  <footer className="mt-2 text-xs text-muted-foreground tabular-nums">
+                    {formatAt(note.created_at) ?? note.created_at}
+                  </footer>
+                ) : null}
+              </blockquote>
+            ))}
           </CardContent>
         </Card>
       ) : null}

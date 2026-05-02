@@ -3,6 +3,7 @@
 namespace App\Support\Crm;
 
 use App\Enums\BookingStatus;
+use App\Enums\NoteVisibility;
 use App\Enums\OrderStatus;
 use App\Models\AuditLog;
 use App\Models\Booking;
@@ -12,6 +13,8 @@ use App\Models\CompanySubscription;
 use App\Models\Contact;
 use App\Models\Note;
 use App\Models\Order;
+use App\Models\User;
+use App\Support\Notes\NoteStaffVisibility;
 use App\Support\Orders\OrderStatusPresentation;
 use Illuminate\Support\Str;
 
@@ -28,7 +31,7 @@ final class CompanyCrmOverview
     ];
 
     /** @return array<string, mixed> */
-    public static function toArray(Company $company): array
+    public static function toArray(Company $company, ?User $viewer = null): array
     {
         $defaultLocation = self::resolveDefaultLocation($company);
         $primaryContact = self::resolvePrimaryContact($company);
@@ -47,7 +50,7 @@ final class CompanyCrmOverview
             'active_order' => self::orderPayload($activeOrder),
             'unpaid_balance_pence' => $unpaidBalancePence,
             'subscription' => self::subscriptionPayload($subscription),
-            'recent_activity' => self::recentActivityPreview($company),
+            'recent_activity' => self::recentActivityPreview($company, $viewer),
         ];
     }
 
@@ -237,7 +240,7 @@ final class CompanyCrmOverview
     }
 
     /** @return list<array<string, mixed>> */
-    private static function recentActivityPreview(Company $company): array
+    private static function recentActivityPreview(Company $company, ?User $viewer): array
     {
         $audits = AuditLog::query()
             ->with('actor:id,name')
@@ -255,6 +258,10 @@ final class CompanyCrmOverview
             ->limit(5)
             ->get();
 
+        if ($viewer !== null) {
+            $notes = $notes->filter(static fn (Note $n) => NoteStaffVisibility::visibleToStaff($n, $viewer))->values();
+        }
+
         $combined = [];
 
         foreach ($audits as $row) {
@@ -269,6 +276,7 @@ final class CompanyCrmOverview
         }
 
         foreach ($notes as $row) {
+            $vis = $row->visibility instanceof NoteVisibility ? $row->visibility : NoteVisibility::Internal;
             $combined[] = [
                 'type' => 'note',
                 'id' => $row->id,
@@ -277,6 +285,8 @@ final class CompanyCrmOverview
                 'action' => 'note.created',
                 'actor_name' => $row->author?->name,
                 'body_preview' => Str::limit((string) $row->body, 120),
+                'visibility' => $vis->value,
+                'visibility_label' => $vis->staffLabel(),
             ];
         }
 

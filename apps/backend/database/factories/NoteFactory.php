@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\NoteVisibility;
 use App\Models\Company;
 use App\Models\Note;
 use App\Models\User;
@@ -19,6 +20,7 @@ class NoteFactory extends Factory
             'noteable_id' => Company::factory(),
             'author_id' => User::factory(),
             'body' => fake()->paragraphs(2, true),
+            'visibility' => NoteVisibility::Internal,
         ];
     }
 }

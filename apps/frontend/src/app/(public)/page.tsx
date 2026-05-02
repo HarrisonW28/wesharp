@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 import { HomeHero } from "@/components/marketing/HomeHero";
-import { PublicSubscriptionPlansPanel } from "@/components/marketing/PublicSubscriptionPlansPanel";
+import { PublicSubscriptionPlansCatalog } from "@/components/marketing/PublicSubscriptionPlansCatalog";
 import { Button } from "@/components/ui/button";
 import { PRICING } from "@/config/pricing";
 import { SERVICE_AREAS } from "@/config/service-areas";
@@ -12,7 +12,7 @@ import { fetchPublicSiteData } from "@/lib/site-content/fetch-site-content";
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const { content: site, publicSubscriptionPlans } = await fetchPublicSiteData();
+  const { content: site } = await fetchPublicSiteData();
   const h = site.homepage;
   const paygFromMinor = Math.min(...PRICING.tiers.map((t) => t.unitAmountMinor));
 
@@ -125,11 +125,7 @@ export default async function HomePage() {
             <div className="rounded-2xl border bg-card p-8 shadow-sm">
               <div className="text-sm font-semibold text-primary">{h.pricing_section_programme_label}</div>
               <p className="mt-1 text-xs text-muted-foreground">{h.pricing_section_programme_hint}</p>
-              <PublicSubscriptionPlansPanel
-                plans={publicSubscriptionPlans}
-                fallbackMonthlyMinor={PRICING.subscriptionMonthlyMinor}
-                footer={h.pricing_section_programme_footer}
-              />
+              <PublicSubscriptionPlansCatalog footer={h.pricing_section_programme_footer} />
             </div>
           </div>
           <div className="mt-8 flex flex-wrap justify-center gap-3">

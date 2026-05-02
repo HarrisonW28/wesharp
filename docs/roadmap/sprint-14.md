@@ -59,6 +59,8 @@ If not covered:
 - No raw technical wording.
 - Works on mobile.
 
+**Implemented:** Postcode check + waitlist on **`/service-areas`** (`ServiceAreaCheckerSection`); **`POST /api/public/service-area/check`** and **`POST /api/public/service-area/waitlist`** (`throttle:service-area-public`, 20/min/IP); coverage from active **`service_areas.postcode_prefix`** (longest match); next collection hint from next future **`routes`** row; **`GET /api/admin/service-area-waitlist`** (`companies.view`); table **`service_area_waitlist_signups`**; audit **`public.service_area_waitlist_signup`**; admin UI **`/admin/waitlist`**.
+
 ---
 
 ## Sprint 14.2 — Packages and Public Pricing Calculator
@@ -104,6 +106,8 @@ Show:
 - Calculator links into booking wizard.
 - Admin pricing remains source of truth where possible.
 - No misleading fake prices.
+
+**Implemented:** **`POST /api/public/pricing-estimate`** (`throttle:pricing-estimate-public`, 30/min/IP) uses **`PublicPricingEstimateService`**: pay-as-you-go totals from active **`pricing_rules`** + postcode via **`PricingRuleResolver::resolveActiveRuleForServiceTypeAndPostcode`** (refactored shared **`ruleMatchesNormalizedPostcode`**); subscription path from **`subscription_plans`** (`is_active`, `show_on_public_site`) with best-fit allowance + overage. **`/pricing`** — **`PublicPricingCalculator`**; programmes list still from **`GET /api/public/site-content`**. **`/book`** reads **`knives`**, **`postcode`**, **`programme`**, **`service`** query params to prefill the wizard.
 
 ---
 
@@ -216,6 +220,8 @@ Future admin fields may include:
 - Mobile layout works.
 - Empty/loading states are handled.
 
+**Implemented:** DB fields **`public_highlights`**, **`public_cta_label`**, **`recommended`**; shared **`PublicSubscriptionPlanCatalog::marketedPlans()`** for **`GET /api/public/subscription-plans`** (`throttle:site-content-public`, **`data.items`**), **`GET /api/public/site-content`**, and **`PublicPricingEstimateService`** subscription estimates. Admin edits marketing fields on **`/admin/subscription-plans`**. **`PublicSubscriptionPlansCatalog`** on **`/`**, **`/pricing`**, **`/subscriptions`** (loading / empty / error + always-on bespoke). Plan CTAs → **`/book?programme=subscription&plan_name=…`**; bespoke → **`custom_plan=1`** (prefills enquiry **`BookPageClient`**).
+
 ---
 
 ## Sprint 14.3 — Customer Invite and Portal Onboarding
@@ -250,6 +256,8 @@ Allow admins to invite customers into the portal.
 - Invite state is visible.
 - Role safety is preserved.
 
+**Implemented:** Table **`customer_portal_invites`** (per company + normalised email, pending/accepted/expired/revoked, Clerk id + error text, rolling **14-day** expiry from last send). **`POST /api/admin/companies/{company}/portal-invites`** and **`POST .../portal-invites/{invite}/resend`** (`companies.update`) create/update invites, call **Clerk `POST /v1/invitations`** when **`CLERK_SECRET_KEY`** is set, and audit **`customer_portal_invite.sent` / `.resent`**. **`GET /api/admin/companies/{company}`** includes **`portal_invites`**. On Clerk JWT / webhook user sync, **`CustomerPortalInviteFulfillment`** links **customer** users (never staff) with **`company_id` null** to a matching non-expired pending invite and audits **`customer_portal_invite.accepted_auto`**. CRM **Users** tab: send + resend UI. Role **`clerk.default_role`** remains customer; merge rules still do not promote staff from Clerk.
+
 ---
 
 ## Sprint 14.4 — Internal Notes vs Customer Notes
@@ -281,6 +289,8 @@ Make note visibility safe and obvious.
 - Staff cannot accidentally expose notes without clear action.
 - Existing notes are handled safely.
 - Note visibility is respected in timelines/tracking.
+
+**Implemented:** `notes.visibility` enum (**internal**, **customer**, **route**, **finance**) with default **internal** for existing rows. **`POST /api/admin/companies/{company}/notes`** accepts **`visibility`**; **`GET`** detail / **`/activity`** / overview **`recent_activity`** filter notes by viewer (**route** requires **`routes.view`**; **finance** requires invoices / **`reports.finance`** / payments / **`subscriptions.view`**). **`customer_company_notes`** on tenant **`GET /api/account/bookings/{id}`** and **`GET /api/public/track/{token}`** lists **customer** visibility only. Audit **`company.note_added`** includes **`visibility`**. CRM UI: visibility selector + labels; portal booking + tracking show **From your account team**.
 
 ---
 

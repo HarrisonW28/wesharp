@@ -1,15 +1,11 @@
 import Link from "next/link";
 
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
-import { PublicSubscriptionPlansPanel } from "@/components/marketing/PublicSubscriptionPlansPanel";
-import { PRICING } from "@/config/pricing";
-import { fetchPublicSiteData } from "@/lib/site-content/fetch-site-content";
+import { PublicSubscriptionPlansCatalog } from "@/components/marketing/PublicSubscriptionPlansCatalog";
 
 export const revalidate = 60;
 
-export default async function SubscriptionsPage() {
-  const { publicSubscriptionPlans } = await fetchPublicSiteData();
-
+export default function SubscriptionsPage() {
   return (
     <MarketingArticle
       eyebrow="Care plans for busy kitchens"
@@ -36,10 +32,7 @@ export default async function SubscriptionsPage() {
           Every kitchen is different. Published plans below are indicative — we&apos;ll confirm a written quote after we
           understand your volumes and cadence.
         </p>
-        <PublicSubscriptionPlansPanel
-          plans={publicSubscriptionPlans}
-          fallbackMonthlyMinor={PRICING.subscriptionMonthlyMinor}
-        />
+        <PublicSubscriptionPlansCatalog />
         <p className="text-sm text-muted-foreground">
           <Link href="/trade-accounts" className="font-medium text-foreground underline underline-offset-4">
             Trade accounts

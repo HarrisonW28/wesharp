@@ -79,6 +79,12 @@ class Company extends Model
         return $this->hasMany(User::class);
     }
 
+    /** @return HasMany<CustomerPortalInvite, $this> */
+    public function portalInvites(): HasMany
+    {
+        return $this->hasMany(CustomerPortalInvite::class)->orderByDesc('last_sent_at');
+    }
+
     public function contacts(): HasMany
     {
         return $this->hasMany(Contact::class);

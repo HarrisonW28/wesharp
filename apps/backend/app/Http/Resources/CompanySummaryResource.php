@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\BookingStatus;
 use App\Models\Company;
+use App\Models\User;
 use App\Support\Crm\CompanyCrmOverview;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -18,6 +19,9 @@ class CompanySummaryResource extends JsonResource
     {
         /** @var Company $c */
         $c = $this->resource;
+
+        $viewer = $request->user();
+        \assert($viewer instanceof User);
 
         $ordersTotal = (int) ($c->orders()->sum('total_pence'));
 
@@ -34,7 +38,7 @@ class CompanySummaryResource extends JsonResource
             'knives_count' => $c->knives()->count(),
             'invoices_open_count' => $c->invoices()->outstanding()->count(),
             'invoices_open_total_pence' => (int) $c->invoices()->outstanding()->sum('total_pence'),
-            'overview' => CompanyCrmOverview::toArray($c),
+            'overview' => CompanyCrmOverview::toArray($c, $viewer),
         ];
     }
 }

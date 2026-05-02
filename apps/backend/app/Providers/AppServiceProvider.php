@@ -80,6 +80,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(20)->by($request->ip());
         });
 
+        RateLimiter::for('pricing-estimate-public', static function (Request $request): Limit {
+            return Limit::perMinute(30)->by($request->ip());
+        });
+
         RateLimiter::for('site-content-public', static function (Request $request): Limit {
             return Limit::perMinute(120)->by($request->ip());
         });

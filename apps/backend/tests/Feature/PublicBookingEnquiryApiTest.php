@@ -37,6 +37,7 @@ final class PublicBookingEnquiryApiTest extends TestCase
                 'service_type' => 'collection',
                 'message' => 'Please collect chef knives from the prep area loading bay.',
                 'terms_accepted' => true,
+                'programme_interest' => 'unsure',
             ]);
 
             $response->assertCreated()

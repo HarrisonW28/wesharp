@@ -80,6 +80,8 @@ export const LocationSchema = z.object({
 export const NoteSchema = z.object({
   id: z.string(),
   body: z.string(),
+  visibility: z.enum(["internal", "customer", "route", "finance"]).optional(),
+  visibility_label: z.string().optional(),
   created_at: z.string().nullable().optional(),
   author_name: z.string().nullable().optional(),
 });
@@ -185,6 +187,8 @@ export const CompanyOverviewSnapshotSchema = z.object({
       action: z.string().optional(),
       actor_name: z.string().nullable().optional(),
       body_preview: z.string().optional(),
+      visibility: z.enum(["internal", "customer", "route", "finance"]).optional(),
+      visibility_label: z.string().optional(),
     }),
   ),
 });
@@ -197,6 +201,25 @@ export const CompanyUserSchema = z.object({
   role_label: z.string(),
   status: z.string().nullable().optional(),
   status_label: z.string().nullable().optional(),
+});
+
+export const CustomerPortalInviteRowSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string(),
+  status: z.string(),
+  display_status: z.string(),
+  expires_at: z.string().nullable().optional(),
+  last_sent_at: z.string().nullable().optional(),
+  accepted_at: z.string().nullable().optional(),
+  clerk_invitation_id: z.string().nullable().optional(),
+  last_clerk_error: z.string().nullable().optional(),
+  invited_by: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+    })
+    .nullable()
+    .optional(),
 });
 
 const CrmSubscriptionActionSchema = z.object({
@@ -335,6 +358,7 @@ export const CompanyDetailResponseSchema = z.object({
     overview: CompanyOverviewSnapshotSchema,
     subscription: CompanySubscriptionCrmSchema,
     users: z.array(CompanyUserSchema),
+    portal_invites: z.array(CustomerPortalInviteRowSchema),
     contacts: z.array(ContactSchema),
     locations: z.array(LocationSchema),
     notes: z.array(NoteSchema),

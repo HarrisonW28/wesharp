@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\NoteVisibility;
+use App\Support\Notes\NoteStaffVisibility;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +19,25 @@ class Note extends Model
     protected $fillable = [
         'author_id',
         'body',
+        'visibility',
     ];
+
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'visibility' => NoteVisibility::class,
+        ];
+    }
+
+    /**
+     * @param  Builder<Note>  $query
+     * @return Builder<Note>
+     */
+    public function scopeVisibleToStaff(Builder $query, User $viewer): Builder
+    {
+        return NoteStaffVisibility::applyStaffScope($query, $viewer);
+    }
 
     public function noteable(): MorphTo
     {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -80,6 +80,7 @@ type CrmTab = (typeof CRM_TABS)[number];
 
 const noteFormSchema = z.object({
   body: z.string().min(1, "Enter note text."),
+  visibility: z.enum(["internal", "customer", "route", "finance"]),
 });
 
 const bookingFormSchema = z.object({
@@ -105,6 +106,15 @@ export default function AdminCrmCompanyPage() {
   const canViewPayments = perms.has("payments.view");
   const canManageSubs = perms.has("subscriptions.manage");
   const canViewSubs = perms.has("subscriptions.view");
+  const canUseRouteNoteVisibility =
+    perms.has("routes.view") || perms.has("routes.manage") || perms.has("route_stops.update");
+  const canUseFinanceNoteVisibility =
+    perms.has("invoices.view") ||
+    perms.has("reports.finance") ||
+    perms.has("payments.view") ||
+    perms.has("subscriptions.view") ||
+    perms.has("subscriptions.manage");
+
   const [tab, setTab] = useState<CrmTab>("overview");
 
   const invalidateCompany = async () => {
@@ -184,14 +194,17 @@ export default function AdminCrmCompanyPage() {
 
   const noteForm = useForm<z.infer<typeof noteFormSchema>>({
     resolver: zodResolver(noteFormSchema),
-    defaultValues: { body: "" },
+    defaultValues: { body: "", visibility: "internal" },
   });
 
   const noteMutation = useMutation({
-    mutationFn: async (body: string) => {
+    mutationFn: async (payload: z.infer<typeof noteFormSchema>) => {
       const res = await admin.json(`/api/admin/companies/${companyId}/notes`, {
         method: "POST",
-        body: JSON.stringify({ body }),
+        body: JSON.stringify({
+          body: payload.body.trim(),
+          visibility: payload.visibility,
+        }),
       });
       if (!res.ok) {
         throw new Error(res.message);
@@ -200,7 +213,7 @@ export default function AdminCrmCompanyPage() {
     },
     onSuccess: async () => {
       toast.success("Note added.");
-      noteForm.reset({ body: "" });
+      noteForm.reset({ body: "", visibility: "internal" });
       await invalidateCompany();
     },
     onError: (e: unknown) => {
@@ -209,6 +222,7 @@ export default function AdminCrmCompanyPage() {
   });
 
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
 
   const bookingForm = useForm<z.infer<typeof bookingFormSchema>>({
     resolver: zodResolver(bookingFormSchema),
@@ -242,6 +256,47 @@ export default function AdminCrmCompanyPage() {
     },
     onError: (e: unknown) => {
       toast.error(e instanceof Error ? e.message : "Booking failed.");
+    },
+  });
+
+  const sendPortalInvite = useMutation({
+    mutationFn: async (email: string) => {
+      const res = await admin.json<unknown>(`/api/admin/companies/${companyId}/portal-invites`, {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
+    onSuccess: async () => {
+      toast.success("Portal invitation sent.");
+      setInviteEmail("");
+      await invalidateCompany();
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Invite failed.");
+    },
+  });
+
+  const resendPortalInvite = useMutation({
+    mutationFn: async (inviteId: string) => {
+      const res = await admin.json<unknown>(
+        `/api/admin/companies/${companyId}/portal-invites/${inviteId}/resend`,
+        { method: "POST", body: JSON.stringify({}) },
+      );
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
+    onSuccess: async () => {
+      toast.success("Invitation resent.");
+      await invalidateCompany();
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Resend failed.");
     },
   });
 
@@ -689,6 +744,11 @@ export default function AdminCrmCompanyPage() {
                       <li key={`${row.type}-${row.id}`} className="rounded-md border px-3 py-2">
                         <span className="text-xs text-muted-foreground">{row.at ?? ""}</span>{" "}
                         <span className="font-medium">{row.summary ?? row.action ?? row.type}</span>
+                        {row.type === "note" && row.visibility_label ? (
+                          <span className="ml-2 rounded border border-border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                            {row.visibility_label}
+                          </span>
+                        ) : null}
                         <span className="text-muted-foreground"> · {row.actor_name ?? "—"}</span>
                         {row.type === "note" && row.body_preview ? (
                           <p className="mt-1 text-muted-foreground">{row.body_preview}</p>
@@ -721,29 +781,107 @@ export default function AdminCrmCompanyPage() {
         ) : null}
 
         {tab === "users" ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Portal users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {c.users.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No users linked to this company.</p>
-              ) : (
-                <ul className="space-y-3 text-sm">
-                  {c.users.map((u) => (
-                    <li key={u.id} className="rounded-lg border px-3 py-2">
-                      <div className="font-medium">{u.name}</div>
-                      <div className="text-muted-foreground">{u.email}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {u.role_label}
-                        {u.status_label ? ` · ${u.status_label}` : null}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Portal users</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {c.users.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No users linked to this company.</p>
+                ) : (
+                  <ul className="space-y-3 text-sm">
+                    {c.users.map((u) => (
+                      <li key={u.id} className="rounded-lg border px-3 py-2">
+                        <div className="font-medium">{u.name}</div>
+                        <div className="text-muted-foreground">{u.email}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {u.role_label}
+                          {u.status_label ? ` · ${u.status_label}` : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+
+            {canUpdate ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Portal invitations</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-xs text-muted-foreground">
+                    Sends a Clerk invitation when API keys are configured. Customers who sign in with the invited email
+                    are linked to this account automatically (customer roles only).
+                  </p>
+                  <form
+                    className="flex flex-col gap-2 sm:flex-row sm:items-end"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const t = inviteEmail.trim();
+                      if (t === "" || sendPortalInvite.isPending) return;
+                      sendPortalInvite.mutate(t);
+                    }}
+                  >
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <Label htmlFor="portal-invite-email">Email</Label>
+                      <Input
+                        id="portal-invite-email"
+                        type="email"
+                        autoComplete="off"
+                        placeholder="name@company.com"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        disabled={sendPortalInvite.isPending}
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={sendPortalInvite.isPending || inviteEmail.trim() === "" || !admin.origin}
+                      className="sm:shrink-0"
+                    >
+                      <Mail className="mr-2 h-4 w-4" aria-hidden />
+                      Send invite
+                    </Button>
+                  </form>
+
+                  {c.portal_invites.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No invitations recorded yet.</p>
+                  ) : (
+                    <ul className="space-y-2 text-sm">
+                      {c.portal_invites.map((inv) => (
+                        <li key={inv.id} className="flex flex-col gap-2 rounded-lg border px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <div className="font-medium">{inv.email}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {inv.display_status}
+                              {inv.last_sent_at ? ` · last sent ${new Date(inv.last_sent_at).toLocaleString()}` : null}
+                              {inv.last_clerk_error ? ` · Clerk: ${inv.last_clerk_error}` : null}
+                            </div>
+                          </div>
+                          {inv.display_status !== "accepted" ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={resendPortalInvite.isPending}
+                              className="shrink-0"
+                              onClick={() => resendPortalInvite.mutate(inv.id)}
+                            >
+                              <RefreshCw className="mr-2 h-4 w-4" aria-hidden />
+                              Resend
+                            </Button>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
         ) : null}
 
         {tab === "bookings" ? (
@@ -807,12 +945,46 @@ export default function AdminCrmCompanyPage() {
                 <form
                   className="space-y-3"
                   onSubmit={noteForm.handleSubmit((v) => {
-                    noteMutation.mutate(v.body.trim());
+                    noteMutation.mutate({
+                      body: v.body.trim(),
+                      visibility: v.visibility,
+                    });
                   })}
                 >
-                  <Textarea rows={4} placeholder="Add an internal note…" {...noteForm.register("body")} />
+                  <div className="space-y-2">
+                    <Label htmlFor="crm-note-visibility">Who can see this note</Label>
+                    <Select
+                      value={noteForm.watch("visibility")}
+                      onValueChange={(val) =>
+                        noteForm.setValue("visibility", val as z.infer<typeof noteFormSchema>["visibility"], {
+                          shouldValidate: true,
+                        })
+                      }
+                    >
+                      <SelectTrigger id="crm-note-visibility" className="max-w-xl">
+                        <SelectValue placeholder="Visibility" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="internal">Internal — staff CRM only (default)</SelectItem>
+                        <SelectItem value="customer">Customer-visible — shown on portal & tracking</SelectItem>
+                        {canUseRouteNoteVisibility ? (
+                          <SelectItem value="route">Route / field — staff with route access</SelectItem>
+                        ) : null}
+                        {canUseFinanceNoteVisibility ? (
+                          <SelectItem value="finance">Finance / billing — staff with finance access</SelectItem>
+                        ) : null}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Customer-visible notes are intentionally shared; internal notes never leave the CRM.
+                    </p>
+                  </div>
+                  <Textarea rows={4} placeholder="Note text…" {...noteForm.register("body")} />
                   {noteForm.formState.errors.body ? (
                     <p className="text-xs text-destructive">{noteForm.formState.errors.body.message}</p>
+                  ) : null}
+                  {noteForm.formState.errors.visibility ? (
+                    <p className="text-xs text-destructive">{noteForm.formState.errors.visibility.message}</p>
                   ) : null}
                   <Button type="submit" size="sm" disabled={noteMutation.isPending}>
                     {noteMutation.isPending ? "Saving…" : "Add note"}
@@ -828,8 +1000,15 @@ export default function AdminCrmCompanyPage() {
                 <ul className="space-y-3 text-sm">
                   {c.notes.map((n) => (
                     <li key={n.id} className="rounded-lg border px-3 py-2">
-                      <div className="text-xs text-muted-foreground">
-                        {n.created_at ?? "—"} · {n.author_name ?? "Unknown"}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                        <span>
+                          {n.created_at ?? "—"} · {n.author_name ?? "Unknown"}
+                        </span>
+                        {n.visibility_label ? (
+                          <span className="rounded border border-border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                            {n.visibility_label}
+                          </span>
+                        ) : null}
                       </div>
                       <p className="whitespace-pre-wrap pt-1">{n.body}</p>
                     </li>
@@ -864,6 +1043,11 @@ export default function AdminCrmCompanyPage() {
                       <div key={`${row.type}-${row.id}`} className="rounded-md border px-3 py-2">
                         <span className="text-xs text-muted-foreground">{row.at ?? ""}</span>{" "}
                         <span className="font-medium">Note</span>
+                        {"visibility_label" in row && row.visibility_label ? (
+                          <span className="ml-2 rounded border border-border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                            {String(row.visibility_label)}
+                          </span>
+                        ) : null}
                         <span className="text-muted-foreground"> · {(row as { actor_name?: string }).actor_name ?? "—"}</span>
                         {row.body ? <p className="mt-1 text-muted-foreground">{row.body}</p> : null}
                       </div>

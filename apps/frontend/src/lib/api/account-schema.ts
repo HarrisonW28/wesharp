@@ -192,6 +192,11 @@ export const AccountCustomerMessageSchema = z.object({
   posted_at_label: z.string().nullable().optional(),
 });
 
+export const AccountCompanyCustomerNoteSchema = z.object({
+  body: z.string(),
+  created_at: z.string().nullable().optional(),
+});
+
 export const BookingDetailEnvelopeSchema = z.object({
   success: z.literal(true),
   data: z.record(z.string(), z.unknown()),
@@ -253,6 +258,7 @@ export const AccountBookingDetailDataSchema = BookingRowSchema.extend({
     .optional(),
   fulfilment: AccountFulfilmentSchema.optional(),
   customer_messages: z.array(AccountCustomerMessageSchema).optional(),
+  customer_company_notes: z.array(AccountCompanyCustomerNoteSchema).optional(),
   activity_timeline: z.array(CustomerPortalActivityStepSchema).optional(),
 }).passthrough();
 

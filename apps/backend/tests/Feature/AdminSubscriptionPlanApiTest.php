@@ -54,9 +54,18 @@ final class AdminSubscriptionPlanApiTest extends TestCase
             'is_active' => true,
             'sort_order' => 10,
             'show_on_public_site' => true,
+            'public_highlights' => ['Swap-outs included', 'Route priority'],
+            'public_cta_label' => 'Book this plan',
+            'recommended' => true,
         ]);
 
-        $create->assertCreated();
+        $create->assertCreated()
+            ->assertJsonPath('data.plan.public_cta_label', 'Book this plan')
+            ->assertJsonPath('data.plan.recommended', true);
+        self::assertSame(
+            ['Swap-outs included', 'Route priority'],
+            $create->json('data.plan.public_highlights'),
+        );
         $id = (string) $create->json('data.plan.id');
         self::assertNotSame('', $id);
 

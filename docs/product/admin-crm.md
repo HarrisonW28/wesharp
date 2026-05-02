@@ -9,7 +9,7 @@ Operational CRM for internal staff: browse **companies (accounts)**, filter and 
 | Route | Description |
 | --- | --- |
 | `/admin/crm` | List: search, city + status + subscription + unpaid/active booking filters, sort, pagination, DataTable, “New account” modal (POST create). Status and CRM signal badges. |
-| `/admin/crm/[companyId]` | Profile: tabbed CRM (**Overview**, **Contacts**, **Locations**, users, bookings, orders, knives, invoices, **subscription** (CRM readiness panel), notes, activity). Overview uses summary KPIs + snapshot (default site, primary billing contact, etc.). **Contacts** and **Locations** support add, edit, archive/restore, primary billing / default site. Bookings table shows site and contact context when present. |
+| `/admin/crm/[companyId]` | Profile: tabbed CRM (**Overview**, **Contacts**, **Locations**, users, bookings, orders, knives, invoices, **subscription** (CRM readiness panel), notes, activity). Overview uses summary KPIs + snapshot (default site, primary billing contact, etc.). **Contacts** and **Locations** support add, edit, archive/restore, primary billing / default site. Bookings table shows site and contact context when present. **Users** tab: list linked portal users; **Portal invitations** (send/resend) when the actor has **`companies.update`**. |
 
 ## API endpoints (backend)
 
@@ -24,7 +24,7 @@ Base path: **`/api/admin`** (Laravel `routes/api.php`; full URL prefix **`/api/a
 | DELETE | `/companies/{company}` | `companies.delete` |
 | GET | `/companies/{company}/summary` | `companies.view` |
 | GET | `/companies/{company}/activity` | `companies.view` |
-| POST | `/companies/{company}/notes` | `companies.update` |
+| POST | `/companies/{company}/notes` | `companies.update` — **`body`** + **`visibility`**: **`internal`** (default, staff CRM only), **`customer`** (also returned on tenant booking + public tracking as **`customer_company_notes`**), **`route`** (staff with **`routes.view`**; hidden from pure finance viewers), **`finance`** (staff with invoices / **`reports.finance`** / payments / subscriptions read access; hidden from route-only viewers). **`company.note_added`** audit metadata includes **`visibility`**. |
 | POST | `/companies/{company}/contacts` | `companies.update` |
 | PUT | `/companies/{company}/contacts/{contact}` | `companies.update` |
 | POST | `/companies/{company}/contacts/{contact}/archive` | `companies.update` |
@@ -37,6 +37,8 @@ Base path: **`/api/admin`** (Laravel `routes/api.php`; full URL prefix **`/api/a
 | POST | `/companies/{company}/locations/{location}/set-default` | `companies.update` |
 | POST | `/companies/{company}/bookings` | `companies.view` + `bookings.create` |
 | PUT | `/companies/{company}/status` | `companies.update` |
+| POST | `/companies/{company}/portal-invites` | `companies.update` — customer portal email invite (Clerk when configured); **`data.invite`** |
+| POST | `/companies/{company}/portal-invites/{invite}/resend` | `companies.update` |
 
 Middleware: **`clerk.auth`**, **`staff`**. Responses use **`App\Support\ApiResponses`**.
 

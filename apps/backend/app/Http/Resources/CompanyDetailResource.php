@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\NoteVisibility;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CompanyLocation;
@@ -41,24 +42,35 @@ class CompanyDetailResource extends JsonResource
             'phone' => $c->phone,
             'billing_email' => $c->billing_email,
             'city' => $c->city,
-            'overview' => CompanyCrmOverview::toArray($c),
+            'overview' => CompanyCrmOverview::toArray($c, $viewer),
             'subscription' => CompanySubscriptionCrmPayload::build($c, $viewer),
             'users' => $c->relationLoaded('users')
                 ? $c->users->map(static fn (User $u) => self::userRow($u))->values()->all()
                 : $c->users()->orderBy('name')->limit(100)->get()->map(static fn (User $u) => self::userRow($u))->values()->all(),
+            'portal_invites' => $c->relationLoaded('portalInvites')
+                ? CustomerPortalInviteResource::collection($c->portalInvites)->resolve()
+                : CustomerPortalInviteResource::collection(
+                    $c->portalInvites()->with('invitedBy:id,name')->orderByDesc('last_sent_at')->limit(50)->get()
+                )->resolve(),
             'contacts' => $c->contacts->map(
                 static fn (Contact $contact) => (new CrmContactResource($contact))->resolve()
             )->values()->all(),
             'locations' => $c->locations->map(
                 static fn (CompanyLocation $loc) => (new CrmLocationResource($loc))->resolve()
             )->values()->all(),
-            'notes' => $c->notes->map(static fn (Note $n) => [
-                'id' => (string) $n->id,
-                'body' => $n->body,
-                'created_at' => $n->created_at?->toIso8601String(),
-                'author_name' => $n->relationLoaded('author') && $n->author ? $n->author->name : null,
-                'author_id' => $n->author_id ? (string) $n->author_id : null,
-            ]),
+            'notes' => $c->notes->map(static function (Note $n) {
+                $vis = $n->visibility instanceof NoteVisibility ? $n->visibility : NoteVisibility::Internal;
+
+                return [
+                    'id' => (string) $n->id,
+                    'body' => $n->body,
+                    'visibility' => $vis->value,
+                    'visibility_label' => $vis->staffLabel(),
+                    'created_at' => $n->created_at?->toIso8601String(),
+                    'author_name' => $n->relationLoaded('author') && $n->author ? $n->author->name : null,
+                    'author_id' => $n->author_id ? (string) $n->author_id : null,
+                ];
+            }),
             'bookings' => $c->bookings->map(static function (Booking $b) {
                 $loc = $b->relationLoaded('location') ? $b->location : null;
                 $contact = $b->relationLoaded('contact') ? $b->contact : null;

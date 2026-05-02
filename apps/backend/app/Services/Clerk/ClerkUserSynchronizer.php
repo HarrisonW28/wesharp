@@ -5,6 +5,7 @@ namespace App\Services\Clerk;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\User;
+use App\Services\Crm\CustomerPortalInviteFulfillment;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -103,6 +104,7 @@ final class ClerkUserSynchronizer
         $existingByClerk = User::query()->where('clerk_user_id', $clerkUserId)->first();
         if ($existingByClerk !== null) {
             $this->mergeProfile($existingByClerk, $profile);
+            CustomerPortalInviteFulfillment::tryFulfill($existingByClerk->fresh());
 
             return;
         }
@@ -110,11 +112,12 @@ final class ClerkUserSynchronizer
         $byEmail = User::query()->where('email', $profile['email'])->first();
         if ($byEmail !== null) {
             $this->mergeProfile($byEmail, $profile);
+            CustomerPortalInviteFulfillment::tryFulfill($byEmail->fresh());
 
             return;
         }
 
-        User::query()->create([
+        $created = User::query()->create([
             'clerk_user_id' => $clerkUserId,
             'name' => $profile['name'],
             'email' => $profile['email'],
@@ -123,6 +126,7 @@ final class ClerkUserSynchronizer
             'status' => UserStatus::tryFrom((string) config('clerk.default_status')) ?? UserStatus::Active,
             'company_id' => null,
         ]);
+        CustomerPortalInviteFulfillment::tryFulfill($created);
     }
 
     /**
@@ -207,18 +211,24 @@ final class ClerkUserSynchronizer
         $existingByClerk = User::query()->where('clerk_user_id', $clerkUserId)->first();
 
         if ($existingByClerk) {
-            return $this->mergeProfile($existingByClerk, $profile);
+            $user = $this->mergeProfile($existingByClerk, $profile);
+            CustomerPortalInviteFulfillment::tryFulfill($user);
+
+            return $user;
         }
 
         $byEmail = User::query()->where('email', $profile['email'])->first();
 
         if ($byEmail !== null) {
-            return $this->mergeProfile($byEmail, array_merge($profile, [
+            $user = $this->mergeProfile($byEmail, array_merge($profile, [
                 'clerk_user_id' => $clerkUserId,
             ]));
+            CustomerPortalInviteFulfillment::tryFulfill($user);
+
+            return $user;
         }
 
-        return User::query()->create([
+        $created = User::query()->create([
             'clerk_user_id' => $clerkUserId,
             'name' => $profile['name'],
             'email' => $profile['email'],
@@ -227,6 +237,9 @@ final class ClerkUserSynchronizer
             'status' => UserStatus::tryFrom((string) config('clerk.default_status')) ?? UserStatus::Active,
             'company_id' => null,
         ]);
+        CustomerPortalInviteFulfillment::tryFulfill($created);
+
+        return $created;
     }
 
     /**
