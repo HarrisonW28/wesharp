@@ -76,7 +76,7 @@ This document reflects **what ships in the repo today** — not the long-term ro
 | **`POST /api/public/booking-enquiries`** | Throttled public lead + booking request (no auth) |
 | **`POST /api/webhooks/stripe`** | Stripe webhooks (signature verified; idempotent event log) |
 | **`POST /api/webhooks/clerk`** | Clerk webhooks — Svix signature, idempotent `webhook_inbox`, user sync (`docs/security/auth-sso.md`) |
-| **`GET /api/admin/webhooks/inbox`** | Staff metadata-only webhook delivery log (`audit_logs.view`) — **admin UI:** `/admin/webhooks/inbox` |
+| **`GET /api/admin/webhooks/inbox`** | Staff metadata-only webhook delivery log (`system.tools.view`, Sprint 15.3) — **admin UI:** `/admin/webhooks/inbox` |
 | **`GET /api/v1/me`**, **`POST /api/v1/account/bootstrap-organisation`** | Profile / tenant bootstrap ( **`GET /api/v1/admin/smoke`**, **`GET /api/v1/account/smoke`** — registered only when `APP_ENV` ≠ `production`) |
 | **`/api/account/*`** | Tenant portal (dashboard, bookings, orders, knives, invoices, locations, settings) |
 | **`/api/admin/*`** | Internal ops: companies, bookings, routes, route-stops, orders, knives, invoices, payments, analytics |

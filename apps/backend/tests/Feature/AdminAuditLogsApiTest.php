@@ -25,6 +25,43 @@ final class AdminAuditLogsApiTest extends TestCase
         return ['X-WeSharp-Test-User-Id' => (string) $user->id];
     }
 
+    public function test_business_admin_cannot_list_audit_logs(): void
+    {
+        $admin = User::factory()->create([
+            'role' => UserRole::Admin,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+        ]);
+
+        $this->withHeaders($this->staffHeaders($admin))
+            ->getJson('/api/admin/audit-logs')
+            ->assertForbidden();
+    }
+
+    public function test_developer_lists_audit_logs_unscoped(): void
+    {
+        $dev = User::factory()->create([
+            'role' => UserRole::Developer,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+        ]);
+
+        $company = Company::factory()->create();
+        $log = AuditLog::factory()->create([
+            'actor_id' => $dev->id,
+            'auditable_type' => Company::class,
+            'auditable_id' => $company->id,
+            'action' => 'company.updated',
+        ]);
+
+        $response = $this->withHeaders($this->staffHeaders($dev))
+            ->getJson('/api/admin/audit-logs?per_page=10');
+
+        $response->assertOk();
+        $ids = collect($response->json('data.items'))->pluck('id')->all();
+        self::assertContains((string) $log->id, $ids);
+    }
+
     public function test_super_admin_lists_audit_logs_with_redacted_payloads(): void
     {
         $admin = User::factory()->create([

@@ -3,7 +3,9 @@ import { z } from "zod";
 export const SubscriptionPlanRowSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
+  public_name: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  public_description: z.string().nullable().optional(),
   billing_interval: z.string(),
   price_amount_minor: z.number().int(),
   currency: z.string(),

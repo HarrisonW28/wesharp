@@ -23,7 +23,9 @@ class SubscriptionPlan extends Model
 
     protected $fillable = [
         'name',
+        'public_name',
         'description',
+        'public_description',
         'billing_interval',
         'price_amount_minor',
         'currency',

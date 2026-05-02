@@ -36,6 +36,7 @@ const ROLE_FILTERS: { label: string; value: UserRoleValue | "all" }[] = [
   { label: "All roles", value: "all" },
   { label: USER_ROLE_LABELS.super_admin, value: "super_admin" },
   { label: USER_ROLE_LABELS.admin, value: "admin" },
+  { label: USER_ROLE_LABELS.developer, value: "developer" },
   { label: USER_ROLE_LABELS.route_manager, value: "route_manager" },
   { label: USER_ROLE_LABELS.finance, value: "finance" },
   { label: USER_ROLE_LABELS.customer_owner, value: "customer_owner" },
@@ -59,7 +60,7 @@ function roleBadgeVariant(role: UserRoleValue): "default" | "secondary" | "outli
   if (role === "super_admin" || role === "admin") {
     return "default";
   }
-  if (role === "finance" || role === "route_manager") {
+  if (role === "finance" || role === "route_manager" || role === "developer") {
     return "secondary";
   }
   return "outline";

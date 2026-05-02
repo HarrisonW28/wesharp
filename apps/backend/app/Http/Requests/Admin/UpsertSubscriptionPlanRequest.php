@@ -20,7 +20,9 @@ final class UpsertSubscriptionPlanRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:160'],
+            'public_name' => ['sometimes', 'nullable', 'string', 'max:160'],
             'description' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'public_description' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'billing_interval' => ['required', 'string', Rule::in(array_map(static fn (BillingInterval $i) => $i->value, BillingInterval::cases()))],
             'price_amount_minor' => ['required', 'integer', 'min:0', 'max:1000000000'],
             'currency' => ['sometimes', 'string', 'size:3'],
@@ -49,7 +51,13 @@ final class UpsertSubscriptionPlanRequest extends FormRequest
 
         return [
             'name' => trim((string) $v['name']),
+            'public_name' => array_key_exists('public_name', $v)
+                ? self::normalizePublicName($v['public_name'])
+                : null,
             'description' => array_key_exists('description', $v) ? $v['description'] : null,
+            'public_description' => array_key_exists('public_description', $v)
+                ? self::normalizePublicDescription($v['public_description'])
+                : null,
             'billing_interval' => BillingInterval::from((string) $v['billing_interval']),
             'price_amount_minor' => (int) $v['price_amount_minor'],
             'currency' => $currency,
@@ -95,6 +103,32 @@ final class UpsertSubscriptionPlanRequest extends FormRequest
         }
 
         return $out === [] ? null : $out;
+    }
+
+    private static function normalizePublicName(mixed $raw): ?string
+    {
+        if ($raw === null) {
+            return null;
+        }
+        if (! is_string($raw)) {
+            return null;
+        }
+        $t = trim($raw);
+
+        return $t === '' ? null : mb_substr($t, 0, 160);
+    }
+
+    private static function normalizePublicDescription(mixed $raw): ?string
+    {
+        if ($raw === null) {
+            return null;
+        }
+        if (! is_string($raw)) {
+            return null;
+        }
+        $t = trim($raw);
+
+        return $t === '' ? null : mb_substr($t, 0, 2000);
     }
 
     private static function normalizePublicCtaLabel(mixed $raw): ?string

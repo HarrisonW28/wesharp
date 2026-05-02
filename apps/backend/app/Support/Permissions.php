@@ -107,6 +107,9 @@ final class Permissions
     /** Internal audit log index and timeline payloads (staff only; never granted to tenant roles). */
     public const AUDIT_LOGS_VIEW = 'audit_logs.view';
 
+    /** Webhook inbox and integration diagnostics — {@see UserRole::Developer} and super admins only (Sprint 15.3). */
+    public const SYSTEM_TOOLS_VIEW = 'system.tools.view';
+
     /** Cross-resource notification delivery list (ops / finance visibility for failures). */
     public const NOTIFICATIONS_DELIVERIES_VIEW = 'notifications.deliveries.view';
 
@@ -151,6 +154,7 @@ final class Permissions
         self::USERS_VIEW,
         self::USERS_MANAGE,
         self::AUDIT_LOGS_VIEW,
+        self::SYSTEM_TOOLS_VIEW,
         self::NOTIFICATIONS_DELIVERIES_VIEW,
         self::REPORTS_FINANCE,
         self::REPORTS_OPERATIONS,
@@ -160,95 +164,118 @@ final class Permissions
         self::SUBSCRIPTIONS_MANAGE,
     ];
 
-    /** @var array<string, list<string>> Role value => granted permission keys */
-    private const MAP = [
-        UserRole::SuperAdmin->value => self::ALL_PERMISSIONS,
+    /**
+     * @return array<string, list<string>>
+     */
+    private static function map(): array
+    {
+        static $cached = null;
 
-        UserRole::Admin->value => self::ALL_PERMISSIONS,
+        if ($cached !== null) {
+            return $cached;
+        }
 
-        UserRole::RouteManager->value => [
-            self::DASHBOARD_VIEW,
-            self::COMPANIES_VIEW,
-            self::BOOKINGS_VIEW,
-            self::BOOKINGS_CREATE,
-            self::BOOKINGS_UPDATE,
-            self::BOOKINGS_CANCEL,
-            self::ROUTES_VIEW,
-            self::ROUTES_MANAGE,
-            self::ROUTE_STOPS_UPDATE,
-            self::ORDERS_VIEW,
-            self::ORDERS_CREATE,
-            self::ORDERS_UPDATE,
-            self::KNIVES_VIEW,
-            self::KNIVES_UPDATE,
-            self::ANALYTICS_VIEW,
-            self::REPORTS_OPERATIONS,
-            self::SETTINGS_VIEW,
-            self::AUDIT_LOGS_VIEW,
-        ],
+        return $cached = [
+            UserRole::SuperAdmin->value => self::ALL_PERMISSIONS,
 
-        UserRole::Finance->value => [
-            self::DASHBOARD_VIEW,
-            self::COMPANIES_VIEW,
-            self::BOOKINGS_VIEW,
-            self::BOOKINGS_CANCEL,
-            self::ORDERS_VIEW,
-            self::ORDERS_UPDATE,
-            self::KNIVES_VIEW,
-            self::INVOICES_VIEW,
-            self::INVOICES_CREATE,
-            self::INVOICES_UPDATE,
-            self::PAYMENTS_VIEW,
-            self::PAYMENTS_MANAGE,
-            self::ANALYTICS_VIEW,
-            self::REPORTS_FINANCE,
-            self::PRICING_VIEW,
-            self::PRICING_MANAGE,
-            self::SUBSCRIPTIONS_VIEW,
-            self::SUBSCRIPTIONS_MANAGE,
-            self::SETTINGS_VIEW,
-            self::AUDIT_LOGS_VIEW,
-            self::NOTIFICATIONS_DELIVERIES_VIEW,
-        ],
+            UserRole::Admin->value => array_values(array_diff(self::ALL_PERMISSIONS, [
+                self::AUDIT_LOGS_VIEW,
+                self::SYSTEM_TOOLS_VIEW,
+            ])),
 
-        UserRole::CustomerOwner->value => [
-            self::DASHBOARD_VIEW,
-            self::COMPANIES_VIEW,
-            self::BOOKINGS_VIEW,
-            self::BOOKINGS_CREATE,
-            self::BOOKINGS_CANCEL,
-            self::ORDERS_VIEW,
-            self::KNIVES_VIEW,
-            self::KNIVES_UPDATE,
-            self::INVOICES_VIEW,
-            self::PAYMENTS_VIEW,
-            self::ACCOUNT_SETTINGS_VIEW,
-            self::ACCOUNT_SETTINGS_UPDATE,
-            self::ACCOUNT_PROFILE_UPDATE,
-            self::ACCOUNT_BUSINESS_UPDATE,
-            self::ACCOUNT_LOCATIONS_MANAGE,
-        ],
+            UserRole::Developer->value => [
+                self::DASHBOARD_VIEW,
+                self::ANALYTICS_VIEW,
+                self::USERS_VIEW,
+                self::AUDIT_LOGS_VIEW,
+                self::SYSTEM_TOOLS_VIEW,
+                self::NOTIFICATIONS_DELIVERIES_VIEW,
+            ],
 
-        UserRole::CustomerStaff->value => [
-            self::DASHBOARD_VIEW,
-            self::COMPANIES_VIEW,
-            self::BOOKINGS_VIEW,
-            self::BOOKINGS_CREATE,
-            self::BOOKINGS_CANCEL,
-            self::ORDERS_VIEW,
-            self::KNIVES_VIEW,
-            self::INVOICES_VIEW,
-            self::PAYMENTS_VIEW,
-            self::ACCOUNT_SETTINGS_VIEW,
-            self::ACCOUNT_SETTINGS_UPDATE,
-            self::ACCOUNT_PROFILE_UPDATE,
-        ],
-    ];
+            UserRole::RouteManager->value => [
+                self::DASHBOARD_VIEW,
+                self::COMPANIES_VIEW,
+                self::BOOKINGS_VIEW,
+                self::BOOKINGS_CREATE,
+                self::BOOKINGS_UPDATE,
+                self::BOOKINGS_CANCEL,
+                self::ROUTES_VIEW,
+                self::ROUTES_MANAGE,
+                self::ROUTE_STOPS_UPDATE,
+                self::ORDERS_VIEW,
+                self::ORDERS_CREATE,
+                self::ORDERS_UPDATE,
+                self::KNIVES_VIEW,
+                self::KNIVES_UPDATE,
+                self::ANALYTICS_VIEW,
+                self::REPORTS_OPERATIONS,
+                self::SETTINGS_VIEW,
+                self::AUDIT_LOGS_VIEW,
+            ],
+
+            UserRole::Finance->value => [
+                self::DASHBOARD_VIEW,
+                self::COMPANIES_VIEW,
+                self::BOOKINGS_VIEW,
+                self::BOOKINGS_CANCEL,
+                self::ORDERS_VIEW,
+                self::ORDERS_UPDATE,
+                self::KNIVES_VIEW,
+                self::INVOICES_VIEW,
+                self::INVOICES_CREATE,
+                self::INVOICES_UPDATE,
+                self::PAYMENTS_VIEW,
+                self::PAYMENTS_MANAGE,
+                self::ANALYTICS_VIEW,
+                self::REPORTS_FINANCE,
+                self::PRICING_VIEW,
+                self::PRICING_MANAGE,
+                self::SUBSCRIPTIONS_VIEW,
+                self::SUBSCRIPTIONS_MANAGE,
+                self::SETTINGS_VIEW,
+                self::AUDIT_LOGS_VIEW,
+                self::NOTIFICATIONS_DELIVERIES_VIEW,
+            ],
+
+            UserRole::CustomerOwner->value => [
+                self::DASHBOARD_VIEW,
+                self::COMPANIES_VIEW,
+                self::BOOKINGS_VIEW,
+                self::BOOKINGS_CREATE,
+                self::BOOKINGS_CANCEL,
+                self::ORDERS_VIEW,
+                self::KNIVES_VIEW,
+                self::KNIVES_UPDATE,
+                self::INVOICES_VIEW,
+                self::PAYMENTS_VIEW,
+                self::ACCOUNT_SETTINGS_VIEW,
+                self::ACCOUNT_SETTINGS_UPDATE,
+                self::ACCOUNT_PROFILE_UPDATE,
+                self::ACCOUNT_BUSINESS_UPDATE,
+                self::ACCOUNT_LOCATIONS_MANAGE,
+            ],
+
+            UserRole::CustomerStaff->value => [
+                self::DASHBOARD_VIEW,
+                self::COMPANIES_VIEW,
+                self::BOOKINGS_VIEW,
+                self::BOOKINGS_CREATE,
+                self::BOOKINGS_CANCEL,
+                self::ORDERS_VIEW,
+                self::KNIVES_VIEW,
+                self::INVOICES_VIEW,
+                self::PAYMENTS_VIEW,
+                self::ACCOUNT_SETTINGS_VIEW,
+                self::ACCOUNT_SETTINGS_UPDATE,
+                self::ACCOUNT_PROFILE_UPDATE,
+            ],
+        ];
+    }
 
     /** @return list<string> */
     public static function forRole(UserRole $role): array
     {
-        return array_values(array_unique(self::MAP[$role->value] ?? []));
+        return array_values(array_unique(self::map()[$role->value] ?? []));
     }
 
     public static function userMay(User $user, string $permission): bool

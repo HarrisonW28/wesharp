@@ -23,7 +23,13 @@ final class SubscriptionPlanResource extends JsonResource
         return [
             'id' => (string) $this->id,
             'name' => $this->name,
+            'public_name' => $this->public_name !== null && trim((string) $this->public_name) !== ''
+                ? trim((string) $this->public_name)
+                : null,
             'description' => $this->description,
+            'public_description' => $this->public_description !== null && trim((string) $this->public_description) !== ''
+                ? trim((string) $this->public_description)
+                : null,
             'billing_interval' => $this->billing_interval?->value,
             'price_amount_minor' => (int) $this->price_amount_minor,
             'currency' => (string) $this->currency,

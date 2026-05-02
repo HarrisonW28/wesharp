@@ -63,8 +63,6 @@ Reorganise admin navigation into clearer operational areas.
 - Mobile drawer still works.
 - Route manager nav remains simple.
 
-**Implemented (2026-05-01):** `ADMIN_NAV_SECTIONS` in `apps/frontend/src/config/navigation.ts` — eight section labels (**Command Centre**, **CRM**, **Operations**, **Routes**, **Finance**, **Customers**, **Growth**, **System**); all historic admin URLs preserved; **Routes** uses flat **Today** + **Collections** (was nested under Operations); reports + site content sit under **Growth**; **Users** under **Customers**; notifications, audit, webhooks under **System** (flat). **`ROUTE_MANAGER_NAV_SECTIONS`** unchanged. Vitest: `apps/frontend/src/config/admin-navigation.test.ts`.
-
 ---
 
 ## Sprint 15.2 — Sidebar Role Visibility
@@ -130,6 +128,8 @@ Separate developer/system access from business super admin access.
 - Normal admin cannot access developer-only pages.
 - Tests cover at least audit/webhook/system access.
 
+**Implemented (2026-05-01):** New permission **`system.tools.view`** and **`UserRole::Developer`**. **`Admin`** no longer receives **`audit_logs.view`** or **`system.tools.view`** (business ops only). **`Super admin`** retains both via `ALL_PERMISSIONS`. **`Developer`** receives dashboard, analytics, users (read), full audit index, system tools, notification deliveries. **`GET /api/admin/webhooks/inbox`** and **`WebhookInboxPolicy`** require **`system.tools.view`**. **`AuditLogQueryService`** unscoped list for **super admin** and **developer** only (admin uses scoped finance/route patterns — admin denied at policy). Work queue integrations tile gates on **`system.tools.view`**. Frontend: nav + **`route-permissions`** use **`system.tools.view`** for `/admin/webhooks`. User admin UI + Zod include **`developer`**.
+
 ---
 
 ## Sprint 15.4 — Navigation Copy Cleanup
@@ -153,6 +153,7 @@ Rename confusing nav items.
 - Labels fit mobile.
 - No route path changes unless required.
 - Existing tests pass.
+
 
 ---
 
@@ -187,6 +188,8 @@ Allow admins to control how subscription plans appear publicly.
 - Custom/bespoke card still appears separately.
 - Mobile subscription cards display correctly.
 
+**Implemented (2026-05-01):** `public_name` and `public_description` on **`subscription_plans`** (migration `2026_05_22_100000_add_public_name_and_public_description_to_subscription_plans.php`). Admin **`UpsertSubscriptionPlanRequest`** / **`SubscriptionPlanResource`** expose them; **`PublicSubscriptionPlanResource`** resolves **`name`** and **`description`** for marketing from public fields with fallback to catalogue fields. Existing controls (**`show_on_public_site`**, **`public_highlights`**, **`recommended`**, **`public_cta_label`**, **`sort_order`**) unchanged. Admin UI **`/admin/subscription-plans`** — public display fields. Tests: **`PublicSubscriptionPlansCatalogTest`**, **`AdminSubscriptionPlanApiTest`**.
+
 ---
 
 ## Sprint 15.6 — Sprint 15 Regression QA
@@ -213,3 +216,11 @@ At the end, provide:
 - files changed
 - deferred issues
 - Sprint 15 final verdict: PASS / FAIL
+
+**Done (2026-05-01):** Full output in [`sprint-15.6-qa-report.md`](./sprint-15.6-qa-report.md). **Verdict: PASS.**
+
+- **Summary:** Backend **299** tests; frontend typecheck, lint, Vitest (incl. **`route-permissions`** regression), production **build** — all green.
+- **Bug fixed (P2):** **`adminPermissionForPath`** now maps **`/admin/subscription-plans`**, **`/admin/subscriptions`** → **`subscriptions.view`**; **`/admin/waitlist`** → **`companies.view`**; **`/admin/content-settings`** → **`settings.manage`** (previously fell through to **`dashboard.view`**).
+- **Deferred:** Manual mobile drawer / staging smoke.
+
+---

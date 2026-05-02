@@ -24,11 +24,14 @@ final class PublicSubscriptionPlanResource extends JsonResource
             $highlights
         )));
 
+        $displayName = $this->resolvedPublicName();
+        $displayDescription = $this->resolvedPublicDescription();
+
         return [
             'id' => (string) $this->id,
-            'name' => $this->name,
+            'name' => $displayName,
             'is_active' => (bool) $this->is_active,
-            'description' => $this->description,
+            'description' => $displayDescription,
             'billing_interval' => $this->billing_interval?->value,
             'price_amount_minor' => (int) $this->price_amount_minor,
             'currency' => (string) $this->currency,
@@ -42,5 +45,37 @@ final class PublicSubscriptionPlanResource extends JsonResource
                 ? trim((string) $this->public_cta_label)
                 : null,
         ];
+    }
+
+    private function resolvedPublicName(): string
+    {
+        $pub = $this->public_name ?? null;
+        if (is_string($pub)) {
+            $t = trim($pub);
+            if ($t !== '') {
+                return $t;
+            }
+        }
+
+        return (string) $this->name;
+    }
+
+    private function resolvedPublicDescription(): ?string
+    {
+        $pub = $this->public_description ?? null;
+        if (is_string($pub)) {
+            $t = trim($pub);
+            if ($t !== '') {
+                return $t;
+            }
+        }
+
+        $internal = $this->description;
+        if ($internal === null) {
+            return null;
+        }
+        $t = trim((string) $internal);
+
+        return $t === '' ? null : $t;
     }
 }

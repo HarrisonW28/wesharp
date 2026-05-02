@@ -35,9 +35,9 @@ final class PublicBookingEnquiryApiTest extends TestCase
                 'preferred_date' => $preferred,
                 'time_window_preference' => 'After lunch, 13:00–16:00',
                 'service_type' => 'collection',
+                'programme_interest' => 'subscription',
                 'message' => 'Please collect chef knives from the prep area loading bay.',
                 'terms_accepted' => true,
-                'programme_interest' => 'unsure',
             ]);
 
             $response->assertCreated()

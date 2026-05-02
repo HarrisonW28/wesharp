@@ -1,7 +1,7 @@
 /** Map portal URL segments to Laravel permission strings (belt with API + route gates). */
 export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/webhooks")) {
-    return "audit_logs.view";
+    return "system.tools.view";
   }
   if (pathname.startsWith("/admin/audit")) {
     return "audit_logs.view";
@@ -16,6 +16,9 @@ export function adminPermissionForPath(pathname: string): string {
     return "dashboard.view";
   }
   if (pathname.startsWith("/admin/crm")) {
+    return "companies.view";
+  }
+  if (pathname.startsWith("/admin/waitlist")) {
     return "companies.view";
   }
   if (pathname.startsWith("/admin/users")) {
@@ -56,6 +59,15 @@ export function adminPermissionForPath(pathname: string): string {
   }
   if (pathname.startsWith("/admin/payments")) {
     return "payments.view";
+  }
+  if (pathname.startsWith("/admin/subscription-plans")) {
+    return "subscriptions.view";
+  }
+  if (pathname.startsWith("/admin/subscriptions")) {
+    return "subscriptions.view";
+  }
+  if (pathname.startsWith("/admin/content-settings")) {
+    return "settings.manage";
   }
   if (pathname.startsWith("/admin/routes")) {
     return "routes.view";

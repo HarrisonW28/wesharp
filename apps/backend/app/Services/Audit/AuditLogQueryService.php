@@ -72,7 +72,7 @@ final class AuditLogQueryService
     {
         $role = $viewer->resolvedRole();
 
-        if ($role === UserRole::SuperAdmin || $role === UserRole::Admin) {
+        if ($role === UserRole::SuperAdmin || $role === UserRole::Developer) {
             return;
         }
 

@@ -41,7 +41,11 @@ import {
 
 type PlanDraft = {
   name: string;
+  /** Shown on public subscription cards when set; otherwise `name` is used on the marketing site. */
+  public_name: string;
   description: string;
+  /** Shown on public cards when set; otherwise internal `description` is used for marketing copy. */
+  public_description: string;
   billing_interval: string;
   /** Raw GBP text while editing; parsed to minor units only when saving. */
   price_gbp_input: string;
@@ -91,7 +95,9 @@ function intOrNull(v: string): number | null {
 function defaultDraft(): PlanDraft {
   return {
     name: "",
+    public_name: "",
     description: "",
+    public_description: "",
     billing_interval: "monthly",
     price_gbp_input: "",
     currency: "GBP",
@@ -110,7 +116,9 @@ function defaultDraft(): PlanDraft {
 function toDraft(p: SubscriptionPlanRow): PlanDraft {
   return {
     name: p.name ?? "",
+    public_name: p.public_name ?? "",
     description: p.description ?? "",
+    public_description: p.public_description ?? "",
     billing_interval: p.billing_interval ?? "monthly",
     price_gbp_input: moneyInputFromMinor(p.price_amount_minor ?? 0),
     currency: p.currency ?? "GBP",
@@ -134,7 +142,9 @@ function draftToApiPayload(d: PlanDraft): Record<string, unknown> {
 
   return {
     name: d.name,
+    public_name: d.public_name.trim() === "" ? null : d.public_name.trim(),
     description: d.description,
+    public_description: d.public_description.trim() === "" ? null : d.public_description.trim(),
     billing_interval: d.billing_interval,
     price_amount_minor: moneyMinorFromInput(d.price_gbp_input),
     currency,
@@ -313,7 +323,9 @@ export default function AdminSubscriptionPlansPage() {
                     <div className="flex flex-col gap-3 p-4 md:flex-row md:items-start md:justify-between">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <div className="truncate text-base font-semibold">{p.name}</div>
+                          <div className="truncate text-base font-semibold">
+                            {(p.public_name?.trim() ? p.public_name : p.name) ?? p.name}
+                          </div>
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
                               p.is_active
@@ -347,8 +359,15 @@ export default function AdminSubscriptionPlansPage() {
                           {INTERVALS.find((i) => i.value === p.billing_interval)?.label ?? p.billing_interval} ·{" "}
                           {p.currency === "GBP" ? formatGBP(p.price_amount_minor ?? 0) : `${p.price_amount_minor} ${p.currency}`}
                         </div>
-                        {p.description ? (
-                          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>
+                        {p.public_name?.trim() && p.public_name.trim() !== (p.name ?? "") ? (
+                          <p className="mt-1 text-xs text-muted-foreground">Catalogue name: {p.name}</p>
+                        ) : null}
+                        {p.description || p.public_description ? (
+                          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                            {p.public_description?.trim()
+                              ? p.public_description
+                              : (p.description ?? "")}
+                          </p>
                         ) : null}
                         <div className="mt-2 text-xs text-muted-foreground">
                           Included collections: {p.included_collections ?? "—"} · Knife allowance:{" "}
@@ -533,7 +552,7 @@ function PlanEditor(props: {
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="plan-name">Name</Label>
+          <Label htmlFor="plan-name">Catalogue name</Label>
           <Input
             id="plan-name"
             value={d.name}
@@ -562,13 +581,36 @@ function PlanEditor(props: {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="plan-desc">Description</Label>
+        <Label htmlFor="plan-desc">Description (internal / catalogue)</Label>
         <Input
           id="plan-desc"
           value={d.description}
           onChange={(e) => update({ description: e.target.value })}
           placeholder="What’s included, what’s not, and how overages work."
         />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="plan-public-name">Public name (optional)</Label>
+          <Input
+            id="plan-public-name"
+            value={d.public_name}
+            onChange={(e) => update({ public_name: e.target.value.slice(0, 160) })}
+            placeholder="Marketing title — defaults to catalogue name when empty"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="plan-public-desc">Public description (optional)</Label>
+          <Textarea
+            id="plan-public-desc"
+            value={d.public_description}
+            onChange={(e) => update({ public_description: e.target.value.slice(0, 2000) })}
+            placeholder="Short customer-facing summary for subscription cards"
+            rows={3}
+            className="min-h-[72px] resize-y text-sm"
+          />
+        </div>
       </div>
 
       <Separator />

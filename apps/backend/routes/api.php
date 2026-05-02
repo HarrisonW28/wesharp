@@ -156,7 +156,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
 
     Route::middleware('permission:audit_logs.view')->get('audit-logs', [AuditLogController::class, 'index'])->name('api.admin.audit_logs.index');
 
-    Route::middleware('permission:audit_logs.view')->get('webhooks/inbox', [WebhookInboxController::class, 'index'])->name('api.admin.webhooks.inbox.index');
+    Route::middleware('permission:system.tools.view')->get('webhooks/inbox', [WebhookInboxController::class, 'index'])->name('api.admin.webhooks.inbox.index');
 
     Route::middleware('permission:notifications.deliveries.view')
         ->get('notifications/deliveries', [NotificationDeliveryController::class, 'globalIndex'])

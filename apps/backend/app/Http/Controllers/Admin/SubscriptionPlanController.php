@@ -57,6 +57,7 @@ final class SubscriptionPlanController extends Controller
 
         $before = [
             'name' => $plan->name,
+            'public_name' => $plan->public_name,
             'billing_interval' => $plan->billing_interval?->value,
             'price_amount_minor' => (int) $plan->price_amount_minor,
             'currency' => (string) $plan->currency,
@@ -66,6 +67,8 @@ final class SubscriptionPlanController extends Controller
             'is_active' => (bool) $plan->is_active,
             'show_on_public_site' => (bool) $plan->show_on_public_site,
             'sort_order' => (int) $plan->sort_order,
+            'description' => $plan->description,
+            'public_description' => $plan->public_description,
             'public_highlights' => $plan->public_highlights,
             'public_cta_label' => $plan->public_cta_label,
             'recommended' => (bool) $plan->recommended,
@@ -76,6 +79,7 @@ final class SubscriptionPlanController extends Controller
 
         $after = [
             'name' => $plan->name,
+            'public_name' => $plan->public_name,
             'billing_interval' => $plan->billing_interval?->value,
             'price_amount_minor' => (int) $plan->price_amount_minor,
             'currency' => (string) $plan->currency,
@@ -85,6 +89,8 @@ final class SubscriptionPlanController extends Controller
             'is_active' => (bool) $plan->is_active,
             'show_on_public_site' => (bool) $plan->show_on_public_site,
             'sort_order' => (int) $plan->sort_order,
+            'description' => $plan->description,
+            'public_description' => $plan->public_description,
             'public_highlights' => $plan->public_highlights,
             'public_cta_label' => $plan->public_cta_label,
             'recommended' => (bool) $plan->recommended,

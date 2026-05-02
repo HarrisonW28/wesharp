@@ -146,7 +146,7 @@ final class WorkQueueService
             ];
         }
 
-        if (Permissions::userMay($viewer, Permissions::AUDIT_LOGS_VIEW)) {
+        if (Permissions::userMay($viewer, Permissions::SYSTEM_TOOLS_VIEW)) {
             $sections[] = [
                 'key' => 'integrations',
                 'label' => 'Integrations',

@@ -44,7 +44,9 @@ final class AdminSubscriptionPlanApiTest extends TestCase
 
         $create = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)->postJson('/api/admin/subscription-plans', [
             'name' => 'Kitchen Care Monthly',
+            'public_name' => 'Chef Programme (marketing)',
             'description' => 'Monthly plan',
+            'public_description' => 'Customer-facing blurb.',
             'billing_interval' => BillingInterval::Monthly->value,
             'price_amount_minor' => 9900,
             'currency' => 'gbp',
@@ -61,7 +63,9 @@ final class AdminSubscriptionPlanApiTest extends TestCase
 
         $create->assertCreated()
             ->assertJsonPath('data.plan.public_cta_label', 'Book this plan')
-            ->assertJsonPath('data.plan.recommended', true);
+            ->assertJsonPath('data.plan.recommended', true)
+            ->assertJsonPath('data.plan.public_name', 'Chef Programme (marketing)')
+            ->assertJsonPath('data.plan.public_description', 'Customer-facing blurb.');
         self::assertSame(
             ['Swap-outs included', 'Route priority'],
             $create->json('data.plan.public_highlights'),
@@ -71,7 +75,9 @@ final class AdminSubscriptionPlanApiTest extends TestCase
 
         $update = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)->putJson('/api/admin/subscription-plans/'.$id, [
             'name' => 'Kitchen Care Monthly',
+            'public_name' => null,
             'description' => 'Monthly plan updated',
+            'public_description' => null,
             'billing_interval' => BillingInterval::Monthly->value,
             'price_amount_minor' => 12_000,
             'currency' => 'GBP',
@@ -84,7 +90,8 @@ final class AdminSubscriptionPlanApiTest extends TestCase
         ]);
 
         $update->assertOk()
-            ->assertJsonPath('data.plan.price_amount_minor', 12_000);
+            ->assertJsonPath('data.plan.price_amount_minor', 12_000)
+            ->assertJsonPath('data.plan.public_name', null);
 
         $deactivate = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
             ->postJson('/api/admin/subscription-plans/'.$id.'/deactivate');

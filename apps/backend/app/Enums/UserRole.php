@@ -11,6 +11,7 @@ enum UserRole: string
 {
     case SuperAdmin = 'super_admin';
     case Admin = 'admin';
+    case Developer = 'developer';
     case RouteManager = 'route_manager';
     case Finance = 'finance';
     case CustomerOwner = 'customer_owner';
@@ -22,6 +23,7 @@ enum UserRole: string
         return [
             self::SuperAdmin,
             self::Admin,
+            self::Developer,
             self::RouteManager,
             self::Finance,
         ];

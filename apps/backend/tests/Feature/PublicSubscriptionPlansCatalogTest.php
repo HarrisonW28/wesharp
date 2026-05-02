@@ -117,4 +117,26 @@ final class PublicSubscriptionPlansCatalogTest extends TestCase
         self::assertContains('Live', $names);
         self::assertNotContains('Deleted Public', $names);
     }
+
+    public function test_public_catalog_uses_public_name_and_public_description_when_set(): void
+    {
+        SubscriptionPlan::factory()->create([
+            'name' => 'Internal SKU-99',
+            'public_name' => 'Kitchen Plus',
+            'description' => 'Internal notes only.',
+            'public_description' => 'Rolling visits for busy teams.',
+            'show_on_public_site' => true,
+            'is_active' => true,
+            'sort_order' => 0,
+        ]);
+
+        $res = $this->getJson('/api/public/subscription-plans');
+        $res->assertOk();
+        $items = $res->json('data.items');
+        self::assertIsArray($items);
+        $hit = collect($items)->firstWhere('name', 'Kitchen Plus');
+        self::assertNotNull($hit);
+        self::assertSame('Rolling visits for busy teams.', $hit['description']);
+        self::assertNotSame('Internal SKU-99', $hit['name']);
+    }
 }

@@ -46,6 +46,7 @@ const ROLE_OPTIONS: { value: UserRoleValue; label: string }[] = (
   [
     "super_admin",
     "admin",
+    "developer",
     "route_manager",
     "finance",
     "customer_owner",
@@ -69,20 +70,24 @@ const editSchema = z
     confirm_super_demotion: z.string().optional(),
   })
   .superRefine((val, ctx) => {
-    if (customerRole(val.role) && val.company_id.trim() === "") {
+    if (!customerRole(val.role)) {
+      return;
+    }
+    if (val.company_id.trim() === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Customer roles must be linked to a company.",
         path: ["company_id"],
       });
+      return;
     }
-    const uuidOk =
-      val.company_id.trim() === "" ||
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val.company_id.trim());
+    const uuidOk = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      val.company_id.trim(),
+    );
     if (!uuidOk) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Choose a valid company or leave blank for staff without a tenant.",
+        message: "Choose a valid company from search.",
         path: ["company_id"],
       });
     }
@@ -93,7 +98,7 @@ type EditFormValues = z.infer<typeof editSchema>;
 function formDefaults(user: UserDetail): EditFormValues {
   const fromApi = user.company_id?.trim() ?? "";
   const fromEmbed = user.company?.id?.trim() ?? "";
-  const company_id = fromApi || fromEmbed;
+  const company_id = customerRole(user.role) ? fromApi || fromEmbed : "";
   return {
     role: user.role,
     status: user.status ?? "active",
@@ -187,7 +192,7 @@ function ManageUserPanels({ user, userId }: { user: UserDetail; userId: string }
         role: values.role,
         status: values.status,
       };
-      body.company_id = trimmedCompany === "" ? null : trimmedCompany;
+      body.company_id = customerRole(values.role) ? (trimmedCompany === "" ? null : trimmedCompany) : null;
 
       if ((values.confirm_super_demotion ?? "") === "REMOVE_MY_SUPER_ACCESS") {
         body.confirm_super_demotion = "REMOVE_MY_SUPER_ACCESS";
@@ -266,17 +271,24 @@ function ManageUserPanels({ user, userId }: { user: UserDetail; userId: string }
 
   const watchedRole = form.watch("role");
   const watchedStatus = form.watch("status");
+  const watchedCompanyId = form.watch("company_id");
   const needsSelfDemotionBanner =
     canManage && actorId === userId && user.role === "super_admin" && watchedRole !== "super_admin";
 
   const isSelf = actorId === userId;
   const suspended = user.status === "suspended";
 
+  const desiredCompanyId: string | null = customerRole(watchedRole)
+    ? watchedCompanyId.trim() || null
+    : null;
+  const savedCompanyId: string | null = (user.company_id ?? "").trim() || null;
+  const companyDirty = desiredCompanyId !== savedCompanyId;
+
   const dirtyRisk =
     canManage &&
     (watchedRole !== user.role ||
       watchedStatus !== (user.status ?? "active") ||
-      form.watch("company_id").trim() !== (user.company_id ?? "").trim());
+      companyDirty);
 
   const submitValues = (vals: EditFormValues) => {
     if (needsSelfDemotionBanner && (vals.confirm_super_demotion ?? "").trim() !== "REMOVE_MY_SUPER_ACCESS") {
@@ -405,7 +417,15 @@ function ManageUserPanels({ user, userId }: { user: UserDetail; userId: string }
                   <Label htmlFor="role">Role</Label>
                   <Select
                     value={form.watch("role")}
-                    onValueChange={(v) => form.setValue("role", v as UserRoleValue, { shouldValidate: true })}
+                    onValueChange={(v) => {
+                      const next = v as UserRoleValue;
+                      form.setValue("role", next, { shouldValidate: true });
+                      if (!customerRole(next)) {
+                        form.setValue("company_id", "", { shouldValidate: true });
+                      } else if ((form.getValues("company_id") ?? "").trim() === "" && user.company_id) {
+                        form.setValue("company_id", user.company_id, { shouldValidate: true });
+                      }
+                    }}
                   >
                     <SelectTrigger id="role">
                       <SelectValue />
@@ -446,35 +466,42 @@ function ManageUserPanels({ user, userId }: { user: UserDetail; userId: string }
                   ) : null}
                 </div>
 
-                <div className="space-y-2">
-                  <CompanyLookup
-                    label="Company"
-                    id="company_id"
-                    value={form.watch("company_id").trim() === "" ? null : form.watch("company_id")}
-                    onChange={(id) => form.setValue("company_id", id ?? "", { shouldValidate: true })}
-                    nullable
-                    placeholder="Search company…"
-                    initialOption={
-                      user.company
-                        ? {
-                            id: user.company.id,
-                            label: user.company.name,
-                            description: user.company.city ?? null,
-                          }
-                        : null
-                    }
-                  />
+                {customerRole(watchedRole) ? (
+                  <div className="space-y-2">
+                    <CompanyLookup
+                      label="Company"
+                      id="company_id"
+                      value={watchedCompanyId.trim() === "" ? null : watchedCompanyId}
+                      onChange={(id) => form.setValue("company_id", id ?? "", { shouldValidate: true })}
+                      nullable
+                      placeholder="Search company…"
+                      initialOption={
+                        user.company
+                          ? {
+                              id: user.company.id,
+                              label: user.company.name,
+                              description: user.company.city ?? null,
+                            }
+                          : null
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Customer roles are scoped to one CRM account. Search by company name or open the{" "}
+                      <Link href="/admin/crm" className="text-primary underline">
+                        CRM directory
+                      </Link>
+                      .
+                    </p>
+                    {form.formState.errors.company_id ? (
+                      <p className="text-xs text-destructive">{form.formState.errors.company_id.message}</p>
+                    ) : null}
+                  </div>
+                ) : (
                   <p className="text-xs text-muted-foreground">
-                    Search by company name. Staff may clear this; customer roles must link to a{" "}
-                    <Link href="/admin/crm" className="text-primary underline">
-                      CRM account
-                    </Link>
-                    .
+                    Internal roles are scoped by role only, not by a CRM account. Saving with an internal role clears
+                    tenant company binding when one was set.
                   </p>
-                  {form.formState.errors.company_id ? (
-                    <p className="text-xs text-destructive">{form.formState.errors.company_id.message}</p>
-                  ) : null}
-                </div>
+                )}
 
                 {needsSelfDemotionBanner ? (
                   <div className="space-y-2 rounded-lg border border-primary/40 bg-primary/10 p-3">

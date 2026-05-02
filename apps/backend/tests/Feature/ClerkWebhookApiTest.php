@@ -266,7 +266,46 @@ final class ClerkWebhookApiTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_staff_with_audit_permission_lists_inbox_metadata(): void
+    public function test_business_admin_cannot_list_webhook_inbox(): void
+    {
+        $admin = User::factory()->create([
+            'role' => UserRole::Admin,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $admin->id)
+            ->getJson('/api/admin/webhooks/inbox')
+            ->assertForbidden();
+    }
+
+    public function test_developer_lists_webhook_inbox(): void
+    {
+        $dev = User::factory()->create([
+            'role' => UserRole::Developer,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+        ]);
+
+        $now = now();
+        DB::table('webhook_inbox')->insert([
+            'provider' => 'clerk',
+            'external_id' => 'msg_dev_1',
+            'event_type' => 'user.created',
+            'processing_state' => 'processed',
+            'last_error' => null,
+            'received_at' => $now,
+            'processed_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $dev->id)
+            ->getJson('/api/admin/webhooks/inbox')
+            ->assertOk();
+    }
+
+    public function test_staff_with_system_tools_permission_lists_inbox_metadata(): void
     {
         $admin = User::factory()->create([
             'role' => UserRole::SuperAdmin,
