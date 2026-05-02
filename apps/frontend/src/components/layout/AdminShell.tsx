@@ -42,8 +42,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <Toaster richColors closeButton position="top-right" />
       <ShellPermissionBoundary scope="admin" label="Checking operations permissions…">
         <div className="flex min-h-screen bg-gradient-to-br from-muted/35 via-background to-muted/20 print:min-h-0 print:bg-white">
-          <aside className="app-chrome hidden print:hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95 md:backdrop-blur">
-            <div className="flex flex-col gap-1 border-b px-4 py-3">
+          <aside className="app-chrome hidden h-svh shrink-0 print:hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95 md:backdrop-blur">
+            <div className="flex shrink-0 flex-col gap-1 border-b px-4 py-3">
               <WeSharpLogo className="h-9" href="/admin/dashboard" />
               <Link
                 href="/"
@@ -52,8 +52,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 Public site
               </Link>
             </div>
-            <SidebarNav sections={navSections} />
-            <div className="mt-auto border-t p-4 text-xs text-muted-foreground">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+              <SidebarNav sections={navSections} className="p-2 md:p-3" />
+            </div>
+            <div className="shrink-0 border-t p-4 text-xs text-muted-foreground">
               Manchester · Liverpool coverage · Internal console
             </div>
           </aside>

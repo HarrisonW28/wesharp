@@ -791,6 +791,7 @@ export default function AdminOrderDetailPage() {
       <PageHeader
         title={orderRef}
         description={`${o.company?.name ?? "Account"}${o.company?.city ? ` · ${o.company.city}` : ""}`}
+        titleRowEnd={<StatusBadge kind="order" status={o.status ?? ""} />}
         actions={
           canOrders ? (
             <div className="flex flex-wrap gap-2">
@@ -1220,10 +1221,6 @@ export default function AdminOrderDetailPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-4 lg:col-span-2">
           <div className="text-xs font-semibold uppercase text-muted-foreground">Overview</div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <StatusBadge kind="order" status={o.status ?? ""} />
-            <span className="text-xs text-muted-foreground">Order status</span>
-          </div>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-muted-foreground">Company</dt>

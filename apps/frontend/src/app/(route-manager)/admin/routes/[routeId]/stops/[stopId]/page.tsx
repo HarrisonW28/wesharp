@@ -283,6 +283,9 @@ export default function RouteStopDetailPage() {
     <RouteManagerShell
       title={`Stop ${stop.sequence}`}
       subtitle={stop.company?.name ?? "Venue"}
+      headerAccessory={
+        <StatusBadge kind="route_stop" status={stop.route_stop_status ?? ""} className="px-2.5 py-1 text-xs" />
+      }
       stickyFooter={stickyFooter}
     >
       <div className="space-y-4">
@@ -297,12 +300,11 @@ export default function RouteStopDetailPage() {
 
         <Card className="border-white/10 bg-white/5 p-4 text-slate-100 md:border-border md:bg-muted/40 md:text-foreground">
           <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Stop status</div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <StatusBadge kind="route_stop" status={stop.route_stop_status ?? ""} className="px-3 py-1.5 text-sm" />
-            {stop.booking?.status ? (
+          {stop.booking?.status ? (
+            <div className="mt-3">
               <span className="text-base text-slate-300 md:text-muted-foreground">Booking: {stop.booking.status}</span>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </Card>
 
         {stop.failure_reason ? (

@@ -418,58 +418,56 @@ export default function AdminCrmCompanyPage() {
       <PageHeader
         title={c.name}
         description={`Slug · ${c.slug}`}
-        actions={
-          <div className="flex flex-wrap gap-2">
+        titleRowEnd={
+          <>
             <CompanyStatusBadge status={c.company_status} />
-            <Button type="button" variant="outline" size="sm" asChild>
-              <Link href="/admin/crm">Back to list</Link>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={!canUpdate || statusMutation.isPending || c.company_status === "active"}
+              onClick={() => statusMutation.mutate("active")}
+            >
+              Mark active
             </Button>
-          </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={!canUpdate || statusMutation.isPending || c.company_status === "at_risk"}
+              onClick={() => statusMutation.mutate("at_risk")}
+            >
+              Mark at risk
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!canUpdate || statusMutation.isPending || c.company_status === "lost"}
+              onClick={() => statusMutation.mutate("lost")}
+            >
+              Mark lost
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                toast.message("Review request", {
+                  description: "Outbound review workflows are not wired yet — this route is reserved.",
+                })
+              }
+            >
+              Request review
+            </Button>
+          </>
+        }
+        actions={
+          <Button type="button" variant="outline" size="sm" asChild>
+            <Link href="/admin/crm">Back to list</Link>
+          </Button>
         }
       />
-
-      {/* Quick actions */}
-      <section className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          disabled={!canUpdate || statusMutation.isPending || c.company_status === "active"}
-          onClick={() => statusMutation.mutate("active")}
-        >
-          Mark active
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          disabled={!canUpdate || statusMutation.isPending || c.company_status === "at_risk"}
-          onClick={() => statusMutation.mutate("at_risk")}
-        >
-          Mark at risk
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={!canUpdate || statusMutation.isPending || c.company_status === "lost"}
-          onClick={() => statusMutation.mutate("lost")}
-        >
-          Mark lost
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() =>
-            toast.message("Review request", {
-              description: "Outbound review workflows are not wired yet — this route is reserved.",
-            })
-          }
-        >
-          Request review
-        </Button>
-      </section>
 
       <nav className="flex flex-wrap gap-1 border-b border-border pb-2" aria-label="Account sections">
         {CRM_TABS.map((id) => (

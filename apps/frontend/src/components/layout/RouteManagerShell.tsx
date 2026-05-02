@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 
@@ -19,11 +17,14 @@ import { useBackendMe } from "@/hooks/use-backend-me";
 export function RouteManagerShell({
   title,
   subtitle,
+  headerAccessory,
   stickyFooter,
   children,
 }: {
   title: string;
   subtitle?: string;
+  /** Compact progress / status beside the title — avoids a full-bleed bar in the page body on wide layouts. */
+  headerAccessory?: ReactNode;
   /** Fixed above the mobile bottom nav — primary CTAs for the active screen. */
   stickyFooter?: ReactNode;
   children: ReactNode;
@@ -35,13 +36,22 @@ export function RouteManagerShell({
   return (
     <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-x-hidden bg-slate-950 text-slate-50 md:max-w-none md:bg-background md:text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/85 backdrop-blur-xl md:border-border md:bg-background/85 md:text-foreground">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="min-w-0 pr-2">
+        <div className="flex items-start justify-between gap-2 px-4 py-3">
+          <div className="min-w-0 flex-1 pr-2">
             <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">
               Route manager
             </div>
-            <div className="truncate text-xl font-bold leading-tight md:text-lg">{title}</div>
-            {subtitle ? <div className="mt-0.5 truncate text-base text-slate-300 md:text-sm md:text-muted-foreground">{subtitle}</div> : null}
+            <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
+              <div className="min-w-0">
+                <div className="truncate text-xl font-bold leading-tight md:text-lg">{title}</div>
+                {subtitle ? (
+                  <div className="mt-0.5 truncate text-base text-slate-300 md:text-sm md:text-muted-foreground">{subtitle}</div>
+                ) : null}
+              </div>
+              {headerAccessory ? (
+                <div className="flex min-w-0 flex-wrap items-center gap-2">{headerAccessory}</div>
+              ) : null}
+            </div>
           </div>
           <Button
             size="icon"

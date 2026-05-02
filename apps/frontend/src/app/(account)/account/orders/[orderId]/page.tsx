@@ -83,6 +83,14 @@ export default function TenantOrderDetailPage() {
       <PageHeader
         title={o?.display_reference ?? "Order details"}
         description="Read-only view of this sharpening order — totals match what we bill, shown in GBP."
+        titleRowEnd={
+          o ? (
+            <StatusBadgeGroup className="max-w-md">
+              <CustomerOrderStatusBadge status={o.status} />
+              <StatusBadge kind="payment" status={o.payment_status} />
+            </StatusBadgeGroup>
+          ) : null
+        }
       />
 
       {orderQuery.status === "pending" ? (
@@ -102,10 +110,6 @@ export default function TenantOrderDetailPage() {
               <CardDescription>Where this order is in our fulfilment flow.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <StatusBadgeGroup className="max-w-xl">
-                <CustomerOrderStatusBadge status={o.status} />
-                <StatusBadge kind="payment" status={o.payment_status} />
-              </StatusBadgeGroup>
               {useServerFulfilment ? (
                 <p className="text-sm text-muted-foreground">
                   Live collection and workshop milestones are in the <strong>Updates</strong> section below.

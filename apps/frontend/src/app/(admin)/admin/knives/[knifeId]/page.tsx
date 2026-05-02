@@ -420,10 +420,75 @@ export default function AdminKnifeDetailPage() {
       <PageHeader
         title={k.tag_id ?? "Knife"}
         description={`${statusStr.replace(/_/g, " ")}${typeof k.company?.name === "string" ? ` · ${k.company.name}` : ""}`}
+        titleRowEnd={
+          <>
+            {steps.map((step) => {
+              const busy = transitionMutation.isPending;
+              const variant = isRiskyKnifeTransition(step.target) ? "destructive" : "secondary";
+
+              return (
+                <Button
+                  key={step.target}
+                  type="button"
+                  size="sm"
+                  variant={variant}
+                  disabled={busy}
+                  onClick={() => {
+                    if (isRiskyKnifeTransition(step.target)) {
+                      const ok = window.confirm("Confirm this blade status change?");
+                      if (!ok) {
+                        return;
+                      }
+                    }
+                    transitionMutation.mutate(step.target);
+                  }}
+                >
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+                  {step.label}
+                </Button>
+              );
+            })}
+            {canReportIssue(statusStr) ? (
+              <Dialog open={issueOpen} onOpenChange={setIssueOpen}>
+                <DialogTrigger asChild>
+                  <Button type="button" size="sm" variant="outline">
+                    Report issue
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Report a workshop issue</DialogTitle>
+                  </DialogHeader>
+                  <Label htmlFor="issue">Damage / issue notes</Label>
+                  <Textarea
+                    id="issue"
+                    value={issueNotes}
+                    onChange={(e) => setIssueNotes(e.target.value)}
+                    rows={5}
+                    placeholder="Describe the defect, wear, or customer concern."
+                  />
+                  <DialogFooter className="gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIssueOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="button" disabled={issueMutation.isPending} onClick={() => issueMutation.mutate()}>
+                      {issueMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+                      Submit issue
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            ) : null}
+          </>
+        }
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="p-4 lg:col-span-2">
+      {!steps.length && !canReportIssue(statusStr) ? (
+        <p className="text-xs text-muted-foreground">Terminal state — only audit history below.</p>
+      ) : null}
+
+      <div className="grid gap-6">
+        <Card className="p-4">
           <div className="text-xs font-semibold uppercase text-muted-foreground">Identification</div>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>
@@ -733,72 +798,6 @@ export default function AdminKnifeDetailPage() {
               <dd>{k.returned_by?.name ?? "—"}</dd>
             </div>
           </dl>
-        </Card>
-
-        <Card className="space-y-3 p-4">
-          <div className="text-sm font-semibold">Workflow</div>
-          <div className="flex flex-wrap gap-2">
-            {steps.map((step) => {
-              const busy = transitionMutation.isPending;
-              const variant = isRiskyKnifeTransition(step.target) ? "destructive" : "secondary";
-
-              return (
-                <Button
-                  key={step.target}
-                  type="button"
-                  size="sm"
-                  variant={variant}
-                  disabled={busy}
-                  onClick={() => {
-                    if (isRiskyKnifeTransition(step.target)) {
-                      const ok = window.confirm("Confirm this blade status change?");
-                      if (!ok) {
-                        return;
-                      }
-                    }
-                    transitionMutation.mutate(step.target);
-                  }}
-                >
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-                  {step.label}
-                </Button>
-              );
-            })}
-            {canReportIssue(statusStr) ? (
-              <Dialog open={issueOpen} onOpenChange={setIssueOpen}>
-                <DialogTrigger asChild>
-                  <Button type="button" size="sm" variant="outline">
-                    Report issue
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Report a workshop issue</DialogTitle>
-                  </DialogHeader>
-                  <Label htmlFor="issue">Damage / issue notes</Label>
-                  <Textarea
-                    id="issue"
-                    value={issueNotes}
-                    onChange={(e) => setIssueNotes(e.target.value)}
-                    rows={5}
-                    placeholder="Describe the defect, wear, or customer concern."
-                  />
-                  <DialogFooter className="gap-2">
-                    <Button type="button" variant="outline" onClick={() => setIssueOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="button" disabled={issueMutation.isPending} onClick={() => issueMutation.mutate()}>
-                      {issueMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
-                      Submit issue
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            ) : null}
-          </div>
-          {!steps.length && !canReportIssue(statusStr) ? (
-            <p className="text-xs text-muted-foreground">Terminal state — only audit history below.</p>
-          ) : null}
         </Card>
       </div>
 

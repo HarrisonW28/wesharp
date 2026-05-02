@@ -316,8 +316,7 @@ export default function RouteDetailPage() {
     return null;
   }
 
-  const { completed, total, pending } = route.progress;
-  const pendingCount = pending ?? Math.max(0, total - completed);
+  const { completed, total } = route.progress;
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const canComplete = route.route_status === "in_progress";
   const stopIdsOrdered = route.stops.map((s) => s.id);
@@ -347,6 +346,28 @@ export default function RouteDetailPage() {
     <RouteManagerShell
       title={route.name}
       subtitle={`${route.scheduled_date ?? ""} · ${route.coverage_city ?? "Area"}`}
+      headerAccessory={
+        <>
+          <StatusBadge kind="route" status={route.route_status ?? ""} className="px-2.5 py-1 text-xs" />
+          <div className="hidden flex-col gap-1 md:flex md:w-32">
+            <div className="flex justify-between text-[10px] font-medium text-muted-foreground tabular-nums">
+              <span>
+                {completed}/{total} stops
+              </span>
+              <span>{pct}%</span>
+            </div>
+            <div
+              className="h-1.5 overflow-hidden rounded-full bg-muted"
+              role="progressbar"
+              aria-valuenow={pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div className="h-full rounded-full bg-sky-500/90 transition-[width]" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        </>
+      }
       stickyFooter={stickyFooter ?? undefined}
     >
       <div className="space-y-4">
@@ -373,9 +394,6 @@ export default function RouteDetailPage() {
 
         <div className="space-y-3 md:hidden">
           <MobileRouteProgress route={route} />
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge kind="route" status={route.route_status ?? ""} className="px-3 py-1 text-sm" />
-          </div>
         </div>
 
         {nextStop ? (
@@ -383,21 +401,6 @@ export default function RouteDetailPage() {
             <MobileNextStopBanner route={route} stop={nextStop} />
           </div>
         ) : null}
-
-        <div className="hidden space-y-2 md:block">
-          <div className="flex justify-between text-sm text-slate-400 md:text-muted-foreground">
-            <span>
-              Progress · {completed}/{total} done · {pendingCount} open
-            </span>
-            <span>{pct}%</span>
-          </div>
-          <div className="h-3 overflow-hidden rounded-full bg-white/10 md:bg-muted">
-            <div className="h-full rounded-full bg-sky-500/90 transition-[width]" style={{ width: `${pct}%` }} />
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <StatusBadge kind="route" status={route.route_status ?? ""} />
-          </div>
-        </div>
 
         {route.notes ? (
           <Card className="border-white/10 bg-white/5 p-4 text-sm text-slate-200 md:bg-muted/40 md:text-foreground">

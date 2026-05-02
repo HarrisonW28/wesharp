@@ -571,12 +571,73 @@ export default function AdminBookingDetailPage() {
       <PageHeader
         title={b.reference ?? "Booking"}
         description={`${b.company?.name ?? "Account"} · collection ${collectionDateForRoute ?? b.requested_date ?? "—"} · ${b.service_type}`}
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" asChild>
-              <Link href="/admin/bookings">Back to list</Link>
+        titleRowEnd={
+          <>
+            <StatusBadge kind="booking" status={b.status} className="text-xs" />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!canConfirm || !canUpdateBooking || confirmMutation.isPending}
+              onClick={() => {
+                const extras = confirmExtrasForm.getValues();
+                const body: Record<string, string> = {};
+                if (extras.confirmed_collection_date?.trim()) {
+                  body.confirmed_collection_date = extras.confirmed_collection_date.trim();
+                }
+                if (extras.confirmed_time_window_start?.trim()) {
+                  body.confirmed_time_window_start = extras.confirmed_time_window_start.trim().slice(0, 5);
+                }
+                if (extras.confirmed_time_window_end?.trim()) {
+                  body.confirmed_time_window_end = extras.confirmed_time_window_end.trim().slice(0, 5);
+                }
+                confirmMutation.mutate(body);
+              }}
+            >
+              Confirm
             </Button>
-          </div>
+            <Button type="button" variant="destructive" disabled={!canCancelNow} onClick={() => setCancelOpen(true)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="secondary" disabled={!canAssignNow} onClick={openAssignDialog}>
+              Assign to route
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!canUnassignNow || unassignMutation.isPending}
+              onClick={() => setUnassignOpen(true)}
+            >
+              Remove from route
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!assignRoute || routePlaceholderMutation.isPending}
+              onClick={() => routePlaceholderMutation.mutate()}
+            >
+              New route (placeholder)
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={!canConvertNow || convertMutation.isPending}
+              onClick={() => setConvertOpen(true)}
+            >
+              Convert to order
+            </Button>
+            {showHardDelete ? (
+              <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+                Delete booking
+              </Button>
+            ) : null}
+          </>
+        }
+        actions={
+          <Button type="button" variant="outline" size="sm" asChild>
+            <Link href="/admin/bookings">Back to list</Link>
+          </Button>
         }
       />
 
@@ -593,68 +654,6 @@ export default function AdminBookingDetailPage() {
           </AlertDescription>
         </Alert>
       ) : null}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge kind="booking" status={b.status} className="text-xs" />
-        <Button
-          type="button"
-          variant="outline"
-          disabled={!canConfirm || !canUpdateBooking || confirmMutation.isPending}
-          onClick={() => {
-            const extras = confirmExtrasForm.getValues();
-            const body: Record<string, string> = {};
-            if (extras.confirmed_collection_date?.trim()) {
-              body.confirmed_collection_date = extras.confirmed_collection_date.trim();
-            }
-            if (extras.confirmed_time_window_start?.trim()) {
-              body.confirmed_time_window_start = extras.confirmed_time_window_start.trim().slice(0, 5);
-            }
-            if (extras.confirmed_time_window_end?.trim()) {
-              body.confirmed_time_window_end = extras.confirmed_time_window_end.trim().slice(0, 5);
-            }
-            confirmMutation.mutate(body);
-          }}
-        >
-          Confirm
-        </Button>
-        <Button type="button" variant="destructive" disabled={!canCancelNow} onClick={() => setCancelOpen(true)}>
-          Cancel
-        </Button>
-        <Button type="button" variant="secondary" disabled={!canAssignNow} onClick={openAssignDialog}>
-          Assign to route
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={!canUnassignNow || unassignMutation.isPending}
-          onClick={() => setUnassignOpen(true)}
-        >
-          Remove from route
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={!assignRoute || routePlaceholderMutation.isPending}
-          onClick={() => routePlaceholderMutation.mutate()}
-        >
-          New route (placeholder)
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={!canConvertNow || convertMutation.isPending}
-          onClick={() => setConvertOpen(true)}
-        >
-          Convert to order
-        </Button>
-        {showHardDelete ? (
-          <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
-            Delete booking
-          </Button>
-        ) : null}
-      </div>
 
       {canConfirm && canUpdateBooking ? (
         <Card>

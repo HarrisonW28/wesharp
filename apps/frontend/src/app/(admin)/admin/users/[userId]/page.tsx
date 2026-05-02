@@ -91,10 +91,13 @@ const editSchema = z
 type EditFormValues = z.infer<typeof editSchema>;
 
 function formDefaults(user: UserDetail): EditFormValues {
+  const fromApi = user.company_id?.trim() ?? "";
+  const fromEmbed = user.company?.id?.trim() ?? "";
+  const company_id = fromApi || fromEmbed;
   return {
     role: user.role,
     status: user.status ?? "active",
-    company_id: user.company_id ?? "",
+    company_id,
     confirm_super_demotion: "",
   };
 }
@@ -164,9 +167,14 @@ function ManageUserPanels({ user, userId }: { user: UserDetail; userId: string }
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
 
+  const editFormValues = useMemo(
+    () => formDefaults(user),
+    [user.id, user.updated_at, user.company_id, user.company?.id, user.role, user.status],
+  );
+
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),
-    values: formDefaults(user),
+    values: editFormValues,
   });
 
   const invalidate = async () => {

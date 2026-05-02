@@ -151,6 +151,61 @@ export default function TenantBookingDetailPage() {
       <PageHeader
         title="Booking details"
         description="Everything you need to know about this collection — in plain language."
+        titleRowEnd={
+          d && timeline ? (
+            <>
+              <CustomerBookingStatusBadge status={d.status} className="w-fit text-sm" />
+              {canCancel ? (
+                <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="outline" size="sm" className="rounded-lg text-destructive hover:text-destructive">
+                      Cancel booking
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        You can cancel before we assign this collection to a route. If we’ve already scheduled your visit, contact
+                        us instead.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium" htmlFor="cancel-reason">
+                        Note (optional)
+                      </label>
+                      <Textarea
+                        id="cancel-reason"
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        placeholder="e.g. Kitchen closed that day"
+                        className="min-h-[80px] resize-none"
+                        maxLength={2000}
+                      />
+                    </div>
+                    {cancelMutation.isError ? (
+                      <p className="text-sm text-destructive">{(cancelMutation.error as Error).message}</p>
+                    ) : null}
+                    <AlertDialogFooter>
+                      <AlertDialogCancel type="button" disabled={cancelMutation.isPending}>
+                        Keep booking
+                      </AlertDialogCancel>
+                      <Button
+                        type="button"
+                        disabled={cancelMutation.isPending}
+                        variant="destructive"
+                        className="rounded-lg"
+                        onClick={() => cancelMutation.mutate()}
+                      >
+                        {cancelMutation.isPending ? "Cancelling…" : "Yes, cancel"}
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : null}
+            </>
+          ) : null
+        }
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" variant="outline" size="sm" className="rounded-lg" asChild>
@@ -196,58 +251,6 @@ export default function TenantBookingDetailPage() {
         </Card>
       ) : d && timeline ? (
         <div className="space-y-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <CustomerBookingStatusBadge status={d.status} className="w-fit text-sm" />
-            {canCancel ? (
-              <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button type="button" variant="outline" size="sm" className="rounded-lg text-destructive hover:text-destructive">
-                    Cancel booking
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      You can cancel before we assign this collection to a route. If we’ve already scheduled your visit, contact us
-                      instead.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="cancel-reason">
-                      Note (optional)
-                    </label>
-                    <Textarea
-                      id="cancel-reason"
-                      value={cancelReason}
-                      onChange={(e) => setCancelReason(e.target.value)}
-                      placeholder="e.g. Kitchen closed that day"
-                      className="min-h-[80px] resize-none"
-                      maxLength={2000}
-                    />
-                  </div>
-                  {cancelMutation.isError ? (
-                    <p className="text-sm text-destructive">{(cancelMutation.error as Error).message}</p>
-                  ) : null}
-                  <AlertDialogFooter>
-                    <AlertDialogCancel type="button" disabled={cancelMutation.isPending}>
-                      Keep booking
-                    </AlertDialogCancel>
-                    <Button
-                      type="button"
-                      disabled={cancelMutation.isPending}
-                      variant="destructive"
-                      className="rounded-lg"
-                      onClick={() => cancelMutation.mutate()}
-                    >
-                      {cancelMutation.isPending ? "Cancelling…" : "Yes, cancel"}
-                    </Button>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            ) : null}
-          </div>
-
           {useServerFulfilment ? (
             <TenantFulfilmentUpdatesCard
               fulfilment={d.fulfilment}

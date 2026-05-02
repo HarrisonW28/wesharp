@@ -39,13 +39,16 @@ export function MobileDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[min(92vw,20rem)] p-0">
-        <SheetHeader className="border-b px-4 py-4 text-left">
+      <SheetContent
+        side="left"
+        className="flex h-full max-h-[100dvh] w-[min(92vw,20rem)] flex-col gap-0 overflow-hidden p-0"
+      >
+        <SheetHeader className="shrink-0 space-y-0 border-b px-4 py-3 text-left">
           <SheetTitle className="text-lg font-normal leading-none">
             <span className="sr-only">{sheetLabel}</span>
             <span className="inline-flex items-center gap-2">
               <WeSharpLogo
-                className="h-9 md:h-8"
+                className="h-8 md:h-8"
                 href={logoHref}
                 onNavigate={logoHref ? () => onOpenChange(false) : undefined}
               />
@@ -54,7 +57,7 @@ export function MobileDrawer({
           </SheetTitle>
         </SheetHeader>
         {quickLinks !== undefined && quickLinks.length > 0 ? (
-          <div className="flex flex-col gap-px border-b bg-muted/40">
+          <div className="shrink-0 flex flex-col gap-px border-b bg-muted/40">
             {quickLinks.map((q) => (
               <Link
                 key={q.href}
@@ -67,7 +70,9 @@ export function MobileDrawer({
             ))}
           </div>
         ) : null}
-        <SidebarNav items={items} sections={sections} onNavigate={() => onOpenChange(false)} />
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-2 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2">
+          <SidebarNav items={items} sections={sections} onNavigate={() => onOpenChange(false)} className="px-0 pb-4" />
+        </div>
       </SheetContent>
     </Sheet>
   );

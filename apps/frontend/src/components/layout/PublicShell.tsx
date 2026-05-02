@@ -57,44 +57,49 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                   <Menu className="h-5 w-5" aria-hidden />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[min(100vw-2rem,20rem)]">
-                <SheetHeader>
+              <SheetContent
+                side="right"
+                className="flex h-full max-h-[100dvh] w-[min(100vw-2rem,20rem)] flex-col gap-0 overflow-hidden p-0"
+              >
+                <SheetHeader className="shrink-0 space-y-0 border-b px-6 py-4 text-left">
                   <SheetTitle>Navigate</SheetTitle>
                 </SheetHeader>
-                <nav className="mt-6 flex flex-col gap-4 text-base" aria-label="Mobile">
-                  {PUBLIC_SITE_NAV_LINKS.map((l) => (
-                    <Link key={l.href} href={l.href} className={navLinkMobileClass} onClick={() => setOpen(false)}>
-                      {l.label}
-                    </Link>
-                  ))}
-                  <SignedOut>
-                    <Link href="/login" className={navLinkMobileClass} onClick={() => setOpen(false)}>
-                      Sign in
-                    </Link>
-                    <Link href="/register" className={navLinkMobileClass} onClick={() => setOpen(false)}>
-                      Create account
-                    </Link>
-                  </SignedOut>
-                  <SignedIn>
-                    <Link
-                      href="/auth/continue"
-                      className={`${navLinkMobileClass} gap-2`}
-                      onClick={() => setOpen(false)}
-                    >
-                      <LayoutDashboard className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
-                      My account
-                    </Link>
-                  </SignedIn>
-                  <Button asChild className="mt-2 rounded-lg">
-                    <Link href="/book" onClick={() => setOpen(false)}>
-                      Book a collection <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
-                    </Link>
-                  </Button>
-                  <div className="mt-6 flex items-center justify-between border-t pt-4">
-                    <span className="text-sm text-muted-foreground">Theme</span>
-                    <ThemeToggle />
-                  </div>
-                </nav>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
+                  <nav className="flex flex-col gap-1 text-base" aria-label="Mobile">
+                    {PUBLIC_SITE_NAV_LINKS.map((l) => (
+                      <Link key={l.href} href={l.href} className={navLinkMobileClass} onClick={() => setOpen(false)}>
+                        {l.label}
+                      </Link>
+                    ))}
+                    <SignedOut>
+                      <Link href="/login" className={navLinkMobileClass} onClick={() => setOpen(false)}>
+                        Sign in
+                      </Link>
+                      <Link href="/register" className={navLinkMobileClass} onClick={() => setOpen(false)}>
+                        Create account
+                      </Link>
+                    </SignedOut>
+                    <SignedIn>
+                      <Link
+                        href="/auth/continue"
+                        className={`${navLinkMobileClass} gap-2`}
+                        onClick={() => setOpen(false)}
+                      >
+                        <LayoutDashboard className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+                        My account
+                      </Link>
+                    </SignedIn>
+                    <Button asChild className="mt-4 w-full shrink-0 rounded-lg">
+                      <Link href="/book" onClick={() => setOpen(false)}>
+                        Book a collection <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+                      </Link>
+                    </Button>
+                  </nav>
+                </div>
+                <div className="flex shrink-0 items-center justify-between border-t px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                  <span className="text-sm text-muted-foreground">Theme</span>
+                  <ThemeToggle />
+                </div>
               </SheetContent>
             </Sheet>
 

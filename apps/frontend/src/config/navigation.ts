@@ -38,8 +38,6 @@ export type NavItem = {
 export type NavSection = {
   label: string;
   items: NavItem[];
-  /** When true, sidebar shows this group collapsed until expanded (non-core utilities). */
-  defaultCollapsed?: boolean;
 };
 
 export const ADMIN_NAV_SECTIONS: NavSection[] = [
@@ -128,7 +126,6 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
   },
   {
     label: "Settings",
-    defaultCollapsed: true,
     items: [
       { title: "Users", href: "/admin/users", icon: UserCog, permission: "users.view" },
       { title: "Site content", href: "/admin/content-settings", icon: Newspaper, permission: "settings.manage" },
@@ -137,7 +134,6 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
   },
   {
     label: "System",
-    defaultCollapsed: true,
     items: [
       { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
       { title: "Webhook inbox", href: "/admin/webhooks/inbox", icon: Webhook, permission: "audit_logs.view" },
@@ -148,16 +144,34 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
 /** Full admin flat list — useful for tests or legacy imports. */
 export const ADMIN_NAV: NavItem[] = ADMIN_NAV_SECTIONS.flatMap((s) => s.items);
 
-export const ACCOUNT_NAV: NavItem[] = [
-  { title: "Overview", href: "/account/dashboard", icon: Gauge, permission: "dashboard.view" },
-  { title: "Your plan", href: "/account/subscription", icon: Repeat, permission: "dashboard.view" },
-  { title: "My bookings", href: "/account/bookings", icon: CalendarClock, permission: "bookings.view" },
-  { title: "My orders", href: "/account/orders", icon: ClipboardList, permission: "orders.view" },
-  { title: "Knives", href: "/account/knives", icon: Utensils, permission: "knives.view" },
-  { title: "Invoices", href: "/account/invoices", icon: Receipt, permission: "invoices.view" },
-  { title: "Locations", href: "/account/locations", icon: MapPinned, permission: "account.locations.manage" },
-  { title: "Settings", href: "/account/settings", icon: Settings, permission: "account.settings.update" },
+/** Tenant account — grouped for collapsible mobile / narrow sidebars. */
+export const ACCOUNT_NAV_SECTIONS: NavSection[] = [
+  {
+    label: "Overview",
+    items: [
+      { title: "Overview", href: "/account/dashboard", icon: Gauge, permission: "dashboard.view" },
+      { title: "Your plan", href: "/account/subscription", icon: Repeat, permission: "dashboard.view" },
+    ],
+  },
+  {
+    label: "Work",
+    items: [
+      { title: "My bookings", href: "/account/bookings", icon: CalendarClock, permission: "bookings.view" },
+      { title: "My orders", href: "/account/orders", icon: ClipboardList, permission: "orders.view" },
+      { title: "Knives", href: "/account/knives", icon: Utensils, permission: "knives.view" },
+      { title: "Invoices", href: "/account/invoices", icon: Receipt, permission: "invoices.view" },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { title: "Locations", href: "/account/locations", icon: MapPinned, permission: "account.locations.manage" },
+      { title: "Settings", href: "/account/settings", icon: Settings, permission: "account.settings.update" },
+    ],
+  },
 ];
+
+export const ACCOUNT_NAV: NavItem[] = ACCOUNT_NAV_SECTIONS.flatMap((s) => s.items);
 
 export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
   {
@@ -218,7 +232,6 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
   },
   {
     label: "System",
-    defaultCollapsed: true,
     items: [
       { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
       { title: "Webhook inbox", href: "/admin/webhooks/inbox", icon: Webhook, permission: "audit_logs.view" },
