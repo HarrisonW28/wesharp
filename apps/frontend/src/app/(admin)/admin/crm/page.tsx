@@ -210,7 +210,7 @@ export default function AdminCrmPage() {
       <Breadcrumbs items={[{ label: "CRM" }]} />
       <PageHeader
         title="Accounts"
-        description="Operational CRM — sourced from Laravel /api/admin/companies."
+        description="Kitchens and groups you work with — search, filter, and open a full timeline on each account."
         actions={
           <Button type="button" onClick={() => setCreateOpen(true)}>
             New account
@@ -439,7 +439,12 @@ export default function AdminCrmPage() {
         </div>
       ) : (
         <>
-          <DataTable columns={columns} data={q?.data.items ?? []} emptyLabel="No accounts match your filters." />
+          <DataTable
+            columns={columns}
+            data={q?.data.items ?? []}
+            emptyLabel="No accounts match your filters."
+            emptyDescription="Try clearing search or filters, or create a new account to get started."
+          />
           {q?.meta.pagination ? (
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
               <span>

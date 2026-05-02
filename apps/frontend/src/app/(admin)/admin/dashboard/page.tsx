@@ -30,6 +30,7 @@ import {
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
+import { AdminQuickActionsCard } from "@/components/admin/AdminQuickActionsCard";
 import { ChartCard } from "@/components/cards/ChartCard";
 import { StatCard } from "@/components/cards/StatCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -132,13 +133,15 @@ export default function AdminDashboardPage() {
       <Breadcrumbs items={[{ label: "Dashboard" }]} />
       <PageHeader
         title="Operations dashboard"
-        description="KPIs mirror the Analytics API — totals are server-derived from seeded or live Laravel data."
+        description="Headline volumes and cash position for roughly the last 90 days — figures come from your live Laravel totals."
         actions={
           <Button type="button" variant="outline" size="sm" asChild className="shrink-0">
             <Link href="/admin/analytics">Deep-dive analytics</Link>
           </Button>
         }
       />
+
+      <AdminQuickActionsCard />
 
       {fault ? (
         <Alert variant="destructive">
@@ -166,7 +169,7 @@ export default function AdminDashboardPage() {
           <StatCard
             title="New bookings · this week"
             value={String(kpis.new_bookings_this_week)}
-            hint={`Analytics filters · ${overviewQuery.data?.distinct_cities?.length ?? 0} cities in scope`}
+            hint={`${overviewQuery.data?.distinct_cities?.length ?? 0} cities in this window`}
             icon={CalendarDays}
           />
           <StatCard
@@ -197,7 +200,7 @@ export default function AdminDashboardPage() {
       {!fault ? (
       <ChartCard
         title="Revenue pulse · trailing week"
-        description="Daily GBP from Analytics sales payload (last seven buckets in-range)."
+        description="Daily GBP for the last seven days in range."
       >
         {!chartIsEmpty ? (
           <div className="w-full min-w-0">

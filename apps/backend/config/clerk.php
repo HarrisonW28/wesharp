@@ -1,4 +1,4 @@
-fix <?php
+<?php
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
@@ -6,6 +6,12 @@ use App\Enums\UserStatus;
 return [
 
     'secret' => env('CLERK_SECRET_KEY'),
+
+    /**
+     * Svix signing secret from Clerk Dashboard → Webhooks → Signing Secret (whsec_…).
+     * Required for POST /api/webhooks/clerk.
+     */
+    'webhook_signing_secret' => env('CLERK_WEBHOOK_SIGNING_SECRET', ''),
 
     /**
      * JWKS URL — usually https://{frontend_api}/.well-known/jwks.json

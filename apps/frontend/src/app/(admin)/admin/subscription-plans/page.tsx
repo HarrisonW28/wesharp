@@ -15,7 +15,17 @@ import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,6 +117,8 @@ export default function AdminSubscriptionPlansPage() {
   const [createDraft, setCreateDraft] = useState<PlanDraft>(() => defaultDraft());
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<PlanDraft>(() => defaultDraft());
+  const [toggleConfirm, setToggleConfirm] = useState<{ id: string; name: string; makeActive: boolean } | null>(null);
+  const [archiveConfirm, setArchiveConfirm] = useState<{ id: string; name: string } | null>(null);
 
   const plansQuery = useQuery({
     queryKey: ["admin-subscription-plans"],
@@ -299,15 +311,9 @@ export default function AdminSubscriptionPlansPage() {
                           type="button"
                           variant={p.is_active ? "secondary" : "default"}
                           disabled={saving}
-                          onClick={() => {
-                            const ok = window.confirm(
-                              p.is_active
-                                ? "Deactivate this plan? It cannot be assigned to new companies while inactive."
-                                : "Activate this plan?",
-                            );
-                            if (!ok) return;
-                            toggleActive.mutate({ id: p.id, active: !p.is_active });
-                          }}
+                          onClick={() =>
+                            setToggleConfirm({ id: p.id, name: p.name ?? "This plan", makeActive: !p.is_active })
+                          }
                         >
                           <Power className="mr-2 h-4 w-4" aria-hidden />
                           {p.is_active ? "Deactivate" : "Activate"}
@@ -316,13 +322,7 @@ export default function AdminSubscriptionPlansPage() {
                           type="button"
                           variant="destructive"
                           disabled={saving}
-                          onClick={() => {
-                            const ok = window.confirm(
-                              "Archive this plan? Existing company subscriptions remain linked; the plan will be removed from the active catalogue.",
-                            );
-                            if (!ok) return;
-                            archivePlan.mutate({ id: p.id });
-                          }}
+                          onClick={() => setArchiveConfirm({ id: p.id, name: p.name ?? "This plan" })}
                         >
                           <Trash2 className="mr-2 h-4 w-4" aria-hidden />
                           Archive
@@ -348,6 +348,81 @@ export default function AdminSubscriptionPlansPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={toggleConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setToggleConfirm(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {toggleConfirm?.makeActive ? "Activate plan?" : "Deactivate plan?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {toggleConfirm ? (
+                <>
+                  <span className="font-medium text-foreground">{toggleConfirm.name}</span>
+                  {toggleConfirm.makeActive
+                    ? " will be available to assign to accounts again."
+                    : " won’t be assignable to new accounts while it’s inactive. Existing subscriptions stay as they are."}
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              onClick={() => {
+                if (toggleConfirm) {
+                  toggleActive.mutate({ id: toggleConfirm.id, active: toggleConfirm.makeActive });
+                }
+                setToggleConfirm(null);
+              }}
+            >
+              {toggleConfirm?.makeActive ? "Activate" : "Deactivate"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={archiveConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setArchiveConfirm(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive subscription plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {archiveConfirm ? (
+                <>
+                  <span className="font-medium text-foreground">{archiveConfirm.name}</span> will be removed from the
+                  active catalogue. Existing company subscriptions stay linked; this cannot be undone from this screen.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => {
+                if (archiveConfirm) {
+                  archivePlan.mutate({ id: archiveConfirm.id });
+                }
+                setArchiveConfirm(null);
+              }}
+            >
+              Archive plan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

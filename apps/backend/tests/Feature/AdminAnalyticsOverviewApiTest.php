@@ -28,6 +28,17 @@ final class AdminAnalyticsOverviewApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonStructure([
                 'data',
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'kpis' => [
+                        'revenue_this_month_pence',
+                        'invoiced_subscription_total_pence_in_range',
+                        'invoiced_overage_line_pence_in_range',
+                        'completed_orders_in_filter_range',
+                        'average_knives_per_completed_order_in_range',
+                    ],
+                ],
             ]);
     }
 }

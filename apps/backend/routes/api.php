@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\RouteStopController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserDirectoryController;
+use App\Http\Controllers\Admin\WebhookInboxController;
 use App\Http\Controllers\Api\Account\AccountBookingController;
 use App\Http\Controllers\Api\Account\AccountDashboardController;
 use App\Http\Controllers\Api\Account\AccountInvoiceController;
@@ -43,6 +44,7 @@ use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\TenantSmokeController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\Public\PublicBookingEnquiryController;
+use App\Http\Controllers\Webhooks\ClerkWebhookController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -103,6 +105,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     });
 
     Route::middleware('permission:audit_logs.view')->get('audit-logs', [AuditLogController::class, 'index'])->name('api.admin.audit_logs.index');
+
+    Route::middleware('permission:audit_logs.view')->get('webhooks/inbox', [WebhookInboxController::class, 'index'])->name('api.admin.webhooks.inbox.index');
 
     Route::middleware('permission:notifications.deliveries.view')
         ->get('notifications/deliveries', [NotificationDeliveryController::class, 'globalIndex'])
@@ -318,4 +322,5 @@ Route::prefix('public')->middleware('throttle:booking-enquiries')->group(functio
 });
 
 /** Provider webhooks — unauthenticated; each controller verifies signatures and returns safe JSON errors. */
+Route::post('webhooks/clerk', ClerkWebhookController::class)->name('api.webhooks.clerk');
 Route::post('webhooks/stripe', StripeWebhookController::class)->name('api.webhooks.stripe');

@@ -127,6 +127,14 @@ export default function RouteTodayPage() {
         <Card className="border-destructive/40 bg-destructive/10 p-4 text-base text-red-200 md:text-destructive">
           {(todayQuery.error as Error).message}
         </Card>
+        <Button
+          type="button"
+          variant="secondary"
+          className="mt-4 h-12 w-full rounded-xl text-base md:w-auto"
+          onClick={() => void todayQuery.refetch()}
+        >
+          Try again
+        </Button>
       </RouteManagerShell>
     );
   }

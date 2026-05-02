@@ -7,13 +7,14 @@ namespace App\Support\Evidence;
 use App\Enums\EvidencePhotoCategory;
 use App\Models\EvidencePhoto;
 use App\Models\Order;
+use App\Support\Knives\KnifeJson;
 
 final class EvidencePhotoJson
 {
     /** @return array<string, mixed> */
     public static function adminRow(EvidencePhoto $photo): array
     {
-        $photo->loadMissing(['uploadedBy:id,name']);
+        $photo->loadMissing(['uploadedBy:id,name', 'knife:id,brand,knife_type,label,tag_id']);
 
         return [
             'id' => (string) $photo->id,
@@ -25,6 +26,7 @@ final class EvidencePhotoJson
             'notes' => $photo->notes,
             'archived_at' => $photo->archived_at?->toIso8601String(),
             'knife_id' => $photo->knife_id !== null ? (string) $photo->knife_id : null,
+            'knife_label' => $photo->knife !== null ? KnifeJson::briefListingLabel($photo->knife) : null,
             'damage_report_id' => $photo->damage_report_id !== null ? (string) $photo->damage_report_id : null,
             'order_id' => $photo->order_id !== null ? (string) $photo->order_id : null,
             'route_stop_id' => $photo->route_stop_id !== null ? (string) $photo->route_stop_id : null,

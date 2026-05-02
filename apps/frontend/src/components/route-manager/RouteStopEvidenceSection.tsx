@@ -8,6 +8,16 @@ import { toast } from "sonner";
 
 import { EvidencePhotoAdminRowSchema, EvidenceSettingsSchema } from "@/lib/api/admin-routes-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,8 +50,11 @@ function formatCapturedAt(iso?: string | null): string {
 function EvidenceThumb({ fetchPath, className }: { fetchPath: string; className?: string }) {
   const admin = useAdminApi();
   const [src, setSrc] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
+    setLoadError(false);
+    setSrc(null);
     let objectUrl: string | null = null;
     let cancelled = false;
     void (async () => {
@@ -53,6 +66,7 @@ function EvidenceThumb({ fetchPath, className }: { fetchPath: string; className?
         }
       } catch {
         if (!cancelled) {
+          setLoadError(true);
           setSrc(null);
         }
       }
@@ -64,6 +78,21 @@ function EvidenceThumb({ fetchPath, className }: { fetchPath: string; className?
       }
     };
   }, [fetchPath, admin]);
+
+  if (loadError) {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 px-2 text-center text-xs text-muted-foreground",
+          className,
+        )}
+        role="img"
+        aria-label="Photo preview unavailable"
+      >
+        Couldn’t load preview
+      </div>
+    );
+  }
 
   if (!src) {
     return (
@@ -87,11 +116,14 @@ export function RouteStopEvidenceSection({
   routeId,
   photos,
   settings,
+  orderKnives = [],
 }: {
   stopId: string;
   routeId: string;
   photos: EvidenceRow[];
   settings?: EvidenceSettings;
+  /** When the stop has a linked order, optional knives to tie the photo to (Sprint 11.3). */
+  orderKnives?: { id: string; label: string }[];
 }) {
   const idPrefix = useId();
   const admin = useAdminApi();
@@ -99,6 +131,9 @@ export function RouteStopEvidenceSection({
 
   const [category, setCategory] = useState(STOP_CATEGORIES[0]?.value ?? "general_route_stop");
   const [caption, setCaption] = useState("");
+  const [knifeId, setKnifeId] = useState("");
+  const [archivePhotoId, setArchivePhotoId] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<string>(
     settings?.default_visibility === "customer_visible" ? "customer_visible" : "internal_only",
   );
@@ -131,6 +166,9 @@ export function RouteStopEvidenceSection({
       if (allowCustomerVisible) {
         fd.append("visibility", visibility);
       }
+      if (knifeId.trim() !== "") {
+        fd.append("knife_id", knifeId.trim());
+      }
       const res = await admin.json<unknown>(`/api/admin/route-stops/${stopId}/evidence-photos`, {
         method: "POST",
         body: fd,
@@ -140,14 +178,23 @@ export function RouteStopEvidenceSection({
       }
       return res.data;
     },
+    onMutate: () => {
+      setUploadError(null);
+    },
     onSuccess: () => {
       toast.success("Photo uploaded.");
       setDraftFile(null);
       setCaption("");
+      setKnifeId("");
+      setUploadError(null);
       void queryClient.invalidateQueries({ queryKey: ["admin-route-stop", stopId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-route-detail", routeId] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      const msg = e.message || "Upload failed.";
+      setUploadError(msg);
+      toast.error(msg);
+    },
   });
 
   const patchMutation = useMutation({
@@ -230,6 +277,33 @@ export function RouteStopEvidenceSection({
           </Select>
         </div>
 
+        {orderKnives.length > 0 ? (
+          <div>
+            <Label className="text-base">Link to knife (optional)</Label>
+            <Select
+              value={knifeId || "__none__"}
+              onValueChange={(v) => setKnifeId(v === "__none__" ? "" : v)}
+            >
+              <SelectTrigger className="mt-2 h-12 rounded-xl text-base">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__" className="text-base">
+                  Not linked to a blade line
+                </SelectItem>
+                {orderKnives.map((k) => (
+                  <SelectItem key={k.id} value={k.id} className="text-base">
+                    {k.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-1.5 text-xs text-slate-400 md:text-muted-foreground">
+              Tie proof photos to a knife when the order is registered — helps workshop and customer timelines match up.
+            </p>
+          </div>
+        ) : null}
+
         <div>
           <Label htmlFor={`${idPrefix}-cap`} className="text-base">
             Caption / notes (optional)
@@ -260,6 +334,12 @@ export function RouteStopEvidenceSection({
               </SelectContent>
             </Select>
           </div>
+        ) : null}
+
+        {uploadError ? (
+          <p className="text-sm font-medium text-amber-100 md:text-destructive" role="alert">
+            {uploadError}
+          </p>
         ) : null}
 
         <Button
@@ -310,6 +390,11 @@ export function RouteStopEvidenceSection({
                         <span className="text-xs font-medium text-amber-200 md:text-amber-800">Archived</span>
                       ) : null}
                     </div>
+                    {p.knife_label ? (
+                      <div className="text-xs text-slate-400 md:text-muted-foreground">
+                        Knife: <span className="font-medium text-slate-200 md:text-foreground">{p.knife_label}</span>
+                      </div>
+                    ) : null}
                     <div className="text-sm text-slate-400 md:text-muted-foreground">
                       {formatCapturedAt(p.captured_at)}
                       {p.uploaded_by?.name ? ` · ${p.uploaded_by.name}` : null}
@@ -342,12 +427,7 @@ export function RouteStopEvidenceSection({
                           size="sm"
                           className="rounded-lg"
                           disabled={patchMutation.isPending}
-                          onClick={() => {
-                            if (!window.confirm("Archive this photo? It will stay for audit but hidden from active lists.")) {
-                              return;
-                            }
-                            patchMutation.mutate({ photoId: p.id, body: { archived: true } });
-                          }}
+                          onClick={() => setArchivePhotoId(p.id)}
                         >
                           Archive
                         </Button>
@@ -367,6 +447,37 @@ export function RouteStopEvidenceSection({
           failed collection.
         </p>
       ) : null}
+
+      <AlertDialog
+        open={archivePhotoId !== null}
+        onOpenChange={(open) => {
+          if (!open) setArchivePhotoId(null);
+        }}
+      >
+        <AlertDialogContent className="rounded-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive this photo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It stays in the audit trail but disappears from active lists. Customer-visible photos will no longer show in the
+              portal once archived.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              onClick={() => {
+                if (archivePhotoId) {
+                  patchMutation.mutate({ photoId: archivePhotoId, body: { archived: true } });
+                }
+                setArchivePhotoId(null);
+              }}
+            >
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

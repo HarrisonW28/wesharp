@@ -122,6 +122,17 @@ End with:
 - QA checklist
 - known limitations
 
+### Sprint 11.2 — Done (implementation summary)
+
+- **Dashboard** (`admin/dashboard/page.tsx`): friendlier KPI/chart copy; **`AdminQuickActionsCard`** — shortcuts to bookings, CRM, orders, today’s routes, invoices, finance, payments, subscriptions (same destinations as sidebar).
+- **Subscription plans** (`admin/subscription-plans/page.tsx`): **AlertDialog** replaces `window.confirm` for activate/deactivate and archive, with plan name in the copy.
+- **Orders / invoices list** (`admin/orders/page.tsx`, `admin/invoices/page.tsx`): empty state is a **dashed card** with guidance, **Reset filters** link, and **New order** / **New invoice** primary CTA.
+- **CRM** (`admin/crm/page.tsx`): operational **PageHeader** description; **DataTable** `emptyDescription` when no rows.
+
+**QA:** `npm run typecheck` (frontend); manually: dashboard quick links, subscription plan toggle/archive dialogs, orders/invoices empty states with filters applied, CRM empty table.
+
+**Limitations:** Permissions still enforce API access; quick-action links do not hide items the role cannot use (404/403 from destination is unchanged).
+
 ---
 
 ## Sprint 11.3 — Route, Agent and Photo Evidence Polish
@@ -173,6 +184,20 @@ End with:
 - permission notes
 - QA checklist
 - known limitations
+
+### Sprint 11.3 — Done (implementation summary)
+
+- **Stop payload (Laravel):** `RouteFormatting::stopDetail` eager-loads **order knives** and returns **`order_knives`** `{ id, label }` for the linked workshop order; **`EvidencePhotoJson::adminRow`** includes **`knife_label`** (via `KnifeJson::briefListingLabel`) so admins see readable blade lines, not only IDs.
+- **Route evidence UI:** `RouteStopEvidenceSection` — optional **link photo to knife** when knives exist; **inline upload error** (plus toast); **preview thumb** shows a clear failure state; **archive** uses **AlertDialog**; list shows **knife label** when present.
+- **Stop detail:** **Complete stop** uses **AlertDialog** (replaces `window.confirm`); **linked order** card uses **Open order** to `/admin/orders/:id` (no truncated UUID in copy).
+- **Today’s route:** error state includes **Try again** (`refetch`).
+- **Customer order:** `TenantFulfilmentUpdatesCard` — copy clarifies **collection / return / workshop** visibility rules; shared photos heading **Photos shared with you**; timestamps use **tabular-nums**; **OrderEvidenceImage** shows a friendly error if the file fetch fails.
+
+**Permissions:** Unchanged — `EvidencePhotoPolicy` and portal filtering still enforce **customer_visible** + company scope; internal-only route photos never appear in account UI.
+
+**QA:** `php artisan test tests/Feature/EvidencePhotoApiTest.php`; `npm run typecheck` (frontend). Manually: upload route evidence with/without knife link; mark customer-visible and confirm portal; complete stop dialog; today page error retry.
+
+**Limitations:** Route photo → knife linking only appears when the stop has a linked order with registered knives; very large uploads may still fail with a generic API message depending on server limits.
 
 ---
 
@@ -226,6 +251,17 @@ End with:
 - QA checklist
 - known limitations
 
+### Sprint 11.4 — Done (implementation summary)
+
+- **Analytics overview API** (`AnalyticsService::overview`): KPIs now include **invoice accrual in the filter date range** (ex void/draft): **`invoiced_subscription_total_pence_in_range`** vs **`invoiced_one_off_total_pence_in_range`** (`is_subscription_billing`). **Line-level** **`invoiced_subscription_line_pence_in_range`** and **`invoiced_overage_line_pence_in_range`** sum `invoice_items.line_total_pence` for `subscription` / `overage` types on the same issued invoices (city on billing company). **Throughput:** **`completed_orders_in_filter_range`** and **`average_knives_per_completed_order_in_range`** (completed orders with `updated_at` in range; null avg when none). **`basis`** text documents each.
+- **Admin Analytics UI** (`admin/analytics/page.tsx`): Filter card copy clarifies which KPIs use **date_from/date_to** vs rolling week/month; new section **Finance & throughput · filter dates** renders the above metrics with footnotes. Schema: `admin-analytics-schema.ts`.
+- **Tests:** `AdminAnalyticsOverviewApiTest` asserts KPI structure for the new keys.
+- **Existing reports/CSV** (sales, payments, bookings, orders, etc.) unchanged this sprint — still the source for deep exports; analytics adds a **consistent finance snapshot** on the main dashboard.
+
+**QA:** `php artisan test tests/Feature/AdminAnalyticsOverviewApiTest.php`; `npm run typecheck`; in UI: set date range + city, confirm subscription/one-off/overage numbers move with test data; compare a known invoice cohort to `/admin/reports/sales` totals where both use `issued_on`.
+
+**Limitations:** Invoice split uses **invoice header** `is_subscription_billing` for totals; line sums can differ slightly from headers when lines mix types. **Paid vs unpaid cash** remains on the **Sales report** and sales analytics chart, not duplicated in every new KPI.
+
 ---
 
 ## Sprint 11.5 — Webhooks Foundation and Event Idempotency
@@ -266,6 +302,16 @@ QA:
 - Send bad signature and confirm rejected.
 - Test payment events if available.
 - Check logs.
+
+### Sprint 11.5 — Done (implementation summary)
+
+- **Table:** `webhook_inbox` — unique `(provider, external_id)`, processing state, errors, timestamps (migration `2026_05_10_120000_create_webhook_inbox_table.php`); model `App\Models\WebhookInbox`.
+- **Clerk (Svix):** `POST /api/webhooks/clerk` → `ClerkWebhookController` verifies `ClerkSvixSignature`, logs row idempotently (`insertOrIgnore`), runs `ClerkUserSynchronizer::applyClerkWebhook` for `user.created` / `user.updated` / `user.deleted` (internal roles unchanged via existing merge rules; delete suspends locally). Env: `CLERK_WEBHOOK_SIGNING_SECRET` (`config/clerk.php`).
+- **Stripe:** Existing `POST /api/webhooks/stripe` + `stripe_webhook_events` idempotency unchanged (no dual-write to `webhook_inbox` in this sprint).
+- **Admin visibility:** `GET /api/admin/webhooks/inbox` — last 100 rows, **metadata only** (no raw payloads); gated by `audit_logs.view` + `WebhookInboxPolicy`.
+- **Tests:** `tests/Feature/ClerkWebhookApiTest.php` — secret/signature rejects, `user.*` flows, duplicate Svix idempotency, super_admin role preserved, customer forbidden on inbox.
+- **QA:** `php artisan test tests/Feature/ClerkWebhookApiTest.php` plus manual Clerk dashboard replay if desired.
+- **Limitations:** Clerk retries with a **new** `svix-id` re-run handler logic (by design); Stripe events are not listed in `webhook_inbox` until a future consolidation if needed.
 
 End with:
 - files changed
@@ -308,6 +354,15 @@ Acceptance criteria:
 - Rollback checklist exists.
 - No secrets committed.
 - Production protected.
+
+### Sprint 11.6 — Done (implementation summary)
+
+- **Guide:** `docs/operations/gitlab-environments-and-deployment.md` — environment tiers (local/staging/production), canonical URLs (`app.wesharp.co.uk`, `api.wesharp.co.uk`, `staging…`, `api-staging…`), expanded env tables (Laravel, Next, Clerk including webhooks, CORS, mail, queue/cache/session, filesystem, Stripe), GitLab branch model (`main`, `staging`, `develop`, `feature/*`, `hotfix/*`), staging/production/rollback checklists, staging smoke tests, Clerk & Stripe separation rules, “outside repo” follow-ups.
+- **CI:** root **`.gitlab-ci.yml`** — `backend:test` (`php artisan test`), `frontend:quality` (`typecheck` + `lint`) on MRs and `main` / `develop` / `staging`.
+- **`docs/operations/deployment.md`** — links to the new guide; `CLERK_WEBHOOK_SIGNING_SECRET` + `.gitlab-ci.yml` called out.
+- **`docs/security/auth-sso.md`** — Clerk webhook line updated (inbound sync exists; Laravel remains RBAC source of truth).
+- **QA:** Read the new guide; enable a GitLab runner; open an MR and confirm pipeline passes; walk staging smoke checklist on a real staging URL when available.
+- **Limitations:** No deploy/rollback automation in YAML yet — add jobs and secrets in GitLab per host; DNS/TLS/runners are operator setup.
 
 End with:
 - files changed
@@ -460,3 +515,42 @@ At the end, provide:
 - files changed
 - deferred issues
 - Sprint 11 final verdict: PASS / FAIL
+
+### Sprint 11.7 — Done (regression QA report, 2026-05-01)
+
+#### QA checks completed
+
+| Area | What ran | Result |
+| --- | --- | --- |
+| **Backend** | `php artisan test` — full suite (241 tests) | Pass |
+| **Frontend** | `tsc --noEmit`, `next lint`, `vitest run`, `next build` | Pass |
+| **Public UX (static)** | `PUBLIC_SITE_NAV_LINKS` in `apps/frontend/src/config/public-site-nav.ts` vs `(public)/**/page.tsx` routes | All 9 nav targets have pages; single `PublicShell` layout |
+| **Deployment docs (11.6)** | Presence of `docs/operations/gitlab-environments-and-deployment.md`, `.gitlab-ci.yml`, linked from `docs/operations/deployment.md` | Present |
+| **Secrets** | Repo grep for committed live patterns (sample: real `sk_live` / raw `whsec_` in app code) | No issues in tracked app sources (only tests, `.env.example`, docs) |
+
+#### Manual / subjective QA (not executed in this run)
+
+Per §QA areas 1–7: browser-based checks (mobile nav, copy tone, dashboard numbers vs live data, photo capture on device, Clerk replay in staging, etc.) remain for **human QA** on deployed staging when available.
+
+#### Bugs found
+
+- **None** surfaced by automated tests, production build, lint, or the static public-nav / layout checks above.
+
+#### Bugs fixed
+
+- **None** (no Sprint 11 regressions required code changes).
+
+#### Files changed (this sprint)
+
+- `docs/roadmap/sprint-11.md` — this report
+- `docs/roadmap/README.md` — current status → 11.7
+
+#### Deferred issues
+
+- Full **manual** walkthrough of §QA areas 1–5 (customer + admin UX, routes/photos, reporting charts vs DB, subjective “trust” and pill alignment).
+- **E2E/Playwright** (`npm run test:e2e`) not run — install/browsers needed; optional before release.
+- **Staging Clerk/Stripe replay** for webhooks — verify in real staging (docs and unit/feature tests cover behaviour locally).
+
+#### Sprint 11 final verdict
+
+**PASS** — executable regression (tests, lint, typecheck, `next build`) is green; no Sprint 11 bug fixes were required. Complete subjective acceptance (trust copy, live reporting reconciliation, device photo flows) in a **manual / staging** pass before treating Sprint 11 as sign-off for production launch.

@@ -14,8 +14,6 @@ use App\Models\Knife;
 use App\Models\KnifeServiceAssignment;
 use App\Support\Audit\AuditLogPresenter;
 use App\Support\Evidence\EvidencePhotoJson;
-use App\Support\Knives\KnifeStatusPresentation;
-use App\Support\Knives\KnifeStatusTransitions;
 use App\Support\Orders\OrderJson;
 use App\Support\Orders\OrderStatusPresentation;
 
@@ -458,6 +456,25 @@ final class KnifeJson
             KnifeServiceKind::InventoryLink => 'Workshop service',
             KnifeServiceKind::Reservice => 'Return visit',
         };
+    }
+
+    /** Readable one-line label for picks and short lists (route evidence, etc.). */
+    public static function briefListingLabel(Knife $knife): string
+    {
+        $parts = array_values(array_filter(
+            [$knife->brand, $knife->knife_type, $knife->label],
+            static fn ($p) => is_string($p) && trim($p) !== '',
+        ));
+
+        if ($parts !== []) {
+            return implode(' · ', $parts);
+        }
+
+        if (is_string($knife->tag_id) && trim($knife->tag_id) !== '') {
+            return 'Blade '.$knife->tag_id;
+        }
+
+        return 'Knife';
     }
 
     /** Audit trail for status changes (+ related actions). */

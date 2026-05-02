@@ -9,6 +9,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { StopDetailResponseSchema } from "@/lib/api/admin-routes-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
@@ -66,6 +76,7 @@ export default function RouteStopDetailPage() {
   const [failOpen, setFailOpen] = useState(false);
   const [failReason, setFailReason] = useState("");
   const [failNotes, setFailNotes] = useState("");
+  const [completeStopOpen, setCompleteStopOpen] = useState(false);
 
   useEffect(() => {
     if (!stop) {
@@ -214,7 +225,8 @@ export default function RouteStopDetailPage() {
             className="h-14 w-full rounded-xl text-base font-semibold"
             disabled={transitionMutation.isPending || skipMutation.isPending}
             onClick={() => {
-              if (row.path === "complete" && !window.confirm("Mark this stop as fully completed?")) {
+              if (row.path === "complete") {
+                setCompleteStopOpen(true);
                 return;
               }
               transitionMutation.mutate(row.path);
@@ -440,10 +452,15 @@ export default function RouteStopDetailPage() {
         {stop.order ? (
           <Card className="border-white/10 bg-white/[0.04] p-4 md:border-border md:bg-card">
             <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">Linked order</div>
-            <p className="mt-2 text-base">
-              Order <span className="font-mono text-sm">{stop.order.id.slice(0, 8)}…</span>
-            </p>
-            <p className="mt-1 text-lg font-bold tabular-nums">{formatGBP(stop.order.total_pence)}</p>
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-base font-medium text-slate-100 md:text-foreground">Workshop order on this stop</p>
+                <p className="mt-1 text-lg font-bold tabular-nums">{formatGBP(stop.order.total_pence)}</p>
+              </div>
+              <Button asChild variant="secondary" className="h-12 w-full shrink-0 rounded-xl sm:w-auto">
+                <Link href={`/admin/orders/${stop.order.id}`}>Open order</Link>
+              </Button>
+            </div>
           </Card>
         ) : null}
 
@@ -452,6 +469,7 @@ export default function RouteStopDetailPage() {
           routeId={routeId}
           photos={stop.evidence_photos ?? []}
           settings={stop.evidence_settings}
+          orderKnives={stop.order_knives ?? []}
         />
 
         <RouteStopCustomerPortalSection
@@ -522,6 +540,39 @@ export default function RouteStopDetailPage() {
             Back to route
           </Link>
         </Button>
+
+        <AlertDialog
+          open={completeStopOpen}
+          onOpenChange={(open) => {
+            if (!transitionMutation.isPending) {
+              setCompleteStopOpen(open);
+            }
+          }}
+        >
+          <AlertDialogContent className="rounded-xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Mark stop completed?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Only use this when handover and evidence are done for this visit. You can still open the stop from the route if you
+                need to fix something right away.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                type="button"
+                disabled={transitionMutation.isPending}
+                onClick={() => {
+                  transitionMutation.mutate("complete", {
+                    onSettled: () => setCompleteStopOpen(false),
+                  });
+                }}
+              >
+                Complete stop
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </RouteManagerShell>
   );

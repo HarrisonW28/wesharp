@@ -1,0 +1,52 @@
+# WeSharp — GitLab CI (Sprint 11.6)
+# Requires a GitLab runner with Docker or Kubernetes executor.
+# Extend with deploy jobs and environment-scoped variables in GitLab.
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "staging"
+
+stages:
+  - test
+
+variables:
+  COMPOSER_ALLOW_SUPERUSER: "1"
+
+.test-backend:
+  image: php:8.3-cli-bookworm
+  stage: test
+  before_script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends git unzip libzip-dev sqlite3 libsqlite3-dev
+    - rm -rf /var/lib/apt/lists/*
+    - docker-php-ext-install -j"$(nproc)" zip pdo_sqlite
+    - curl -fsSL https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    - cd apps/backend && composer install --no-interaction --prefer-dist --no-progress
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-composer-backend"
+    paths:
+      - apps/backend/vendor/
+
+backend:test:
+  extends: .test-backend
+  script:
+    - cd apps/backend && php artisan test
+
+.test-frontend:
+  image: node:22-bookworm
+  stage: test
+  before_script:
+    - cd apps/frontend && npm ci
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-npm-frontend"
+    paths:
+      - apps/frontend/node_modules/
+
+frontend:quality:
+  extends: .test-frontend
+  script:
+    - cd apps/frontend && npm run typecheck
+    - cd apps/frontend && npm run lint

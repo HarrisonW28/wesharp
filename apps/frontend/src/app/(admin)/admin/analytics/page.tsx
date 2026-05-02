@@ -262,7 +262,9 @@ type ErrWithStatus = Error & { status?: number };
         <CardHeader>
           <CardTitle className="text-base">Filters</CardTitle>
           <CardDescription>
-            Applies to chart series; rolling KPI snapshots (This week/month) ignore the date picker but honour city via company.
+            Date range and city apply to <span className="font-medium">invoice accrual</span> and{" "}
+            <span className="font-medium">completed-order</span> KPIs below. Rolling week/month revenue cards still use calendar
+            week/month (UTC), filtered by city only.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-4">
@@ -368,6 +370,57 @@ type ErrWithStatus = Error & { status?: number };
             value={kpis.new_bookings_this_week.toLocaleString("en-GB")}
             footnote={"Bookings.created_at filtered by filters city."}
           />
+        </section>
+      ) : null}
+
+      {!isLoading && kpis ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground">Finance &amp; throughput · filter dates</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <InsightCard
+              title="Invoiced · subscription flagged"
+              description={`issued_on ${overview?.filters?.date_from ?? ""} → ${overview?.filters?.date_to ?? ""}`}
+              value={formatGBP(kpis.invoiced_subscription_total_pence_in_range)}
+              footnote={overview?.basis?.invoiced_split ?? "is_subscription_billing = true on issued invoices."}
+            />
+            <InsightCard
+              title="Invoiced · one-off"
+              description="Same date window · totals"
+              value={formatGBP(kpis.invoiced_one_off_total_pence_in_range)}
+              footnote="All other issued invoices in scope (not void/draft)."
+            />
+            <InsightCard
+              title="Line revenue · subscription items"
+              description="Sum of subscription-type lines"
+              value={formatGBP(kpis.invoiced_subscription_line_pence_in_range)}
+              footnote={overview?.basis?.invoice_lines ?? "invoice line_item_type = subscription."}
+            />
+            <InsightCard
+              title="Line revenue · overage"
+              description="Usage beyond allowance (lines)"
+              value={formatGBP(kpis.invoiced_overage_line_pence_in_range)}
+              footnote="invoice line_item_type = overage."
+            />
+            <InsightCard
+              title="Completed orders (range)"
+              description="orders.updated_at in filter"
+              value={kpis.completed_orders_in_filter_range.toLocaleString("en-GB")}
+              footnote={overview?.basis?.completed_orders_filter ?? ""}
+            />
+            <InsightCard
+              title="Avg knives / completed order"
+              description="In filter date span"
+              value={
+                kpis.average_knives_per_completed_order_in_range != null
+                  ? kpis.average_knives_per_completed_order_in_range.toLocaleString("en-GB", {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 2,
+                    })
+                  : "—"
+              }
+              footnote="Null when no completed orders in range."
+            />
+          </div>
         </section>
       ) : null}
 

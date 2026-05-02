@@ -19,6 +19,7 @@ use App\Models\PricingRule;
 use App\Models\RouteStop;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\Models\WebhookInbox;
 use App\Policies\AuditLogPolicy;
 use App\Policies\BookingPolicy;
 use App\Policies\CompanyPolicy;
@@ -35,6 +36,7 @@ use App\Policies\PricingRulePolicy;
 use App\Policies\RouteStopPolicy;
 use App\Policies\SubscriptionPlanPolicy;
 use App\Policies\UserPolicy;
+use App\Policies\WebhookInboxPolicy;
 use App\Services\Clerk\ClerkJwtVerifier;
 use App\Services\Clerk\ClerkUserSynchronizer;
 use App\Services\Payments\StripePaymentProvider;
@@ -67,6 +69,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
+        Gate::policy(WebhookInbox::class, WebhookInboxPolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);
         Gate::policy(EvidencePhoto::class, EvidencePhotoPolicy::class);
         Gate::policy(CustomerPortalUpdate::class, CustomerPortalUpdatePolicy::class);

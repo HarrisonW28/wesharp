@@ -9,11 +9,13 @@ The browser **never decides** RBAC outcomes; it only adjusts navigation when `/a
 
 ---
 
-## Clerk frontend
+## Frontend middleware (Next.js)
+
+`apps/frontend/src/middleware.ts` uses `clerkMiddleware`: only **`/admin`, `/account`, `/auth`, `/venue-pending`, `/offline`** invoke **`await auth.protect()`** — marketing, **`/book`**, **`/login`**, **`/register`**, **`/unauthorised`**, **`/forbidden`**, and brochure routes stay public. The handler must **await** `protect()` so Clerk can return a redirect response to the framework (see Clerk Next.js middleware reference).
 
 - Packages: **`@clerk/nextjs`** in `apps/frontend`.
 - `ClerkProvider` wraps the shell in `src/app/providers.tsx`.
-- `src/middleware.ts` requires a Clerk session for every route outside the public matcher (`/`, `/login`, `/register`, `/unauthorised`, `/forbidden`). Admin (`/admin/**`) and customer (`/account/**`) portals share the middleware gate — further tenant vs staff segregation happens in React via `/api/v1/me`.
+- Tenant vs staff segregation after sign-in still uses Laravel **`/api/v1/me`** in React (never trust client-only checks for RBAC).
 
 ---
 
@@ -66,6 +68,6 @@ PHPUnit only: forwarding header `config('clerk.testing_bypass_header')` (**defau
 
 ## Known gaps / follow-ups
 
-- **No Clerk webhooks** yet — syncing role changes authored in Laravel back into Clerk public metadata/outbox queues is intentionally deferred (single source remains PostgreSQL users table).
+- **Clerk webhooks** — inbound `user.*` events are handled at **`POST /api/webhooks/clerk`** (Svix verification + idempotent `webhook_inbox`); role **authority** remains PostgreSQL (`users.role`). Syncing Laravel-only role changes back into Clerk metadata is deferred.
 - **Multi-company impersonation UI** absent — placeholder `CompanySwitcher` documents future states.
 - **Payment overrides**: `payments.override` is limited to **`super_admin`** / **`admin`** (not **Finance**); overpayment and posting on an already-**paid** invoice require it. Normal recording uses **`payments.manage`** and is audited.

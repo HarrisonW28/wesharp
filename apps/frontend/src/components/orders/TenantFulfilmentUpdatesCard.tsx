@@ -31,8 +31,11 @@ function formatAt(iso?: string | null): string | null {
 function OrderEvidenceImage({ path, alt }: { path: string; alt: string }) {
   const api = useAccountApi();
   const [src, setSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    setFailed(false);
+    setSrc(null);
     let objectUrl: string | null = null;
     let cancelled = false;
     void (async () => {
@@ -44,6 +47,7 @@ function OrderEvidenceImage({ path, alt }: { path: string; alt: string }) {
         }
       } catch {
         if (!cancelled) {
+          setFailed(true);
           setSrc(null);
         }
       }
@@ -55,6 +59,16 @@ function OrderEvidenceImage({ path, alt }: { path: string; alt: string }) {
       }
     };
   }, [path, api]);
+
+  if (failed) {
+    return (
+      <div className="flex min-h-32 w-full items-center justify-center rounded-lg border border-dashed border-muted-foreground/40 bg-muted/20 px-3">
+        <span className="text-center text-sm text-muted-foreground">
+          We couldn’t load this image. Refresh the page or try again later.
+        </span>
+      </div>
+    );
+  }
 
   if (!src) {
     return (
@@ -102,8 +116,8 @@ export function TenantFulfilmentUpdatesCard({
           Photos &amp; updates
         </CardTitle>
         <CardDescription>
-          Collection progress, shared notes, and workshop photos our team has marked visible for you (no internal routing
-          details).
+          Collection, return and workshop photos our team has marked visible for your account. Internal-only images are never
+          shown here.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
@@ -206,7 +220,7 @@ export function TenantFulfilmentUpdatesCard({
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-2">
               <ImageIcon className="h-3.5 w-3.5" aria-hidden />
-              Workshop photos
+              Photos shared with you
             </p>
             <ul className="mt-3 space-y-6">
               {imgs.map((ph) => (
@@ -214,7 +228,7 @@ export function TenantFulfilmentUpdatesCard({
                   <div className="flex flex-wrap items-center gap-2 text-sm">
                     <span className="font-medium">{ph.category_label ?? ph.status_line ?? "Photo"}</span>
                     {ph.captured_at_label ? (
-                      <span className="text-muted-foreground">{ph.captured_at_label}</span>
+                      <span className="text-muted-foreground tabular-nums">{ph.captured_at_label}</span>
                     ) : null}
                   </div>
                   {ph.caption ? <p className="text-sm text-muted-foreground">{ph.caption}</p> : null}

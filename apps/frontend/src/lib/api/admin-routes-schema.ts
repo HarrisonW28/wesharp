@@ -225,6 +225,7 @@ export const EvidencePhotoAdminRowSchema = z
     notes: z.string().nullable().optional(),
     archived_at: z.string().nullable().optional(),
     knife_id: z.string().nullable().optional(),
+    knife_label: z.string().nullable().optional(),
     damage_report_id: z.string().nullable().optional(),
     order_id: z.string().nullable().optional(),
     route_stop_id: z.string().nullable().optional(),
@@ -318,6 +319,7 @@ export const StopDetailDataSchema = z
       .nullable()
       .optional(),
     order: StopOrderSummarySchema.nullable().optional(),
+    order_knives: z.array(z.object({ id: z.string(), label: z.string() })).optional(),
     company: z
       .object({
         id: z.string(),

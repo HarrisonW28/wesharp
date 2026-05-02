@@ -1,6 +1,6 @@
 # WeSharp Sprint Roadmap
 
-Current status: Completed up to Sprint 11.1 (public marketing polish — see `sprint-11.md`).
+Current status: Completed up to Sprint 12.2 (critical bug fixing — see **§ Sprint 12.2 — Done** in `sprint-12.md`).
 
 Use this roadmap one sprint at a time. The roadmap is context; the Cursor chat prompt is the command.
 

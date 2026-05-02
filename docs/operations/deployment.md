@@ -2,6 +2,8 @@
 
 Minimal guidance for standing up **frontend** + **API** environments. Tune for your infra (Vercel, Fly, Kubernetes, VPS).
 
+**Environments, GitLab workflow, checklists and CI:** see **`docs/operations/gitlab-environments-and-deployment.md`** (Sprint 11.6).
+
 ---
 
 ## Environment variables
@@ -16,6 +18,7 @@ Configure via `.env` / platform secret store:
 | **Database** | `DB_*` connection Laravel expects |
 | **`CLERK_*`** | Issuer, JWKS, optional local bypass (see **`config/clerk.php`**) |
 | **`STRIPE_*`** | Keys + **`STRIPE_WEBHOOK_SECRET`** for **`POST /api/webhooks/stripe`** |
+| **`CLERK_WEBHOOK_SIGNING_SECRET`** | Svix signing secret for **`POST /api/webhooks/clerk`** (see **`config/clerk.php`**) |
 | **`CORS`** | Restrict origins beyond `*` in production (**`config/cors.php`**) |
 
 ### Next.js (`apps/frontend`)
@@ -39,7 +42,7 @@ php artisan migrate --force
 # Optional demo data (non-prod): php artisan migrate --seed
 ```
 
-Run **`php artisan test`** in CI before promote.
+Run **`php artisan test`** in CI before promote (see **`.gitlab-ci.yml`** on GitLab).
 
 ### Frontend
 
@@ -61,6 +64,7 @@ npm run build
 
 ## Related documents
 
+- **`docs/operations/gitlab-environments-and-deployment.md`** — staging/prod URLs, env reference, GitLab branches, deploy/rollback/smoke checklists, CI  
 - **`docs/product/mvp-scope.md`** — feature list & known gaps  
 - **`docs/testing/qa-checklist.md`** — pre-release checklist  
 - **`docs/security/`** — auth, uploads, Stripe, permissions matrix  

@@ -19,6 +19,7 @@ import {
   UserCog,
   Users,
   Utensils,
+  Webhook,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -72,6 +73,7 @@ export const ADMIN_NAV: NavItem[] = [
   { title: "Payments", href: "/admin/payments", icon: Banknote, permission: "payments.view" },
   { title: "Notifications", href: "/admin/notifications", icon: Bell, permission: "notifications.deliveries.view" },
   { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
+  { title: "Webhook inbox", href: "/admin/webhooks/inbox", icon: Webhook, permission: "audit_logs.view" },
   { title: "Routes · Today", href: "/admin/routes/today", icon: MapPinned, permission: "routes.view" },
 ];
 
@@ -112,4 +114,5 @@ export const ROUTE_MANAGER_NAV: NavItem[] = [
     permission: "reports.operations",
   },
   { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
+  { title: "Webhook inbox", href: "/admin/webhooks/inbox", icon: Webhook, permission: "audit_logs.view" },
 ];

@@ -50,6 +50,12 @@ Acceptance criteria:
 - Production blockers listed.
 - No major feature work added.
 
+### Sprint 12.1 — Done (implementation summary)
+
+- **Deliverable:** `docs/roadmap/sprint-12.1-audit.md` — full audit across public site, portals, effective POS (admin desk), routes/photos, pricing/revenue, subscriptions/reporting, notifications, webhooks, security, technical health, mobile/responsive notes; severity table; blockers; duplicate/risk lists; fix order.
+- **P0 fix:** `apps/frontend/src/middleware.ts` — Clerk `await auth.protect()`; explicit **protected** route prefixes only so marketing + `/book` stay public.
+- **Docs:** `docs/product/mvp-scope.md`, `docs/security/auth-sso.md`; `docs/roadmap/README.md` status bump.
+
 ---
 
 ## Sprint 12.2 — Critical Bug Fixing
@@ -104,6 +110,14 @@ End with:
 - remaining known issues
 - QA results
 - next recommended phase
+
+### Sprint 12.2 — Done (implementation summary)
+
+- **Bugs fixed / closed:** **P0** from audit addressed in 12.1 (Clerk middleware). **P1-2** — webhook inbox had API but no ops UI; added **`/admin/webhooks/inbox`** (metadata table, `audit_logs.view`), sidebar + route-manager nav, `ShellPermissionBoundary` mapping in `route-permissions.ts`.
+- **Files:** `apps/frontend/src/app/(admin)/admin/webhooks/inbox/page.tsx`, `apps/frontend/src/lib/api/admin-webhooks-inbox-schema.ts`, `apps/frontend/src/config/navigation.ts`, `apps/frontend/src/lib/route-permissions.ts`, `docs/product/mvp-scope.md`, `docs/roadmap/sprint-12.1-audit.md`, `docs/roadmap/sprint-12.md`, `docs/roadmap/README.md`.
+- **Remaining known issues:** P2+ items from `sprint-12.1-audit.md` (invoice email, contact API, E2E, etc.); staging manual verify Clerk redirects.
+- **QA:** `npm run typecheck`, `npm run lint`, `npm run build` (frontend); `php artisan test` (backend — unchanged).
+- **Next:** Sprint **12.3** end-to-end QA.
 
 ---
 

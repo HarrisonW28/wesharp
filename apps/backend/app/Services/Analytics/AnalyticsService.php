@@ -2,11 +2,13 @@
 
 namespace App\Services\Analytics;
 
+use App\Enums\InvoiceLineItemType;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderStatus;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Knife;
 use App\Models\OperationalRoute;
 use App\Models\Order;
@@ -69,6 +71,38 @@ final class AnalyticsService
             ))
             ->sum(DB::raw('invoices.total_pence - COALESCE(ipsum.paid_pence, 0)'));
 
+        $issuedInRange = $this->invoicesIssuedInFilterRange($city, $from, $to);
+
+        $invoicedSubscriptionTotalPenceInRange = (int) (clone $issuedInRange)
+            ->where('is_subscription_billing', true)
+            ->sum('total_pence');
+        $invoicedOneOffTotalPenceInRange = (int) (clone $issuedInRange)
+            ->where(static function (EloquentBuilder $q): void {
+                $q->where('is_subscription_billing', false)->orWhereNull('is_subscription_billing');
+            })
+            ->sum('total_pence');
+
+        $subscriptionLinePenceInRange = $this->sumInvoiceLineTotalsInRange(
+            $city,
+            $from,
+            $to,
+            InvoiceLineItemType::Subscription,
+        );
+        $overageLinePenceInRange = $this->sumInvoiceLineTotalsInRange(
+            $city,
+            $from,
+            $to,
+            InvoiceLineItemType::Overage,
+        );
+
+        $completedInRangeBase = Order::completed()->whereCompanyCity($city)
+            ->whereBetween('orders.updated_at', [$from, $to]);
+        $completedOrdersInRangeCount = (int) (clone $completedInRangeBase)->count();
+        $knivesOnCompletedInRange = (int) (clone $completedInRangeBase)->sum('orders.knife_count');
+        $averageKnivesPerCompletedOrderInRange = $completedOrdersInRangeCount > 0
+            ? round($knivesOnCompletedInRange / $completedOrdersInRangeCount, 2)
+            : null;
+
         return [
             'kpis' => [
                 'revenue_this_month_pence' => $revMonth,
@@ -82,6 +116,12 @@ final class AnalyticsService
                 'new_bookings_this_week' => Booking::query()->whereCompanyCity($city)
                     ->whereBetween('bookings.created_at', [$weekStart, $weekEnd])
                     ->count(),
+                'invoiced_subscription_total_pence_in_range' => $invoicedSubscriptionTotalPenceInRange,
+                'invoiced_one_off_total_pence_in_range' => $invoicedOneOffTotalPenceInRange,
+                'invoiced_subscription_line_pence_in_range' => $subscriptionLinePenceInRange,
+                'invoiced_overage_line_pence_in_range' => $overageLinePenceInRange,
+                'completed_orders_in_filter_range' => $completedOrdersInRangeCount,
+                'average_knives_per_completed_order_in_range' => $averageKnivesPerCompletedOrderInRange,
             ],
             'distinct_cities' => $this->distinctCities(),
             'filters' => [
@@ -93,8 +133,42 @@ final class AnalyticsService
                 'revenue' => 'Sum of orders.total_pence for completed orders within each time window using orders.updated_at.',
                 'average_price_per_knife' => 'SUM(total_pence) divided by SUM(knife_count) on completed orders in filters date_from…date_to.',
                 'invoice_balances' => 'invoice totals minus summed payment rows on invoices (payments.invoice_id).',
+                'invoiced_split' => 'Invoice totals issued in date_from…date_to (void/draft excluded), split by is_subscription_billing flag.',
+                'invoice_lines' => 'Sums invoice_items.line_total_pence by line_item_type on invoices with issued_on in filter range (void/draft excluded; city on billing company).',
+                'completed_orders_filter' => 'Completed orders with updated_at in date_from…date_to; average knives = SUM(knife_count) ÷ count.',
             ],
         ];
+    }
+
+    /** @return EloquentBuilder<Invoice> */
+    private function invoicesIssuedInFilterRange(?string $city, CarbonInterface $from, CarbonInterface $to): EloquentBuilder
+    {
+        return Invoice::query()
+            ->whereNotNull('issued_on')
+            ->whereBetween('issued_on', [$from->toDateString(), $to->toDateString()])
+            ->whereNotIn('invoice_status', [InvoiceStatus::Void, InvoiceStatus::Draft])
+            ->whereCompanyCity($city);
+    }
+
+    private function sumInvoiceLineTotalsInRange(
+        ?string $city,
+        CarbonInterface $from,
+        CarbonInterface $to,
+        InvoiceLineItemType $type,
+    ): int {
+        $q = InvoiceItem::query()
+            ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
+            ->where('invoice_items.line_item_type', $type->value)
+            ->whereNotNull('invoices.issued_on')
+            ->whereBetween('invoices.issued_on', [$from->toDateString(), $to->toDateString()])
+            ->whereNotIn('invoices.invoice_status', [InvoiceStatus::Void, InvoiceStatus::Draft]);
+
+        if ($city !== null && $city !== '') {
+            $q->join('companies', 'companies.id', '=', 'invoices.company_id')
+                ->where('companies.city', $city);
+        }
+
+        return (int) $q->sum('invoice_items.line_total_pence');
     }
 
     /** @return array<string, mixed> */

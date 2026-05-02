@@ -9,6 +9,7 @@ use App\Models\CustomerPortalUpdate;
 use App\Models\OperationalRoute;
 use App\Models\RouteStop;
 use App\Support\Evidence\EvidencePhotoJson;
+use App\Support\Knives\KnifeJson;
 use App\Support\Portal\PortalCustomerUpdateJson;
 use Illuminate\Support\Str;
 
@@ -195,8 +196,15 @@ final class RouteFormatting
             'booking.company:id,name,city,phone',
             'booking.location',
             'booking.contact',
-            'booking.orders:id,booking_id,total_pence,currency',
-            'evidencePhotos' => fn ($q) => $q->with(['uploadedBy:id,name'])->orderByDesc('captured_at'),
+            'booking.orders' => fn ($q) => $q
+                ->select(['id', 'booking_id', 'total_pence', 'currency'])
+                ->orderBy('created_at')
+                ->with([
+                    'knives' => fn ($kq) => $kq
+                        ->select(['id', 'order_id', 'brand', 'knife_type', 'label', 'tag_id', 'position'])
+                        ->orderBy('position'),
+                ]),
+            'evidencePhotos' => fn ($q) => $q->with(['uploadedBy:id,name', 'knife:id,brand,knife_type,label,tag_id'])->orderByDesc('captured_at'),
         ]);
 
         $portalUpdates = CustomerPortalUpdate::query()
@@ -255,6 +263,12 @@ final class RouteFormatting
                 'total_pence' => (int) $order->total_pence,
                 'currency' => $order->currency,
             ] : null,
+            'order_knives' => $order !== null
+                ? $order->knives->map(static fn ($k) => [
+                    'id' => (string) $k->id,
+                    'label' => KnifeJson::briefListingLabel($k),
+                ])->values()->all()
+                : [],
             'company' => $booking?->company ? [
                 'id' => (string) $booking->company->id,
                 'name' => $booking->company->name,

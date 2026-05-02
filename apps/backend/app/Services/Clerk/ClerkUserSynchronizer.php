@@ -13,6 +13,7 @@ use Throwable;
 
 /**
  * Maps Clerk `sub` claims to local {@see User} rows and keeps profile fields in sync on first login.
+ * Webhook-driven updates use {@see self::applyClerkWebhook()} with the same merge rules (internal roles preserved).
  */
 final class ClerkUserSynchronizer
 {
@@ -52,6 +53,150 @@ final class ClerkUserSynchronizer
         }
 
         return $this->syncLocalUser($sub, $decoded);
+    }
+
+    /**
+     * Apply Clerk `user.*` webhook payloads after Svix verification and idempotency checks.
+     * Unknown event types are ignored. Does not promote users to staff from Clerk metadata.
+     *
+     * @param  array<string, mixed>  $data  The Clerk `data` object from the webhook body.
+     */
+    public function applyClerkWebhook(string $eventType, array $data): void
+    {
+        match ($eventType) {
+            'user.created', 'user.updated' => $this->upsertUserFromClerkUserResource($data),
+            'user.deleted' => $this->suspendLocalUserFromClerkDeletion($data),
+            default => null,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function suspendLocalUserFromClerkDeletion(array $data): void
+    {
+        $id = isset($data['id']) && is_string($data['id']) ? $data['id'] : null;
+        if ($id === null || $id === '') {
+            return;
+        }
+
+        $user = User::query()->where('clerk_user_id', $id)->first();
+        if ($user === null) {
+            return;
+        }
+
+        $user->status = UserStatus::Suspended;
+        $user->save();
+    }
+
+    /**
+     * @param  array<string, mixed>  $u  Clerk User JSON resource
+     */
+    private function upsertUserFromClerkUserResource(array $u): void
+    {
+        $profile = $this->profileArrayFromClerkUserResource($u);
+        if ($profile === null) {
+            throw new \InvalidArgumentException('Clerk user payload missing id or resolvable email.');
+        }
+
+        $clerkUserId = $profile['clerk_user_id'];
+        $existingByClerk = User::query()->where('clerk_user_id', $clerkUserId)->first();
+        if ($existingByClerk !== null) {
+            $this->mergeProfile($existingByClerk, $profile);
+
+            return;
+        }
+
+        $byEmail = User::query()->where('email', $profile['email'])->first();
+        if ($byEmail !== null) {
+            $this->mergeProfile($byEmail, $profile);
+
+            return;
+        }
+
+        User::query()->create([
+            'clerk_user_id' => $clerkUserId,
+            'name' => $profile['name'],
+            'email' => $profile['email'],
+            'password' => null,
+            'role' => UserRole::tryFrom((string) config('clerk.default_role')) ?? UserRole::CustomerStaff,
+            'status' => UserStatus::tryFrom((string) config('clerk.default_status')) ?? UserStatus::Active,
+            'company_id' => null,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $u
+     * @return array{clerk_user_id: string, name: string, email: string}|null
+     */
+    private function profileArrayFromClerkUserResource(array $u): ?array
+    {
+        $id = isset($u['id']) && is_string($u['id']) ? $u['id'] : null;
+        if ($id === null || $id === '') {
+            return null;
+        }
+
+        $email = $this->primaryEmailFromClerkUserArray($u);
+        if ($email === null || $email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+        $email = strtolower($email);
+
+        $name = $this->displayNameFromClerkUserArray($u) ?? 'WeSharp user';
+
+        return [
+            'clerk_user_id' => $id,
+            'email' => $email,
+            'name' => $name,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $u
+     */
+    private function primaryEmailFromClerkUserArray(array $u): ?string
+    {
+        $primaryId = $u['primary_email_address_id'] ?? null;
+        $addresses = $u['email_addresses'] ?? [];
+        if (! is_array($addresses)) {
+            return null;
+        }
+
+        foreach ($addresses as $row) {
+            if (! is_array($row) || empty($row['email_address']) || ! is_string($row['email_address'])) {
+                continue;
+            }
+            if (is_string($primaryId) && $primaryId !== '' && isset($row['id']) && (string) $row['id'] === $primaryId) {
+                return (string) $row['email_address'];
+            }
+        }
+
+        foreach ($addresses as $row) {
+            if (is_array($row) && ! empty($row['email_address']) && is_string($row['email_address'])) {
+                return (string) $row['email_address'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $u
+     */
+    private function displayNameFromClerkUserArray(array $u): ?string
+    {
+        $first = isset($u['first_name']) && is_string($u['first_name']) ? $u['first_name'] : '';
+        $last = isset($u['last_name']) && is_string($u['last_name']) ? $u['last_name'] : '';
+        $full = trim($first.' '.$last);
+        if ($full !== '') {
+            return $full;
+        }
+
+        if (isset($u['username']) && is_string($u['username']) && $u['username'] !== '') {
+            return $u['username'];
+        }
+
+        return null;
     }
 
     private function syncLocalUser(string $clerkUserId, stdClass $decoded): User

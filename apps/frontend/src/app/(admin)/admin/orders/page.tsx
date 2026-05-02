@@ -506,7 +506,20 @@ export default function AdminOrdersPage() {
       </div>
 
       {rows.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">No orders match these filters.</p>
+        <div className="mt-6 rounded-xl border border-dashed bg-muted/30 p-8 text-center shadow-sm">
+          <p className="text-sm font-medium text-foreground">No orders match these filters</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Widen the date range, clear the account filter, or create a workshop order from a booking.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Button type="button" variant="outline" asChild>
+              <Link href="/admin/orders">Reset filters</Link>
+            </Button>
+            <Button type="button" onClick={() => setCreateOpen(true)}>
+              New order
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="mt-6 overflow-x-auto">
           <DataTable<OrderRow> columns={columns} data={rows} emptyDescription="Adjust filters or create an order." />

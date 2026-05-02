@@ -29,7 +29,7 @@ This document reflects **what ships in the repo today** — not the long-term ro
 | Area | What exists |
 | --- | --- |
 | **Marketing / public** | Home, brochure pages (how it works, pricing, areas, trade, safety, FAQ, contact), **Request pickup** (**`/book`**) posting to **`POST /api/public/booking-enquiries`**, Clerk sign-in/register pages |
-| **Admin console** | Dashboard (KPIs + chart from **`/api/admin/analytics/overview` + `sales`**), CRM, bookings, routes (list/today/detail/stop), orders, knives, invoices, payments, analytics |
+| **Admin console** | Dashboard (KPIs + chart), CRM, bookings, routes (list/today/detail/stop), orders, knives, invoices, payments, finance dashboard, analytics, reporting (`/admin/reports/*`), company subscriptions, subscription plans, notifications settings, audit log |
 | **Route manager** | Mobile-first **`/admin/routes/*`** (+ **`/offline`**) with bottom nav and permission boundary |
 | **Customer portal** | **`/account/*`** — dashboard, bookings (list/new/detail), orders, knives, invoices, locations, settings — all via **`/api/account/*`** + Clerk tenant gate |
 | **Backend API** | Consistent **`App\Support\ApiResponses`** JSON (**`success`**, **`data`**, **`meta`**, or **`error`** with **`code`/`message`**, validation **`errors`**) |
@@ -41,7 +41,7 @@ This document reflects **what ships in the repo today** — not the long-term ro
 
 ### Public (mostly static)
 
-- `/`, `/how-it-works`, `/pricing`, `/service-areas`, `/trade-accounts`, `/safety`, `/faq`, `/contact`, `/book`
+- `/`, `/services`, `/how-it-works`, `/pricing`, `/service-areas`, `/trade-accounts`, `/subscriptions`, `/safety`, `/faq`, `/contact`, `/book`
 - `/login`, `/register`, `/forbidden`, `/unauthorised`
 
 ### Admin (dynamic; `AdminShell` + permission boundary)
@@ -50,8 +50,11 @@ This document reflects **what ships in the repo today** — not the long-term ro
 - `/admin/bookings`, `/admin/bookings/[bookingId]`
 - `/admin/orders`, `/admin/orders/[orderId]`
 - `/admin/knives`, `/admin/knives/[knifeId]`
-- `/admin/invoices`, `/admin/invoices/[invoiceId]`
-- `/admin/payments`, `/admin/analytics`
+- `/admin/invoices`, `/admin/invoices/[invoiceId]`, print view
+- `/admin/payments`, `/admin/finance`, `/admin/analytics`, `/admin/audit`, `/admin/notifications`
+- `/admin/reports/*` (sales, billing, operations, routes, knives, recurring revenue)
+- `/admin/subscription-plans`, `/admin/subscriptions`
+- `/admin/users`, `/admin/users/[userId]`
 
 ### Route manager (client layout; mobile shell)
 
@@ -71,7 +74,9 @@ This document reflects **what ships in the repo today** — not the long-term ro
 | --- | --- |
 | **`GET /api/health`** | Liveness |
 | **`POST /api/public/booking-enquiries`** | Throttled public lead + booking request (no auth) |
-| **`POST /api/webhooks/stripe`** | Stripe webhooks (signature verified in controller) |
+| **`POST /api/webhooks/stripe`** | Stripe webhooks (signature verified; idempotent event log) |
+| **`POST /api/webhooks/clerk`** | Clerk webhooks — Svix signature, idempotent `webhook_inbox`, user sync (`docs/security/auth-sso.md`) |
+| **`GET /api/admin/webhooks/inbox`** | Staff metadata-only webhook delivery log (`audit_logs.view`) — **admin UI:** `/admin/webhooks/inbox` |
 | **`/api/v1/me`**, **`/api/v1/admin/smoke`**, **`/api/v1/account/smoke`** | JWT smoke / profile |
 | **`/api/account/*`** | Tenant portal (dashboard, bookings, orders, knives, invoices, locations, settings) |
 | **`/api/admin/*`** | Internal ops: companies, bookings, routes, route-stops, orders, knives, invoices, payments, analytics |
@@ -97,6 +102,7 @@ See also **`docs/testing/qa-checklist.md`** and per-domain product docs.
 
 ## References
 
+- **`docs/roadmap/sprint-12.1-audit.md`** — full-system audit (Sprint 12.1)
 - **`docs/testing/qa-checklist.md`** — regression checklist
 - **`docs/product/public-website.md`**, **`docs/product/customer-portal.md`**, **`docs/product/admin-user-stories.md`**
 - **`docs/architecture/frontend-architecture.md`**, **`docs/architecture/backend-architecture.md`**, **`docs/architecture/system-architecture.md`**
