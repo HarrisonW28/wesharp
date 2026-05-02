@@ -19,7 +19,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   const navLinkClass =
     "text-sm text-muted-foreground transition-colors hover:text-foreground aria-[current]:font-medium aria-[current]:text-foreground";
   /** Mobile sheet: comfortable tap targets */
-  const navLinkMobileClass = `${navLinkClass} inline-flex min-h-10 items-center py-1.5`;
+  const navLinkMobileClass = `${navLinkClass} inline-flex min-h-11 touch-manipulation items-center py-2`;
   /** Desktop header: keep labels on one row between logo and CTAs */
   const navLinkDesktopClass = `${navLinkClass} whitespace-nowrap`;
 
@@ -89,7 +89,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                         My account
                       </Link>
                     </SignedIn>
-                    <Button asChild className="mt-4 w-full shrink-0 rounded-lg">
+                    <Button asChild className="mt-4 h-11 min-h-11 w-full shrink-0 touch-manipulation rounded-lg">
                       <Link href="/book" onClick={() => setOpen(false)}>
                         Book a collection <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                       </Link>
@@ -122,7 +122,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <div className="flex-1">{children}</div>
+      <div className="min-w-0 flex-1 overflow-x-hidden">{children}</div>
       <footer className="border-t py-10 text-center text-xs text-muted-foreground">
         <div className="mx-auto flex max-w-7xl flex-col flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 sm:flex-row">
           <span>© {new Date().getFullYear()} WeSharp</span>

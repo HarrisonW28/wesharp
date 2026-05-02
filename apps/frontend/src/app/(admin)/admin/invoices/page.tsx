@@ -16,6 +16,8 @@ import {
   PaginatedInvoicesResponseSchema,
 } from "@/lib/api/admin-invoices-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
+import { formatDisplayDate } from "@/lib/format/dates";
+import { paginationRangeCaption } from "@/lib/format/pagination-caption";
 import { formatGBP } from "@/lib/format/money";
 
 import { CompanyLookup, OrderLookup } from "@/components/admin/lookups/AsyncEntityLookup";
@@ -223,7 +225,7 @@ export default function AdminInvoicesPage() {
       {
         accessorKey: "due_date",
         header: "Due",
-        cell: ({ row }) => row.original.due_date ?? "—",
+        cell: ({ row }) => formatDisplayDate(row.original.due_date ?? null),
       },
       {
         accessorKey: "total",
@@ -293,6 +295,8 @@ export default function AdminInvoicesPage() {
   const rows = listQuery.data?.items ?? [];
   const filterCompanyId = searchParams.get("company_id");
   const overdueOnly = searchParams.get("overdue") === "1" || searchParams.get("overdue") === "true";
+  const invPag = listQuery.data?.pagination;
+  const invRangeCaptionText = invPag ? paginationRangeCaption(page, invPag.per_page, invPag.total) : null;
 
   return (
     <>
@@ -428,6 +432,9 @@ export default function AdminInvoicesPage() {
             placeholder="All accounts"
           />
         </div>
+        <p className="w-full text-xs text-muted-foreground lg:col-span-full">
+          Search updates after a short pause. Status, settlement, and date filters apply immediately and jump back to page 1.
+        </p>
       </div>
 
       {rows.length === 0 ? (
@@ -458,8 +465,10 @@ export default function AdminInvoicesPage() {
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm">
         <div className="text-muted-foreground">
-          Page {page}
-          {listQuery.data?.pagination?.total !== undefined ? ` · ${listQuery.data.pagination.total} invoices` : null}
+          <span className="text-foreground">Page {page}</span>
+          {invPag?.total_pages != null ? ` of ${invPag.total_pages}` : null}
+          {invPag?.total !== undefined ? ` · ${invPag.total} invoices` : null}
+          {invRangeCaptionText ? ` · ${invRangeCaptionText}` : null}
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" size="lg" disabled={page <= 1} onClick={() => goPage(page - 1)}>

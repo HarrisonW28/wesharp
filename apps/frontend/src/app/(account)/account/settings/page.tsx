@@ -8,7 +8,10 @@ import { SettingsResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { PortalFormWidth } from "@/components/layout/PortalForm";
+import { PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PortalErrorAlert, PortalLoadingCenter } from "@/components/layout/PortalStates";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,19 +65,21 @@ export default function AccountSettingsPage() {
   }, [d?.user.email_notification_preferences]);
 
   return (
-    <div className="space-y-8">
+    <PortalPage>
       <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Settings" }]} />
       <PageHeader title="Account basics" description="Operational emails and phone routing only — invoicing thresholds stay behind finance." />
 
       {profileQuery.status === "pending" ? (
-        <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+        <PortalLoadingCenter label="Loading settings…" />
       ) : profileQuery.isError ? (
-        <Alert variant="destructive">
-          <AlertDescription>{(profileQuery.error as Error).message}</AlertDescription>
-        </Alert>
+        <PortalErrorAlert
+          message={(profileQuery.error as Error).message}
+          onRetry={() => void profileQuery.refetch()}
+        />
       ) : (
+        <PortalFormWidth>
         <form
-          className="mx-auto grid max-w-2xl gap-6 rounded-2xl border bg-card p-6 shadow-sm"
+          className="mx-auto grid w-full gap-6 rounded-2xl border bg-card p-6 shadow-sm"
           onSubmit={(e) => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
@@ -178,7 +183,8 @@ export default function AccountSettingsPage() {
             Save changes
           </Button>
         </form>
+        </PortalFormWidth>
       )}
-    </div>
+    </PortalPage>
   );
 }

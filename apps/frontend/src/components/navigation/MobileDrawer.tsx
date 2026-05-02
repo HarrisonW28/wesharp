@@ -63,7 +63,7 @@ export function MobileDrawer({
                 key={q.href}
                 href={q.href}
                 onClick={() => onOpenChange(false)}
-                className="px-4 py-2.5 text-sm font-medium text-primary hover:bg-muted/60"
+                className="inline-flex min-h-11 touch-manipulation items-center px-4 py-3 text-sm font-medium text-primary hover:bg-muted/60 active:bg-muted/80"
               >
                 {q.label}
               </Link>

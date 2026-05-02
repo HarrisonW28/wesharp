@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ClipboardList,
   Landmark,
+  ListTodo,
   MapPinned,
   Receipt,
   Repeat2,
@@ -14,6 +15,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ACTIONS: { href: string; label: string; hint: string; icon: typeof CalendarDays }[] = [
+  { href: "/admin/work-queue", label: "Work queue", hint: "Role-aware next steps", icon: ListTodo },
   { href: "/admin/bookings", label: "Bookings", hint: "Confirm windows & routes", icon: CalendarDays },
   { href: "/admin/crm", label: "Accounts", hint: "CRM & site details", icon: Building2 },
   { href: "/admin/orders", label: "Orders", hint: "Workshop & fulfilment", icon: ClipboardList },

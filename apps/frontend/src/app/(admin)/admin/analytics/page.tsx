@@ -38,6 +38,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { PageActions, PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -227,34 +228,33 @@ type ErrWithStatus = Error & { status?: number };
 
   if (first403) {
     return (
-      <div className="space-y-8">
+      <PortalPage>
         <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Analytics" }]} />
-        <PageHeader
-          title="Analytics"
-          description="Requires analytics.view on your staff profile."
-        />
+        <PageHeader title="Analytics" description="Requires analytics.view on your staff profile." />
         <Card>
           <CardContent className="flex items-center gap-3 py-6 text-sm">
             <AlertCircle className="h-5 w-5 text-destructive" />
             <span>You do not have permission to view analytics dashboards.</span>
           </CardContent>
         </Card>
-      </div>
+      </PortalPage>
     );
   }
 
 
   return (
-    <div className="space-y-10">
+    <PortalPage>
       <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Analytics" }]} />
       <PageHeader
         title="Analytics"
         description="Throughput, revenue and route performance totals are computed on the server only."
         actions={
-          <Button type="button" variant="outline" size="sm" onClick={() => void onApplyFilters()} disabled={isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Refresh
-          </Button>
+          <PageActions>
+            <Button type="button" variant="outline" size="sm" onClick={() => void onApplyFilters()} disabled={isLoading}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Refresh
+            </Button>
+          </PageActions>
         }
       />
 
@@ -585,6 +585,6 @@ type ErrWithStatus = Error & { status?: number };
           </div>
         </ChartShell>
       </div>
-    </div>
+    </PortalPage>
   );
 }

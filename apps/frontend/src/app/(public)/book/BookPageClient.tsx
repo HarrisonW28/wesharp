@@ -302,7 +302,7 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
 
   if (status === "success") {
     return (
-      <div className="mx-auto max-w-xl space-y-6 px-4 py-16 md:py-24">
+      <div className="mx-auto min-w-0 max-w-xl space-y-6 overflow-x-hidden px-4 py-16 pb-[max(4rem,env(safe-area-inset-bottom))] md:py-24">
         <div className="flex justify-center md:justify-start">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 className="h-9 w-9" aria-hidden />
@@ -319,7 +319,7 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
           ))}
         </ul>
         <div className="flex flex-wrap justify-center gap-3 md:justify-start">
-          <Button asChild variant="default" className="rounded-lg">
+          <Button asChild variant="default" className="h-12 min-h-11 touch-manipulation rounded-lg">
             <Link href="/">Back home</Link>
           </Button>
         </div>
@@ -339,7 +339,7 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
           : "—";
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 px-4 py-12 md:space-y-10 md:py-20">
+    <div className="mx-auto min-w-0 max-w-2xl space-y-8 overflow-x-hidden px-4 py-12 pb-[max(3rem,env(safe-area-inset-bottom))] md:space-y-10 md:py-20">
       <div className="space-y-3">
         <p className="text-sm font-medium text-primary">{booking.page_kicker}</p>
         <h1 className="text-balance text-3xl font-semibold tracking-tight">{booking.page_title}</h1>
@@ -692,7 +692,7 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
                       setFieldErrors((prev) => ({ ...prev, programme_interest: undefined }));
                     }}
                     className={cn(
-                      "flex w-full flex-col rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      "flex min-h-[4.5rem] w-full touch-manipulation flex-col rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-muted/40",
                       selected ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30",
                     )}
                   >
@@ -817,12 +817,12 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
               </div>
 
               <div className="grid gap-2">
-                <label className="flex items-start gap-3 text-sm leading-relaxed">
+                <label className="flex min-h-11 touch-manipulation cursor-pointer items-start gap-3 text-sm leading-relaxed">
                   <input
                     type="checkbox"
                     checked={values.terms_accepted}
                     onChange={(ev) => patch("terms_accepted")(ev.target.checked)}
-                    className="mt-1 h-4 w-4 shrink-0 rounded border-input"
+                    className="mt-0.5 h-5 w-5 shrink-0 rounded border-input"
                     aria-invalid={fieldErrors.terms_accepted ? "true" : undefined}
                     aria-describedby={fieldErrors.terms_accepted ? "terms_accepted-error" : undefined}
                   />
@@ -841,11 +841,14 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
           ) : null}
         </div>
 
+        <div
+          className="sticky bottom-0 z-10 -mx-4 mt-8 border-t border-border/70 bg-background/95 px-4 py-4 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))] sm:static sm:z-auto sm:mx-0 sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none"
+        >
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap sm:justify-between">
           <Button
             type="button"
             variant="ghost"
-            className="h-11 rounded-lg"
+            className="h-11 min-h-11 touch-manipulation rounded-lg"
             disabled={step === 0 || status === "submitting"}
             onClick={goBack}
           >
@@ -854,11 +857,15 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
           </Button>
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             {!isReviewStep ? (
-              <Button type="submit" className="h-11 rounded-lg" disabled={apiOrigin() === ""}>
+              <Button type="submit" className="h-11 min-h-11 touch-manipulation rounded-lg" disabled={apiOrigin() === ""}>
                 Continue
               </Button>
             ) : (
-              <Button type="submit" className="h-11 rounded-lg" disabled={status === "submitting" || apiOrigin() === ""}>
+              <Button
+                type="submit"
+                className="h-11 min-h-11 touch-manipulation rounded-lg"
+                disabled={status === "submitting" || apiOrigin() === ""}
+              >
                 {status === "submitting" ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
@@ -869,10 +876,11 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
                 )}
               </Button>
             )}
-            <Button type="button" variant="outline" className="h-11 rounded-lg" asChild>
+            <Button type="button" variant="outline" className="h-11 min-h-11 touch-manipulation rounded-lg" asChild>
               <Link href="/">Cancel</Link>
             </Button>
           </div>
+        </div>
         </div>
 
         <p className="text-xs text-muted-foreground">

@@ -33,8 +33,8 @@ export function DataTable<TData>({
   const rows = table.getRowModel().rows;
 
   return (
-    <div className="space-y-3">
-      <ScrollArea className="w-full rounded-xl border bg-card">
+    <div className="max-w-full min-w-0 space-y-3">
+      <ScrollArea className="max-w-full min-w-0 w-full rounded-xl border bg-card shadow-sm">
         <table className="w-full min-w-[720px] caption-bottom text-sm">
           <thead className="bg-muted/40 [&_tr]:border-b">
             {table.getHeaderGroups().map((headerGroup) => (

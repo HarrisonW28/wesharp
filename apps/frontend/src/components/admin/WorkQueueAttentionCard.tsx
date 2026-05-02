@@ -6,6 +6,7 @@ import { ClipboardList, Loader2 } from "lucide-react";
 
 import { WorkQueueApiResponseSchema, flattenWorkQueueItems, type WorkQueueItem } from "@/lib/api/admin-work-queue-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,12 +37,27 @@ export function WorkQueueAttentionCard() {
   const top = flat.slice(0, 5);
   const more = Math.max(0, flat.length - top.length);
 
+  const totalTasks = flat.reduce((acc, row) => acc + row.count, 0);
+  const hasItems = flat.length > 0;
+
   return (
-    <Card className="border-dashed">
+    <Card
+      className={cn(
+        "border-dashed transition-colors",
+        hasItems ? "border-primary/35 bg-primary/[0.03] shadow-sm" : null,
+      )}
+    >
       <CardHeader className="space-y-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ClipboardList className="h-4 w-4 text-muted-foreground" aria-hidden />
-          <CardTitle className="text-base font-semibold">Needs attention</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Needs attention
+            {hasItems ? (
+              <span className="ml-2 inline-flex items-center rounded-md bg-primary/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                {flat.length} {flat.length === 1 ? "lane" : "lanes"} · {totalTasks} tasks
+              </span>
+            ) : null}
+          </CardTitle>
         </div>
         <CardDescription>
           Operational queue — only items that need action right now (counts respect your role).

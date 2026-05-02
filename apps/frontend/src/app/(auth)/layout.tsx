@@ -3,5 +3,9 @@
  * marketing chrome beside Clerk-hosted components.
  */
 export default function AuthMinimalLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen bg-background">{children}</div>;
+  return (
+    <div className="min-h-dvh bg-background pb-[env(safe-area-inset-bottom)] supports-[min-height:100dvh]:min-h-[100dvh]">
+      {children}
+    </div>
+  );
 }

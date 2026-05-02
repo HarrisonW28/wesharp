@@ -4,12 +4,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
-  "relative w-full rounded-lg border px-4 py-3 text-sm [&_svg]:pointer-events-none [&_svg]:absolute [&_svg]:left-4 [&_svg]:top-4 [&_svg]:text-foreground [&_svg~*]:pl-7",
+  "relative w-full rounded-xl border px-4 py-3 text-sm shadow-sm [&_svg]:pointer-events-none [&_svg]:absolute [&_svg]:left-4 [&_svg]:top-4 [&_svg~*]:pl-7",
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
-        destructive: "border-destructive/50 text-destructive dark:border-destructive [&_svg]:text-destructive",
+        default: "border-border/70 bg-muted/40 text-foreground [&_svg]:text-muted-foreground",
+        destructive:
+          "border-destructive/35 bg-destructive/10 text-destructive dark:bg-destructive/15 [&_svg]:text-destructive",
+        success:
+          "border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-950 dark:border-emerald-400/35 dark:bg-emerald-500/10 dark:text-emerald-100 [&_svg]:text-emerald-600 dark:[&_svg]:text-emerald-400",
+        warning:
+          "border-amber-500/40 bg-amber-500/[0.1] text-amber-950 dark:border-amber-400/35 dark:bg-amber-950/35 dark:text-amber-50 [&_svg]:text-amber-600 dark:[&_svg]:text-amber-400",
       },
     },
     defaultVariants: {

@@ -15,6 +15,8 @@ import type { BookingRow } from "@/lib/api/admin-bookings-schema";
 import { BOOKING_STATUS_VALUES, PaginatedBookingsResponseSchema } from "@/lib/api/admin-bookings-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { bookingStatusLabel } from "@/lib/helpers/status-helpers";
+import { formatDisplayDate } from "@/lib/format/dates";
+import { paginationRangeCaption } from "@/lib/format/pagination-caption";
 import { formatGBP, parseGbpInputToMinorUnits } from "@/lib/format/money";
 
 import { CompanyLookup, ContactLookup, LocationLookup } from "@/components/admin/lookups/AsyncEntityLookup";
@@ -230,7 +232,9 @@ export default function AdminBookingsPage() {
       {
         accessorKey: "requested_date",
         header: "Date",
-        cell: ({ row }) => <span className="tabular-nums">{row.original.requested_date ?? "—"}</span>,
+        cell: ({ row }) => (
+          <span className="tabular-nums">{formatDisplayDate(row.original.requested_date)}</span>
+        ),
       },
       {
         accessorKey: "company",
@@ -302,9 +306,9 @@ export default function AdminBookingsPage() {
         header: "Est.",
         cell: ({ row }) =>
           row.original.price_estimate != null ? (
-            <span className="tabular-nums">{formatGBP(Number(row.original.price_estimate))}</span>
+            <span className="tabular-nums text-sm font-medium">{formatGBP(Number(row.original.price_estimate))}</span>
           ) : (
-            "—"
+            <span className="text-muted-foreground">—</span>
           ),
       },
       {
@@ -338,6 +342,10 @@ export default function AdminBookingsPage() {
   );
 
   const data = listQuery.data;
+  const bookingPag = data?.meta.pagination;
+  const bookingRangeCaptionText = bookingPag
+    ? paginationRangeCaption(bookingPag.page, bookingPag.per_page, bookingPag.total)
+    : null;
 
   return (
     <div className="space-y-8">
@@ -558,6 +566,10 @@ export default function AdminBookingsPage() {
               </SelectContent>
             </Select>
           </div>
+          <p className="col-span-full text-xs text-muted-foreground">
+            Search waits until you stop typing. Picking an account enables site/location filters. Changing filters resets to page
+            1.
+          </p>
         </div>
       </section>
 
@@ -575,21 +587,22 @@ export default function AdminBookingsPage() {
           <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
             <DataTable columns={columns} data={data?.data.items ?? []} emptyLabel="No bookings match your filters." />
           </div>
-          {data?.meta.pagination ? (
+          {bookingPag ? (
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
               <span>
-                Page {data.meta.pagination.page} of {data.meta.pagination.total_pages ?? 1} ·{" "}
-                {data.meta.pagination.total ?? 0} bookings
+                <span className="text-foreground">Page {bookingPag.page}</span> of {bookingPag.total_pages ?? 1} ·{" "}
+                {bookingPag.total ?? 0} bookings
+                {bookingRangeCaptionText ? ` · ${bookingRangeCaptionText}` : null}
               </span>
               <div className="flex gap-2">
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={data.meta.pagination.page <= 1}
+                  disabled={bookingPag.page <= 1}
                   onClick={() =>
                     updateParam((p) => {
-                      p.set("page", String(Math.max(1, data.meta.pagination.page - 1)));
+                      p.set("page", String(Math.max(1, bookingPag.page - 1)));
                     })
                   }
                 >
@@ -599,10 +612,10 @@ export default function AdminBookingsPage() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={data.meta.pagination.has_more_pages === false}
+                  disabled={bookingPag.has_more_pages === false}
                   onClick={() =>
                     updateParam((p) => {
-                      p.set("page", String(data.meta.pagination.page + 1));
+                      p.set("page", String(bookingPag.page + 1));
                     })
                   }
                 >
@@ -632,7 +645,7 @@ export default function AdminBookingsPage() {
           >
             <div className="space-y-2">
               <CompanyLookup
-                label="Account"
+                label="Account (required)"
                 value={form.watch("company_id") === "" ? null : form.watch("company_id")}
                 onChange={(id) => {
                   form.setValue("company_id", id ?? "");
@@ -645,7 +658,7 @@ export default function AdminBookingsPage() {
 
             <div className="space-y-2">
               <LocationLookup
-                label="Location"
+                label="Location (required)"
                 value={form.watch("location_id") === "" ? null : form.watch("location_id")}
                 onChange={(id) => form.setValue("location_id", id ?? "")}
                 disabled={!form.watch("company_id")}
@@ -672,8 +685,8 @@ export default function AdminBookingsPage() {
 
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Requested date</Label>
-                <Input type="date" {...form.register("requested_date")} />
+                <Label htmlFor="booking-requested-date">Requested date (required)</Label>
+                <Input id="booking-requested-date" type="date" {...form.register("requested_date")} />
               </div>
               <div className="space-y-2">
                 <Label>Service</Label>
@@ -712,8 +725,8 @@ export default function AdminBookingsPage() {
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label>Internal notes</Label>
-                <Input {...form.register("internal_notes")} />
+                <Label htmlFor="booking-internal-notes">Internal notes (optional)</Label>
+                <Input id="booking-internal-notes" {...form.register("internal_notes")} placeholder="Visible to ops only" />
               </div>
             </div>
 

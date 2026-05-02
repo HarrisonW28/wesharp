@@ -21,7 +21,7 @@ export default function PublicTrackBookingPage() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 md:px-6 md:py-14">
+    <div className="mx-auto max-w-3xl min-w-0 overflow-x-hidden px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] md:px-6 md:py-14">
       {query.status === "pending" ? (
         <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
@@ -35,10 +35,10 @@ export default function PublicTrackBookingPage() {
               Links expire after a period for security. If you’re a customer, sign in to your account for the latest status.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" className="rounded-lg" asChild>
+              <Button type="button" variant="outline" className="h-11 min-h-11 touch-manipulation rounded-lg" asChild>
                 <Link href="/account/dashboard">Customer sign-in</Link>
               </Button>
-              <Button type="button" variant="ghost" className="rounded-lg" asChild>
+              <Button type="button" variant="ghost" className="h-11 min-h-11 touch-manipulation rounded-lg" asChild>
                 <Link href="/">Home</Link>
               </Button>
             </div>

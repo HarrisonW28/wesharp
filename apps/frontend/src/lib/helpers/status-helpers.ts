@@ -188,7 +188,10 @@ export function paymentAttemptLabel(status: string): string {
     succeeded: "Succeeded",
     paid: "Paid",
     unpaid: "Unpaid",
-    part_paid: "Part paid",
+    /** Orders + some AR rows */
+    partial: "Partially paid",
+    part_paid: "Partially paid",
+    waived: "Waived",
     overdue: "Overdue",
     written_off: "Written off",
     processing: "Processing",
@@ -200,4 +203,17 @@ export function paymentAttemptLabel(status: string): string {
     requires_action: "Action required",
   };
   return labels[key] ?? humanizeUnderscored(key);
+}
+
+/** Workshop order list `payment_status` — consistent wording with settlement badges. */
+export function orderPaymentStatusLabel(status: string | null | undefined): string {
+  const key = (status ?? "").trim().toLowerCase();
+  const labels: Record<string, string> = {
+    unpaid: "Unpaid",
+    partial: "Partially paid",
+    paid: "Paid",
+    waived: "Waived",
+    refunded: "Refunded",
+  };
+  return labels[key] ?? humanizeUnderscored(status);
 }

@@ -70,7 +70,7 @@ export function CustomerTrackingView(props: {
   const day = data.display_collection_date ?? data.confirmed_collection_date ?? data.requested_collection_date ?? null;
 
   return (
-    <div className="mx-auto max-w-lg space-y-6 md:max-w-2xl">
+    <div className="mx-auto max-w-lg min-w-0 space-y-6 md:max-w-2xl">
       <div className="space-y-1">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Progress</p>
         <h1 className="text-balance text-2xl font-semibold tracking-tight">{ref}</h1>
@@ -176,7 +176,7 @@ export function CustomerTrackingView(props: {
             <CardTitle className="text-base">Your note</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{data.customer_notes}</p>
+            <p className="break-words whitespace-pre-wrap text-sm text-muted-foreground">{data.customer_notes}</p>
           </CardContent>
         </Card>
       ) : null}
@@ -191,9 +191,9 @@ export function CustomerTrackingView(props: {
             {data.customer_company_notes.map((note, idx) => (
               <blockquote
                 key={`${note.created_at ?? "n"}-${idx}`}
-                className="border-l-2 border-primary/40 py-1 pl-3 text-sm leading-relaxed text-foreground"
+                className="min-w-0 break-words border-l-2 border-primary/40 py-1 pl-3 text-sm leading-relaxed text-foreground"
               >
-                <p>{note.body}</p>
+                <p className="break-words">{note.body}</p>
                 {note.created_at ? (
                   <footer className="mt-2 text-xs text-muted-foreground tabular-nums">
                     {formatAt(note.created_at) ?? note.created_at}
@@ -215,9 +215,9 @@ export function CustomerTrackingView(props: {
             {data.customer_messages.map((m, i) => (
               <blockquote
                 key={`${m.body.slice(0, 24)}-${i}`}
-                className="border-l-2 border-primary/40 py-1 pl-3 text-sm leading-relaxed"
+                className="min-w-0 break-words border-l-2 border-primary/40 py-1 pl-3 text-sm leading-relaxed"
               >
-                <p>{m.body}</p>
+                <p className="break-words">{m.body}</p>
                 {m.posted_at_label ? (
                   <footer className="mt-2 text-xs text-muted-foreground">{m.posted_at_label}</footer>
                 ) : null}
@@ -256,7 +256,7 @@ function ButtonLink({ href, label }: { href: string; label: string }) {
     <div className="flex justify-center">
       <Link
         href={href}
-        className="inline-flex h-11 items-center justify-center rounded-lg border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+        className="inline-flex h-12 min-h-11 touch-manipulation items-center justify-center rounded-lg border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground active:bg-accent/90"
       >
         {label}
       </Link>

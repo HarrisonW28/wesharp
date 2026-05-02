@@ -2,13 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { ClipboardList, Loader2 } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 
 import { WorkQueueApiResponseSchema } from "@/lib/api/admin-work-queue-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { PageActions, PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PortalEmptyCard, PortalErrorAlert, PortalLoadingCenter } from "@/components/layout/PortalStates";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -34,46 +36,40 @@ export default function AdminWorkQueuePage() {
   const empty = !q.isPending && !q.isError && sections.length === 0;
 
   return (
-    <div className="space-y-8">
+    <PortalPage>
       <Breadcrumbs homeHref="/admin/dashboard" items={[{ label: "Work queue" }]} />
       <PageHeader
         title="Work queue"
         description="Role-aware list of operational tasks that need a clear next step. Items with a zero count are hidden so this stays actionable."
         actions={
-          <Button type="button" variant="outline" size="sm" asChild>
-            <Link href="/admin/dashboard">Back to dashboard</Link>
-          </Button>
+          <PageActions>
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link href="/admin/dashboard">Back to dashboard</Link>
+            </Button>
+          </PageActions>
         }
       />
 
       {q.isPending ? (
-        <div className="flex min-h-[24vh] flex-col items-center justify-center gap-3 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-          <p className="text-base">Loading…</p>
-        </div>
+        <PortalLoadingCenter />
       ) : q.isError ? (
-        <p className="text-destructive">{(q.error as Error).message}</p>
+        <PortalErrorAlert
+          message={(q.error as Error).message}
+          onRetry={() => void q.refetch()}
+        />
       ) : empty ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <ClipboardList className="h-4 w-4 text-muted-foreground" aria-hidden />
-              All clear
-            </CardTitle>
-            <CardDescription>
-              There are no open queue items for your role. Check back after new bookings, routes, or finance
-              activity.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Tip: operational filters (unassigned bookings, orders without knives, and more) are linked from each row
-              when something needs attention.
-            </p>
-          </CardContent>
-        </Card>
+        <PortalEmptyCard
+          icon={ClipboardList}
+          title="All clear"
+          description="There are no open queue items for your role. Check back after new bookings, routes, or finance activity."
+        >
+          <p className="text-sm text-muted-foreground">
+            Tip: operational filters (unassigned bookings, orders without knives, and more) are linked from each row when
+            something needs attention.
+          </p>
+        </PortalEmptyCard>
       ) : (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           {sections.map((section) => (
             <Card key={section.key}>
               <CardHeader className="pb-3">
@@ -102,6 +98,6 @@ export default function AdminWorkQueuePage() {
           ))}
         </div>
       )}
-    </div>
+    </PortalPage>
   );
 }

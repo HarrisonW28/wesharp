@@ -36,7 +36,7 @@ export default function AccountBookingTrackPage() {
   const d = query.data;
 
   return (
-    <div className="space-y-8">
+    <div className="min-w-0 space-y-8 overflow-x-hidden">
       <Breadcrumbs
         homeHref="/account/dashboard"
         items={[
@@ -49,7 +49,12 @@ export default function AccountBookingTrackPage() {
         title="Track progress"
         description="Where your collection is right now."
         actions={
-          <Button type="button" variant="outline" size="sm" className="rounded-lg" asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 min-h-11 touch-manipulation rounded-lg sm:h-9 sm:min-h-9"
+            asChild
+          >
             <Link href={`/account/bookings/${bookingId}`}>Full details</Link>
           </Button>
         }
@@ -66,7 +71,12 @@ export default function AccountBookingTrackPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               If this isn’t your booking, you won’t see it here — each company only sees its own collections over the API.
             </p>
-            <Button type="button" className="mt-4 rounded-lg" variant="outline" size="sm" asChild>
+            <Button
+              type="button"
+              className="mt-4 h-11 min-h-11 touch-manipulation rounded-lg sm:h-9 sm:min-h-9"
+              variant="outline"
+              asChild
+            >
               <Link href="/account/bookings">My bookings</Link>
             </Button>
           </CardContent>

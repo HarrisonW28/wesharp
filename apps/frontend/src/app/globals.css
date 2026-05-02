@@ -55,8 +55,8 @@
   --accent: oklch(0.94 0.02 247);
   --accent-foreground: oklch(0.28 0.04 264);
   --destructive: oklch(0.55 0.22 25);
-  --border: oklch(0.91 0.01 247);
-  --input: oklch(0.91 0.01 247);
+  --border: oklch(0.87 0.012 247);
+  --input: oklch(0.89 0.012 247);
   --ring: oklch(0.45 0.18 252);
   --chart-1: oklch(0.55 0.2 252);
   --chart-2: oklch(0.65 0.18 145);
@@ -97,7 +97,12 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply min-h-svh bg-background text-foreground antialiased;
+  }
+  /** Subtle top wash in light mode — portals keep their own shells; this lifts flat marketing pages slightly. */
+  html:not(.dark) body {
+    background-image: linear-gradient(180deg, oklch(0.97 0.02 252) 0%, var(--background) min(28rem, 45vh));
+    background-repeat: no-repeat;
   }
 }
 

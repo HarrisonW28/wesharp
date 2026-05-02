@@ -34,11 +34,25 @@ export function RouteManagerShell({
 
   return (
     <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-x-hidden bg-slate-950 text-slate-50 md:max-w-none md:bg-background md:text-foreground">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/85 backdrop-blur-xl md:border-border md:bg-background/85 md:text-foreground">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:border-border md:bg-background/85 md:pt-0 md:text-foreground">
         <div className="flex items-start justify-between gap-2 px-4 py-3">
           <div className="min-w-0 flex-1 pr-2">
             <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">
               Route manager
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium">
+              <Link
+                href="/admin/dashboard"
+                className="text-slate-300 underline-offset-2 hover:text-white hover:underline md:text-muted-foreground md:hover:text-foreground"
+              >
+                Operations dashboard
+              </Link>
+              <Link
+                href="/admin/work-queue"
+                className="text-slate-300 underline-offset-2 hover:text-white hover:underline md:text-muted-foreground md:hover:text-foreground"
+              >
+                Work queue
+              </Link>
             </div>
             <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
               <div className="min-w-0">
@@ -75,7 +89,7 @@ export function RouteManagerShell({
         </div>
       ) : null}
 
-      <div className="border-t border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-slate-400 md:hidden">
+      <div className="border-t border-white/10 bg-slate-950/90 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-sm text-slate-400 md:hidden">
         Field mode · Large controls for on-site use.
       </div>
 

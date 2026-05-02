@@ -252,7 +252,7 @@ export function RouteStopEvidenceSection({
               type="button"
               variant="secondary"
               size="sm"
-              className="absolute right-2 top-2 rounded-lg"
+              className="absolute right-2 top-2 min-h-10 touch-manipulation rounded-lg md:min-h-9"
               onClick={() => setDraftFile(null)}
             >
               <Trash2 className="mr-1 h-4 w-4" aria-hidden />
@@ -262,7 +262,7 @@ export function RouteStopEvidenceSection({
         ) : null}
 
         <details className="rounded-xl border border-white/10 bg-white/[0.02] [&_summary::-webkit-details-marker]:hidden md:border-border">
-          <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-slate-200 md:text-foreground">
+          <summary className="min-h-11 touch-manipulation cursor-pointer px-3 py-3 text-sm font-medium text-slate-200 md:text-foreground">
             Fine-tune before upload — optional
           </summary>
           <div className="space-y-3 border-t border-white/10 px-3 pb-3 pt-3 md:border-border">
@@ -348,7 +348,7 @@ export function RouteStopEvidenceSection({
 
         <Button
           type="button"
-          className="h-14 w-full rounded-xl text-base font-semibold"
+          className="h-14 min-h-12 w-full touch-manipulation rounded-xl text-base font-semibold"
           disabled={!draftFile || uploadMutation.isPending}
           onClick={() => uploadMutation.mutate()}
         >
@@ -411,7 +411,7 @@ export function RouteStopEvidenceSection({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="rounded-lg"
+                            className="h-11 min-h-11 touch-manipulation rounded-lg md:h-9 md:min-h-9"
                             disabled={patchMutation.isPending}
                             onClick={() =>
                               patchMutation.mutate({
@@ -429,7 +429,7 @@ export function RouteStopEvidenceSection({
                           type="button"
                           variant="secondary"
                           size="sm"
-                          className="rounded-lg"
+                          className="h-11 min-h-11 touch-manipulation rounded-lg md:h-9 md:min-h-9"
                           disabled={patchMutation.isPending}
                           onClick={() => setArchivePhotoId(p.id)}
                         >

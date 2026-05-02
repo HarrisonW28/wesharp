@@ -12,16 +12,30 @@ type BreadcrumbsProps = {
   /** Alias for `items`; supported for legacy admin pages. */
   crumbs?: Crumb[];
   homeHref?: string;
+  /** First crumb link label. Defaults from `homeHref` (Dashboard / Overview / Home). */
+  homeLabel?: string;
   className?: string;
 };
+
+function defaultHomeLabel(homeHref: string): string {
+  if (homeHref.startsWith("/account")) {
+    return "Overview";
+  }
+  if (homeHref.startsWith("/admin")) {
+    return "Dashboard";
+  }
+  return "Home";
+}
 
 export function Breadcrumbs({
   items,
   crumbs,
   homeHref = "/admin/dashboard",
+  homeLabel: homeLabelProp,
   className,
 }: BreadcrumbsProps) {
   const trail = items ?? crumbs ?? [];
+  const homeLabel = homeLabelProp ?? defaultHomeLabel(homeHref);
   return (
     <nav
       aria-label="Breadcrumb"
@@ -32,7 +46,7 @@ export function Breadcrumbs({
         className="inline-flex min-h-10 items-center gap-1.5 rounded-md px-1 py-1 hover:text-foreground md:min-h-0 md:px-0 md:py-0"
       >
         <Home className="h-5 w-5 shrink-0 md:h-4 md:w-4" aria-hidden />
-        <span className="hidden sm:inline">Home</span>
+        <span className="hidden sm:inline">{homeLabel}</span>
       </Link>
       {trail.map((item, idx) => (
         <span key={`${item.label}-${idx}`} className="flex items-center gap-2">

@@ -28,12 +28,13 @@ export function MobileBottomNav({ items }: MobileBottomNavProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex min-w-0 flex-1 max-w-[4.75rem] flex-col items-center gap-1 rounded-xl px-1 py-1 text-[10px] font-medium leading-tight sm:text-[11px]",
+                "flex min-h-[3.25rem] min-w-0 max-w-[5rem] flex-1 touch-manipulation flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-medium leading-tight",
                 active ? "text-primary" : "text-muted-foreground",
               )}
+              aria-current={active ? "page" : undefined}
             >
-              <Icon className={cn("h-5 w-5", active ? "opacity-100" : "opacity-70")} aria-hidden />
-              <span className="leading-none">{item.title}</span>
+              <Icon className={cn("h-6 w-6 shrink-0", active ? "opacity-100" : "opacity-70")} aria-hidden />
+              <span className="max-w-full truncate text-center leading-none">{item.title}</span>
             </Link>
           );
         })}

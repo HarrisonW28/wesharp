@@ -31,7 +31,9 @@ import { customerKnifeListLabel } from "@/lib/helpers/customer-display";
 import { formatGBP } from "@/lib/format/money";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { PageActions, PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PortalErrorAlert } from "@/components/layout/PortalStates";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -185,7 +187,7 @@ export default function AccountDashboardPage() {
 
   if (dashQuery.status === "pending") {
     return (
-      <div className="space-y-8">
+      <PortalPage>
         <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Overview" }]} />
         <div className="space-y-2">
           <Skeleton className="h-10 w-64 max-w-full" />
@@ -197,7 +199,7 @@ export default function AccountDashboardPage() {
             <Skeleton key={i} className="h-52 w-full rounded-xl" />
           ))}
         </div>
-      </div>
+      </PortalPage>
     );
   }
 
@@ -205,19 +207,15 @@ export default function AccountDashboardPage() {
     const errMsg =
       dashQuery.error instanceof Error ? dashQuery.error.message : "Something went wrong on our side.";
     return (
-      <div className="space-y-6">
+      <PortalPage>
         <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Overview" }]} />
         <PageHeader title="Overview" description="Your bookings, orders and account activity in one place." />
-        <Alert variant="destructive" className="max-w-xl">
-          <AlertTitle>We couldn’t load your overview</AlertTitle>
-          <AlertDescription>
-            {errMsg} If it keeps happening, wait a moment and try again — or contact us and we’ll help.
-          </AlertDescription>
-        </Alert>
-        <Button type="button" variant="outline" size="sm" onClick={() => void dashQuery.refetch()}>
-          Try again
-        </Button>
-      </div>
+        <PortalErrorAlert
+          title="We couldn’t load your overview"
+          message={`${errMsg} If it keeps happening, wait a moment and try again — or contact us and we’ll help.`}
+          onRetry={() => void dashQuery.refetch()}
+        />
+      </PortalPage>
     );
   }
 
@@ -253,7 +251,7 @@ export default function AccountDashboardPage() {
   const greetingName = settingsQuery.data?.user?.name?.trim().split(/\s+/)[0] ?? null;
 
   return (
-    <div className="space-y-8">
+    <PortalPage>
       <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Overview" }]} />
       <PageHeader
         title={greetingName ? `Hello, ${greetingName}` : "Welcome back"}
@@ -264,7 +262,7 @@ export default function AccountDashboardPage() {
           </>
         }
         actions={
-          <>
+          <PageActions>
             <Button type="button" variant="ghost" size="sm" className="rounded-lg" asChild>
               <Link href="/">
                 <Home className="mr-1.5 h-4 w-4" aria-hidden />
@@ -280,7 +278,7 @@ export default function AccountDashboardPage() {
             <Button type="button" variant="outline" size="sm" className="rounded-lg" asChild>
               <Link href="/pricing">Pricing</Link>
             </Button>
-          </>
+          </PageActions>
         }
       />
 
@@ -748,6 +746,6 @@ export default function AccountDashboardPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PortalPage>
   );
 }

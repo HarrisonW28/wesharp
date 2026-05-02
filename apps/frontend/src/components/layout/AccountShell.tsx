@@ -25,10 +25,19 @@ export function AccountShell({ children }: { children: ReactNode }) {
     [permissions],
   );
 
+  const accountDrawerQuickLinks = useMemo(
+    () => [
+      { href: "/account/dashboard", label: "Overview" },
+      { href: "/account/bookings/new", label: "Book a collection" },
+      { href: "/", label: "WeSharp website" },
+    ],
+    [],
+  );
+
   return (
     <TenantRouteGate>
       <ShellPermissionBoundary scope="account" label="Checking your account access…">
-        <div className="flex min-h-screen bg-muted/25 print:min-h-0 print:bg-white">
+        <div className="flex min-h-svh bg-muted/25 print:min-h-0 print:bg-white">
           <aside className="app-chrome hidden h-svh shrink-0 print:hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
             <div className="flex shrink-0 flex-col border-b px-4 py-3">
               <WeSharpLogo className="h-8" href="/" />
@@ -41,7 +50,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
           <div className="flex min-w-0 flex-1 flex-col">
             <TopBar
               className="app-chrome print:hidden"
-              title="Your account"
+              title="Customer portal"
               showMenu
               onMenuClick={() => setDrawerOpen(true)}
               trailing={
@@ -51,11 +60,20 @@ export function AccountShell({ children }: { children: ReactNode }) {
                 </div>
               }
             />
-            <main className="flex-1 space-y-8 px-4 py-6 print:px-4 print:py-3 md:px-8">{children}</main>
+            <main className="flex-1 min-w-0 overflow-x-hidden px-4 py-6 sm:px-6 md:px-8 print:px-4 print:py-3">
+              {children}
+            </main>
           </div>
 
           <div className="app-chrome print:hidden">
-            <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} sections={navSections} logoHref="/" />
+            <MobileDrawer
+              open={drawerOpen}
+              onOpenChange={setDrawerOpen}
+              sections={navSections}
+              brandSuffix="Account"
+              quickLinks={accountDrawerQuickLinks}
+              logoHref="/"
+            />
           </div>
         </div>
       </ShellPermissionBoundary>

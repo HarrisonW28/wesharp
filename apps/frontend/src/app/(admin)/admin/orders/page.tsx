@@ -16,7 +16,9 @@ import {
   PaginatedOrdersResponseSchema,
 } from "@/lib/api/admin-orders-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
+import { paginationRangeCaption } from "@/lib/format/pagination-caption";
 import { parseGbpInputToMinorUnits, formatGBP } from "@/lib/format/money";
+import { orderPaymentStatusLabel } from "@/lib/helpers/status-helpers";
 
 import { BookingLookup, CompanyLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
@@ -267,7 +269,7 @@ export default function AdminOrdersPage() {
         cell: ({ row }) => (
           <div className="flex flex-col gap-1">
             <StatusBadge kind="order" status={row.original.status} />
-            <span className="text-xs capitalize text-muted-foreground">{row.original.payment_status ?? "—"}</span>
+            <span className="text-xs text-muted-foreground">{orderPaymentStatusLabel(row.original.payment_status)}</span>
           </div>
         ),
       },
@@ -343,6 +345,8 @@ export default function AdminOrdersPage() {
   const rows = listQuery.data?.items ?? [];
 
   const filterCompanyId = searchParams.get("company_id");
+  const orderPag = listQuery.data?.pagination;
+  const orderRangeCaptionText = orderPag ? paginationRangeCaption(page, orderPag.per_page, orderPag.total) : null;
 
   return (
     <>
@@ -520,6 +524,9 @@ export default function AdminOrdersPage() {
             placeholder="All accounts"
           />
         </div>
+        <p className="w-full text-xs text-muted-foreground md:col-span-full">
+          Search updates after a short pause while you type. Other filters apply immediately and reset to page 1.
+        </p>
       </div>
 
       {rows.length === 0 ? (
@@ -545,8 +552,10 @@ export default function AdminOrdersPage() {
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm">
         <div className="text-muted-foreground">
-          Page {page}
-          {listQuery.data?.pagination?.total !== undefined ? ` · ${listQuery.data.pagination.total} orders` : null}
+          <span className="text-foreground">Page {page}</span>
+          {orderPag?.total_pages != null ? ` of ${orderPag.total_pages}` : null}
+          {orderPag?.total !== undefined ? ` · ${orderPag.total} orders` : null}
+          {orderRangeCaptionText ? ` · ${orderRangeCaptionText}` : null}
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" size="lg" disabled={page <= 1} onClick={() => goPage(page - 1)}>

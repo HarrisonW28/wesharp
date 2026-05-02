@@ -12,6 +12,7 @@ import {
   LookupListResponseSchema,
   lookupQueryString,
 } from "@/lib/api/admin-lookup-schema";
+import { lookupClosedDisplayLabel } from "@/lib/format/display-id";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -151,7 +152,7 @@ export function AsyncEntityLookup({
       return initialOption.label;
     }
 
-    return resolvedFromApi?.label ?? "";
+    return lookupClosedDisplayLabel(value, resolvedFromApi?.label ?? "");
   }, [value, picked, initialOption, resolvedFromApi]);
 
   const resolveLoading = resolveEnabled && Boolean(value) && resolveQuery.isFetching && !resolvedFromApi && !picked;

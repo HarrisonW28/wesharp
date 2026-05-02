@@ -28,7 +28,14 @@ export function TopBar({ title, subtitle, onMenuClick, showMenu, center, trailin
       )}
     >
       {showMenu ? (
-        <Button type="button" variant="ghost" size="icon" className="-ml-1 shrink-0 md:hidden" onClick={onMenuClick} aria-label="Open menu">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="-ml-1 h-11 min-h-11 min-w-11 shrink-0 touch-manipulation md:hidden md:h-10 md:min-h-10 md:min-w-10"
+          onClick={onMenuClick}
+          aria-label="Open menu"
+        >
           <Menu className="h-6 w-6 md:h-5 md:w-5" />
         </Button>
       ) : null}

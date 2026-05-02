@@ -35,6 +35,7 @@ function NavLeafLinkRow({ leaf, onNavigate }: { leaf: NavLeaf; onNavigate?: () =
     <Link
       href={leaf.href}
       onClick={() => onNavigate?.()}
+      aria-current={active ? "page" : undefined}
       className={cn(
         "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors md:min-h-0 md:py-2 md:text-sm",
         active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
@@ -118,6 +119,7 @@ function NavBranch({ item, onNavigate }: { item: NavItem; onNavigate?: () => voi
                   key={child.href}
                   href={child.href}
                   onClick={() => onNavigate?.()}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex min-h-[3.25rem] gap-3 rounded-lg border bg-card/80 px-3 py-2.5 shadow-sm backdrop-blur-[2px] transition-colors md:min-h-0",
                     active
@@ -186,11 +188,14 @@ function CollapsibleNavSection({
   }, [hasActiveChild]);
 
   return (
-    <div className="flex flex-col gap-1 border-t border-border/60 pt-2 first:border-t-0 first:pt-0 md:pt-2.5">
+    <div className="flex flex-col gap-1 border-t border-border/60 pt-3 first:border-t-0 first:pt-0 md:pt-3.5">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full min-h-11 items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-accent/50 md:min-h-0"
+        className={cn(
+          "flex w-full min-h-11 items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider transition-colors hover:bg-accent/50 md:min-h-0",
+          hasActiveChild ? "text-foreground" : "text-muted-foreground",
+        )}
         aria-expanded={open}
       >
         <span className="min-w-0 truncate">{section.label}</span>
@@ -203,7 +208,7 @@ function CollapsibleNavSection({
         />
       </button>
       {open ? (
-        <div className="flex flex-col gap-0.5 pb-1">
+        <div className="flex flex-col gap-1.5 pb-1.5">
           {section.items.map((item) => (
             <NavEntryRow key={navEntryKey(item)} item={item} onNavigate={onNavigate} />
           ))}
@@ -216,7 +221,7 @@ function CollapsibleNavSection({
 export function SidebarNav({ items, sections, onNavigate, className }: SidebarNavProps) {
   if (sections !== undefined && sections.length > 0) {
     return (
-      <nav className={cn("flex flex-col gap-2 md:gap-3", className)} aria-label="Primary">
+      <nav className={cn("flex flex-col gap-3 md:gap-4", className)} aria-label="Primary">
         {sections.map((section) => (
           <CollapsibleNavSection key={section.label} section={section} onNavigate={onNavigate} />
         ))}

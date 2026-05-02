@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { BookingDetailResponseSchema } from "@/lib/api/admin-bookings-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
+import { orderStatusLabel, routeStopStatusLabel } from "@/lib/helpers/status-helpers";
 
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { RouteLookup } from "@/components/admin/lookups/AsyncEntityLookup";
@@ -901,7 +902,13 @@ export default function AdminBookingDetailPage() {
           </div>
           <div>
             <span className="text-muted-foreground">Stop: </span>
-            {b.route_stop ? `#${b.route_stop.sequence ?? "?"} · ${b.route_stop.route_stop_status ?? ""}` : "—"}
+            {b.route_stop ? (
+              <>
+                #{b.route_stop.sequence ?? "?"} · {routeStopStatusLabel(b.route_stop.route_stop_status ?? "")}
+              </>
+            ) : (
+              "—"
+            )}
           </div>
           <div>
             <span className="text-muted-foreground">Orders: </span>
@@ -911,9 +918,14 @@ export default function AdminBookingDetailPage() {
               <ul className="mt-1 space-y-1">
                 {b.orders.map((o) => (
                   <li key={o.id}>
-                    <Link href={`/admin/orders/${o.id}`} className="text-sm font-medium text-primary underline underline-offset-2">
-                      {o.order_status?.replace(/_/g, " ") ?? "Order"} · {formatGBP(o.total_pence)}
-                      {o.currency ? ` ${o.currency}` : ""}
+                    <Link
+                      href={`/admin/orders/${o.id}`}
+                      className="text-sm font-medium text-primary underline underline-offset-2"
+                    >
+                      <span className="tabular-nums">
+                        {orderStatusLabel(o.order_status ?? "")} · {formatGBP(o.total_pence)}
+                        {o.currency && o.currency !== "GBP" ? ` ${o.currency}` : ""}
+                      </span>
                     </Link>
                   </li>
                 ))}

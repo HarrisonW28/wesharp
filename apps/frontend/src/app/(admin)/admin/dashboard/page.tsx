@@ -17,6 +17,7 @@ import {
   CalendarDays,
   CircleDollarSign,
   Landmark,
+  ListTodo,
   Receipt,
   RefreshCw,
   UtensilsCrossed,
@@ -35,6 +36,7 @@ import { WorkQueueAttentionCard } from "@/components/admin/WorkQueueAttentionCar
 import { ChartCard } from "@/components/cards/ChartCard";
 import { StatCard } from "@/components/cards/StatCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { PageActions, PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -106,7 +108,7 @@ export default function AdminDashboardPage() {
 
   if (pending) {
     return (
-      <div className="space-y-8">
+      <PortalPage>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2">
             <Skeleton className="h-6 w-48" />
@@ -125,20 +127,28 @@ export default function AdminDashboardPage() {
           ))}
         </div>
         <Skeleton className="h-72 w-full max-w-4xl" />
-      </div>
+      </PortalPage>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <PortalPage>
       <Breadcrumbs items={[{ label: "Dashboard" }]} />
       <PageHeader
         title="Operations dashboard"
         description="Headline volumes and cash position for roughly the last 90 days — from your live booking, order and invoice totals."
         actions={
-          <Button type="button" variant="outline" size="sm" asChild className="shrink-0">
-            <Link href="/admin/analytics">Deep-dive analytics</Link>
-          </Button>
+          <PageActions>
+            <Button type="button" variant="outline" size="sm" asChild className="shrink-0">
+              <Link href="/admin/work-queue">
+                <ListTodo className="mr-1.5 h-4 w-4" aria-hidden />
+                Work queue
+              </Link>
+            </Button>
+            <Button type="button" variant="outline" size="sm" asChild className="shrink-0">
+              <Link href="/admin/analytics">Deep-dive analytics</Link>
+            </Button>
+          </PageActions>
         }
       />
 
@@ -237,6 +247,6 @@ export default function AdminDashboardPage() {
         )}
       </ChartCard>
       ) : null}
-    </div>
+    </PortalPage>
   );
 }
