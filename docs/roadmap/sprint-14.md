@@ -17,6 +17,8 @@ This should not become a full SaaS/org rebuild yet.
 - Customer-facing flows should be simple and confidence-building.
 - Admin tools should help staff onboard customers and reduce support.
 - Backend permissions must enforce access.
+- Public pricing/subscription display should be backend-driven where possible.
+- Frontend should not hardcode active subscription plans.
 
 ---
 
@@ -91,6 +93,9 @@ Show:
 - Do not duplicate pricing logic if backend pricing services exist.
 - Clearly mark estimates as estimates if final price depends on inspection.
 - Display GBP with decimals.
+- Public package/subscription display should be backend-driven where possible.
+- Frontend should not hardcode active subscription plans.
+- Include a custom/bespoke option for customers who need a different plan.
 
 ### Acceptance criteria
 
@@ -99,6 +104,117 @@ Show:
 - Calculator links into booking wizard.
 - Admin pricing remains source of truth where possible.
 - No misleading fake prices.
+
+---
+
+## Sprint 14.2b — Backend-Driven Public Subscription Cards
+
+### Goal
+
+Show subscription/package cards on the public frontend using backend subscription/pricing data.
+
+The frontend should not hardcode subscription plans if the backend already has subscription plan models.
+
+### Public subscription cards
+
+Show active plans as cards.
+
+Each card should include:
+
+- plan name
+- short description
+- billing interval
+- price
+- included collections if applicable
+- included knife allowance if applicable
+- overage pricing if applicable
+- key benefits
+- Book Now / Choose Plan CTA
+
+### Custom plan card
+
+Always show one additional card:
+
+- Custom / Bespoke Plan
+- for businesses with different volume, frequency or collection needs
+- CTA: “Request custom plan” or “Talk to us”
+
+This should create either:
+
+- a lead
+- a waitlist/request record
+- a CRM note/request
+- or a booking enquiry, depending on existing backend structures
+
+### Backend requirements
+
+Use backend as source of truth.
+
+Preferred source:
+
+- `subscription_plans`
+- active plans only
+- sorted by `sort_order`
+- exclude deleted/inactive plans
+
+If required, add a public endpoint such as:
+
+GET /api/public/subscription-plans
+
+Suggested response fields:
+
+- id
+- name
+- description
+- billing_interval
+- price_amount_minor
+- currency
+- included_collections
+- included_knife_allowance
+- overage_price_amount_minor
+- is_active
+- sort_order
+- public_highlights
+- cta_label
+- recommended
+
+### Frontend requirements
+
+- Fetch plans from backend.
+- Render as responsive cards.
+- Show loading state.
+- Show empty state if no plans exist.
+- Show custom plan card even if no backend plans exist.
+- Do not duplicate backend pricing logic.
+- Format prices in GBP.
+- Link selected plan into booking/pricing flow where possible.
+
+### Admin requirements
+
+Admin should be able to manage the data that appears publicly, either now or later.
+
+At minimum, plans should be driven by backend records.
+
+Future admin fields may include:
+
+- public visibility
+- public description
+- highlight bullets
+- recommended flag
+- CTA label
+- display order
+
+### Acceptance criteria
+
+- Public frontend shows subscription/package cards.
+- Cards are loaded from backend active subscription plans.
+- Custom/bespoke plan card always appears.
+- Frontend does not hardcode core plan data.
+- Inactive/deleted plans do not show publicly.
+- Plan CTA links into booking/enquiry flow.
+- Custom plan CTA creates or starts an enquiry.
+- Mobile layout works.
+- Empty/loading states are handled.
 
 ---
 
@@ -266,6 +382,9 @@ Regression test Sprint 14 only.
 - waitlist
 - pricing calculator
 - packages
+- backend-driven subscription cards
+- custom/bespoke plan enquiry
+- inactive plans hidden from public frontend
 - customer invites
 - portal onboarding
 - note visibility

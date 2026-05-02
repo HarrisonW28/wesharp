@@ -1,4 +1,5 @@
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
+import { ServiceAreaCheckerSection } from "@/components/marketing/ServiceAreaCheckerSection";
 import { SERVICE_AREAS } from "@/config/service-areas";
 import { fetchPublicSiteContent } from "@/lib/site-content/fetch-site-content";
 
@@ -10,6 +11,7 @@ export default async function ServiceAreasPage() {
 
   return (
     <MarketingArticle title={s.title} lead={s.lead}>
+      <ServiceAreaCheckerSection className="mb-8" />
       <div className="flex flex-wrap gap-2">
         {SERVICE_AREAS.map((area) => (
           <span key={area.id} className="rounded-full border bg-card px-3 py-1.5 text-sm text-foreground">

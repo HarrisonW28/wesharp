@@ -40,15 +40,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <StaffRouteGate>
       <Toaster richColors closeButton position="top-right" />
       <ShellPermissionBoundary scope="admin" label="Checking operations permissions…">
-        <div className="flex min-h-screen bg-gradient-to-br from-muted/35 via-background to-muted/20 print:min-h-0 print:bg-white">
-          <aside className="app-chrome hidden h-svh shrink-0 print:hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95 md:backdrop-blur">
+        <div className="flex min-h-svh bg-gradient-to-br from-muted/35 via-background to-muted/20 print:min-h-0 print:bg-white">
+          <aside className="app-chrome hidden shrink-0 print:hidden md:sticky md:top-0 md:flex md:h-svh md:max-h-svh md:w-64 md:flex-col md:self-start md:border-r md:bg-background/95 md:backdrop-blur">
             <div className="flex shrink-0 flex-col border-b px-4 py-3">
               <WeSharpLogo className="h-9" href="/admin/dashboard" />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
               <SidebarNav sections={navSections} className="p-2 md:p-3" />
             </div>
-            <div className="shrink-0 border-t p-4 text-xs text-muted-foreground">
+            <div className="sticky bottom-0 z-10 mt-auto shrink-0 border-t bg-background/95 p-4 text-xs text-muted-foreground backdrop-blur supports-[backdrop-filter]:bg-background/80">
               Manchester · Liverpool coverage · Internal console
             </div>
           </aside>
@@ -57,14 +57,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <TopBar
               className="app-chrome print:hidden"
               title="Operations console"
+              center={<AdminDashboardSearch />}
               showMenu
               onMenuClick={() => setDrawerOpen(true)}
-              trailing={
-                <div className="flex items-center gap-2">
-                  <AdminDashboardSearch />
-                  <UserMenu variant="internal" />
-                </div>
-              }
+              trailing={<UserMenu variant="internal" />}
             />
             <main className="flex-1 space-y-8 px-4 py-6 print:px-4 print:py-3 md:px-8">{children}</main>
           </div>
@@ -74,7 +70,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
               open={drawerOpen}
               onOpenChange={setDrawerOpen}
               sections={navSections}
-              brandSuffix="Ops"
               logoHref="/admin/dashboard"
             />
           </div>

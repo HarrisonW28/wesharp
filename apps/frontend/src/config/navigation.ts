@@ -8,6 +8,7 @@ import {
   CircleDollarSign,
   ClipboardList,
   Gauge,
+  Inbox,
   Landmark,
   LayoutDashboard,
   LineChart,
@@ -136,6 +137,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     label: "Operations",
     items: [
       { title: "Companies", href: "/admin/crm", icon: Users, permission: "companies.view" },
+      { title: "Waitlist", href: "/admin/waitlist", icon: Inbox, permission: "companies.view" },
       { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
       { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
       { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
@@ -323,6 +325,7 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
   {
     label: "Operations",
     items: [
+      { title: "Waitlist", href: "/admin/waitlist", icon: Inbox, permission: "companies.view" },
       { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
       { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
       { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },

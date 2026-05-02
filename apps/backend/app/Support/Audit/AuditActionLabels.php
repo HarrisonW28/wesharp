@@ -112,6 +112,7 @@ final class AuditActionLabels
         'user.invite_resend_placeholder' => 'Invite resent (placeholder)',
         'user.company_attached_via_portal' => 'User attached to company (portal)',
         'public.booking_enquiry' => 'Public booking enquiry',
+        'public.service_area_waitlist_signup' => 'Public service area waitlist signup',
         'company_subscription.assigned' => 'Subscription assigned',
         'company_subscription.cancelled' => 'Subscription cancelled',
         'company_subscription.plan_changed' => 'Subscription plan changed',

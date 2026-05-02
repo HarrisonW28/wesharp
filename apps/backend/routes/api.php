@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\ReportingController;
 use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\RouteStopController;
+use App\Http\Controllers\Admin\ServiceAreaWaitlistController;
 use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserDirectoryController;
@@ -47,6 +48,8 @@ use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\TenantSmokeController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\Public\PublicBookingEnquiryController;
+use App\Http\Controllers\Public\PublicServiceAreaCheckController;
+use App\Http\Controllers\Public\PublicServiceAreaWaitlistController;
 use App\Http\Controllers\Public\PublicSiteContentController;
 use App\Http\Controllers\Public\PublicTrackingController;
 use App\Http\Controllers\Webhooks\ClerkWebhookController;
@@ -176,6 +179,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:companies.view')->get('lookups/contacts', [LookupController::class, 'contacts'])->name('api.admin.lookups.contacts');
 
     Route::middleware('permission:companies.view')->get('companies', [CompanyController::class, 'index'])->name('api.admin.companies.index');
+    Route::middleware('permission:companies.view')->get('service-area-waitlist', [ServiceAreaWaitlistController::class, 'index'])->name('api.admin.service_area_waitlist.index');
     Route::middleware('permission:companies.create')->post('companies', [CompanyController::class, 'store'])->name('api.admin.companies.store');
     Route::middleware('permission:companies.view')->get('companies/{company}', [CompanyController::class, 'show'])->whereUuid('company')->name('api.admin.companies.show');
     Route::middleware('permission:subscriptions.view')->get('subscription-billing/dashboard', [AdminSubscriptionDashboardController::class, 'index'])->name('api.admin.subscription_billing.dashboard');
@@ -340,6 +344,11 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:payments.view')->get('payments', [PaymentController::class, 'index'])->name('api.admin.payments.index');
     Route::middleware('permission:payments.manage')->post('payments/manual', [PaymentController::class, 'manual'])->name('api.admin.payments.manual');
     Route::middleware('permission:payments.manage')->patch('payments/{payment}', [PaymentController::class, 'update'])->whereUuid('payment')->name('api.admin.payments.update');
+});
+
+Route::prefix('public')->middleware('throttle:service-area-public')->group(function (): void {
+    Route::post('service-area/check', [PublicServiceAreaCheckController::class, 'store'])->name('api.public.service_area.check');
+    Route::post('service-area/waitlist', [PublicServiceAreaWaitlistController::class, 'store'])->name('api.public.service_area.waitlist.store');
 });
 
 Route::prefix('public')->middleware('throttle:booking-enquiries')->group(function (): void {

@@ -191,19 +191,19 @@ export function AdminDashboardSearch() {
           type="button"
           variant="outline"
           size="sm"
-          className="hidden h-9 gap-2 rounded-full border-dashed md:inline-flex"
+          className="hidden h-10 w-full max-w-2xl items-center gap-3 rounded-lg border bg-muted/35 px-4 text-sm font-normal shadow-sm hover:bg-muted/60 md:inline-flex"
           aria-label="Search workspace"
           onClick={() => setOpen(true)}
         >
-          <Search className="h-4 w-4 opacity-70" aria-hidden />
-          <span className="text-muted-foreground">Search</span>
-          <kbd className="pointer-events-none hidden h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex">
+          <Search className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-left text-muted-foreground">Search companies, bookings, orders…</span>
+          <kbd className="pointer-events-none hidden h-5 shrink-0 select-none items-center gap-0.5 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex">
             ⌘K
           </kbd>
         </Button>
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-h-[min(85vh,32rem)] gap-0 overflow-hidden p-0 sm:max-w-lg">
+      <DialogContent className="max-h-[min(85vh,36rem)] gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="sr-only">
           <DialogTitle>Search workspace</DialogTitle>
           <DialogDescription>Find companies, bookings, orders, knives, and more.</DialogDescription>

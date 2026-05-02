@@ -12,12 +12,14 @@ type TopBarProps = {
   subtitle?: string;
   onMenuClick?: () => void;
   showMenu?: boolean;
+  /** Desktop-focused strip (e.g. wide search). Mobile still shares this row between title and actions. */
+  center?: ReactNode;
   /** Account menu, company switcher, etc. */
   trailing?: ReactNode;
   className?: string;
 };
 
-export function TopBar({ title, subtitle, onMenuClick, showMenu, trailing, className }: TopBarProps) {
+export function TopBar({ title, subtitle, onMenuClick, showMenu, center, trailing, className }: TopBarProps) {
   return (
     <header
       className={cn(
@@ -30,7 +32,12 @@ export function TopBar({ title, subtitle, onMenuClick, showMenu, trailing, class
           <Menu className="h-6 w-6 md:h-5 md:w-5" />
         </Button>
       ) : null}
-      <div className="flex min-w-0 flex-1 flex-col justify-center">
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 flex-col justify-center",
+          center ? "md:max-w-[13rem] md:flex-none md:shrink-0 lg:max-w-[16rem]" : "",
+        )}
+      >
         {title ? (
           typeof title === "string" ? (
             <h1 className="truncate text-lg font-semibold leading-tight md:text-base">{title}</h1>
@@ -43,8 +50,15 @@ export function TopBar({ title, subtitle, onMenuClick, showMenu, trailing, class
         ) : null}
         {subtitle ? <p className="truncate text-xs text-muted-foreground">{subtitle}</p> : null}
       </div>
+      {center ? (
+        <div className="flex min-w-0 flex-1 justify-center px-0.5 md:px-2">
+          <div className="w-full max-w-2xl">{center}</div>
+        </div>
+      ) : null}
       <div className="flex shrink-0 items-center gap-2">
-        <ThemeToggle />
+        <div className="hidden md:flex md:items-center">
+          <ThemeToggle />
+        </div>
         {trailing}
       </div>
     </header>

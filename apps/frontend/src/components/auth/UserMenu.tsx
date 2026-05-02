@@ -1,7 +1,9 @@
 "use client";
 
 import { SignOutButton, useUser } from "@clerk/nextjs";
-import { Building2, ChevronDown, LogOut, User } from "lucide-react";
+import { Building2, ChevronDown, Home, LogOut, Moon, Sun, User } from "lucide-react";
+import Link from "next/link";
+import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +27,12 @@ type UserMenuProps = {
 export function UserMenu({ variant }: UserMenuProps) {
   const { user } = useUser();
   const { data } = useBackendMe();
+  const { resolvedTheme, setTheme } = useTheme();
 
   const label = data?.data?.user.name ?? user?.fullName ?? user?.primaryEmailAddress?.emailAddress ?? "Account";
   const role = data?.data?.user.role ?? "…";
+  const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
+  const themeLabel = resolvedTheme === "dark" ? "Light mode" : "Dark mode";
 
   return (
     <div className="flex items-center gap-2">
@@ -50,14 +55,30 @@ export function UserMenu({ variant }: UserMenuProps) {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           {variant === "internal" ? (
-            <>
-              <DropdownMenuItem disabled className="gap-2">
-                <Building2 className="h-4 w-4" aria-hidden />
-                Company context (Clerk orgs later)
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
+            <DropdownMenuItem asChild>
+              <Link href="/" className="flex cursor-default items-center gap-2">
+                <Home className="h-4 w-4" aria-hidden />
+                Back to home
+              </Link>
+            </DropdownMenuItem>
           ) : null}
+          {variant === "internal" ? <DropdownMenuSeparator /> : null}
+          {variant === "internal" ? (
+            <DropdownMenuItem disabled className="hidden gap-2 md:flex">
+              <Building2 className="h-4 w-4" aria-hidden />
+              Company context (Clerk orgs later)
+            </DropdownMenuItem>
+          ) : null}
+          {variant === "internal" ? <DropdownMenuSeparator className="hidden md:block" /> : null}
+          <DropdownMenuItem className="gap-2 md:hidden" onClick={() => setTheme(nextTheme)}>
+            {resolvedTheme === "dark" ? (
+              <Sun className="h-4 w-4" aria-hidden />
+            ) : (
+              <Moon className="h-4 w-4" aria-hidden />
+            )}
+            {themeLabel}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="md:hidden" />
           <SignOutButton signOutOptions={{ redirectUrl: "/" }}>
             <button
               type="button"
