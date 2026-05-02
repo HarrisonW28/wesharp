@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 
 import { ACCOUNT_NAV, type NavItem } from "@/config/navigation";
@@ -30,8 +31,14 @@ export function AccountShell({ children }: { children: ReactNode }) {
       <ShellPermissionBoundary scope="account" label="Checking your account access…">
         <div className="flex min-h-screen bg-muted/25 print:min-h-0 print:bg-white">
           <aside className="app-chrome hidden print:hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
-            <div className="flex h-14 items-center border-b px-4">
-              <WeSharpLogo className="h-10" />
+            <div className="flex flex-col gap-1 border-b px-4 py-3">
+              <WeSharpLogo className="h-8" href="/" />
+              <Link
+                href="/"
+                className="w-fit text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Back to home
+              </Link>
             </div>
             <SidebarNav items={navItems} />
           </aside>
@@ -52,7 +59,11 @@ export function AccountShell({ children }: { children: ReactNode }) {
               open={drawerOpen}
               onOpenChange={setDrawerOpen}
               items={navItems}
-              quickLinks={[{ href: "/account/dashboard", label: "Account home" }]}
+              logoHref="/"
+              quickLinks={[
+                { href: "/", label: "Back to home" },
+                { href: "/account/dashboard", label: "Account home" },
+              ]}
             />
           </div>
         </div>

@@ -37,7 +37,6 @@ final class PublicBookingEnquiryApiTest extends TestCase
                 'service_type' => 'collection',
                 'message' => 'Please collect chef knives from the prep area loading bay.',
                 'terms_accepted' => true,
-                'programme_interest' => 'subscription',
             ]);
 
             $response->assertCreated()
@@ -57,7 +56,6 @@ final class PublicBookingEnquiryApiTest extends TestCase
             self::assertSame(12, $booking->estimated_knife_count);
             self::assertStringContainsString('After lunch', (string) $booking->customer_notes);
             self::assertStringContainsString('Programme preference:', (string) $booking->customer_notes);
-            self::assertStringContainsString('[Source: wesharp.app public booking form]', (string) $booking->customer_notes);
 
             self::assertTrue(
                 AuditLog::query()

@@ -1,11 +1,14 @@
 import Link from "next/link";
 
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
+import { PublicSubscriptionPlansPanel } from "@/components/marketing/PublicSubscriptionPlansPanel";
 import { PRICING } from "@/config/pricing";
-import { formatGBP } from "@/lib/format/money";
+import { fetchPublicSiteData } from "@/lib/site-content/fetch-site-content";
 
-export default function SubscriptionsPage() {
-  const example = formatGBP(PRICING.subscriptionMonthlyMinor);
+export const revalidate = 60;
+
+export default async function SubscriptionsPage() {
+  const { publicSubscriptionPlans } = await fetchPublicSiteData();
 
   return (
     <MarketingArticle
@@ -28,18 +31,20 @@ export default function SubscriptionsPage() {
         </ul>
       </section>
       <section className="space-y-3 rounded-xl border bg-card p-5 text-foreground">
-        <h2 className="text-base font-semibold">Indicative pricing</h2>
+        <h2 className="text-base font-semibold">Programme pricing (guide)</h2>
         <p className="text-sm text-muted-foreground">
-          Every kitchen is different. As a guide, monthly programmes often start around{" "}
-          <span className="font-semibold tabular-nums text-foreground">{example}</span> — we&apos;ll confirm a written
-          quote after we understand your volumes and how often you need us.
+          Every kitchen is different. Published plans below are indicative — we&apos;ll confirm a written quote after we
+          understand your volumes and cadence.
         </p>
+        <PublicSubscriptionPlansPanel
+          plans={publicSubscriptionPlans}
+          fallbackMonthlyMinor={PRICING.subscriptionMonthlyMinor}
+        />
         <p className="text-sm text-muted-foreground">
-          Larger groups and multi-site teams usually pair a programme with{" "}
           <Link href="/trade-accounts" className="font-medium text-foreground underline underline-offset-4">
-            a business account
+            Trade accounts
           </Link>{" "}
-          so invoicing stays simple.
+          cover multi-site and consolidated billing.
         </p>
       </section>
       <p>

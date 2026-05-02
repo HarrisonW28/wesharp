@@ -38,6 +38,8 @@ export type NavItem = {
 export type NavSection = {
   label: string;
   items: NavItem[];
+  /** When true, sidebar shows this group collapsed until expanded (non-core utilities). */
+  defaultCollapsed?: boolean;
 };
 
 export const ADMIN_NAV_SECTIONS: NavSection[] = [
@@ -126,6 +128,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
   },
   {
     label: "Settings",
+    defaultCollapsed: true,
     items: [
       { title: "Users", href: "/admin/users", icon: UserCog, permission: "users.view" },
       { title: "Site content", href: "/admin/content-settings", icon: Newspaper, permission: "settings.manage" },
@@ -134,6 +137,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
   },
   {
     label: "System",
+    defaultCollapsed: true,
     items: [
       { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
       { title: "Webhook inbox", href: "/admin/webhooks/inbox", icon: Webhook, permission: "audit_logs.view" },
@@ -214,6 +218,7 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
   },
   {
     label: "System",
+    defaultCollapsed: true,
     items: [
       { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
       { title: "Webhook inbox", href: "/admin/webhooks/inbox", icon: Webhook, permission: "audit_logs.view" },

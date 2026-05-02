@@ -11,6 +11,8 @@ export const SubscriptionPlanRowSchema = z.object({
   included_knife_allowance: z.number().int().nullable().optional(),
   overage_price_amount_minor: z.number().int().nullable().optional(),
   is_active: z.boolean(),
+  /** Newer API; default false for older deploys. */
+  show_on_public_site: z.boolean().optional().default(false),
   sort_order: z.number().int(),
   created_at: z.string().nullable().optional(),
   updated_at: z.string().nullable().optional(),

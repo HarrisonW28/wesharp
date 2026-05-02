@@ -51,6 +51,8 @@ type PlanDraft = {
   overage_gbp_input: string;
   is_active: boolean;
   sort_order: number;
+  /** When true, plan appears on public marketing pages (home / pricing / subscriptions) if also active. */
+  show_on_public_site: boolean;
 };
 
 const INTERVALS = [
@@ -93,6 +95,7 @@ function defaultDraft(): PlanDraft {
     overage_gbp_input: "",
     is_active: true,
     sort_order: 0,
+    show_on_public_site: false,
   };
 }
 
@@ -109,6 +112,7 @@ function toDraft(p: SubscriptionPlanRow): PlanDraft {
       p.overage_price_amount_minor == null ? "" : moneyInputFromMinor(p.overage_price_amount_minor),
     is_active: Boolean(p.is_active),
     sort_order: p.sort_order ?? 0,
+    show_on_public_site: Boolean(p.show_on_public_site),
   };
 }
 
@@ -129,6 +133,7 @@ function draftToApiPayload(d: PlanDraft): Record<string, unknown> {
       d.overage_gbp_input.trim() === "" ? null : moneyMinorFromInput(d.overage_gbp_input),
     is_active: d.is_active,
     sort_order: Number.isFinite(d.sort_order) ? Math.max(0, Math.floor(d.sort_order)) : 0,
+    show_on_public_site: d.show_on_public_site,
   };
 }
 
@@ -301,6 +306,20 @@ export default function AdminSubscriptionPlansPage() {
                           >
                             {p.is_active ? "Active" : "Inactive"}
                           </span>
+                          {p.show_on_public_site ? (
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
+                                p.is_active ? "bg-sky-50 text-sky-800" : "bg-amber-50 text-amber-900"
+                              }`}
+                              title={
+                                p.is_active
+                                  ? "Shown on public marketing pages"
+                                  : "Would appear on the marketing site once this plan is active"
+                              }
+                            >
+                              {p.is_active ? "Marketing site" : "Marketing (inactive)"}
+                            </span>
+                          ) : null}
                         </div>
                         <div className="mt-1 text-sm text-muted-foreground">
                           {INTERVALS.find((i) => i.value === p.billing_interval)?.label ?? p.billing_interval} ·{" "}
@@ -578,7 +597,7 @@ function PlanEditor(props: {
             placeholder="Optional"
           />
         </div>
-        <div className="flex items-end gap-3">
+        <div className="flex flex-col gap-2 md:col-span-1">
           <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2">
             <input
               type="checkbox"
@@ -588,6 +607,19 @@ function PlanEditor(props: {
             />
             <span className="text-sm">{d.is_active ? "Active" : "Inactive"}</span>
           </label>
+          <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={d.show_on_public_site}
+              onChange={(e) => update({ show_on_public_site: e.target.checked })}
+            />
+            <span className="text-sm">Show on marketing site</span>
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Public pages only list plans that are active and have this option on. Home, pricing, and subscriptions use
+            the catalogue from the API.
+          </p>
         </div>
       </div>
 

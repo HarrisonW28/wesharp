@@ -20,11 +20,21 @@ type MobileDrawerProps = {
   sections?: NavSection[];
   /** Shown next to the logo (e.g. "Ops" for admin). */
   brandSuffix?: string;
+  /** Wordmark link target (marketing `/` for customers, `/admin/dashboard` for ops). */
+  logoHref?: string;
   /** Primary home link at top of drawer (Sprint 13.1). */
   quickLinks?: MobileNavQuickLink[];
 };
 
-export function MobileDrawer({ open, onOpenChange, items, sections, brandSuffix, quickLinks }: MobileDrawerProps) {
+export function MobileDrawer({
+  open,
+  onOpenChange,
+  items,
+  sections,
+  brandSuffix,
+  logoHref,
+  quickLinks,
+}: MobileDrawerProps) {
   const sheetLabel = brandSuffix ? `WeSharp ${brandSuffix}` : "WeSharp";
 
   return (
@@ -33,8 +43,12 @@ export function MobileDrawer({ open, onOpenChange, items, sections, brandSuffix,
         <SheetHeader className="border-b px-4 py-4 text-left">
           <SheetTitle className="text-lg font-normal leading-none">
             <span className="sr-only">{sheetLabel}</span>
-            <span className="inline-flex items-center gap-2" aria-hidden>
-              <WeSharpLogo className="h-9 md:h-8" />
+            <span className="inline-flex items-center gap-2">
+              <WeSharpLogo
+                className="h-9 md:h-8"
+                href={logoHref}
+                onNavigate={logoHref ? () => onOpenChange(false) : undefined}
+              />
               {brandSuffix ? <span className="text-xs font-medium text-muted-foreground">{brandSuffix}</span> : null}
             </span>
           </SheetTitle>

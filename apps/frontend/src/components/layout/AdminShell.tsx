@@ -9,6 +9,7 @@ import {
 } from "@/config/navigation";
 
 import { Toaster } from "sonner";
+import Link from "next/link";
 
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
 import { StaffRouteGate } from "@/components/auth/StaffRouteGate";
@@ -42,8 +43,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <ShellPermissionBoundary scope="admin" label="Checking operations permissions…">
         <div className="flex min-h-screen bg-gradient-to-br from-muted/35 via-background to-muted/20 print:min-h-0 print:bg-white">
           <aside className="app-chrome hidden print:hidden md:flex md:w-64 md:flex-col md:border-r md:bg-background/95 md:backdrop-blur">
-            <div className="flex h-14 items-center border-b px-4">
-              <WeSharpLogo className="h-10" />
+            <div className="flex flex-col gap-1 border-b px-4 py-3">
+              <WeSharpLogo className="h-9" href="/admin/dashboard" />
+              <Link
+                href="/"
+                className="w-fit text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Public site
+              </Link>
             </div>
             <SidebarNav sections={navSections} />
             <div className="mt-auto border-t p-4 text-xs text-muted-foreground">
@@ -68,7 +75,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
               onOpenChange={setDrawerOpen}
               sections={navSections}
               brandSuffix="Ops"
-              quickLinks={[{ href: "/admin/dashboard", label: "Dashboard home" }]}
+              logoHref="/admin/dashboard"
+              quickLinks={[
+            { href: "/", label: "Back to home" },
+            { href: "/admin/dashboard", label: "Dashboard home" },
+          ]}
             />
           </div>
         </div>

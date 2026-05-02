@@ -1,5 +1,14 @@
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+
 import type { BadgeProps } from "@/components/ui/badge";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   bookingStatusLabel,
   invoiceStatusLabel,
@@ -187,4 +196,39 @@ export function StatusBadge(props: UnifiedStatusBadgeProps) {
         </Badge>
       );
   }
+}
+
+type WithClassName = { className?: string };
+
+export function StatusBadgeGroup({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const cells = Children.toArray(children).filter((c) => c != null);
+  if (cells.length === 0) {
+    return null;
+  }
+
+  const pillStretch = "min-w-0 w-full justify-center";
+
+  return (
+    <div
+      className={cn("flex max-w-full flex-nowrap items-stretch gap-2", className)}
+      role="group"
+      aria-label="Status"
+    >
+      {cells.map((child, i) => (
+        <div key={i} className="flex min-h-0 min-w-0 flex-1 basis-0 items-stretch justify-center">
+          {isValidElement(child)
+            ? cloneElement(child as ReactElement<WithClassName>, {
+                className: cn((child as ReactElement<WithClassName>).props.className, pillStretch),
+              })
+            : child}
+        </div>
+      ))}
+    </div>
+  );
 }

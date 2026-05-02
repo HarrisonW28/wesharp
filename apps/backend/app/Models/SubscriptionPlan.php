@@ -31,6 +31,7 @@ class SubscriptionPlan extends Model
         'included_knife_allowance',
         'overage_price_amount_minor',
         'is_active',
+        'show_on_public_site',
         'sort_order',
     ];
 
@@ -43,6 +44,7 @@ class SubscriptionPlan extends Model
             'included_knife_allowance' => 'integer',
             'overage_price_amount_minor' => 'integer',
             'is_active' => 'boolean',
+            'show_on_public_site' => 'boolean',
             'sort_order' => 'integer',
         ];
     }

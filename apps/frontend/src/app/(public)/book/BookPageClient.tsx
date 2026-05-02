@@ -21,12 +21,36 @@ import type { SiteContent } from "@/lib/site-content/site-content-defaults";
 import { cn } from "@/lib/utils";
 
 const STEP_HEADINGS = [
-  { title: "What do you need sharpened?", hint: "Tell us what you’re sending — chef knives, tools, or a mix." },
-  { title: "How many knives or items?", hint: "A rough count helps us plan. You can skip this if you’re not sure yet." },
-  { title: "Collection address", hint: "Where we should collect from (and the venue name we should ask for on site)." },
-  { title: "Preferred date & time", hint: "We’ll confirm the exact window with you after we review the request." },
-  { title: "One-off or subscription?", hint: "No commitment on this form — it just helps us respond with the right options." },
-  { title: "Review & send", hint: "Check your details, add your contact information, and send the enquiry." },
+  {
+    name: "What to sharpen",
+    title: "What do you need sharpened?",
+    hint: "Tell us what you’re sending — chef knives, tools, or a mix.",
+  },
+  {
+    name: "How many",
+    title: "How many knives or items?",
+    hint: "A rough count helps us plan. You can skip this if you’re not sure yet.",
+  },
+  {
+    name: "Address",
+    title: "Collection address",
+    hint: "Where we should collect from (and the venue name we should ask for on site).",
+  },
+  {
+    name: "Date & time",
+    title: "Preferred date & time",
+    hint: "We’ll confirm the exact window with you after we review the request.",
+  },
+  {
+    name: "Programme",
+    title: "One-off or subscription?",
+    hint: "No commitment on this form — it just helps us respond with the right options.",
+  },
+  {
+    name: "Review",
+    title: "Review & send",
+    hint: "Check your details, add your contact information, and send the enquiry.",
+  },
 ] as const;
 
 const initialValues: PublicBookingFormValues = {
@@ -262,12 +286,18 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
       </div>
 
       <nav aria-label="Booking progress" className="rounded-xl border bg-muted/30 px-3 py-3 md:px-4">
-        <ol className="flex flex-wrap items-center justify-center gap-2 md:justify-between md:gap-1">
-          {STEP_HEADINGS.map((_, i) => (
-            <li key={i} className="flex items-center gap-1">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-foreground">Booking progress</p>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            Step {step + 1}/{PUBLIC_BOOKING_WIZARD_STEP_COUNT}
+          </p>
+        </div>
+        <ol className="mt-4 flex flex-wrap items-center justify-center gap-2 md:justify-between md:gap-1">
+          {STEP_HEADINGS.map((s, i) => (
+            <li key={s.name} className="flex items-center gap-1">
               <span
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
                   i === step
                     ? "bg-primary text-primary-foreground"
                     : i < step
@@ -278,18 +308,15 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
               >
                 {i < step ? "✓" : i + 1}
               </span>
-              <span className="hidden text-xs text-muted-foreground sm:inline md:max-lg:hidden lg:inline">
-                Step {i + 1}
+              <span className="min-w-0 max-w-[7.25rem] truncate text-xs text-muted-foreground sm:max-w-[9rem] md:max-w-none">
+                {s.name}
               </span>
               {i < STEP_HEADINGS.length - 1 ? (
-                <span className="mx-1 hidden h-px w-4 bg-border sm:block md:max-lg:hidden lg:block" aria-hidden />
+                <span className="mx-0.5 hidden h-px w-3 shrink-0 bg-border md:mx-1 md:block lg:w-4" aria-hidden />
               ) : null}
             </li>
           ))}
         </ol>
-        <p className="mt-3 text-center text-xs text-muted-foreground md:text-left">
-          Step {step + 1} of {PUBLIC_BOOKING_WIZARD_STEP_COUNT}
-        </p>
       </nav>
 
       {apiOrigin() === "" && (

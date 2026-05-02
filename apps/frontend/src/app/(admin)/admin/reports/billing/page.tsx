@@ -70,15 +70,27 @@ function buildQs(params: Record<string, string>): string {
   return s ? `?${s}` : "";
 }
 
+/** Short card copy; full definitions still listed below from the API. */
+const BILLING_KPI_HINTS = {
+  invoices_sent: "Issued in period — excludes draft & void.",
+  invoices_paid: "Invoices marked paid with issue date in range.",
+  overdue_period: "Invoices in overdue status in period.",
+  unpaid_snapshot: "Still owing as of period end (AR snapshot).",
+  total_outstanding: "Sum of unpaid balances on that snapshot.",
+  total_paid: "Cash in from invoice payments in period.",
+  payments_rows: "Payment rows with paid date in range.",
+  avg_days_to_pay: "Average days from issue date to last payment.",
+} as const;
+
 function KpiCard(props: { title: string; value: string; hint?: string }) {
   return (
-    <Card className="min-h-[108px] shadow-sm">
-      <CardHeader className="pb-1">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{props.title}</CardTitle>
-        {props.hint ? <CardDescription className="text-xs">{props.hint}</CardDescription> : null}
-      </CardHeader>
-      <CardContent>
-        <p className="text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">{props.value}</p>
+    <Card className="shadow-sm">
+      <CardContent className="p-4">
+        <div className="flex flex-row items-baseline justify-between gap-3">
+          <h3 className="min-w-0 flex-1 text-sm font-medium leading-snug text-foreground">{props.title}</h3>
+          <p className="shrink-0 text-right text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">{props.value}</p>
+        </div>
+        {props.hint ? <p className="mt-2 text-xs leading-snug text-muted-foreground">{props.hint}</p> : null}
       </CardContent>
     </Card>
   );
@@ -495,17 +507,17 @@ export default function AdminBillingReportPage() {
       ) : d ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
-            <KpiCard title="Invoices sent (period)" value={String(d.kpis.invoices_sent_count)} hint={definitions.invoices_sent_count} />
-            <KpiCard title="Invoices paid (period)" value={String(d.kpis.invoices_paid_count)} hint={definitions.invoices_paid_count} />
-            <KpiCard title="Overdue status (period)" value={String(d.kpis.overdue_invoices_period_count)} hint={definitions.overdue_invoices_period_count} />
-            <KpiCard title="Unpaid snapshot" value={String(d.kpis.unpaid_invoices_snapshot_count)} hint={definitions.unpaid_invoices_snapshot_count} />
-            <KpiCard title="Total outstanding" value={formatGBP(d.kpis.total_outstanding_pence)} hint={definitions.total_outstanding_pence} />
-            <KpiCard title="Total paid (period)" value={formatGBP(d.kpis.total_paid_pence)} hint={definitions.total_paid_pence} />
-            <KpiCard title="Payments (rows)" value={String(d.kpis.payments_received_count)} hint={definitions.payments_received_count} />
+            <KpiCard title="Invoices sent (period)" value={String(d.kpis.invoices_sent_count)} hint={BILLING_KPI_HINTS.invoices_sent} />
+            <KpiCard title="Invoices paid (period)" value={String(d.kpis.invoices_paid_count)} hint={BILLING_KPI_HINTS.invoices_paid} />
+            <KpiCard title="Overdue status (period)" value={String(d.kpis.overdue_invoices_period_count)} hint={BILLING_KPI_HINTS.overdue_period} />
+            <KpiCard title="Unpaid snapshot" value={String(d.kpis.unpaid_invoices_snapshot_count)} hint={BILLING_KPI_HINTS.unpaid_snapshot} />
+            <KpiCard title="Total outstanding" value={formatGBP(d.kpis.total_outstanding_pence)} hint={BILLING_KPI_HINTS.total_outstanding} />
+            <KpiCard title="Total paid (period)" value={formatGBP(d.kpis.total_paid_pence)} hint={BILLING_KPI_HINTS.total_paid} />
+            <KpiCard title="Payments (rows)" value={String(d.kpis.payments_received_count)} hint={BILLING_KPI_HINTS.payments_rows} />
             <KpiCard
               title="Avg days to pay"
               value={d.kpis.average_days_to_pay != null ? `${d.kpis.average_days_to_pay}` : "—"}
-              hint={definitions.average_days_to_pay}
+              hint={BILLING_KPI_HINTS.avg_days_to_pay}
             />
           </div>
 

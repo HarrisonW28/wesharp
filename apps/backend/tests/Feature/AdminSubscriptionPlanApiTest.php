@@ -53,6 +53,7 @@ final class AdminSubscriptionPlanApiTest extends TestCase
             'overage_price_amount_minor' => 800,
             'is_active' => true,
             'sort_order' => 10,
+            'show_on_public_site' => true,
         ]);
 
         $create->assertCreated();
@@ -70,6 +71,7 @@ final class AdminSubscriptionPlanApiTest extends TestCase
             'overage_price_amount_minor' => 800,
             'is_active' => true,
             'sort_order' => 10,
+            'show_on_public_site' => false,
         ]);
 
         $update->assertOk()

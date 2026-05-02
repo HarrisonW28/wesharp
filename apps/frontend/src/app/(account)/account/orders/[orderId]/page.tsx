@@ -18,7 +18,7 @@ import { CustomerActivityTimeline } from "@/components/account/CustomerActivityT
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CustomerInvoiceStatusBadge } from "@/components/invoices/CustomerInvoiceStatusBadge";
-import { StatusBadge } from "@/components/status/StatusBadge";
+import { StatusBadge, StatusBadgeGroup } from "@/components/status/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -102,11 +102,10 @@ export default function TenantOrderDetailPage() {
               <CardDescription>Where this order is in our fulfilment flow.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
+              <StatusBadgeGroup className="max-w-xl">
                 <CustomerOrderStatusBadge status={o.status} />
-                <span className="text-sm text-muted-foreground">Payment</span>
                 <StatusBadge kind="payment" status={o.payment_status} />
-              </div>
+              </StatusBadgeGroup>
               {useServerFulfilment ? (
                 <p className="text-sm text-muted-foreground">
                   Live collection and workshop milestones are in the <strong>Updates</strong> section below.

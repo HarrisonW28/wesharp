@@ -14,7 +14,7 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { StatusBadge } from "@/components/status/StatusBadge";
+import { StatusBadge, StatusBadgeGroup } from "@/components/status/StatusBadge";
 
 export default function AccountInvoicesPage() {
   const api = useAccountApi();
@@ -85,17 +85,22 @@ export default function AccountInvoicesPage() {
                       <div className="font-medium leading-tight">
                         {inv.display_reference ?? inv.invoice_number ?? "Invoice"}
                       </div>
-                      <CustomerInvoiceStatusBadge
-                        status={inv.status}
-                        customerLabel={inv.customer_status_label}
-                        hint={inv.customer_status_hint}
-                      />
                       {inv.payment_status ? (
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                          <span>Payment</span>
+                        <StatusBadgeGroup>
+                          <CustomerInvoiceStatusBadge
+                            status={inv.status}
+                            customerLabel={inv.customer_status_label}
+                            hint={inv.customer_status_hint}
+                          />
                           <StatusBadge kind="payment" status={inv.payment_status} />
-                        </div>
-                      ) : null}
+                        </StatusBadgeGroup>
+                      ) : (
+                        <CustomerInvoiceStatusBadge
+                          status={inv.status}
+                          customerLabel={inv.customer_status_label}
+                          hint={inv.customer_status_hint}
+                        />
+                      )}
                       <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
                         {inv.issue_date ? <span>Issued {inv.issue_date}</span> : null}
                         {inv.due_date ? <span>Due {inv.due_date}</span> : null}

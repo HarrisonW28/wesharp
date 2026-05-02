@@ -27,6 +27,7 @@ class SubscriptionPlanFactory extends Factory
             'included_knife_allowance' => fake()->randomElement([20, 40, 80]),
             'overage_price_amount_minor' => fake()->optional(0.5)->randomElement([500, 800, 1200]),
             'is_active' => true,
+            'show_on_public_site' => false,
             'sort_order' => fake()->numberBetween(0, 100),
         ];
     }

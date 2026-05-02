@@ -19,7 +19,7 @@ import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTi
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { NotificationHistoryPlaceholder } from "@/components/notifications/NotificationHistoryPlaceholder";
-import { StatusBadge } from "@/components/status/StatusBadge";
+import { StatusBadge, StatusBadgeGroup } from "@/components/status/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -643,11 +643,11 @@ export default function AdminInvoiceDetailPage() {
       <div className="space-y-8 print:hidden">
         <Card className="p-4">
           <div className="text-xs font-semibold uppercase text-muted-foreground">Operations</div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <StatusBadgeGroup className="mt-3 w-full max-w-xl">
             <StatusBadge kind="invoice" status={st} />
             <StatusBadge kind="payment" status={inv.payment_status ?? ""} />
             {inv.overdue ? <Badge variant="destructive">Overdue</Badge> : null}
-          </div>
+          </StatusBadgeGroup>
           {(inv.status_timeline ?? []).length > 0 ? (
             <div className="mt-4 border-t pt-4">
               <div className="text-xs font-semibold uppercase text-muted-foreground">Status history</div>

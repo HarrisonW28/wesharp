@@ -5,6 +5,7 @@ import {
   ArrowRight,
   CalendarClock,
   ClipboardList,
+  Home,
   Info,
   Loader2,
   MapPin,
@@ -264,6 +265,12 @@ export default function AccountDashboardPage() {
         }
         actions={
           <>
+            <Button type="button" variant="ghost" size="sm" className="rounded-lg" asChild>
+              <Link href="/">
+                <Home className="mr-1.5 h-4 w-4" aria-hidden />
+                Back to home
+              </Link>
+            </Button>
             <Button type="button" size="sm" className="rounded-lg" asChild>
               <Link href="/account/bookings/new">
                 Book a collection

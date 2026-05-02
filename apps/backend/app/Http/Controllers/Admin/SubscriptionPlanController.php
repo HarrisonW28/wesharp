@@ -43,6 +43,7 @@ final class SubscriptionPlanController extends Controller
             'price_amount_minor' => (int) $plan->price_amount_minor,
             'currency' => (string) $plan->currency,
             'is_active' => (bool) $plan->is_active,
+            'show_on_public_site' => (bool) $plan->show_on_public_site,
         ], $request);
 
         return ApiResponses::success([
@@ -63,6 +64,7 @@ final class SubscriptionPlanController extends Controller
             'included_knife_allowance' => $plan->included_knife_allowance,
             'overage_price_amount_minor' => $plan->overage_price_amount_minor,
             'is_active' => (bool) $plan->is_active,
+            'show_on_public_site' => (bool) $plan->show_on_public_site,
             'sort_order' => (int) $plan->sort_order,
         ];
 
@@ -78,6 +80,7 @@ final class SubscriptionPlanController extends Controller
             'included_knife_allowance' => $plan->included_knife_allowance,
             'overage_price_amount_minor' => $plan->overage_price_amount_minor,
             'is_active' => (bool) $plan->is_active,
+            'show_on_public_site' => (bool) $plan->show_on_public_site,
             'sort_order' => (int) $plan->sort_order,
         ];
 

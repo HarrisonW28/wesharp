@@ -16,8 +16,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 const STEPS = 6;
+
+const ACCOUNT_BOOKING_STEPS = [
+  "Location & service",
+  "Knife count",
+  "Collection date",
+  "Time window",
+  "Notes",
+  "Review",
+] as const;
 
 function formatTimeLabel(iso: string): string {
   if (iso.length >= 5) {
@@ -302,23 +312,41 @@ export default function NewAccountBookingPage() {
         </Alert>
       ) : (
         <>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground" aria-hidden>
-            {Array.from({ length: STEPS }, (_, i) => (
-              <span
-                key={i}
-                className={
-                  i + 1 === step
-                    ? "h-1.5 flex-1 rounded-full bg-primary"
-                    : i + 1 < step
-                      ? "h-1.5 flex-1 rounded-full bg-primary/40"
-                      : "h-1.5 flex-1 rounded-full bg-muted"
-                }
-              />
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Step {step} of {STEPS}
-          </p>
+          <nav aria-label="Booking progress" className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">Booking progress</p>
+              <p className="text-xs text-muted-foreground tabular-nums">
+                Step {step}/{STEPS}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5" aria-hidden>
+              {Array.from({ length: STEPS }, (_, i) => (
+                <span
+                  key={ACCOUNT_BOOKING_STEPS[i]}
+                  className={
+                    i + 1 === step
+                      ? "h-1.5 flex-1 rounded-full bg-primary"
+                      : i + 1 < step
+                        ? "h-1.5 flex-1 rounded-full bg-primary/40"
+                        : "h-1.5 flex-1 rounded-full bg-muted"
+                  }
+                />
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-2 sm:grid-cols-3 md:grid-cols-6">
+              {ACCOUNT_BOOKING_STEPS.map((label, i) => (
+                <span
+                  key={label}
+                  className={cn(
+                    "text-center text-[11px] leading-tight text-muted-foreground sm:text-xs",
+                    i + 1 === step && "font-semibold text-foreground",
+                  )}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          </nav>
 
           <Card>
             <CardHeader>

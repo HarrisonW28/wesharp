@@ -28,6 +28,7 @@ final class UpsertSubscriptionPlanRequest extends FormRequest
             'included_knife_allowance' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1000000'],
             'overage_price_amount_minor' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1000000000'],
             'is_active' => ['sometimes', 'boolean'],
+            'show_on_public_site' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:1000000'],
         ];
     }
@@ -52,6 +53,7 @@ final class UpsertSubscriptionPlanRequest extends FormRequest
             'included_knife_allowance' => array_key_exists('included_knife_allowance', $v) ? $v['included_knife_allowance'] : null,
             'overage_price_amount_minor' => array_key_exists('overage_price_amount_minor', $v) ? $v['overage_price_amount_minor'] : null,
             'is_active' => array_key_exists('is_active', $v) ? (bool) $v['is_active'] : true,
+            'show_on_public_site' => array_key_exists('show_on_public_site', $v) ? (bool) $v['show_on_public_site'] : false,
             'sort_order' => array_key_exists('sort_order', $v) ? (int) $v['sort_order'] : 0,
         ];
     }

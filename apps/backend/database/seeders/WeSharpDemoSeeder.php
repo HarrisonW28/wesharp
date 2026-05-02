@@ -179,6 +179,7 @@ final class WeSharpDemoSeeder extends Seeder
                     'included_knife_allowance' => 40,
                     'overage_price_amount_minor' => 800,
                     'is_active' => true,
+                    'show_on_public_site' => true,
                     'sort_order' => 10,
                 ],
             );

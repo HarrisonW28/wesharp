@@ -1,14 +1,15 @@
 import Link from "next/link";
 
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
+import { PublicSubscriptionPlansPanel } from "@/components/marketing/PublicSubscriptionPlansPanel";
 import { PRICING } from "@/config/pricing";
 import { formatGBP } from "@/lib/format/money";
-import { fetchPublicSiteContent } from "@/lib/site-content/fetch-site-content";
+import { fetchPublicSiteData } from "@/lib/site-content/fetch-site-content";
 
 export const revalidate = 60;
 
 export default async function PricingPage() {
-  const site = await fetchPublicSiteContent();
+  const { content: site, publicSubscriptionPlans } = await fetchPublicSiteData();
   const p = site.pricing_page;
   const paygFromMinor = Math.min(...PRICING.tiers.map((t) => t.unitAmountMinor));
 
@@ -31,12 +32,11 @@ export default async function PricingPage() {
           </div>
           <div>
             <div className="text-sm font-semibold">Regular programme (guide)</div>
-            <div className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">
-              {formatGBP(PRICING.subscriptionMonthlyMinor)}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Example monthly figure for scheduled visits — we tailor this when we understand your kitchen.
-            </p>
+            <PublicSubscriptionPlansPanel
+              plans={publicSubscriptionPlans}
+              fallbackMonthlyMinor={PRICING.subscriptionMonthlyMinor}
+              footer="Example figures for scheduled visits — we tailor pricing when we understand your kitchen."
+            />
           </div>
         </div>
       </div>
