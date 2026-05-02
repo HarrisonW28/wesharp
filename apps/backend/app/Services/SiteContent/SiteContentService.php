@@ -11,6 +11,8 @@ use App\Support\SiteContent\SiteContentDefaults;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 final class SiteContentService
 {
@@ -32,9 +34,22 @@ final class SiteContentService
         }
 
         $defaults = SiteContentDefaults::all();
-        $overrides = SiteContentSetting::current()->overrides ?? [];
 
-        return $this->resolvedCache = $this->deepMerge($defaults, is_array($overrides) ? $overrides : []);
+        if (! Schema::hasTable('site_content_settings')) {
+            return $this->resolvedCache = $defaults;
+        }
+
+        try {
+            /** @var array<string, mixed>|null $overrides */
+            $overrides = SiteContentSetting::query()->first()?->overrides;
+            if (! is_array($overrides)) {
+                $overrides = [];
+            }
+
+            return $this->resolvedCache = $this->deepMerge($defaults, $overrides);
+        } catch (Throwable) {
+            return $this->resolvedCache = $defaults;
+        }
     }
 
     /**
@@ -199,6 +214,10 @@ final class SiteContentService
      */
     public function saveFullContentTree(array $content, ?Authenticatable $actor, ?Request $request): SiteContentSetting
     {
+        if (! Schema::hasTable('site_content_settings')) {
+            abort(503, 'Site content storage is not available. Run database migrations.');
+        }
+
         $overrides = $this->computeOverrides($content);
         $setting = SiteContentSetting::current();
         $before = ['overrides' => $setting->overrides ?? []];

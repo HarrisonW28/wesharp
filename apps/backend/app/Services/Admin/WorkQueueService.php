@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Models\WebhookInbox;
 use App\Support\Permissions;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Schema;
 
 final class WorkQueueService
 {
@@ -333,6 +334,10 @@ final class WorkQueueService
 
     private function countOrdersMissingWorkshopPhotos(): int
     {
+        if (! Schema::hasTable('evidence_photos')) {
+            return 0;
+        }
+
         return (int) Order::query()
             ->whereIn('order_status', [
                 OrderStatus::Inspection,
@@ -374,6 +379,10 @@ final class WorkQueueService
 
     private function countFailedNotificationDeliveries(): int
     {
+        if (! Schema::hasTable('notification_deliveries')) {
+            return 0;
+        }
+
         return (int) NotificationDelivery::query()
             ->where('status', 'failed')
             ->count();
@@ -381,6 +390,10 @@ final class WorkQueueService
 
     private function countFailedWebhookDeliveries(): int
     {
+        if (! Schema::hasTable('webhook_inbox')) {
+            return 0;
+        }
+
         return (int) WebhookInbox::query()
             ->where('processing_state', 'failed')
             ->count();
@@ -395,6 +408,10 @@ final class WorkQueueService
 
     private function countPastDueSubscriptions(): int
     {
+        if (! Schema::hasTable('company_subscriptions')) {
+            return 0;
+        }
+
         return (int) CompanySubscription::query()
             ->where('status', SubscriptionStatus::PastDue)
             ->count();
@@ -402,14 +419,29 @@ final class WorkQueueService
 
     private function countOrdersWithSubscriptionOverage(): int
     {
-        return (int) Order::query()
+        if (! Schema::hasColumn('orders', 'company_subscription_id')
+            || ! Schema::hasColumn('orders', 'subscription_coverage')) {
+            return 0;
+        }
+
+        $base = Order::query()
             ->whereNotNull('company_subscription_id')
-            ->whereNotNull('subscription_coverage')
-            ->where(function (Builder $q): void {
-                $q->where('subscription_coverage->collections_overage_for_order', '>', 0)
-                    ->orWhere('subscription_coverage->knives_overage_for_order', '>', 0);
-            })
-            ->count();
+            ->whereNotNull('subscription_coverage');
+
+        $driver = Schema::getConnection()->getDriverName();
+
+        // MariaDB / MySQL: Laravel's JSON "->" where can error or compare incorrectly; use EXTRACT + CAST.
+        if (in_array($driver, ['mysql', 'mariadb'], true)) {
+            return (int) $base->whereRaw(
+                '(CAST(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(subscription_coverage, \'$.collections_overage_for_order\')), \'0\') AS SIGNED) > 0 '
+                .'OR CAST(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(subscription_coverage, \'$.knives_overage_for_order\')), \'0\') AS SIGNED) > 0)'
+            )->count();
+        }
+
+        return (int) $base->where(function (Builder $q): void {
+            $q->where('subscription_coverage->collections_overage_for_order', '>', 0)
+                ->orWhere('subscription_coverage->knives_overage_for_order', '>', 0);
+        })->count();
     }
 
     private function countOpenDamageReports(): int

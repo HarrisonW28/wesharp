@@ -49,10 +49,12 @@ return new class extends Migration
         }
 
         if (! Schema::hasColumn('order_items', 'subscription_billing_kind')) {
-            Schema::table('order_items', function (Blueprint $table): void {
+            // `service_status` is added in 2026_05_08_160000, which runs after this migration; anchor must exist on all DBs.
+            $after = Schema::hasColumn('order_items', 'service_status') ? 'service_status' : 'unit_amount_pence';
+            Schema::table('order_items', function (Blueprint $table) use ($after): void {
                 $table->string('subscription_billing_kind', 24)
                     ->default('na')
-                    ->after('service_status');
+                    ->after($after);
             });
         }
     }

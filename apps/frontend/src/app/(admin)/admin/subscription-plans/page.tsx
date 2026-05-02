@@ -42,11 +42,13 @@ type PlanDraft = {
   name: string;
   description: string;
   billing_interval: string;
-  price_amount_minor: number;
+  /** Raw GBP text while editing; parsed to minor units only when saving. */
+  price_gbp_input: string;
   currency: string;
   included_collections: number | null;
   included_knife_allowance: number | null;
-  overage_price_amount_minor: number | null;
+  /** Raw GBP text; empty means no overage (`null` in API). */
+  overage_gbp_input: string;
   is_active: boolean;
   sort_order: number;
 };
@@ -61,7 +63,7 @@ const INTERVALS = [
 function moneyMinorFromInput(v: string): number {
   const raw = v.trim();
   if (!raw) return 0;
-  const n = Number(raw);
+  const n = Number(raw.replace(/,/g, ""));
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, Math.round(n * 100));
 }
@@ -84,11 +86,11 @@ function defaultDraft(): PlanDraft {
     name: "",
     description: "",
     billing_interval: "monthly",
-    price_amount_minor: 0,
+    price_gbp_input: "",
     currency: "GBP",
     included_collections: null,
     included_knife_allowance: null,
-    overage_price_amount_minor: null,
+    overage_gbp_input: "",
     is_active: true,
     sort_order: 0,
   };
@@ -99,13 +101,34 @@ function toDraft(p: SubscriptionPlanRow): PlanDraft {
     name: p.name ?? "",
     description: p.description ?? "",
     billing_interval: p.billing_interval ?? "monthly",
-    price_amount_minor: p.price_amount_minor ?? 0,
+    price_gbp_input: moneyInputFromMinor(p.price_amount_minor ?? 0),
     currency: p.currency ?? "GBP",
     included_collections: p.included_collections ?? null,
     included_knife_allowance: p.included_knife_allowance ?? null,
-    overage_price_amount_minor: p.overage_price_amount_minor ?? null,
+    overage_gbp_input:
+      p.overage_price_amount_minor == null ? "" : moneyInputFromMinor(p.overage_price_amount_minor),
     is_active: Boolean(p.is_active),
     sort_order: p.sort_order ?? 0,
+  };
+}
+
+/** Body for Laravel `UpsertSubscriptionPlanRequest` (stable types; currency always 3-letter when sent). */
+function draftToApiPayload(d: PlanDraft): Record<string, unknown> {
+  const cur = d.currency.trim().toUpperCase().slice(0, 3);
+  const currency = cur.length === 3 ? cur : "GBP";
+
+  return {
+    name: d.name,
+    description: d.description,
+    billing_interval: d.billing_interval,
+    price_amount_minor: moneyMinorFromInput(d.price_gbp_input),
+    currency,
+    included_collections: d.included_collections,
+    included_knife_allowance: d.included_knife_allowance,
+    overage_price_amount_minor:
+      d.overage_gbp_input.trim() === "" ? null : moneyMinorFromInput(d.overage_gbp_input),
+    is_active: d.is_active,
+    sort_order: Number.isFinite(d.sort_order) ? Math.max(0, Math.floor(d.sort_order)) : 0,
   };
 }
 
@@ -135,7 +158,7 @@ export default function AdminSubscriptionPlansPage() {
     mutationFn: async (payload: PlanDraft) => {
       const res = await admin.json<unknown>("/api/admin/subscription-plans", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(draftToApiPayload(payload)),
       });
       if (!res.ok) throw new Error(res.message);
       return res.data;
@@ -153,7 +176,7 @@ export default function AdminSubscriptionPlansPage() {
     mutationFn: async ({ id, payload }: { id: string; payload: PlanDraft }) => {
       const res = await admin.json<unknown>(`/api/admin/subscription-plans/${id}`, {
         method: "PUT",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(draftToApiPayload(payload)),
       });
       if (!res.ok) throw new Error(res.message);
       return res.data;
@@ -483,7 +506,16 @@ function PlanEditor(props: {
             id="plan-sort"
             inputMode="numeric"
             value={String(d.sort_order)}
-            onChange={(e) => update({ sort_order: Math.max(0, Number(e.target.value || 0)) })}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "") {
+                update({ sort_order: 0 });
+                return;
+              }
+              const n = Number(raw);
+              if (!Number.isFinite(n)) return;
+              update({ sort_order: Math.max(0, Math.floor(n)) });
+            }}
           />
         </div>
       </div>
@@ -531,8 +563,9 @@ function PlanEditor(props: {
           <Label>Price (GBP)</Label>
           <Input
             inputMode="decimal"
-            value={moneyInputFromMinor(d.price_amount_minor)}
-            onChange={(e) => update({ price_amount_minor: moneyMinorFromInput(e.target.value) })}
+            value={d.price_gbp_input}
+            onChange={(e) => update({ price_gbp_input: e.target.value })}
+            placeholder="0.00"
           />
           <p className="text-xs text-muted-foreground">Stored in minor units; shown as GBP.</p>
         </div>
@@ -540,8 +573,8 @@ function PlanEditor(props: {
           <Label>Overage price (GBP)</Label>
           <Input
             inputMode="decimal"
-            value={d.overage_price_amount_minor == null ? "" : moneyInputFromMinor(d.overage_price_amount_minor)}
-            onChange={(e) => update({ overage_price_amount_minor: moneyMinorFromInput(e.target.value) })}
+            value={d.overage_gbp_input}
+            onChange={(e) => update({ overage_gbp_input: e.target.value })}
             placeholder="Optional"
           />
         </div>
