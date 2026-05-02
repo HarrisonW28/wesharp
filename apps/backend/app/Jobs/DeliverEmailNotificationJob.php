@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\NotificationDelivery;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use App\Services\Notifications\EmailDelivery;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -56,5 +57,7 @@ final class DeliverEmailNotificationJob implements ShouldQueue
             'failed_at' => now(),
             'failure_reason' => mb_substr($e->getMessage(), 0, 1000),
         ])->save();
+
+        app(InAppNotificationDispatcher::class)->notifyStaffEmailDeliveryPermanentlyFailed($row);
     }
 }

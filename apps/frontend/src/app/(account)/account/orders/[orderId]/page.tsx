@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 import { CustomerOrderStatusBadge } from "@/components/orders/CustomerOrderStatusBadge";
 import { TenantFulfilmentUpdatesCard } from "@/components/orders/TenantFulfilmentUpdatesCard";
+import { CustomerOrderFeedbackCard } from "@/components/orders/CustomerOrderFeedbackCard";
 import { CustomerActivityTimeline } from "@/components/account/CustomerActivityTimeline";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -203,6 +204,8 @@ export default function TenantOrderDetailPage() {
               </CardContent>
             </Card>
           ) : null}
+
+          <CustomerOrderFeedbackCard orderId={String(orderId)} feedback={o.feedback} />
 
           {o.invoice ? (
             <Card className="rounded-xl lg:col-span-3">

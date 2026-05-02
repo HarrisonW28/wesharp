@@ -208,6 +208,10 @@ final class OrderJson
 
         $payload['activity_timeline'] = CustomerActivityTimelinePresenter::forOrder($order);
 
+        $payload['feedback'] = $order->relationLoaded('feedback') && $order->feedback !== null
+            ? OrderFeedbackJson::portal($order->feedback)
+            : null;
+
         return $payload;
     }
 

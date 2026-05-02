@@ -21,6 +21,11 @@ This document describes WeSharp’s outbound notification architecture (email-fi
 - `NOTIFICATIONS_QUEUE` (default `notifications`)
   - Queue name for notification jobs.
 
+## In-app notifications (Sprint 14.5)
+- Separate from `notification_deliveries`: table **`in_app_notifications`** with **`audience`** `staff` | `customer`, **`dedupe_key`** (unique per user).
+- Staff API: `/api/admin/notifications/in-app` (requires **`dashboard.view`**). Customer API: `/api/account/in-app-notifications`.
+- Fan-out uses the same customer-safe copy as email where wired (`BookingEmailService`, `OrderEmailService`, `InvoiceEmailService`). Terminal **email** failures also create a staff in-app row for users with **`notifications.deliveries.view`**.
+
 ## Delivery history (`notification_deliveries`)
 Each outbound notification attempt (or skip) is recorded:
 - **recipient**: `recipient_email`, optional `recipient_user_id`, optional `company_id`
@@ -72,6 +77,7 @@ Set `FRONTEND_URL` (see `config/wesharp.php` → `customer_portal_base_url`) so 
 - `order.status.received` … `order.status.returned` — one idempotent email per status reached
 - `order.cancelled`
 - `order.issue_reported` — damage report with `customer_visible=true` (source idempotency on `DamageReport`)
+- `order.feedback_invite` — single post-completion feedback request per order (Sprint 14.6); pairs with portal + in-app invite
 
 ## Invoice & payment notification types (10.4)
 - `invoice.issued` — when an invoice moves to **Sent** (admin **Send**). Resend uses a new UUID salt via `POST /api/admin/invoices/{invoice}/resend-customer-email`.

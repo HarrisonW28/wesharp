@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\DamageReportController;
 use App\Http\Controllers\Admin\DashboardSearchController;
 use App\Http\Controllers\Admin\EvidencePhotoController;
 use App\Http\Controllers\Admin\FinanceDashboardController;
+use App\Http\Controllers\Admin\InAppNotificationController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\KnifeController;
 use App\Http\Controllers\Admin\LookupController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Admin\NotificationAdminSettingController;
 use App\Http\Controllers\Admin\NotificationDeliveryController;
 use App\Http\Controllers\Admin\NotificationEmailPreviewController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\OrderFeedbackController;
 use App\Http\Controllers\Admin\OrderSubscriptionCoverageController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PricingRuleController;
@@ -36,11 +38,13 @@ use App\Http\Controllers\Admin\WebhookInboxController;
 use App\Http\Controllers\Admin\WorkQueueController;
 use App\Http\Controllers\Api\Account\AccountBookingController;
 use App\Http\Controllers\Api\Account\AccountDashboardController;
+use App\Http\Controllers\Api\Account\AccountInAppNotificationController;
 use App\Http\Controllers\Api\Account\AccountInvoiceController;
 use App\Http\Controllers\Api\Account\AccountKnifeController;
 use App\Http\Controllers\Api\Account\AccountLocationController;
 use App\Http\Controllers\Api\Account\AccountOrderController;
 use App\Http\Controllers\Api\Account\AccountOrderEvidencePhotoController;
+use App\Http\Controllers\Api\Account\AccountOrderFeedbackController;
 use App\Http\Controllers\Api\Account\AccountSettingsController;
 use App\Http\Controllers\Api\Account\AccountSubscriptionController;
 use App\Http\Controllers\Api\V1\BootstrapTenantOrganisationController;
@@ -86,6 +90,8 @@ Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (
 
     Route::middleware('permission:orders.view')->get('orders', [AccountOrderController::class, 'index'])->name('api.account.orders.index');
     Route::middleware('permission:orders.view')->get('orders/{order}', [AccountOrderController::class, 'show'])->whereUuid('order')->name('api.account.orders.show');
+    Route::middleware('permission:orders.view')->get('orders/{order}/feedback', [AccountOrderFeedbackController::class, 'show'])->whereUuid('order')->name('api.account.orders.feedback.show');
+    Route::middleware('permission:orders.view')->post('orders/{order}/feedback', [AccountOrderFeedbackController::class, 'store'])->whereUuid('order')->name('api.account.orders.feedback.store');
     Route::middleware('permission:orders.view')->get('orders/{order}/evidence-photos/{photo}/file', [AccountOrderEvidencePhotoController::class, 'showFile'])->whereUuid(['order', 'photo'])->name('api.account.orders.evidence_photos.file');
 
     Route::middleware('permission:knives.view')->get('knives', [AccountKnifeController::class, 'index'])->name('api.account.knives.index');
@@ -100,6 +106,13 @@ Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (
 
     Route::middleware('permission:account.settings.update')->get('settings', [AccountSettingsController::class, 'show'])->name('api.account.settings.show');
     Route::middleware('permission:account.settings.update')->put('settings', [AccountSettingsController::class, 'update'])->name('api.account.settings.update');
+
+    Route::middleware('permission:dashboard.view')->get('in-app-notifications', [AccountInAppNotificationController::class, 'index'])->name('api.account.in_app_notifications.index');
+    Route::middleware('permission:dashboard.view')->patch('in-app-notifications/{notification}', [AccountInAppNotificationController::class, 'markRead'])
+        ->whereUuid('notification')
+        ->name('api.account.in_app_notifications.mark_read');
+    Route::middleware('permission:dashboard.view')->post('in-app-notifications/mark-all-read', [AccountInAppNotificationController::class, 'markAllRead'])
+        ->name('api.account.in_app_notifications.mark_all_read');
 });
 
 Route::prefix('v1')->group(function (): void {
@@ -131,6 +144,13 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     });
 
     Route::middleware('permission:dashboard.view')->get('work-queue', [WorkQueueController::class, 'index'])->name('api.admin.work_queue.index');
+
+    Route::middleware('permission:dashboard.view')->get('notifications/in-app', [InAppNotificationController::class, 'index'])->name('api.admin.in_app_notifications.index');
+    Route::middleware('permission:dashboard.view')->patch('notifications/in-app/{notification}', [InAppNotificationController::class, 'markRead'])
+        ->whereUuid('notification')
+        ->name('api.admin.in_app_notifications.mark_read');
+    Route::middleware('permission:dashboard.view')->post('notifications/in-app/mark-all-read', [InAppNotificationController::class, 'markAllRead'])
+        ->name('api.admin.in_app_notifications.mark_all_read');
 
     Route::middleware('permission:dashboard.view')->get('dashboard-search', DashboardSearchController::class)->name('api.admin.dashboard_search');
 
@@ -208,6 +228,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:companies.delete')->delete('companies/{company}', [CompanyController::class, 'destroy'])->whereUuid('company')->name('api.admin.companies.destroy');
     Route::middleware('permission:companies.view')->get('companies/{company}/summary', [CompanyController::class, 'summary'])->whereUuid('company')->name('api.admin.companies.summary');
     Route::middleware('permission:companies.view')->get('companies/{company}/activity', [CompanyController::class, 'activity'])->whereUuid('company')->name('api.admin.companies.activity');
+    Route::middleware('permission:orders.view')->get('companies/{company}/order-feedback', [OrderFeedbackController::class, 'index'])->whereUuid('company')->name('api.admin.companies.order_feedback.index');
+    Route::middleware('permission:orders.view')->patch('companies/{company}/order-feedback/{feedback}', [OrderFeedbackController::class, 'update'])->whereUuid(['company', 'feedback'])->name('api.admin.companies.order_feedback.update');
     Route::middleware('permission:companies.update')->post('companies/{company}/notes', [CompanyController::class, 'storeNote'])->whereUuid('company')->name('api.admin.companies.notes.store');
     Route::middleware('permission:companies.update')->post('companies/{company}/portal-invites', [CompanyPortalInviteController::class, 'store'])->whereUuid('company')->name('api.admin.companies.portal_invites.store');
     Route::middleware('permission:companies.update')->post('companies/{company}/portal-invites/{invite}/resend', [CompanyPortalInviteController::class, 'resend'])->whereUuid(['company', 'invite'])->name('api.admin.companies.portal_invites.resend');

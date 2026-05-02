@@ -24,6 +24,7 @@ final class InvoiceEmailService
 {
     public function __construct(
         private readonly NotificationService $notifications,
+        private readonly InAppNotificationDispatcher $inApp,
     ) {}
 
     public function sendInvoiceIssued(Invoice $invoice, ?string $resendSalt = null): void
@@ -339,6 +340,7 @@ final class InvoiceEmailService
                     'view' => 'emails.notifications.invoice',
                 ],
             );
+            $this->fanOutCustomerInApp($invoice, $type, $headline, $body);
 
             return;
         }
@@ -358,6 +360,19 @@ final class InvoiceEmailService
             view: 'emails.notifications.invoice',
             viewData: $viewData,
             ctx: $ctx,
+        );
+        $this->fanOutCustomerInApp($invoice, $type, $headline, $body);
+    }
+
+    private function fanOutCustomerInApp(Invoice $invoice, string $type, string $headline, string $body): void
+    {
+        $kind = 'customer.'.$type;
+        $snippet = mb_substr(trim(str_replace(["\n", "\r"], ' ', $body)), 0, 280);
+        $this->inApp->notifyCustomersInvoicePipeline(
+            $invoice,
+            $kind,
+            $headline,
+            $snippet !== '' ? $snippet : $headline,
         );
     }
 

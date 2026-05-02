@@ -78,6 +78,11 @@ class User extends Authenticatable
         return $this->hasMany(Note::class, 'author_id');
     }
 
+    public function inAppNotifications(): HasMany
+    {
+        return $this->hasMany(InAppNotification::class);
+    }
+
     public function drivenOperationalRoutes(): HasMany
     {
         return $this->hasMany(OperationalRoute::class, 'driver_user_id');

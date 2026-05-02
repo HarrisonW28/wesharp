@@ -22,7 +22,7 @@ Workspace: `**apps/frontend**` (Next.js **15**, App Router, React **19**, Tailwi
 | Layout     | `src/app/(admin)/admin/layout.tsx` wraps children in `**AdminShell`**; `**export const dynamic = 'force-dynamic'**` so Clerk-using routes are not statically prerendered without keys. |
 | Auth gate  | `**StaffRouteGate**` + Clerk session.                                                                                                                                                  |
 | Feedback   | `**sonner**` `**<Toaster />**` mounted in `**AdminShell**` (global toasts).                                                                                                            |
-| Navigation | `src/config/navigation.ts` — CRM (`companies.view`), **Analytics** (`analytics.view`), Orders (`orders.view`), Knives (`knives.view`), **Invoices** (`invoices.view`), **Payments** (`payments.view`), routes (`routes.view`). |
+| Navigation | `src/config/navigation.ts` — **Sprint 15.1** IA: **Command Centre**, **CRM**, **Operations**, **Routes**, **Finance**, **Customers**, **Growth**, **System**; items keep Laravel `permission` keys (e.g. `companies.view`, `routes.view`, `reports.finance`). |
 | Status UI | **`StatusBadge`** (`src/components/status/StatusBadge.tsx`) — shared tone for **`booking` / `order` / `invoice` / `knife` / `route` / `route_stop` / `payment`** rows vs ad-hoc **`Badge`** usage. |
 
 ---

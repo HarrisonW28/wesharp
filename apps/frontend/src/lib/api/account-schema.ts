@@ -395,6 +395,18 @@ export const AccountOrderDetailDataSchema = OrderRowTenantSchema.extend({
     .nullable()
     .optional(),
   activity_timeline: z.array(CustomerPortalActivityStepSchema).optional(),
+  feedback: z
+    .object({
+      id: z.string(),
+      invitation_sent_at: z.string().nullable().optional(),
+      can_submit: z.boolean(),
+      submitted_at: z.string().nullable().optional(),
+      rating: z.number().nullable().optional(),
+      comment: z.string().nullable().optional(),
+      testimonial_interested: z.boolean().optional(),
+    })
+    .nullable()
+    .optional(),
 }).passthrough();
 
 export const AccountOrderDetailResponseSchema = z.object({

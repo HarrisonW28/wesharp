@@ -9,6 +9,7 @@ import { TenantRouteGate } from "@/components/auth/TenantRouteGate";
 import { ShellPermissionBoundary } from "@/components/auth/ShellPermissionBoundary";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { MobileDrawer } from "@/components/navigation/MobileDrawer";
+import { InAppNotificationBell } from "@/components/notifications/InAppNotificationBell";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
 import { TopBar } from "@/components/navigation/TopBar";
 
@@ -43,7 +44,12 @@ export function AccountShell({ children }: { children: ReactNode }) {
               title="Your account"
               showMenu
               onMenuClick={() => setDrawerOpen(true)}
-              trailing={<UserMenu variant="tenant" />}
+              trailing={
+                <div className="flex items-center gap-2">
+                  <InAppNotificationBell variant="account" />
+                  <UserMenu variant="tenant" />
+                </div>
+              }
             />
             <main className="flex-1 space-y-8 px-4 py-6 print:px-4 print:py-3 md:px-8">{children}</main>
           </div>

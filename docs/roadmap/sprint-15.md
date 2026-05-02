@@ -63,6 +63,8 @@ Reorganise admin navigation into clearer operational areas.
 - Mobile drawer still works.
 - Route manager nav remains simple.
 
+**Implemented (2026-05-01):** `ADMIN_NAV_SECTIONS` in `apps/frontend/src/config/navigation.ts` — eight section labels (**Command Centre**, **CRM**, **Operations**, **Routes**, **Finance**, **Customers**, **Growth**, **System**); all historic admin URLs preserved; **Routes** uses flat **Today** + **Collections** (was nested under Operations); reports + site content sit under **Growth**; **Users** under **Customers**; notifications, audit, webhooks under **System** (flat). **`ROUTE_MANAGER_NAV_SECTIONS`** unchanged. Vitest: `apps/frontend/src/config/admin-navigation.test.ts`.
+
 ---
 
 ## Sprint 15.2 — Sidebar Role Visibility

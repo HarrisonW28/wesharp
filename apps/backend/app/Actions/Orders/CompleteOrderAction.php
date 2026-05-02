@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Notifications\OrderEmailService;
+use App\Services\Orders\OrderFeedbackInvitationService;
 use App\Services\Orders\OrderService;
 use App\Services\Subscriptions\OrderSubscriptionCoverageService;
 use App\Support\Orders\OrderStatusTransitions;
@@ -17,6 +18,7 @@ final class CompleteOrderAction
 {
     public function __construct(
         private readonly OrderEmailService $orderEmails,
+        private readonly OrderFeedbackInvitationService $orderFeedbackInvites,
     ) {}
 
     public function execute(Order $order, ?Authenticatable $actor, ?Request $request): Order
@@ -60,6 +62,10 @@ final class CompleteOrderAction
         $this->orderEmails->sendStatusReached(
             $rebuilt->fresh(['company', 'booking.contact']),
             OrderStatus::Completed,
+        );
+
+        $this->orderFeedbackInvites->inviteAfterOrderCompleted(
+            $rebuilt->fresh(['company', 'booking.contact']),
         );
 
         return $rebuilt;

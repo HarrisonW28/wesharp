@@ -18,6 +18,7 @@ final class OrderEmailService
 {
     public function __construct(
         private readonly NotificationService $notifications,
+        private readonly InAppNotificationDispatcher $inApp,
     ) {}
 
     public function sendOrderCreated(Order $order): void
@@ -151,6 +152,33 @@ final class OrderEmailService
         );
     }
 
+    /** Single invitation per order (idempotent). In-app notification is sent separately with a #feedback deep link. */
+    public function sendFeedbackInvite(Order $order): void
+    {
+        $order = $this->ensureLoaded($order);
+        $ref = OrderJson::reference($order);
+        $greet = $this->greetingName($order);
+        $type = 'order.feedback_invite';
+        $idempotencyKey = NotificationService::idempotencyKey($type, Order::class, (string) $order->id);
+
+        $body = trim(implode("\n\n", array_filter([
+            "Hi {$greet},\n\nYour sharpening work on this order is complete — thank you for choosing WeSharp.",
+            "Order reference: {$ref}",
+            'When you have a moment, a quick 1–5 rating in your portal helps us improve.',
+            'You can leave an optional comment and say if you’d be open to a testimonial follow-up (entirely optional).',
+        ])));
+
+        $this->queueOrderEmail(
+            order: $order,
+            type: $type,
+            idempotencyKey: $idempotencyKey,
+            subject: 'Quick feedback on your WeSharp order?',
+            headline: 'How was your experience?',
+            body: $body,
+            fanOutInApp: false,
+        );
+    }
+
     /**
      * @return array<string, array{subject: string, headline: string}>
      */
@@ -273,6 +301,7 @@ final class OrderEmailService
         string $subject,
         string $headline,
         string $body,
+        bool $fanOutInApp = true,
     ): void {
         $order = $this->ensureLoaded($order);
         $to = $this->recipientEmail($order);
@@ -301,6 +330,7 @@ final class OrderEmailService
                     'view' => 'emails.notifications.order',
                 ],
             );
+            $fanOutInApp && $this->fanOutCustomerInApp($order, $type, $headline, $body);
 
             return;
         }
@@ -319,6 +349,19 @@ final class OrderEmailService
                 'portalUrl' => CustomerPortalUrls::orders(),
             ],
             ctx: $ctx,
+        );
+        $fanOutInApp && $this->fanOutCustomerInApp($order, $type, $headline, $body);
+    }
+
+    private function fanOutCustomerInApp(Order $order, string $type, string $headline, string $body): void
+    {
+        $kind = 'customer.'.$type;
+        $snippet = mb_substr(trim(str_replace(["\n", "\r"], ' ', $body)), 0, 280);
+        $this->inApp->notifyCustomersOrderPipeline(
+            $order,
+            $kind,
+            $headline,
+            $snippet !== '' ? $snippet : $headline,
         );
     }
 

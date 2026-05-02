@@ -5,11 +5,10 @@ import { useMemo } from "react";
 
 import Link from "next/link";
 
-import { Bell } from "lucide-react";
-
 import { ROUTE_MANAGER_BOTTOM_NAV, filterNav } from "@/config/navigation";
 
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
+import { InAppNotificationBell } from "@/components/notifications/InAppNotificationBell";
 import { Button } from "@/components/ui/button";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
@@ -53,15 +52,10 @@ export function RouteManagerShell({
               ) : null}
             </div>
           </div>
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-12 w-12 shrink-0 rounded-full bg-white/10 text-white hover:bg-white/15 md:h-10 md:w-10 md:bg-muted md:text-foreground"
-            type="button"
-            aria-label="Notifications"
-          >
-            <Bell className="h-6 w-6 md:h-5 md:w-5" />
-          </Button>
+          <InAppNotificationBell
+            variant="admin"
+            triggerClassName="h-12 w-12 shrink-0 rounded-full bg-white/10 text-white hover:bg-white/15 md:h-10 md:w-10 md:bg-muted md:text-foreground"
+          />
         </div>
       </header>
 

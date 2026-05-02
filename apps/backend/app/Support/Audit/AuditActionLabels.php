@@ -48,6 +48,7 @@ final class AuditActionLabels
         'order.activated' => 'Order activated',
         'order.status_changed' => 'Order status changed',
         'order.completed' => 'Order completed',
+        'order.feedback_submitted' => 'Customer feedback submitted',
         'order.cancelled' => 'Order cancelled',
         'order.bulk_order_items_added' => 'Bulk line items added',
         'order.bulk_price_set' => 'Bulk price set',

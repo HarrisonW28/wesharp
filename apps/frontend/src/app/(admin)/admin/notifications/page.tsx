@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { InAppNotificationsFullList } from "@/components/notifications/InAppNotificationsFullList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -170,6 +171,8 @@ export default function AdminNotificationsPage() {
         title="Notifications"
         description="Delivery history across customers — filter failures, tune opt-out behaviour, and preview fixtures without sending."
       />
+
+      <InAppNotificationsFullList variant="admin" />
 
       <Card>
         <CardHeader>

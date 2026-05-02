@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Mail;
 
 final class EmailDelivery
 {
+    public function __construct(
+        private readonly InAppNotificationDispatcher $inAppNotifications,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $viewData
      */
@@ -22,6 +26,7 @@ final class EmailDelivery
                 'failed_at' => now(),
                 'failure_reason' => 'Missing recipient_email.',
             ])->save();
+            $this->inAppNotifications->notifyStaffEmailDeliveryPermanentlyFailed($delivery);
 
             return;
         }
@@ -42,6 +47,8 @@ final class EmailDelivery
                 'failed_at' => now(),
                 'failure_reason' => mb_substr($e->getMessage(), 0, 1000),
             ])->save();
+
+            $this->inAppNotifications->notifyStaffEmailDeliveryPermanentlyFailed($delivery);
 
             throw $e;
         }

@@ -28,6 +28,8 @@ use App\Models\Contact;
 use App\Models\Note;
 use App\Models\User;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\BookingEmailService;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use App\Support\ApiResponses;
 use App\Support\Audit\AuditLogPresenter;
 use App\Support\Notes\NoteStaffVisibility;
@@ -43,6 +45,8 @@ final class CompanyController extends Controller
 {
     public function __construct(
         private readonly BuildCompaniesIndexQuery $companyIndexQuery,
+        private readonly BookingEmailService $bookingEmails,
+        private readonly InAppNotificationDispatcher $inAppNotifications,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -344,6 +348,10 @@ final class CompanyController extends Controller
         AuditRecorder::record($request->user(), $company, 'company.booking_created', [
             'booking_id' => $booking->id,
         ], $request);
+
+        $booking->load(['company', 'location', 'contact']);
+        $this->bookingEmails->sendBookingRequested($booking);
+        $this->inAppNotifications->notifyStaffNewBooking($booking);
 
         return ApiResponses::success([
             'id' => (string) $booking->id,

@@ -14,6 +14,7 @@ final class BookingEmailService
 {
     public function __construct(
         private readonly NotificationService $notifications,
+        private readonly InAppNotificationDispatcher $inApp,
     ) {}
 
     public function sendBookingRequested(Booking $booking): void
@@ -107,6 +108,7 @@ final class BookingEmailService
                     'view' => 'emails.notifications.booking',
                 ],
             );
+            $this->fanOutCustomerInApp($booking, $type, $headline, $body);
 
             return;
         }
@@ -125,6 +127,33 @@ final class BookingEmailService
             ],
             ctx: $ctx,
         );
+        $this->fanOutCustomerInApp($booking, $type, $headline, $body);
+    }
+
+    private function fanOutCustomerInApp(Booking $booking, string $type, string $headline, string $body): void
+    {
+        $snippet = mb_substr(trim(str_replace(["\n", "\r"], ' ', $body)), 0, 280);
+        match ($type) {
+            'booking.requested' => $this->inApp->notifyCustomersBookingPipeline(
+                $booking,
+                'customer.booking.requested',
+                $headline,
+                $snippet !== '' ? $snippet : 'We received your booking request.',
+            ),
+            'booking.confirmed' => $this->inApp->notifyCustomersBookingPipeline(
+                $booking,
+                'customer.booking.confirmed',
+                $headline,
+                $snippet !== '' ? $snippet : 'Your collection date is confirmed.',
+            ),
+            'booking.cancelled' => $this->inApp->notifyCustomersBookingPipeline(
+                $booking,
+                'customer.booking.cancelled',
+                $headline,
+                $snippet !== '' ? $snippet : 'This booking has been cancelled.',
+            ),
+            default => null,
+        };
     }
 
     private function recipientEmail(Booking $booking): ?string

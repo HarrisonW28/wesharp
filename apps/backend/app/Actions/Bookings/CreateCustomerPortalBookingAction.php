@@ -9,6 +9,7 @@ use App\Enums\ServiceType;
 use App\Models\Booking;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Notifications\BookingEmailService;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,7 @@ final class CreateCustomerPortalBookingAction
 {
     public function __construct(
         private readonly BookingEmailService $bookingEmails,
+        private readonly InAppNotificationDispatcher $inAppNotifications,
     ) {}
 
     /**
@@ -69,6 +71,7 @@ final class CreateCustomerPortalBookingAction
 
         // Email: booking requested (customer-safe; idempotent; logged).
         $this->bookingEmails->sendBookingRequested($booking);
+        $this->inAppNotifications->notifyStaffNewBooking($booking);
 
         return $booking;
     }

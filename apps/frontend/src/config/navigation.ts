@@ -27,6 +27,9 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+/** Staff role string from `GET /api/v1/me` (`user.role`). */
+export type StaffNavRole = string;
+
 /** Leaf link (sidebar row or bottom tab). */
 export type NavLeaf = {
   title: string;
@@ -36,6 +39,11 @@ export type NavLeaf = {
   permission?: string;
   /** Optional one-line hint; shown on nested “card” links in the admin sidebar. */
   description?: string;
+  /**
+   * When set, the row is shown only if `user.role` is one of these values (Sprint 15.2).
+   * Permission checks still apply when `permission` is set. Omit for permission-only gating.
+   */
+  rolesAllow?: readonly StaffNavRole[];
 };
 
 /**
@@ -49,6 +57,8 @@ export type NavItem = {
   permission?: string;
   description?: string;
   children?: NavLeaf[];
+  /** Same semantics as {@link NavLeaf.rolesAllow}; applies to the parent row when it has `href`. */
+  rolesAllow?: readonly StaffNavRole[];
 };
 
 /** Grouped navigation (Sprint 13.1 IA). Empty sections are omitted after permission filtering. */
@@ -56,6 +66,23 @@ export type NavSection = {
   label: string;
   items: NavItem[];
 };
+
+/** Roles that may see integration webhook tooling in the sidebar; extend when `developer` exists on the API. */
+export const ADMIN_WEBHOOK_INBOX_NAV_ROLES = ["super_admin", "admin", "developer"] as const;
+
+/**
+ * If `rolesAllow` is set, the current staff role must match. If `role` is not yet known, restricted
+ * rows stay hidden (avoids flashing integration links to wrong cohort). Missing `rolesAllow` → no extra gate.
+ */
+export function navVisibleForRole(
+  role: StaffNavRole | undefined,
+  item: { rolesAllow?: readonly StaffNavRole[] },
+): boolean {
+  const allow = item.rolesAllow;
+  if (!allow?.length) return true;
+  if (role === undefined || role === "") return false;
+  return allow.includes(role);
+}
 
 /** Flatten one nav item into leaf links (parent `href` first, then children). */
 export function navItemToLeaves(item: NavItem): NavLeaf[] {
@@ -67,6 +94,7 @@ export function navItemToLeaves(item: NavItem): NavLeaf[] {
       icon: item.icon,
       permission: item.permission,
       description: item.description,
+      rolesAllow: item.rolesAllow,
     });
   }
   if (item.children?.length) {
@@ -79,9 +107,18 @@ export function navSectionsToLeaves(sections: NavSection[]): NavLeaf[] {
   return sections.flatMap((s) => s.items.flatMap(navItemToLeaves));
 }
 
-function filterNavItem(item: NavItem, permissions: Set<string>): NavItem | null {
+function filterNavItem(
+  item: NavItem,
+  permissions: Set<string>,
+  role: StaffNavRole | undefined,
+): NavItem | null {
+  if (!navVisibleForRole(role, item)) return null;
+
   if (item.children?.length) {
-    const kids = item.children.filter((c) => !c.permission || permissions.has(c.permission));
+    const kids = item.children.filter(
+      (c) =>
+        navVisibleForRole(role, c) && (!c.permission || permissions.has(c.permission)),
+    );
     const parentLinkOk =
       Boolean(item.href) && (!item.permission || permissions.has(item.permission));
 
@@ -93,6 +130,7 @@ function filterNavItem(item: NavItem, permissions: Set<string>): NavItem | null 
           icon: item.icon,
           permission: item.permission,
           description: item.description,
+          rolesAllow: item.rolesAllow,
         };
       }
       return null;
@@ -119,6 +157,7 @@ function filterNavItem(item: NavItem, permissions: Set<string>): NavItem | null 
       icon: item.icon,
       permission: item.permission,
       description: item.description,
+      rolesAllow: item.rolesAllow,
     };
   }
   return null;
@@ -126,7 +165,7 @@ function filterNavItem(item: NavItem, permissions: Set<string>): NavItem | null 
 
 export const ADMIN_NAV_SECTIONS: NavSection[] = [
   {
-    label: "Dashboard",
+    label: "Command Centre",
     items: [
       { title: "Overview", href: "/admin/dashboard", icon: LayoutDashboard, permission: "dashboard.view" },
       { title: "Work queue", href: "/admin/work-queue", icon: ListTodo, permission: "dashboard.view" },
@@ -134,33 +173,36 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Operations",
+    label: "CRM",
     items: [
       { title: "Companies", href: "/admin/crm", icon: Users, permission: "companies.view" },
       { title: "Waitlist", href: "/admin/waitlist", icon: Inbox, permission: "companies.view" },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
       { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
       { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
       { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
+    ],
+  },
+  {
+    label: "Routes",
+    items: [
       {
-        title: "Routes",
+        title: "Today",
+        href: "/admin/routes/today",
+        icon: MapPinned,
+        permission: "routes.view",
+        description: "Drivers, stops, and completion for today",
+      },
+      {
+        title: "Collections",
+        href: "/admin/routes",
         icon: Boxes,
         permission: "routes.view",
-        children: [
-          {
-            title: "Today's routes",
-            href: "/admin/routes/today",
-            icon: MapPinned,
-            permission: "routes.view",
-            description: "Drivers, stops, and completion for today",
-          },
-          {
-            title: "Route planner",
-            href: "/admin/routes",
-            icon: Boxes,
-            permission: "routes.view",
-            description: "Build schedules and manage routes",
-          },
-        ],
+        description: "Build schedules and manage routes",
       },
     ],
   },
@@ -194,16 +236,21 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Reports",
+    label: "Customers",
+    items: [{ title: "Users", href: "/admin/users", icon: UserCog, permission: "users.view" }],
+  },
+  {
+    label: "Growth",
     items: [
+      { title: "Site content", href: "/admin/content-settings", icon: Newspaper, permission: "settings.manage" },
       {
-        title: "Operations",
+        title: "Operations overview",
         href: "/admin/reports/operations",
         icon: BarChart3,
         permission: "reports.operations",
       },
       {
-        title: "Routes",
+        title: "Route performance",
         href: "/admin/reports/routes",
         icon: Gauge,
         permission: "reports.operations",
@@ -215,7 +262,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
         permission: "reports.operations",
       },
       {
-        title: "Finance",
+        title: "Finance reports",
         icon: LineChart,
         permission: "reports.finance",
         children: [
@@ -245,31 +292,23 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Settings",
+    label: "System",
     items: [
-      { title: "Users", href: "/admin/users", icon: UserCog, permission: "users.view" },
-      { title: "Site content", href: "/admin/content-settings", icon: Newspaper, permission: "settings.manage" },
       { title: "Notifications", href: "/admin/notifications", icon: Bell, permission: "notifications.deliveries.view" },
       {
-        title: "System",
-        icon: Settings,
+        title: "Audit log",
+        href: "/admin/audit",
+        icon: ScrollText,
         permission: "audit_logs.view",
-        children: [
-          {
-            title: "Audit log",
-            href: "/admin/audit",
-            icon: ScrollText,
-            permission: "audit_logs.view",
-            description: "Who changed what, with immutable history",
-          },
-          {
-            title: "Webhook inbox",
-            href: "/admin/webhooks/inbox",
-            icon: Webhook,
-            permission: "audit_logs.view",
-            description: "Inbound integration and Stripe events",
-          },
-        ],
+        description: "Who changed what, with immutable history",
+      },
+      {
+        title: "Webhook inbox",
+        href: "/admin/webhooks/inbox",
+        icon: Webhook,
+        permission: "audit_logs.view",
+        description: "Inbound integration and Stripe events",
+        rolesAllow: ADMIN_WEBHOOK_INBOX_NAV_ROLES,
       },
     ],
   },
@@ -284,6 +323,7 @@ export const ACCOUNT_NAV_SECTIONS: NavSection[] = [
     label: "Overview",
     items: [
       { title: "Overview", href: "/account/dashboard", icon: Gauge, permission: "dashboard.view" },
+      { title: "Notifications", href: "/account/notifications", icon: Bell, permission: "dashboard.view" },
       { title: "Your plan", href: "/account/subscription", icon: Repeat, permission: "dashboard.view" },
     ],
   },
@@ -369,7 +409,13 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
     label: "System",
     items: [
       { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
-      { title: "Webhook inbox", href: "/admin/webhooks/inbox", icon: Webhook, permission: "audit_logs.view" },
+      {
+        title: "Webhook inbox",
+        href: "/admin/webhooks/inbox",
+        icon: Webhook,
+        permission: "audit_logs.view",
+        rolesAllow: ADMIN_WEBHOOK_INBOX_NAV_ROLES,
+      },
     ],
   },
 ];
@@ -385,17 +431,30 @@ export const ROUTE_MANAGER_BOTTOM_NAV: NavLeaf[] = [
   { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
 ];
 
-export function filterNavSections(sections: NavSection[], permissions: Set<string>): NavSection[] {
+export function filterNavSections(
+  sections: NavSection[],
+  permissions: Set<string>,
+  role?: StaffNavRole | null,
+): NavSection[] {
+  const r = role === null || role === "" ? undefined : role;
   return sections
     .map((section) => ({
       ...section,
       items: section.items
-        .map((item) => filterNavItem(item, permissions))
+        .map((item) => filterNavItem(item, permissions, r))
         .filter((item): item is NavItem => item !== null),
     }))
     .filter((section) => section.items.length > 0);
 }
 
-export function filterNav(items: NavLeaf[], permissions: Set<string>): NavLeaf[] {
-  return items.filter((item) => !item.permission || permissions.has(item.permission));
+export function filterNav(
+  items: NavLeaf[],
+  permissions: Set<string>,
+  role?: StaffNavRole | null,
+): NavLeaf[] {
+  const r = role === null || role === "" ? undefined : role;
+  return items.filter(
+    (item) =>
+      navVisibleForRole(r, item) && (!item.permission || permissions.has(item.permission)),
+  );
 }

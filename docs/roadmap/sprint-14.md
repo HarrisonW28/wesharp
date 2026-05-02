@@ -338,6 +338,8 @@ Examples:
 - Read/unread works.
 - Permissions are enforced.
 
+**Implemented:** `in_app_notifications` table (per-user rows, `audience` **staff** | **customer**, `dedupe_key` uniqueness per user). **`InAppNotificationDispatcher`** fans out staff alerts (e.g. new booking → users with **`bookings.view`**; terminal email failure → **`notifications.deliveries.view`**) and customer alerts from booking / order / invoice email pipelines (customer-safe copy only). **`GET/PATCH/POST`** staff: `/api/admin/notifications/in-app` …; tenant: `/api/account/in-app-notifications` … ( **`dashboard.view`**). Next.js: bell dropdown in admin, account, and route-manager shells; full list on **`/admin/notifications`** (in-app card) and **`/account/notifications`**.
+
 ---
 
 ## Sprint 14.6 — Customer Feedback / Review Request
@@ -378,6 +380,8 @@ Admin can see feedback linked to:
 - Duplicate requests are prevented.
 - Feedback links to the correct order/customer.
 
+**Implemented:** `order_feedback` table (one row per order, unique `order_id`). On **`CompleteOrderAction`** finish, **`OrderFeedbackInvitationService`** creates the row once, sends idempotent **`order.feedback_invite`** email (honours **order** notification opt-out) + in-app **`customer.order.feedback_invite`** with `#feedback` deep link. Tenant **`GET|POST /api/account/orders/{order}/feedback`**; admin **`GET|PATCH /api/admin/companies/{company}/order-feedback`**. Portal order detail shows the feedback card; CRM company **Overview** lists feedback with **Mark reviewed** and **Approve marketing** (sets `testimonial_marketing_approved_at` only — no public quote workflow yet). Audit **`order.feedback_submitted`**.
+
 ---
 
 ## Sprint 14.7 — Sprint 14 Regression QA
@@ -413,3 +417,10 @@ At the end, provide:
 - files changed
 - deferred issues
 - Sprint 14 final verdict: PASS / FAIL
+
+**Done (2026-05-01):** Full output is in [`sprint-14.7-qa-report.md`](./sprint-14.7-qa-report.md). **Verdict: PASS.**
+
+- **QA completed:** Backend full suite + frontend typecheck, lint, Vitest, production build; checklist mapped to existing feature tests (see report table).
+- **Bug found:** P0 — missing `OperationalRoutePolicy` import in `AppServiceProvider` caused policy class resolution under wrong namespace and **500** on operational-route authorization (e.g. dashboard search).
+- **Bug fixed:** Added `use App\Policies\OperationalRoutePolicy;` in `AppServiceProvider`.
+- **Deferred:** Physical mobile QA; optional staging smoke for portal onboarding / Clerk-first-run.

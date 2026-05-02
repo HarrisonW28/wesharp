@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Order extends Model
@@ -95,6 +96,11 @@ class Order extends Model
     public function customerPortalUpdates(): HasMany
     {
         return $this->hasMany(CustomerPortalUpdate::class, 'order_id');
+    }
+
+    public function feedback(): HasOne
+    {
+        return $this->hasOne(OrderFeedback::class, 'order_id');
     }
 
     public function invoices(): HasMany

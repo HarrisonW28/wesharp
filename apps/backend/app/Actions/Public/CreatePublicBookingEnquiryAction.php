@@ -10,6 +10,8 @@ use App\Models\Company;
 use App\Models\CompanyLocation;
 use App\Models\Contact;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\BookingEmailService;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +19,11 @@ use Illuminate\Support\Str;
 
 final class CreatePublicBookingEnquiryAction
 {
+    public function __construct(
+        private readonly BookingEmailService $bookingEmails,
+        private readonly InAppNotificationDispatcher $inAppNotifications,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $validated  Output of StorePublicBookingEnquiryRequest validation
      * @return array{accepted: bool, message: string}
@@ -25,7 +32,9 @@ final class CreatePublicBookingEnquiryAction
     {
         $emailNorm = Str::lower(trim((string) $validated['email']));
 
-        DB::transaction(function () use ($validated, $request, $emailNorm): void {
+        $booking = null;
+
+        DB::transaction(function () use ($validated, $request, $emailNorm, &$booking): void {
             $company = $this->resolveOrCreateCompany($validated, $emailNorm);
 
             $location = $this->ensureLocation($company, $validated);
@@ -69,6 +78,12 @@ TXT,
 
             AuditRecorder::record(null, $booking, 'booking.created_from_public_enquiry', [], $request);
         });
+
+        if ($booking instanceof Booking) {
+            $booking->load(['company:id,name,city', 'location:id,city,line_one', 'contact']);
+            $this->bookingEmails->sendBookingRequested($booking);
+            $this->inAppNotifications->notifyStaffNewBooking($booking);
+        }
 
         return [
             'accepted' => true,

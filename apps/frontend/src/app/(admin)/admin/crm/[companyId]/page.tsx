@@ -24,6 +24,7 @@ import {
   OrderPreviewSchema,
 } from "@/lib/api/admin-crm-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
+import { OrderFeedbackListResponseSchema } from "@/lib/api/admin-order-feedback-schema";
 import { formatGBP } from "@/lib/format/money";
 
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
@@ -35,7 +36,7 @@ import { CompanyStatusBadge } from "@/components/crm/CompanyStatusBadge";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/tables/DataTable";
 import {
   Dialog,
@@ -102,6 +103,7 @@ export default function AdminCrmCompanyPage() {
   const perms = useMemo(() => new Set(me?.data?.permissions ?? []), [me?.data?.permissions]);
   const canUpdate = perms.has("companies.update");
   const canCreateBooking = perms.has("bookings.create");
+  const canViewOrders = perms.has("orders.view");
   const canViewInvoices = perms.has("invoices.view");
   const canViewPayments = perms.has("payments.view");
   const canManageSubs = perms.has("subscriptions.manage");
@@ -169,6 +171,48 @@ export default function AdminCrmCompanyPage() {
         throw new Error("Unexpected activity payload.");
       }
       return parsed.data.data.items;
+    },
+  });
+
+  const orderFeedbackQuery = useQuery({
+    enabled: Boolean(companyId) && canViewOrders,
+    queryKey: ["admin-company-order-feedback", companyId],
+    queryFn: async () => {
+      const res = await admin.json<unknown>(`/api/admin/companies/${companyId}/order-feedback?per_page=15`);
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      const parsed = OrderFeedbackListResponseSchema.safeParse(res.data);
+      if (!parsed.success) {
+        throw new Error("Unexpected order feedback payload.");
+      }
+      return parsed.data;
+    },
+  });
+
+  const orderFeedbackReviewMutation = useMutation({
+    mutationFn: async (payload: { feedbackId: string; staff_reviewed?: boolean; testimonial_marketing_approved?: boolean }) => {
+      const body: Record<string, boolean> = {};
+      if (payload.staff_reviewed !== undefined) {
+        body.staff_reviewed = payload.staff_reviewed;
+      }
+      if (payload.testimonial_marketing_approved !== undefined) {
+        body.testimonial_marketing_approved = payload.testimonial_marketing_approved;
+      }
+      const res = await admin.json<unknown>(`/api/admin/companies/${companyId}/order-feedback/${payload.feedbackId}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+    },
+    onSuccess: async () => {
+      toast.success("Feedback updated.");
+      await orderFeedbackQuery.refetch();
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Update failed.");
     },
   });
 
@@ -598,6 +642,103 @@ export default function AdminCrmCompanyPage() {
                   </Card>
                 ) : null}
               </section>
+            ) : null}
+
+            {canViewOrders ? (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Customer order feedback</CardTitle>
+                  <CardDescription>Post-completion ratings and optional testimonial interest.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {orderFeedbackQuery.isPending ? (
+                    <div className="flex justify-center py-6">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden />
+                    </div>
+                  ) : orderFeedbackQuery.isError ? (
+                    <p className="text-sm text-destructive">{(orderFeedbackQuery.error as Error).message}</p>
+                  ) : (orderFeedbackQuery.data?.data.items.length ?? 0) === 0 ? (
+                    <p className="text-sm text-muted-foreground">No feedback rows for this company yet.</p>
+                  ) : (
+                    <div className="overflow-x-auto rounded-md border">
+                      <table className="w-full min-w-[640px] text-left text-sm">
+                        <thead className="border-b bg-muted/40">
+                          <tr>
+                            <th className="px-3 py-2 font-medium">Order</th>
+                            <th className="px-3 py-2 font-medium">Rating</th>
+                            <th className="px-3 py-2 font-medium">Submitted</th>
+                            <th className="px-3 py-2 font-medium">Testimonial interest</th>
+                            <th className="px-3 py-2 font-medium">Reviewed</th>
+                            <th className="px-3 py-2 font-medium">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {orderFeedbackQuery.data?.data.items.map((row) => (
+                            <tr key={row.id} className="border-b last:border-0">
+                              <td className="px-3 py-2 align-top">
+                                {row.order_reference ? (
+                                  <Link
+                                    href={`/admin/orders/${row.order_id}`}
+                                    className="font-mono text-xs hover:underline"
+                                  >
+                                    {row.order_reference}
+                                  </Link>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 align-top">{row.rating ?? "—"}</td>
+                              <td className="px-3 py-2 align-top text-xs text-muted-foreground">
+                                {row.submitted_at?.replace("T", " ").slice(0, 16) ?? "—"}
+                              </td>
+                              <td className="px-3 py-2 align-top">{row.testimonial_interested ? "Yes" : "—"}</td>
+                              <td className="px-3 py-2 align-top text-xs text-muted-foreground">
+                                {row.staff_reviewed_at ? "Yes" : "—"}
+                              </td>
+                              <td className="px-3 py-2 align-top">
+                                <div className="flex flex-wrap gap-2">
+                                  {row.submitted_at && !row.staff_reviewed_at ? (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={orderFeedbackReviewMutation.isPending}
+                                      onClick={() =>
+                                        void orderFeedbackReviewMutation.mutateAsync({
+                                          feedbackId: row.id,
+                                          staff_reviewed: true,
+                                        })
+                                      }
+                                    >
+                                      Mark reviewed
+                                    </Button>
+                                  ) : null}
+                                  {row.testimonial_interested && !row.testimonial_marketing_approved_at ? (
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      disabled={orderFeedbackReviewMutation.isPending}
+                                      onClick={() =>
+                                        void orderFeedbackReviewMutation.mutateAsync({
+                                          feedbackId: row.id,
+                                          testimonial_marketing_approved: true,
+                                        })
+                                      }
+                                    >
+                                      Approve marketing
+                                    </Button>
+                                  ) : null}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             ) : null}
 
             <section className="grid gap-3 md:grid-cols-2">
