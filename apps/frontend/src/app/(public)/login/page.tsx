@@ -10,7 +10,7 @@ export default function LoginPage() {
         <SignIn routing="path" path="/login" signUpUrl="/register" forceRedirectUrl="/auth/continue" />
       </div>
       <p className="text-sm text-muted-foreground">
-        Already use WeSharp? Sign in to book collections and manage invoices from your account.
+        Sign in to book collections, follow your orders, and manage invoices — all in one calm dashboard.
       </p>
       <Link className="text-sm text-muted-foreground underline" href="/">
         Back home

@@ -14,9 +14,12 @@ export default function ServicesPage() {
         <h2 className="text-base font-semibold text-foreground">What we do</h2>
         <ul className="list-disc space-y-2 pl-5">
           <li>Scheduled collection from your venue at an agreed time window.</li>
-          <li>Careful logging of each blade so nothing goes missing.</li>
+          <li>Careful logging of each blade so nothing goes missing — matched to your order in the portal.</li>
           <li>Professional sharpening and inspection in our workshop.</li>
-          <li>Return delivery with blades ready to use and paperwork in order.</li>
+          <li>
+            Return delivery with blades ready for service. Where your programme includes customer-visible photos, they
+            appear in your account with timestamps so you can see work was completed.
+          </li>
         </ul>
       </section>
       <section className="space-y-4">

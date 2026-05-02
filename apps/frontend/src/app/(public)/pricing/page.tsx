@@ -41,11 +41,15 @@ export default function PricingPage() {
         </div>
       </div>
       <p>
-        Trade accounts often combine fixed routes with clear invoicing — see{" "}
-        <Link href="/trade-accounts" className="font-medium underline underline-offset-4">
-          trade accounts
+        Regular programmes bundle visits and allowances — see{" "}
+        <Link href="/subscriptions" className="font-medium underline underline-offset-4">
+          subscriptions &amp; programmes
         </Link>
-        .
+        . Business kitchens often pair that with{" "}
+        <Link href="/trade-accounts" className="font-medium underline underline-offset-4">
+          a trade account
+        </Link>{" "}
+        for multi-site invoicing.
       </p>
     </MarketingArticle>
   );

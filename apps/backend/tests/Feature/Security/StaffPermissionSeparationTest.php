@@ -90,4 +90,13 @@ final class StaffPermissionSeparationTest extends TestCase
             ->getJson('/api/admin/invoices')
             ->assertForbidden();
     }
+
+    public function test_route_manager_cannot_list_global_notification_deliveries(): void
+    {
+        $routeManager = User::query()->where('email', 'driver@demo.wesharp.test')->firstOrFail();
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $routeManager->id)
+            ->getJson('/api/admin/notifications/deliveries')
+            ->assertForbidden();
+    }
 }

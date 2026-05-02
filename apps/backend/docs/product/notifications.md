@@ -116,3 +116,32 @@ Defaults are chosen so local/dev/test environments do not send real emails unles
 - Set `NOTIFICATIONS_ENABLED=true` and `NOTIFICATIONS_EMAIL_QUEUE=false` with `Mail::fake()` in tests → row recorded as `sent`.
 - Trigger twice with same idempotency key → still only one row and one send.
 
+## Sprint 10.8 — Preferences, admin controls, global log, preview
+
+### Customer notification preferences
+- Stored per portal user on `users.email_notification_preferences` (JSON booleans):
+  - `booking_updates` — `booking.*` emails
+  - `order_updates` — `order.*` emails
+  - `subscription_digest` — `subscription.renewal.upcoming`, `subscription.usage.period_summary`, `subscription.usage.allowance_heads_up`
+- Default when unset: all **true** (opted in).
+- **Never gated** by preferences: `invoice.*`, `payment.*`, and subscription lifecycle / billing types such as `subscription.started`, `subscription.usage.overage`, `subscription.payment_failed`, etc. (see `App\Support\Notifications\NotificationTypeCategories`).
+- When a category is opted out, `NotificationService::queueEmail` records `status=skipped`, `meta.preference_skip=true`, and does not queue a send.
+- Matching uses `recipient_email` + `company_id` on the delivery context to find a `User` row (case-insensitive email), or `recipient_user_id` when set.
+
+### Admin notification settings
+- Table `notification_admin_settings` (singleton row): flags **respect** portal opt-outs per category (`respect_*_notification_opt_out`). When a flag is **false**, customers who opted out still receive that category (operational override). Invoices/payments are unaffected (not preference-gated).
+- `GET/PUT /api/admin/notifications/settings` — permission `settings.manage`.
+
+### Global delivery log
+- `GET /api/admin/notifications/deliveries` — paginated list; query: `status`, `company_id`, `type`, `page`, `per_page`.
+- Permission `notifications.deliveries.view` (e.g. finance and full admins — not route managers).
+
+### Duplicate prevention & resend
+- Unchanged: unique `(channel, type, idempotency_key)`; intentional resends use a new salt (e.g. invoice customer resend).
+
+### Email preview (fixture)
+- `GET /api/admin/notifications/email-preview?preset=generic|booking|order|invoice|subscription` returns `{ subject, html }` (rendered Blade, no send). Permission `settings.manage`.
+
+### Portal API
+- `GET/PUT /api/account/settings` includes `user.email_notification_preferences`; updates require `account.settings.update` and `UserPolicy::updateOwnBasicProfile`.
+

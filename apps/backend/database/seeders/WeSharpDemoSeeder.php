@@ -41,6 +41,7 @@ use App\Models\ServiceArea;
 use App\Models\SubscriptionPlan;
 use App\Models\UploadedFile;
 use App\Models\User;
+use App\Services\Subscriptions\SubscriptionBillingPeriodService;
 use Faker\Factory;
 use Faker\Generator;
 use Illuminate\Database\Seeder;
@@ -182,8 +183,8 @@ final class WeSharpDemoSeeder extends Seeder
                 ],
             );
 
-            if (! $portalCompany->subscription()->exists()) {
-                CompanySubscription::query()->create([
+            if (! $portalCompany->operationalSubscription()->exists()) {
+                $seededSub = CompanySubscription::query()->create([
                     'company_id' => $portalCompany->id,
                     'subscription_plan_id' => $demoPlan->id,
                     'status' => SubscriptionStatus::Active,
@@ -193,6 +194,7 @@ final class WeSharpDemoSeeder extends Seeder
                     'currency' => $demoPlan->currency,
                     'notes' => 'Seeded for local/demo environments only.',
                 ]);
+                app(SubscriptionBillingPeriodService::class)->createInitialPeriod($seededSub);
             }
         }
 

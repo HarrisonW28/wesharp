@@ -51,7 +51,11 @@ final class BuildCompaniesIndexQuery
             CompanySubscription::query()
                 ->select('status')
                 ->whereColumn('company_id', 'companies.id')
-                ->where('status', SubscriptionStatus::Active->value)
+                ->whereIn('status', [
+                    SubscriptionStatus::Active->value,
+                    SubscriptionStatus::PastDue->value,
+                ])
+                ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
                 ->limit(1),
             'crm_subscription_status'
         );
@@ -97,7 +101,7 @@ final class BuildCompaniesIndexQuery
 
         $subscriptionStatus = trim((string) $request->query('subscription_status', ''));
         if ($subscriptionStatus === 'none') {
-            $query->whereDoesntHave('subscription');
+            $query->whereDoesntHave('operationalSubscription');
         } elseif ($subscriptionStatus !== '') {
             $query->whereHas(
                 'subscriptions',

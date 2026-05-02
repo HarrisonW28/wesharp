@@ -21,6 +21,7 @@ use Illuminate\Notifications\Notifiable;
     'role',
     'company_id',
     'status',
+    'email_notification_preferences',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -38,6 +39,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'status' => UserStatus::class,
+            'email_notification_preferences' => 'array',
         ];
     }
 

@@ -79,6 +79,19 @@ export const TenantSubscriptionDetailSchema = TenantSubscriptionSummarySchema.ex
   price_amount_minor_snapshot: z.number().optional(),
   billing_contact: TenantSubscriptionBillingContactSchema.nullable().optional(),
   period_usage: TenantSubscriptionPeriodUsageSchema.optional(),
+  recent_billing_periods: z
+    .array(
+      z.object({
+        period_label: z.string().nullable().optional(),
+        starts_on: z.string().nullable().optional(),
+        ends_on: z.string().nullable().optional(),
+        was_completed_billing_cycle: z.boolean().optional(),
+        collections_used: z.number().optional(),
+        knives_used: z.number().optional(),
+        formatted_estimated_overage_gbp: z.string().optional(),
+      }),
+    )
+    .optional(),
   recent_invoices: z.array(TenantSubscriptionInvoiceRowSchema).optional(),
 }).passthrough();
 
@@ -552,6 +565,12 @@ export const LocationsResponseSchema = z.object({
   }),
 });
 
+export const EmailNotificationPreferencesSchema = z.object({
+  booking_updates: z.boolean(),
+  order_updates: z.boolean(),
+  subscription_digest: z.boolean(),
+});
+
 export const SettingsResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({
@@ -559,6 +578,7 @@ export const SettingsResponseSchema = z.object({
       id: z.string(),
       name: z.string().nullable(),
       email: z.string().nullable(),
+      email_notification_preferences: EmailNotificationPreferencesSchema.optional(),
     }),
     company: z.object({
       id: z.string(),

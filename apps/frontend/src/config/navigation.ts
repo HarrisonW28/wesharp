@@ -2,6 +2,7 @@ import {
   Activity,
   Banknote,
   BarChart3,
+  Bell,
   Boxes,
   CalendarClock,
   CircleDollarSign,
@@ -40,6 +41,7 @@ export const ADMIN_NAV: NavItem[] = [
   { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
   { title: "Finance", href: "/admin/finance", icon: Landmark, permission: "payments.view" },
   { title: "Subscription plans", href: "/admin/subscription-plans", icon: Repeat, permission: "subscriptions.view" },
+  { title: "Subscriptions", href: "/admin/subscriptions", icon: Repeat, permission: "subscriptions.view" },
   { title: "Sales report", href: "/admin/reports/sales", icon: LineChart, permission: "reports.finance" },
   {
     title: "Billing report",
@@ -68,6 +70,7 @@ export const ADMIN_NAV: NavItem[] = [
   },
   { title: "Invoices", href: "/admin/invoices", icon: Receipt, permission: "invoices.view" },
   { title: "Payments", href: "/admin/payments", icon: Banknote, permission: "payments.view" },
+  { title: "Notifications", href: "/admin/notifications", icon: Bell, permission: "notifications.deliveries.view" },
   { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
   { title: "Routes · Today", href: "/admin/routes/today", icon: MapPinned, permission: "routes.view" },
 ];

@@ -6,7 +6,7 @@ export default function HowItWorksPage() {
   return (
     <MarketingArticle
       title="How it works"
-      lead="You book a collection. We collect your knives, sharpen and inspect them in our workshop, then return them — with clear updates so you’re never left guessing."
+      lead="You book a collection. We collect your knives, sharpen and inspect them in our workshop, then return them — with plain-English updates in your account so you always know what’s happening."
     >
       <ol className="list-decimal space-y-4 pl-5">
         <li>
@@ -25,10 +25,17 @@ export default function HowItWorksPage() {
           before anything leaves the workshop.
         </li>
         <li>
-          <strong className="font-medium text-foreground">Return</strong> — Your knives come back ready to use. If you have an
-          account, you can follow bookings and orders there.
+          <strong className="font-medium text-foreground">Return</strong> — Your knives come back ready to use. With an
+          account you can follow bookings and orders — and see customer-visible photos when they’re part of your programme.
         </li>
       </ol>
+      <p>
+        Interested in rolling visits? Read{" "}
+        <Link href="/subscriptions" className="font-medium text-foreground underline underline-offset-4">
+          subscriptions &amp; programmes
+        </Link>
+        .
+      </p>
       <p>
         Already a customer?{" "}
         <Link href="/login" className="font-medium text-foreground underline underline-offset-4">

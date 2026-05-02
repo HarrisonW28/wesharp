@@ -327,6 +327,32 @@ export function CompanySubscriptionPanel({
     },
   });
 
+  const renewBillingPeriodMutation = useMutation({
+    mutationFn: async (force: boolean) => {
+      if (sub.state !== "record") {
+        throw new Error("No active subscription.");
+      }
+      const res = await admin.json(
+        `/api/admin/companies/${companyId}/subscriptions/${sub.id}/renew-billing-period`,
+        {
+          method: "POST",
+          body: JSON.stringify({ force }),
+        },
+      );
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
+    onSuccess: async () => {
+      toast.success("Billing period rolled forward.");
+      await onRefresh();
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Renewal failed.");
+    },
+  });
+
   const historyCols: ColumnDef<HistoryRow>[] = useMemo(
     () => [
       { accessorKey: "plan_name", header: "Plan" },
@@ -588,6 +614,30 @@ export function CompanySubscriptionPanel({
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Actions</p>
               <div className="mt-2 flex flex-wrap gap-2">
+                {canManageSubs && sub.state === "record" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={renewBillingPeriodMutation.isPending}
+                    onClick={() => renewBillingPeriodMutation.mutate(false)}
+                  >
+                    Roll billing period
+                  </Button>
+                ) : null}
+                {canManageSubs && sub.state === "record" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs"
+                    disabled={renewBillingPeriodMutation.isPending}
+                    title="Use when finance needs to advance the period before the renewal date"
+                    onClick={() => renewBillingPeriodMutation.mutate(true)}
+                  >
+                    Roll period (force)
+                  </Button>
+                ) : null}
                 {canViewInvoices && sub.state === "record" ? (
                   <Button type="button" size="sm" variant="outline" onClick={openInvoiceDraft}>
                     Generate subscription invoice draft
@@ -643,6 +693,47 @@ export function CompanySubscriptionPanel({
           </CardContent>
         </Card>
       </div>
+
+      {canViewSubs && sub.state === "record" && Array.isArray(sub.billing_periods) && sub.billing_periods.length > 0 ? (
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">Billing period ledger</h2>
+          <p className="text-sm text-muted-foreground">
+            Usage totals are based on completed orders in each window. Current period rows are open; older rows are closed after a
+            renewal.
+          </p>
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full min-w-[640px] text-sm" summary="Billing periods">
+              <thead className="border-b bg-muted/40 text-left text-xs font-medium text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2">Period</th>
+                  <th className="px-3 py-2">State</th>
+                  <th className="px-3 py-2 text-right">Collections</th>
+                  <th className="px-3 py-2 text-right">Knives</th>
+                  <th className="px-3 py-2 text-right">Overage (est.)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {sub.billing_periods.map((row: Record<string, unknown>, i: number) => {
+                  const usage = row.usage as Record<string, unknown> | undefined;
+                  const ov = usage?.estimated_overage_pence;
+                  const ovNum = typeof ov === "number" ? ov : 0;
+                  return (
+                    <tr key={String(row.period_id ?? i)}>
+                      <td className="px-3 py-2 tabular-nums">
+                        {String(row.starts_on ?? "")} – {String(row.ends_on ?? "")}
+                      </td>
+                      <td className="px-3 py-2">{row.is_closed ? "Closed" : "Open"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{String(usage?.collections_used ?? "0")}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{String(usage?.knives_used ?? "0")}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{formatGBP(ovNum)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       {canViewSubs && history.length > 0 ? (
         <section className="space-y-2">

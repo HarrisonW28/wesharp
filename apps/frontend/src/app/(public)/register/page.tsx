@@ -10,7 +10,8 @@ export default function RegisterPage() {
         <SignUp routing="path" path="/register" signInUrl="/login" forceRedirectUrl="/auth/continue" />
       </div>
       <p className="max-w-md text-center text-sm text-muted-foreground">
-        For kitchens and hospitality businesses. Create an account to book collections and track orders.
+        Create a free account to book collections, track sharpenings, and see invoices — built for kitchens and home cooks
+        who want the same professional service.
       </p>
       <Link className="text-sm text-muted-foreground underline" href="/">
         Back home

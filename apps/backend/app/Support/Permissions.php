@@ -86,6 +86,9 @@ final class Permissions
     /** Read tenant account settings payload (`GET /api/account/settings`). */
     public const ACCOUNT_SETTINGS_VIEW = 'account.settings.view';
 
+    /** Read/update tenant account settings and notification preferences (`GET|PUT /api/account/settings`). */
+    public const ACCOUNT_SETTINGS_UPDATE = 'account.settings.update';
+
     /** Update own portal user display name (tenant). */
     public const ACCOUNT_PROFILE_UPDATE = 'account.profile.update';
 
@@ -103,6 +106,9 @@ final class Permissions
 
     /** Internal audit log index and timeline payloads (staff only; never granted to tenant roles). */
     public const AUDIT_LOGS_VIEW = 'audit_logs.view';
+
+    /** Cross-resource notification delivery list (ops / finance visibility for failures). */
+    public const NOTIFICATIONS_DELIVERIES_VIEW = 'notifications.deliveries.view';
 
     /** Payment overrides and sensitive adjustment flows (refunds, write-offs). */
     public const PAYMENTS_OVERRIDE = 'payments.override';
@@ -137,6 +143,7 @@ final class Permissions
         self::ANALYTICS_VIEW,
         self::ACCOUNT_LOCATIONS_MANAGE,
         self::ACCOUNT_SETTINGS_VIEW,
+        self::ACCOUNT_SETTINGS_UPDATE,
         self::ACCOUNT_PROFILE_UPDATE,
         self::ACCOUNT_BUSINESS_UPDATE,
         self::SETTINGS_VIEW,
@@ -144,6 +151,7 @@ final class Permissions
         self::USERS_VIEW,
         self::USERS_MANAGE,
         self::AUDIT_LOGS_VIEW,
+        self::NOTIFICATIONS_DELIVERIES_VIEW,
         self::REPORTS_FINANCE,
         self::REPORTS_OPERATIONS,
         self::PRICING_VIEW,
@@ -200,6 +208,7 @@ final class Permissions
             self::SUBSCRIPTIONS_MANAGE,
             self::SETTINGS_VIEW,
             self::AUDIT_LOGS_VIEW,
+            self::NOTIFICATIONS_DELIVERIES_VIEW,
         ],
 
         UserRole::CustomerOwner->value => [
@@ -214,6 +223,7 @@ final class Permissions
             self::INVOICES_VIEW,
             self::PAYMENTS_VIEW,
             self::ACCOUNT_SETTINGS_VIEW,
+            self::ACCOUNT_SETTINGS_UPDATE,
             self::ACCOUNT_PROFILE_UPDATE,
             self::ACCOUNT_BUSINESS_UPDATE,
             self::ACCOUNT_LOCATIONS_MANAGE,
@@ -230,6 +240,7 @@ final class Permissions
             self::INVOICES_VIEW,
             self::PAYMENTS_VIEW,
             self::ACCOUNT_SETTINGS_VIEW,
+            self::ACCOUNT_SETTINGS_UPDATE,
             self::ACCOUNT_PROFILE_UPDATE,
         ],
     ];

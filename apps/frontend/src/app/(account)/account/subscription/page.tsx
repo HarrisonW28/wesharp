@@ -258,6 +258,41 @@ export default function AccountSubscriptionPage() {
             </Card>
           ) : null}
 
+          {sub.recent_billing_periods && sub.recent_billing_periods.length > 0 ? (
+            <Card className="rounded-xl border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Recent billing periods</CardTitle>
+                <CardDescription className="text-base">
+                  How we grouped your completed visits and knives. Closed rows are earlier cycles; the top row is usually your
+                  current window.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="divide-y rounded-xl border text-base">
+                  {sub.recent_billing_periods.map((row, idx) => (
+                    <li key={`${row.starts_on ?? ""}-${row.ends_on ?? ""}-${idx}`} className="px-4 py-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-medium text-foreground">
+                          {row.period_label ??
+                            ([row.starts_on, row.ends_on].filter(Boolean).join(" → ") || "Billing period")}
+                        </div>
+                        {row.was_completed_billing_cycle ? (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">Completed cycle</span>
+                        ) : (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Current</span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {row.collections_used ?? 0} collection visit{(row.collections_used ?? 0) === 1 ? "" : "s"} · {row.knives_used ?? 0}{" "}
+                        knives · overage est. {row.formatted_estimated_overage_gbp ?? "£0.00"}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          ) : null}
+
           <Card className="rounded-xl border shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Subscription invoices</CardTitle>

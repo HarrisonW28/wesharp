@@ -7,6 +7,7 @@ use App\Models\Contact;
 use App\Models\User;
 use App\Support\Account\CustomerSubscriptionPayload;
 use App\Support\ApiResponses;
+use App\Support\Notifications\NotificationPreferenceNormalizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -34,6 +35,7 @@ final class AccountSettingsController extends TenantAccountController
                 'id' => (string) $actor->id,
                 'name' => $actor->name,
                 'email' => $actor->email,
+                'email_notification_preferences' => NotificationPreferenceNormalizer::normalize($actor->email_notification_preferences),
             ],
             'company' => [
                 'id' => (string) $company->id,
@@ -67,6 +69,18 @@ final class AccountSettingsController extends TenantAccountController
 
         /** @var array<string, mixed> $validated */
         $validated = $request->validated();
+
+        if (data_get($validated, 'user.email_notification_preferences') !== null) {
+            /** @phpstan-ignore-next-line */
+            $this->authorize('updateOwnBasicProfile', $actor);
+
+            $normalized = NotificationPreferenceNormalizer::normalize(
+                data_get($validated, 'user.email_notification_preferences'),
+            );
+            User::query()->whereKey($actor->id)->update(['email_notification_preferences' => $normalized]);
+            /** @phpstan-ignore-next-line */
+            $actor->refresh();
+        }
 
         if (data_get($validated, 'user.name') !== null) {
             /** @phpstan-ignore-next-line */

@@ -584,3 +584,9 @@ At the end, provide:
 - files changed
 - deferred issues
 - Sprint 10 final verdict: PASS / FAIL
+
+---
+
+## Sprint 10.9 — Completion log
+
+Regression QA for 10.3–10.8 is recorded in **[`sprint-10.9-qa-report.md`](./sprint-10.9-qa-report.md)** (automated suite green; verdict **PASS**; manual/staging items deferred as listed there).

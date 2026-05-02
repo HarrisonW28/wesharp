@@ -6,6 +6,7 @@ namespace App\Services\Notifications;
 
 use App\Jobs\DeliverEmailNotificationJob;
 use App\Models\NotificationDelivery;
+use App\Support\Notifications\NotificationPreferenceGate;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
@@ -18,6 +19,10 @@ use Illuminate\Support\Str;
  */
 final class NotificationService
 {
+    public function __construct(
+        private readonly NotificationPreferenceGate $preferenceGate,
+    ) {}
+
     /**
      * @param  array{
      *   company_id?: string|null,
@@ -47,6 +52,25 @@ final class NotificationService
             if ($existing instanceof NotificationDelivery) {
                 return $existing;
             }
+        }
+
+        if ($this->preferenceGate->shouldSkipOutboundEmail($type, $ctx)) {
+            return $this->createDeliveryRow(
+                channel: 'email',
+                type: $type,
+                idempotencyKey: $idempotencyKey,
+                ctx: $ctx,
+                status: 'skipped',
+                meta: [
+                    'subject' => $subject,
+                    'view' => $view,
+                    'data_keys' => array_values(array_map('strval', array_keys($viewData))),
+                    'preference_skip' => true,
+                ],
+                failureReason: 'Recipient opted out of this notification category in portal settings.',
+                queuedAt: null,
+                sentAt: null,
+            );
         }
 
         $enabled = (bool) Config::get('notifications.enabled', false);

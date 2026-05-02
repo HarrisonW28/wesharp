@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\BookingStatus;
 use App\Enums\InvoiceStatus;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\Booking;
@@ -121,12 +122,19 @@ final class AdminCompaniesCrmFiltersApiTest extends TestCase
 
         $bare = Company::factory()->create();
 
+        $pastDueCo = Company::factory()->create();
+        CompanySubscription::factory()->create([
+            'company_id' => $pastDueCo->id,
+            'status' => SubscriptionStatus::PastDue,
+        ]);
+
         $none = $this->withHeaders($this->adminHeaders($admin))
             ->getJson('/api/admin/companies?subscription_status=none&per_page=50');
         $none->assertOk();
         $noneIds = collect($none->json('data.items'))->pluck('id')->all();
         self::assertContains((string) $bare->id, $noneIds);
         self::assertNotContains((string) $subscribed->id, $noneIds);
+        self::assertNotContains((string) $pastDueCo->id, $noneIds);
 
         $active = $this->withHeaders($this->adminHeaders($admin))
             ->getJson('/api/admin/companies?subscription_status=active&per_page=50');

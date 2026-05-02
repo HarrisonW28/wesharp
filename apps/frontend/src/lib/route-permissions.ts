@@ -3,6 +3,9 @@ export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/audit")) {
     return "audit_logs.view";
   }
+  if (pathname.startsWith("/admin/notifications")) {
+    return "notifications.deliveries.view";
+  }
   if (pathname.startsWith("/admin/analytics")) {
     return "analytics.view";
   }
@@ -78,7 +81,7 @@ export function accountPermissionForPath(pathname: string): string {
     pathname.startsWith("/account/profile") ||
     pathname.startsWith("/account/business")
   ) {
-    return "account.settings.view";
+    return "account.settings.update";
   }
   return "dashboard.view";
 }

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { SettingsResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
@@ -15,6 +16,12 @@ import { Label } from "@/components/ui/label";
 
 export default function AccountSettingsPage() {
   const api = useAccountApi();
+
+  const [emailPrefs, setEmailPrefs] = useState({
+    booking_updates: true,
+    order_updates: true,
+    subscription_digest: true,
+  });
 
   const profileQuery = useQuery({
     queryKey: ["account-settings"],
@@ -47,6 +54,13 @@ export default function AccountSettingsPage() {
 
   const d = profileQuery.data;
 
+  useEffect(() => {
+    const p = d?.user.email_notification_preferences;
+    if (p) {
+      setEmailPrefs(p);
+    }
+  }, [d?.user.email_notification_preferences]);
+
   return (
     <div className="space-y-8">
       <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Settings" }]} />
@@ -68,6 +82,11 @@ export default function AccountSettingsPage() {
             void mutation.mutateAsync({
               user: {
                 name: String(fd.get("user.name") ?? ""),
+                email_notification_preferences: {
+                  booking_updates: emailPrefs.booking_updates,
+                  order_updates: emailPrefs.order_updates,
+                  subscription_digest: emailPrefs.subscription_digest,
+                },
               },
               company: {
                 name: String(fd.get("company.name") ?? ""),
@@ -93,6 +112,42 @@ export default function AccountSettingsPage() {
             <p className="text-xs text-muted-foreground">
               Managed through Clerk — email us if your name or email looks wrong.
             </p>
+          </div>
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold">Email updates</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Invoices, payments, and core subscription account notices always send to your billing inbox. You can pause
+              non-essential service emails when they are going to this login&apos;s address.
+            </p>
+            <div className="mt-4 space-y-3">
+              <label className="flex cursor-pointer items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border"
+                  checked={emailPrefs.booking_updates}
+                  onChange={(e) => setEmailPrefs((p) => ({ ...p, booking_updates: e.target.checked }))}
+                />
+                <span className="text-sm">Bookings (requests, confirmations, cancellations)</span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border"
+                  checked={emailPrefs.order_updates}
+                  onChange={(e) => setEmailPrefs((p) => ({ ...p, order_updates: e.target.checked }))}
+                />
+                <span className="text-sm">Orders &amp; fulfilment status</span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border"
+                  checked={emailPrefs.subscription_digest}
+                  onChange={(e) => setEmailPrefs((p) => ({ ...p, subscription_digest: e.target.checked }))}
+                />
+                <span className="text-sm">Subscription reminders &amp; usage digests (not billing notices)</span>
+              </label>
+            </div>
           </div>
           <div className="border-t pt-4">
             <h3 className="text-sm font-semibold">Venue profile</h3>

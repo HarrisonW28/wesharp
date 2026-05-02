@@ -12,7 +12,15 @@ export default function FaqPage() {
     },
     {
       q: "Can I track my knives?",
-      a: "Yes. After you have an account, you can see bookings and orders in one place so you know where things stand from collection to return.",
+      a: "Yes. With a free account you can see bookings and orders in one place — from collection through the workshop to return.",
+    },
+    {
+      q: "Will I see photos of my knives?",
+      a: "When your programme includes customer-visible evidence, timestamped photos can appear in your portal. Internal-only shots never show in your account.",
+    },
+    {
+      q: "Do you offer subscription-style plans?",
+      a: "Yes. Busy kitchens often use rolling programmes with included visits and allowances. Read our subscriptions page for an overview, then we’ll quote properly for your volumes.",
     },
     {
       q: "How do invoices and payment work?",

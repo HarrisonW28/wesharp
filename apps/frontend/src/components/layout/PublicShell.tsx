@@ -38,19 +38,13 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
 
           <nav
             aria-label="Primary"
-            className="hidden items-center justify-center gap-x-5 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2"
+            className="hidden max-w-[min(100%,52rem)] flex-wrap items-center justify-center gap-x-3 gap-y-1 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2 2xl:max-w-none 2xl:flex-nowrap 2xl:gap-x-4"
           >
             {PUBLIC_SITE_NAV_LINKS.map((l) => (
               <Link key={l.href} href={l.href} className={navLinkDesktopClass}>
                 {l.label}
               </Link>
             ))}
-            <Link href="/trade-accounts" className={navLinkDesktopClass}>
-              Trade accounts
-            </Link>
-            <Link href="/safety" className={navLinkDesktopClass}>
-              Safety
-            </Link>
           </nav>
 
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
@@ -71,12 +65,6 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                       {l.label}
                     </Link>
                   ))}
-                  <Link href="/trade-accounts" className={navLinkClass} onClick={() => setOpen(false)}>
-                    Trade accounts
-                  </Link>
-                  <Link href="/safety" className={navLinkClass} onClick={() => setOpen(false)}>
-                    Safety
-                  </Link>
                   <SignedOut>
                     <Link href="/login" className={navLinkClass} onClick={() => setOpen(false)}>
                       Sign in
@@ -123,15 +111,24 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       </header>
       <div className="flex-1">{children}</div>
       <footer className="border-t py-10 text-center text-xs text-muted-foreground">
-        <div className="mx-auto flex max-w-7xl flex-col flex-wrap justify-center gap-3 px-4 sm:flex-row sm:gap-x-6 sm:gap-y-2">
+        <div className="mx-auto flex max-w-7xl flex-col flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 sm:flex-row">
           <span>© {new Date().getFullYear()} WeSharp</span>
+          <Link href="/how-it-works" className="hover:text-foreground">
+            How it works
+          </Link>
+          <Link href="/pricing" className="hover:text-foreground">
+            Pricing
+          </Link>
+          <Link href="/subscriptions" className="hover:text-foreground">
+            Subscriptions
+          </Link>
           <Link href="/service-areas" className="hover:text-foreground">
             Coverage
           </Link>
           <Link href="/contact" className="hover:text-foreground">
             Contact
           </Link>
-          <span className="text-muted-foreground/80">Greater Manchester & Liverpool</span>
+          <span className="text-muted-foreground/80">Greater Manchester &amp; Liverpool</span>
         </div>
       </footer>
     </div>

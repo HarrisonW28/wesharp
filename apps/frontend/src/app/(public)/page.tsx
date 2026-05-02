@@ -8,10 +8,10 @@ import { SERVICE_AREAS } from "@/config/service-areas";
 import { formatGBP } from "@/lib/format/money";
 
 const HOW_STEPS = [
-  { step: 1, title: "Book your collection", body: "Pick a date and time window that works around service — online, in minutes." },
-  { step: 2, title: "We collect your knives", body: "Our driver comes to you, logs each blade, and takes them to our workshop." },
-  { step: 3, title: "We sharpen and inspect them", body: "Professional edges, quality check, and careful handling throughout." },
-  { step: 4, title: "We return them ready to use", body: "Your knives come back sharp, safe, and ready for the next service." },
+  { step: 1, title: "Book your collection", body: "Pick a date and time window that suits your kitchen — online, in a few minutes." },
+  { step: 2, title: "We collect your knives", body: "Our driver arrives, logs each blade, and takes them safely to our workshop." },
+  { step: 3, title: "We sharpen and inspect them", body: "Professional edges, a careful quality check, and safe handling throughout." },
+  { step: 4, title: "We return them ready to use", body: "Your knives come back sharp, ready for service — with clear updates in your account." },
 ] as const;
 
 const WHO_FOR = [
@@ -24,11 +24,11 @@ const WHO_FOR = [
 ] as const;
 
 const BENEFITS = [
-  { title: "Convenient collection", body: "We come to your door — no need to post blades or lose a whole day." },
-  { title: "Professional sharpening", body: "Workshop-grade equipment and experienced sharpeners on every job." },
-  { title: "Order tracking", body: "See where things stand in your WeSharp account from collection to return." },
-  { title: "Invoices and spend history", body: "Clear GBP invoices and a record of what you have had sharpened." },
-  { title: "Repeat service and programmes", body: "Ideal for busy kitchens — ask us about regular runs and subscription-style plans." },
+  { title: "Doorstep collection", body: "We come to you — no need to parcel knives or lose a whole service day." },
+  { title: "Workshop-sharp edges", body: "Proper equipment and experienced sharpeners on every job." },
+  { title: "Tracked orders & updates", body: "See where things stand in your WeSharp account from collection to return — including photos when your programme includes them." },
+  { title: "Straightforward £ pricing", body: "Clear quotes and GBP invoices so you always know what you’re paying." },
+  { title: "Regular visits & care plans", body: "Ideal for busy kitchens — rolling routes and subscription-style programmes tailored to you." },
 ] as const;
 
 export default function HomePage() {
@@ -155,6 +155,14 @@ export default function HomePage() {
               <p className="mt-2 text-xs text-muted-foreground">per month · tailored when we speak</p>
             </div>
           </div>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Button variant="outline" className="rounded-lg" asChild>
+              <Link href="/subscriptions">Subscriptions &amp; programmes</Link>
+            </Button>
+            <Button variant="ghost" className="rounded-lg" asChild>
+              <Link href="/trade-accounts">For business kitchens</Link>
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -173,6 +181,9 @@ export default function HomePage() {
             </Button>
             <Button size="lg" variant="outline" className="rounded-lg sm:min-w-[220px]" asChild>
               <Link href="/contact">Talk to us first</Link>
+            </Button>
+            <Button size="lg" variant="secondary" className="rounded-lg sm:min-w-[220px]" asChild>
+              <Link href="/register">Create free account</Link>
             </Button>
           </div>
         </div>

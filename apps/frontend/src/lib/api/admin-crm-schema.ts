@@ -316,6 +316,7 @@ export const CompanySubscriptionCrmSchema = z.discriminatedUnion("state", [
       .optional(),
     outstanding_subscription_invoices_pence: z.number().optional(),
     formatted_outstanding_subscription: z.string().optional(),
+    billing_periods: z.array(z.record(z.string(), z.unknown())).optional(),
   }),
 ]);
 

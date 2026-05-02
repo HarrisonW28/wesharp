@@ -48,6 +48,15 @@ End with:
 - QA checklist
 - known limitations
 
+### Sprint 11.1 — Done (implementation summary)
+
+- **Public nav** (`public-site-nav.ts`, `PublicShell`): single source of truth; added **For business**, **Subscriptions**, **Safety** in flow; removed duplicate header links; footer links (How it works, Pricing, Subscriptions, Coverage, Contact).
+- **New:** `app/(public)/subscriptions/page.tsx` — customer-facing programmes/allowances/portal copy with indicative £ from `PRICING`.
+- **Home:** hero trust strip (tracked orders, photos, £ clarity, portal), extra CTAs (See prices, How it works), “book in under a minute” line; benefits refreshed; pricing band links to subscriptions + business; final CTA adds **Create free account**.
+- **Copy cleanup:** `trade-accounts` → “For business” tone; `services`, `how-it-works`, `pricing`, `faq` (+2 FAQs), `login`/`register` blurbs; `MarketingArticle` optional `eyebrow`, footer CTAs “Ask a question”.
+- **QA:** `npm run typecheck` OK; manual: click `/book`, `/login`, `/register`, all nav targets, mobile sheet.
+- **Limitations:** Indicative figures only (config); no new booking logic; Clerk UI unchanged.
+
 ---
 
 ## Sprint 11.2 — Admin Operations UX Polish

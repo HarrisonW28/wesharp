@@ -17,6 +17,46 @@ use Illuminate\Http\Request;
 
 final class NotificationDeliveryController extends Controller
 {
+    public function globalIndex(Request $request): JsonResponse
+    {
+        $query = NotificationDelivery::query()->orderByDesc('created_at');
+
+        if ($request->filled('status')) {
+            $query->where('status', (string) $request->query('status'));
+        }
+
+        if ($request->filled('company_id')) {
+            $query->where('company_id', (string) $request->query('company_id'));
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', (string) $request->query('type'));
+        }
+
+        $perPage = min(75, max(1, (int) $request->query('per_page', 25)));
+        $paginator = $query->paginate($perPage);
+
+        $items = $paginator->getCollection()->map(static fn (NotificationDelivery $d): array => [
+            'id' => (string) $d->id,
+            'company_id' => $d->company_id !== null ? (string) $d->company_id : null,
+            'channel' => $d->channel,
+            'type' => $d->type,
+            'status' => $d->status,
+            'recipient_email' => $d->recipient_email,
+            'source_type' => $d->source_type,
+            'source_id' => $d->source_id !== null ? (string) $d->source_id : null,
+            'queued_at' => $d->queued_at?->toIso8601String(),
+            'sent_at' => $d->sent_at?->toIso8601String(),
+            'failed_at' => $d->failed_at?->toIso8601String(),
+            'failure_reason' => $d->failure_reason,
+            'created_at' => $d->created_at?->toIso8601String(),
+        ])->values();
+
+        $paginator->setCollection($items);
+
+        return ApiResponses::paginated($paginator, 'items');
+    }
+
     public function bookingIndex(Request $request, Booking $booking): JsonResponse
     {
         $this->authorize('view', $booking);

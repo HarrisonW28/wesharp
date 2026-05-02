@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Camera, ListChecks, PoundSterling, Sparkles, UserRound } from "lucide-react";
 
 import { SERVICE_AREAS } from "@/config/service-areas";
 
@@ -39,6 +39,14 @@ export function HomeHero() {
             Book a slot, hand over your blades, and get them back sharp and inspected — without leaving your kitchen off the
             pass for long.
           </motion.p>
+          <motion.p
+            className="mt-3 text-sm font-medium text-foreground/90 md:text-base"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.12 }}
+          >
+            Most kitchens book in under a minute — choose a date, tell us roughly how many knives, and you&apos;re done.
+          </motion.p>
           <motion.div
             className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap"
             initial={{ opacity: 0, y: 12 }}
@@ -52,7 +60,10 @@ export function HomeHero() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="rounded-lg sm:min-w-[200px]" asChild>
-              <Link href="/pricing">View pricing</Link>
+              <Link href="/pricing">See prices</Link>
+            </Button>
+            <Button size="lg" variant="secondary" className="rounded-lg sm:min-w-[200px]" asChild>
+              <Link href="/how-it-works">How it works</Link>
             </Button>
           </motion.div>
           <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
@@ -70,7 +81,26 @@ export function HomeHero() {
               </Button>
             </SignedIn>
           </div>
-          <div className="mt-10 flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
+          <ul
+            className="mt-10 flex flex-wrap justify-center gap-2 text-left text-xs text-muted-foreground sm:text-sm"
+            aria-label="Why cooks trust WeSharp"
+          >
+            {[
+              { Icon: ListChecks, label: "Tracked orders — see status from collection to return" },
+              { Icon: Camera, label: "Timestamped photos when your programme includes them" },
+              { Icon: PoundSterling, label: "Clear £ pricing on quotes and invoices" },
+              { Icon: UserRound, label: "Free customer portal for bookings and history" },
+            ].map(({ Icon, label }) => (
+              <li
+                key={label}
+                className="flex max-w-[260px] items-start gap-2 rounded-xl border border-border/70 bg-background/60 px-3 py-2 shadow-sm backdrop-blur-sm sm:max-w-none"
+              >
+                <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <span>{label}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
             {SERVICE_AREAS.map((area) => (
               <span key={area.id} className="rounded-full border bg-background/70 px-3 py-1 shadow-sm">
                 {area.label}
