@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\InvoiceEmailService;
 use App\Support\Invoices\InvoiceStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -18,10 +19,14 @@ use Illuminate\Support\Facades\DB;
 
 final class MarkInvoicePaidAction
 {
+    public function __construct(
+        private readonly InvoiceEmailService $invoiceEmails,
+    ) {}
+
     public function execute(Invoice $invoice, ?Authenticatable $actor, Request $request): Invoice
     {
-        /** @phpstan-ignore-next-line */
-        return DB::transaction(function () use ($invoice, $actor, $request): Invoice {
+        /** @var array{0: Invoice, 1: string|null} $tuple */
+        $tuple = DB::transaction(function () use ($invoice, $actor, $request): array {
             $invoice->refresh();
 
             /** @phpstan-ignore-next-line */
@@ -40,9 +45,12 @@ final class MarkInvoicePaidAction
             $total = (int) $invoice->total_pence;
 
             /** @phpstan-ignore-next-line */
+            $createdPaymentId = null;
+
+            /** @phpstan-ignore-next-line */
             if ($received < $total) {
                 /** @phpstan-ignore-next-line */
-                Payment::query()->create([
+                $p = Payment::query()->create([
                     /** @phpstan-ignore-next-line */
                     'company_id' => $invoice->company_id,
                     /** @phpstan-ignore-next-line */
@@ -62,6 +70,8 @@ final class MarkInvoicePaidAction
                     'reference' => 'SETTLE:'.$invoice->invoice_number,
                     'recorded_by' => $actor instanceof User ? $actor->id : null,
                 ]);
+                /** @phpstan-ignore-next-line */
+                $createdPaymentId = (string) $p->id;
             }
 
             /** @phpstan-ignore-next-line */
@@ -81,7 +91,7 @@ final class MarkInvoicePaidAction
                 'invoice_id' => (string) $invoice->id,
             ], $request);
 
-            return $invoice->fresh([
+            $fresh = $invoice->fresh([
                 /** @phpstan-ignore-next-line */
                 'payments',
                 'items',
@@ -89,6 +99,14 @@ final class MarkInvoicePaidAction
                 'company:id,name,city',
                 'order:id,booking_id',
             ]);
+
+            return [$fresh, $createdPaymentId];
         });
+
+        [$out, $paymentId] = $tuple;
+        $pay = is_string($paymentId) ? Payment::query()->find($paymentId) : null;
+        $this->invoiceEmails->sendPaymentReceived($out, $pay instanceof Payment ? $pay : null);
+
+        return $out;
     }
 }

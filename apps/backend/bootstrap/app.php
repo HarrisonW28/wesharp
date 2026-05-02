@@ -40,7 +40,9 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule): void {
         // Production: run `php artisan schedule:run` every minute (cron/worker scheduler).
-        // Example: $schedule->command('something')->daily();
+        $schedule->command('invoices:send-due-soon-reminders')->dailyAt('08:00');
+        $schedule->command('subscriptions:send-renewal-reminders')->dailyAt('08:00');
+        $schedule->command('subscriptions:send-period-usage-summaries')->dailyAt('08:00');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReportDuplicates();

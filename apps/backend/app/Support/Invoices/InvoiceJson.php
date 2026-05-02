@@ -25,6 +25,7 @@ final class InvoiceJson
         'invoice.created_from_order',
         'invoice.draft_generated',
         'invoice.send_placeholder',
+        'invoice.sent',
         'invoice.marked_paid',
         'invoice.void',
         'invoice.reopened_draft',

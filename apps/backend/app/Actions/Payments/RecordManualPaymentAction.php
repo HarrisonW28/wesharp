@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\InvoiceEmailService;
 use App\Support\Permissions;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -19,6 +20,10 @@ use Illuminate\Support\Facades\DB;
 
 final class RecordManualPaymentAction
 {
+    public function __construct(
+        private readonly InvoiceEmailService $invoiceEmails,
+    ) {}
+
     /**
      * @param  array{
      *   invoice_id:string,
@@ -35,7 +40,8 @@ final class RecordManualPaymentAction
         ?Authenticatable $actor,
         Request $request,
     ): Payment {
-        return DB::transaction(function () use ($invoice, $validated, $actor, $request): Payment {
+        /** @var Payment $payment */
+        $payment = DB::transaction(function () use ($invoice, $validated, $actor, $request): Payment {
             $invoice->refresh();
 
             if ($invoice->invoice_status === InvoiceStatus::Void) {
@@ -157,5 +163,12 @@ final class RecordManualPaymentAction
                 'recordedBy:id,name,email',
             ]);
         });
+
+        $this->invoiceEmails->sendPaymentReceived(
+            $invoice->fresh(['company', 'order.booking.contact', 'payments', 'items']),
+            $payment,
+        );
+
+        return $payment;
     }
 }

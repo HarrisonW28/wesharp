@@ -5,19 +5,24 @@ namespace App\Actions\Invoices;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\InvoiceEmailService;
 use App\Support\Invoices\InvoiceStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Placeholder: records audit only — real email/PDF integrations live behind PSP / mail tooling.
+ * Issues (sends) the invoice to customers: updates status and queues the customer email.
  */
 final class SendInvoicePlaceholderAction
 {
+    public function __construct(
+        private readonly InvoiceEmailService $invoiceEmails,
+    ) {}
+
     public function execute(Invoice $invoice, ?Authenticatable $actor, Request $request): Invoice
     {
-        return DB::transaction(function () use ($invoice, $actor, $request): Invoice {
+        $updated = DB::transaction(function () use ($invoice, $actor, $request): Invoice {
             $invoice->refresh();
 
             /** @phpstan-ignore-next-line */
@@ -41,11 +46,9 @@ final class SendInvoicePlaceholderAction
 
             $invoice->save();
 
-            AuditRecorder::record($actor, $invoice, 'invoice.send_placeholder', [
+            AuditRecorder::record($actor, $invoice, 'invoice.sent', [
                 'from' => $fromStatus,
                 'to' => InvoiceStatus::Sent->value,
-                /** @phpstan-ignore-next-line */
-                'delivery' => 'pending_integration',
                 'invoice_number' => $invoice->invoice_number,
             ], $request);
 
@@ -58,5 +61,9 @@ final class SendInvoicePlaceholderAction
                 'payments',
             ]);
         });
+
+        $this->invoiceEmails->sendInvoiceIssued($updated);
+
+        return $updated;
     }
 }

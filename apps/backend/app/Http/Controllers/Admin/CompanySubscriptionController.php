@@ -20,6 +20,7 @@ use App\Models\Invoice;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\SubscriptionEmailService;
 use App\Services\Subscriptions\CompanySubscriptionProvisioningService;
 use App\Services\Subscriptions\OrderSubscriptionCoverageService;
 use App\Support\ApiResponses;
@@ -34,6 +35,7 @@ final class CompanySubscriptionController extends Controller
 {
     public function __construct(
         private readonly CompanySubscriptionProvisioningService $provisioning,
+        private readonly SubscriptionEmailService $subscriptionEmails,
     ) {}
 
     public function index(Request $request, Company $company): JsonResponse
@@ -91,6 +93,8 @@ final class CompanySubscriptionController extends Controller
             'price_amount_minor_snapshot' => (int) $sub->price_amount_minor_snapshot,
         ], $request);
 
+        $this->subscriptionEmails->sendSubscriptionStarted($sub);
+
         return ApiResponses::success([
             'subscription' => CompanySubscriptionResource::make($sub),
         ], 201);
@@ -139,6 +143,11 @@ final class CompanySubscriptionController extends Controller
             'price_amount_minor_snapshot' => (int) $created->price_amount_minor_snapshot,
         ], $request);
 
+        $this->subscriptionEmails->sendPlanChanged(
+            $created,
+            $prior->plan !== null ? (string) $prior->plan->name : 'Your previous plan',
+        );
+
         return ApiResponses::success([
             'prior_subscription' => CompanySubscriptionResource::make($prior),
             'subscription' => CompanySubscriptionResource::make($created),
@@ -167,6 +176,8 @@ final class CompanySubscriptionController extends Controller
             'reason' => 'manual',
             'cancelled_at' => $cancelled->cancelled_at?->toIso8601String(),
         ], $request);
+
+        $this->subscriptionEmails->sendSubscriptionCancelled($cancelled);
 
         return ApiResponses::success([
             'subscription' => CompanySubscriptionResource::make($cancelled),
@@ -221,6 +232,8 @@ final class CompanySubscriptionController extends Controller
             'starts_at' => $sub->starts_at?->toDateString(),
             'renews_at' => $sub->renews_at?->toDateString(),
         ], $request);
+
+        $this->subscriptionEmails->sendSubscriptionReactivated($sub);
 
         return ApiResponses::success([
             'subscription' => CompanySubscriptionResource::make($sub),

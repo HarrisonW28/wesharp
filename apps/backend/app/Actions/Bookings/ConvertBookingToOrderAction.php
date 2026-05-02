@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Models\Booking;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\OrderEmailService;
 use App\Support\Bookings\BookingStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -15,9 +16,13 @@ use Illuminate\Support\Facades\DB;
 
 final class ConvertBookingToOrderAction
 {
+    public function __construct(
+        private readonly OrderEmailService $orderEmails,
+    ) {}
+
     public function execute(Booking $booking, ?Authenticatable $actor, ?Request $request): Order
     {
-        return DB::transaction(function () use ($booking, $actor, $request): Order {
+        $order = DB::transaction(function () use ($booking, $actor, $request): Order {
             if ($booking->orders()->exists()) {
                 abort(422, 'An order already exists for this booking.');
             }
@@ -62,5 +67,9 @@ final class ConvertBookingToOrderAction
 
             return $order;
         });
+
+        $this->orderEmails->sendOrderCreated($order->fresh(['company', 'booking.contact']));
+
+        return $order;
     }
 }

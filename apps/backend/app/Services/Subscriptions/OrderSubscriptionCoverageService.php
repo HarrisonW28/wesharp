@@ -12,6 +12,7 @@ use App\Models\CompanySubscription;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\SubscriptionPlan;
+use App\Services\Notifications\SubscriptionEmailService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +22,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class OrderSubscriptionCoverageService
 {
+    public function __construct(
+        private readonly SubscriptionEmailService $subscriptionEmails,
+    ) {}
+
     public function computeAndPersist(Order $order): void
     {
         if ($order->subscription_coverage_overridden) {
@@ -46,6 +51,57 @@ final class OrderSubscriptionCoverageService
 
             $this->applyItemBillingKinds($order, $snapshot);
         });
+
+        $this->notifySubscriptionCustomerEmails($order->fresh());
+    }
+
+    /**
+     * Customer-facing subscription usage emails (Sprint 10.5) — only when coverage is subscription mode.
+     */
+    private function notifySubscriptionCustomerEmails(Order $order): void
+    {
+        $snap = $order->subscription_coverage;
+        if (! is_array($snap) || ($snap['mode'] ?? '') !== 'subscription') {
+            return;
+        }
+
+        $subId = $snap['company_subscription_id'] ?? null;
+        if (! is_string($subId) || $subId === '') {
+            return;
+        }
+
+        $sub = CompanySubscription::query()->with('plan')->find($subId);
+        if (! $sub instanceof CompanySubscription || $sub->status !== SubscriptionStatus::Active) {
+            return;
+        }
+
+        $collOv = (int) ($snap['collections_overage_for_order'] ?? 0);
+        $knOv = (int) ($snap['knives_overage_for_order'] ?? 0);
+        if ($collOv > 0 || $knOv > 0) {
+            $this->subscriptionEmails->sendUsageOverage($order, $sub, $snap);
+        }
+
+        $usage = $this->usageSummaryForSubscription($sub);
+        $periodKey = $sub->renews_at?->toDateString() ?? 'na';
+        $plan = $sub->plan;
+
+        if ($plan !== null && $plan->included_collections !== null && $plan->included_collections > 0) {
+            $used = (int) ($usage['collections_used'] ?? 0);
+            $cap = (int) $plan->included_collections;
+            $thr = (int) ceil(0.8 * $cap);
+            if ($used >= $thr && $used < $cap && (int) ($usage['collections_overage_units'] ?? 0) === 0) {
+                $this->subscriptionEmails->sendAllowanceNearlyExhausted($sub, 'collections', $usage, $periodKey);
+            }
+        }
+
+        if ($plan !== null && $plan->included_knife_allowance !== null && $plan->included_knife_allowance > 0) {
+            $used = (int) ($usage['knives_used'] ?? 0);
+            $cap = (int) $plan->included_knife_allowance;
+            $thr = (int) ceil(0.8 * $cap);
+            if ($used >= $thr && $used < $cap && (int) ($usage['knives_overage_units'] ?? 0) === 0) {
+                $this->subscriptionEmails->sendAllowanceNearlyExhausted($sub, 'knives', $usage, $periodKey);
+            }
+        }
     }
 
     /**
@@ -173,9 +229,6 @@ final class OrderSubscriptionCoverageService
         return ['collections' => $collections, 'knives' => $knives];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     /**
      * @return array{collection_units: int, knife_units: int}
      */

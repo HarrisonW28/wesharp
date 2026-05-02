@@ -57,6 +57,7 @@ final class AuditActionLabels
         'invoice.void' => 'Invoice voided',
         'invoice.payment_recorded' => 'Payment recorded on invoice',
         'invoice.send_placeholder' => 'Invoice send (placeholder)',
+        'invoice.sent' => 'Invoice issued / sent to customer',
         'invoice.created_from_order' => 'Invoice created from order',
         'invoice.draft_generated' => 'Invoice draft generated',
         'invoice.reopened_draft' => 'Invoice reopened as draft',

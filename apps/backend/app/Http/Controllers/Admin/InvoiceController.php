@@ -19,11 +19,13 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Invoices\InvoiceService;
+use App\Services\Notifications\InvoiceEmailService;
 use App\Support\ApiResponses;
 use App\Support\Invoices\InvoiceJson;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 final class InvoiceController extends Controller
 {
@@ -36,6 +38,7 @@ final class InvoiceController extends Controller
         private readonly UpdateDraftInvoiceLinesAction $updateDraftInvoiceLinesAction,
         private readonly SyncInvoiceOverdueStatusAction $syncInvoiceOverdueStatusAction,
         private readonly ReopenInvoiceDraftAction $reopenInvoiceDraftAction,
+        private readonly InvoiceEmailService $invoiceEmailService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -151,6 +154,34 @@ final class InvoiceController extends Controller
         $invoice = $this->sendInvoicePlaceholderAction->execute($invoice, $request->user(), $request);
 
         return ApiResponses::success(InvoiceJson::detail($invoice));
+    }
+
+    /**
+     * Intentional resend: new notification delivery row (fresh idempotency salt).
+     */
+    public function resendCustomerEmail(Request $request, Invoice $invoice): JsonResponse
+    {
+        $this->authorize('send', $invoice);
+
+        /** @phpstan-ignore-next-line */
+        if (! in_array($invoice->invoice_status, [InvoiceStatus::Sent, InvoiceStatus::Overdue], true)) {
+            abort(422, 'Only sent or overdue invoices can be resent to customers.');
+        }
+
+        $this->invoiceEmailService->sendInvoiceIssued(
+            $invoice->fresh([
+                /** @phpstan-ignore-next-line */
+                'company:id,name,city,phone,billing_email',
+                'order:id,booking_id',
+                'items',
+                'payments',
+            ]),
+            Str::uuid()->toString(),
+        );
+
+        return ApiResponses::success([
+            'message' => 'Invoice email queued for resend.',
+        ]);
     }
 
     public function markPaid(Request $request, Invoice $invoice): JsonResponse

@@ -8,6 +8,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\OrderEmailService;
 use App\Support\Orders\OrderStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -15,9 +16,13 @@ use Illuminate\Support\Facades\DB;
 
 final class CancelOrderAction
 {
+    public function __construct(
+        private readonly OrderEmailService $orderEmails,
+    ) {}
+
     public function execute(Order $order, ?Authenticatable $actor, ?Request $request, ?string $reason = null): Order
     {
-        return DB::transaction(function () use ($order, $actor, $request, $reason): Order {
+        $updated = DB::transaction(function () use ($order, $actor, $request, $reason): Order {
             $order->refresh();
 
             if ($order->order_status === OrderStatus::Cancelled) {
@@ -50,5 +55,9 @@ final class CancelOrderAction
 
             return $order->fresh();
         });
+
+        $this->orderEmails->sendOrderCancelled($updated->fresh(['company', 'booking.contact']), $reason);
+
+        return $updated;
     }
 }

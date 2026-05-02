@@ -141,6 +141,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions/change-plan', [CompanySubscriptionController::class, 'changePlan'])->whereUuid('company')->name('api.admin.companies.subscriptions.change_plan');
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions/cancel', [CompanySubscriptionController::class, 'cancel'])->whereUuid('company')->name('api.admin.companies.subscriptions.cancel');
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions/reactivate', [CompanySubscriptionController::class, 'reactivate'])->whereUuid('company')->name('api.admin.companies.subscriptions.reactivate');
+    Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscriptions/{subscription}/notifications', [NotificationDeliveryController::class, 'subscriptionIndex'])->whereUuid(['company', 'subscription'])->name('api.admin.companies.subscriptions.notifications.index');
     Route::middleware('permission:subscriptions.manage')->patch('companies/{company}/subscriptions/{subscription}', [CompanySubscriptionController::class, 'updateBillingContact'])->whereUuid(['company', 'subscription'])->name('api.admin.companies.subscriptions.update_billing_contact');
     Route::middleware('permission:companies.update')->put('companies/{company}', [CompanyController::class, 'update'])->whereUuid('company')->name('api.admin.companies.update');
     Route::middleware('permission:companies.delete')->delete('companies/{company}', [CompanyController::class, 'destroy'])->whereUuid('company')->name('api.admin.companies.destroy');
@@ -208,6 +209,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:orders.view')->get('orders', [OrderController::class, 'index'])->name('api.admin.orders.index');
     Route::middleware('permission:orders.create')->post('orders', [OrderController::class, 'store'])->name('api.admin.orders.store');
     Route::middleware('permission:orders.view')->get('orders/{order}', [OrderController::class, 'show'])->whereUuid('order')->name('api.admin.orders.show');
+    Route::middleware('permission:orders.view')->get('orders/{order}/notifications', [NotificationDeliveryController::class, 'orderIndex'])->whereUuid('order')->name('api.admin.orders.notifications.index');
     Route::middleware('permission:orders.update')->put('orders/{order}', [OrderController::class, 'update'])->whereUuid('order')->name('api.admin.orders.update');
     Route::middleware('permission:orders.update')->post('orders/{order}/subscription-coverage/recompute', [OrderSubscriptionCoverageController::class, 'recompute'])->whereUuid('order')->name('api.admin.orders.subscription_coverage.recompute');
     Route::middleware('permission:orders.update')->post('orders/{order}/subscription-coverage/override-one-off', [OrderSubscriptionCoverageController::class, 'overrideOneOff'])->whereUuid('order')->name('api.admin.orders.subscription_coverage.override_one_off');
@@ -244,6 +246,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:invoices.view')->get('invoices/{invoice}', [InvoiceController::class, 'show'])->whereUuid('invoice')->name('api.admin.invoices.show');
     Route::middleware('permission:invoices.update')->put('invoices/{invoice}', [InvoiceController::class, 'update'])->whereUuid('invoice')->name('api.admin.invoices.update');
     Route::middleware('permission:invoices.update')->post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->whereUuid('invoice')->name('api.admin.invoices.send');
+    Route::middleware('permission:invoices.update')->post('invoices/{invoice}/resend-customer-email', [InvoiceController::class, 'resendCustomerEmail'])->whereUuid('invoice')->name('api.admin.invoices.resend_customer_email');
+    Route::middleware('permission:invoices.view')->get('invoices/{invoice}/notifications', [NotificationDeliveryController::class, 'invoiceIndex'])->whereUuid('invoice')->name('api.admin.invoices.notifications.index');
     Route::middleware('permission:invoices.update')->post('invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->whereUuid('invoice')->name('api.admin.invoices.mark_paid');
     Route::middleware('permission:invoices.update')->post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->whereUuid('invoice')->name('api.admin.invoices.void');
     Route::middleware('permission:invoices.update')->post('invoices/{invoice}/reopen-draft', [InvoiceController::class, 'reopenDraft'])->whereUuid('invoice')->name('api.admin.invoices.reopen_draft');

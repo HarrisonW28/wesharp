@@ -5,6 +5,7 @@ namespace App\Actions\Orders;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\OrderEmailService;
 use App\Services\Subscriptions\OrderSubscriptionCoverageService;
 use App\Support\Orders\OrderStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -13,9 +14,13 @@ use Illuminate\Support\Facades\DB;
 
 final class CompleteOrderAction
 {
+    public function __construct(
+        private readonly OrderEmailService $orderEmails,
+    ) {}
+
     public function execute(Order $order, ?Authenticatable $actor, ?Request $request): Order
     {
-        return DB::transaction(function () use ($order, $actor, $request): Order {
+        $updated = DB::transaction(function () use ($order, $actor, $request): Order {
             $order->refresh();
             $order->loadMissing(['items', 'knives']);
 
@@ -46,5 +51,12 @@ final class CompleteOrderAction
 
             return $order->fresh();
         });
+
+        $this->orderEmails->sendStatusReached(
+            $updated->fresh(['company', 'booking.contact']),
+            OrderStatus::Completed,
+        );
+
+        return $updated;
     }
 }

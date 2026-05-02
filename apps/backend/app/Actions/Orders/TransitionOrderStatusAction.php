@@ -7,6 +7,7 @@ namespace App\Actions\Orders;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\OrderEmailService;
 use App\Support\Orders\OrderStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\DB;
 /** Single-step status move (excludes complete/cancel, which have dedicated Actions). */
 final class TransitionOrderStatusAction
 {
+    public function __construct(
+        private readonly OrderEmailService $orderEmails,
+    ) {}
+
     public function execute(
         Order $order,
         OrderStatus $target,
@@ -25,8 +30,13 @@ final class TransitionOrderStatusAction
             abort(500, 'Use CompleteOrderAction or CancelOrderAction.');
         }
 
-        return DB::transaction(function () use ($order, $target, $actor, $request): Order {
+        /** @var array{order: Order, changed: bool} $result */
+        $result = DB::transaction(function () use ($order, $target, $actor, $request): array {
             $order->refresh();
+
+            if ($order->order_status === $target) {
+                return ['order' => $order->fresh(), 'changed' => false];
+            }
 
             OrderStatusTransitions::assertCan($order->order_status, $target);
 
@@ -39,7 +49,16 @@ final class TransitionOrderStatusAction
                 'to' => $target->value,
             ], $request);
 
-            return $order->fresh();
+            return ['order' => $order->fresh(), 'changed' => true];
         });
+
+        if ($result['changed']) {
+            $this->orderEmails->sendStatusReached(
+                $result['order']->fresh(['company', 'booking.contact']),
+                $target,
+            );
+        }
+
+        return $result['order'];
     }
 }

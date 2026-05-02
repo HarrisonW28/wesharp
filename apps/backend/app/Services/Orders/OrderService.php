@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Knives\KnifeService;
+use App\Services\Notifications\OrderEmailService;
 use App\Services\Knives\KnifeServiceAssignmentRecorder;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ final class OrderService
         private KnifeService $knifeService,
         private CompleteOrderAction $completeOrderAction,
         private KnifeServiceAssignmentRecorder $knifeAssignmentRecorder,
+        private OrderEmailService $orderEmails,
     ) {}
 
     public function paginate(Request $request, bool $withOperationalRoute = true): LengthAwarePaginator
@@ -105,6 +107,8 @@ final class OrderService
 
             return $this->rebuildMonetaryTotals($model->fresh(['knives', 'items']));
         });
+
+        $this->orderEmails->sendOrderCreated($order);
 
         /** @phpstan-ignore-next-line */
         return $order->loadMissing([

@@ -7,11 +7,16 @@ use App\Models\DamageReport;
 use App\Models\Knife;
 use App\Models\User;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\OrderEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 final class CreateDamageReportAction
 {
+    public function __construct(
+        private readonly OrderEmailService $orderEmails,
+    ) {}
+
     /**
      * @param  array{
      *   order_id: string,
@@ -24,7 +29,7 @@ final class CreateDamageReportAction
      */
     public function execute(Knife $knife, array $validated, User $actor, Request $request): DamageReport
     {
-        return DB::transaction(function () use ($knife, $validated, $actor, $request): DamageReport {
+        $report = DB::transaction(function () use ($knife, $validated, $actor, $request): DamageReport {
             $knife->refresh();
 
             /** @var DamageReport $report */
@@ -52,5 +57,9 @@ final class CreateDamageReportAction
 
             return $report;
         });
+
+        $this->orderEmails->sendDamageReportCustomerVisible($report);
+
+        return $report;
     }
 }
