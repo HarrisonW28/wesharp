@@ -235,4 +235,31 @@ final class SiteContentService
 
         return $setting;
     }
+
+    /**
+     * Drop stored overrides so {@see resolved()} matches {@see SiteContentDefaults} until edited again.
+     */
+    public function clearOverrides(?Authenticatable $actor, ?Request $request): void
+    {
+        if (! Schema::hasTable('site_content_settings')) {
+            abort(503, 'Site content storage is not available. Run database migrations.');
+        }
+
+        $setting = SiteContentSetting::query()->first();
+        $before = ['overrides' => $setting !== null ? ($setting->overrides ?? []) : []];
+
+        if ($setting !== null) {
+            $setting->overrides = [];
+            $setting->save();
+        }
+
+        $this->forgetResolved();
+
+        if ($actor instanceof User) {
+            AuditRecorder::record($actor, SiteContentSetting::current(), 'site_content.cleared', [
+                'before' => $before,
+                'after' => ['overrides' => []],
+            ], $request);
+        }
+    }
 }

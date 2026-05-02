@@ -168,6 +168,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
         Route::get('notifications/email-preview', [NotificationEmailPreviewController::class, 'show'])->name('api.admin.notifications.email_preview.show');
         Route::get('site-content', [SiteContentController::class, 'show'])->name('api.admin.site_content.show');
         Route::put('site-content', [SiteContentController::class, 'update'])->name('api.admin.site_content.update');
+        Route::delete('site-content', [SiteContentController::class, 'destroy'])->name('api.admin.site_content.destroy');
     });
 
     Route::middleware('permission:subscriptions.view')->prefix('subscription-plans')->group(function (): void {

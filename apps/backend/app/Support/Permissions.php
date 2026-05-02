@@ -190,6 +190,13 @@ final class Permissions
                 self::AUDIT_LOGS_VIEW,
                 self::SYSTEM_TOOLS_VIEW,
                 self::NOTIFICATIONS_DELIVERIES_VIEW,
+                /** Marketing copy + notification template settings (same middleware group as site-content). */
+                self::SETTINGS_MANAGE,
+                /** Remove demo / seeded CRM and rare draft booking hard-deletes — not for production operators. */
+                self::COMPANIES_VIEW,
+                self::COMPANIES_DELETE,
+                self::BOOKINGS_VIEW,
+                self::BOOKINGS_DELETE,
             ],
 
             UserRole::RouteManager->value => [

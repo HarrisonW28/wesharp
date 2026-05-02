@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\UpdateSiteContentRequest;
 use App\Services\SiteContent\SiteContentService;
 use App\Support\ApiResponses;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 final class SiteContentController extends Controller
 {
@@ -25,6 +26,15 @@ final class SiteContentController extends Controller
         $tree = $request->validated('content');
         $full = $content->normalizeSubmitted($tree);
         $content->saveFullContentTree($full, $request->user(), $request);
+
+        return ApiResponses::success([
+            'content' => $content->resolved(),
+        ]);
+    }
+
+    public function destroy(Request $request, SiteContentService $content): JsonResponse
+    {
+        $content->clearOverrides($request->user(), $request);
 
         return ApiResponses::success([
             'content' => $content->resolved(),

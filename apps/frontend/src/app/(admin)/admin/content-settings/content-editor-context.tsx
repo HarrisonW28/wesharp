@@ -1,12 +1,22 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Loader2, Newspaper } from "lucide-react";
+import { Loader2, Newspaper, RotateCcw } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { useBackendMe } from "@/hooks/use-backend-me";
@@ -25,6 +35,7 @@ type SiteContentEditorContextValue = {
   draft: SiteContent | null;
   setDraft: React.Dispatch<React.SetStateAction<SiteContent | null>>;
   saveMutation: ReturnType<typeof useMutation<void, Error, SiteContent>>;
+  resetMutation: ReturnType<typeof useMutation<void, Error, void>>;
   isLoadPending: boolean;
   isLoadError: boolean;
   loadError: Error | null;
@@ -78,17 +89,32 @@ export function SiteContentEditorProvider({ children }: { children: ReactNode })
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const resetMutation = useMutation({
+    mutationFn: async () => {
+      const res = await admin.json<unknown>("/api/admin/site-content", { method: "DELETE" });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Marketing copy reset to built-in defaults.");
+      void qc.invalidateQueries({ queryKey: ["admin-site-content"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const value = useMemo(
     () => ({
       canManage,
       draft,
       setDraft,
       saveMutation,
+      resetMutation,
       isLoadPending: loadQuery.isPending,
       isLoadError: loadQuery.isError,
       loadError: loadQuery.isError ? (loadQuery.error as Error) : null,
     }),
-    [canManage, draft, saveMutation, loadQuery.isPending, loadQuery.isError, loadQuery.error],
+    [canManage, draft, saveMutation, resetMutation, loadQuery.isPending, loadQuery.isError, loadQuery.error],
   );
 
   return <SiteContentEditorContext.Provider value={value}>{children}</SiteContentEditorContext.Provider>;
@@ -162,5 +188,53 @@ export function SaveSiteContentButton() {
       {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Newspaper className="h-4 w-4" aria-hidden />}
       Save changes
     </Button>
+  );
+}
+
+export function ResetSiteContentButton() {
+  const { draft, resetMutation, saveMutation } = useSiteContentEditor();
+
+  if (!draft) {
+    return null;
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          type="button"
+          size="lg"
+          variant="outline"
+          className="gap-2 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          disabled={resetMutation.isPending || saveMutation.isPending}
+        >
+          {resetMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <RotateCcw className="h-4 w-4" aria-hidden />
+          )}
+          Reset to defaults
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Reset all marketing copy?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This removes every stored override and restores the built-in defaults on the marketing site and booking flow.
+            Notification email settings are not affected.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <Button
+            variant="destructive"
+            disabled={resetMutation.isPending}
+            onClick={() => resetMutation.mutate()}
+          >
+            {resetMutation.isPending ? "Resetting…" : "Reset copy"}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

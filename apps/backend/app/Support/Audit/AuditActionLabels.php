@@ -126,6 +126,7 @@ final class AuditActionLabels
         'note.created' => 'Note',
         'demo.audit.event' => 'Demo audit event',
         'site_content.updated' => 'Site content updated',
+        'site_content.cleared' => 'Site content reset to defaults',
     ];
 
     public static function label(string $action): string

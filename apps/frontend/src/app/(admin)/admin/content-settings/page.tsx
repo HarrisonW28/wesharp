@@ -7,7 +7,16 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { ContentSettingsGate, SaveSiteContentButton } from "./content-editor-context";
+import { ContentSettingsGate, ResetSiteContentButton, SaveSiteContentButton } from "./content-editor-context";
+
+function SiteContentHeaderActions() {
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <ResetSiteContentButton />
+      <SaveSiteContentButton />
+    </div>
+  );
+}
 
 const SECTIONS = [
   {
@@ -55,7 +64,7 @@ export default function AdminContentSettingsHubPage() {
       <PageHeader
         title="Site content"
         description="Edit public marketing copy in sections. Changes apply to the marketing site and booking flow when you save."
-        actions={<SaveSiteContentButton />}
+        actions={<SiteContentHeaderActions />}
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 pb-16">
