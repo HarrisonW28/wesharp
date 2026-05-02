@@ -53,6 +53,18 @@ class Company extends Model
     }
 
     /**
+     * Active or past-due subscription occupying the single operational billing slot.
+     */
+    public function operationalSubscription(): HasOne
+    {
+        return $this->hasOne(CompanySubscription::class)
+            ->whereIn('status', [
+                SubscriptionStatus::Active->value,
+                SubscriptionStatus::PastDue->value,
+            ]);
+    }
+
+    /**
      * Full subscription history for the company (all statuses, excluding soft-deleted rows).
      */
     public function subscriptions(): HasMany

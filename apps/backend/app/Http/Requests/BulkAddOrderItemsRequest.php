@@ -24,7 +24,7 @@ final class BulkAddOrderItemsRequest extends FormRequest
             'items.*.notes' => ['nullable', 'string', 'max:20000'],
             'items.*.condition_before' => ['nullable', 'string', 'max:20000'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:500'],
-            'items.*.unit_amount_pence' => ['required', 'integer', 'min:0'],
+            'items.*.unit_amount_pence' => ['nullable', 'integer', 'min:0'],
         ];
     }
 

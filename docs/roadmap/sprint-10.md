@@ -398,6 +398,7 @@ QA:
 - Test cancelled/expired/past_due statuses.
 - Test renewal due behaviour if implemented.
 - Confirm permissions.
+- Price setting on subscriptions is decimal field, it incrementally icnrease by +1 at the moment
 
 End with:
 - files changed
@@ -468,3 +469,118 @@ End with:
 - resend rules
 - QA checklist
 - known limitations
+
+---
+
+## Sprint 10.9 — Notifications, Pricing and Subscription Revenue Regression QA
+
+### Context
+Sprints 10.3–10.8 added or improved:
+- customer-friendly order emails
+- invoice and payment emails
+- subscription emails
+- pricing, knife counts and charge calculation
+- subscription billing periods, renewals and recurring revenue dashboard
+- notification preferences, logs and email reliability
+
+### Goal
+Regression test all Sprint 10 work together and fix integration bugs before moving into Sprint 11.
+
+### Rules
+- Do not add new product features.
+- Do not start Sprint 11 work.
+- Fix only bugs related to Sprint 10 work.
+- Prioritise notification reliability, duplicate prevention, pricing accuracy, invoice accuracy, subscription usage and customer-safe wording.
+- If a wider issue is found, document it unless it blocks Sprint 10 functionality.
+
+### QA areas
+
+#### 1. Email notification regression
+Check:
+- booking emails from Sprint 10.2 still work
+- order lifecycle emails send correctly
+- invoice/payment emails send correctly
+- subscription emails send correctly
+- duplicate-send prevention works
+- failed sends are logged
+- notification preferences are respected
+- resend behaviour works where implemented
+- email copy is customer-friendly
+- emails do not expose raw UUIDs
+
+#### 2. Order and pricing regression
+Check:
+- booking estimated knife count
+- order actual knife count
+- order item quantity
+- price per knife/service
+- manual overrides
+- complimentary items
+- subscription-covered items
+- overage items
+- GBP formatting
+- invoice line items match calculated charge summary
+
+#### 3. Invoice/payment regression
+Check:
+- invoice draft generation
+- invoice issued/sent email
+- invoice amount matches order charge summary
+- payment received notification
+- payment failed notification if supported
+- duplicate invoice emails are prevented
+- duplicate invoice generation is prevented unless intentionally allowed
+
+#### 4. Subscription/revenue regression
+Check:
+- active subscriptions
+- subscription plan display
+- billing period dates
+- usage in current period
+- allowance remaining
+- overage quantity/value
+- renewal dates
+- recurring revenue dashboard
+- one-off vs recurring revenue split
+- unpaid invoice value
+- no duplicate revenue counting
+
+#### 5. Customer portal regression
+Check:
+- customer sees booking/order status
+- customer sees friendly order/pricing summary
+- customer sees invoice/payment status
+- customer sees subscription usage if applicable
+- customer does not see internal notes
+- customer does not see raw UUIDs
+- customer cannot access admin/pricing management
+
+#### 6. Admin/finance regression
+Check:
+- admin can manage pricing
+- admin can add priced order items
+- admin can issue invoice
+- admin can view notification logs
+- finance can view invoices/revenue where intended
+- role permissions remain correct
+- route users do not gain finance/admin powers
+
+### Acceptance criteria
+- Sprint 10 features work together.
+- No duplicated emails in normal workflows.
+- No duplicate invoice/revenue records.
+- Pricing totals match invoice totals.
+- Subscription usage matches reporting.
+- Customer-facing copy is friendly.
+- Permissions remain correct.
+- No P0/P1 bugs remain from Sprint 10.
+- Any deferred issues are clearly documented.
+
+### Required output
+At the end, provide:
+- QA checks completed
+- bugs found
+- bugs fixed
+- files changed
+- deferred issues
+- Sprint 10 final verdict: PASS / FAIL

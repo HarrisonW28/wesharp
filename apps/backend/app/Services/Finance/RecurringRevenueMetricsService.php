@@ -13,6 +13,7 @@ use App\Models\CompanySubscription;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
+use App\Models\SubscriptionBillingPeriod;
 use App\Support\Money\MoneyFormatting;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,6 +45,7 @@ final class RecurringRevenueMetricsService
         $hasSubscriptionRows = (clone $subBase)->exists();
 
         $activeSubscriptions = (int) (clone $subBase)->where('status', 'active')->count();
+        $pastDueSubscriptions = (int) (clone $subBase)->where('status', 'past_due')->count();
         $cancelledSubscriptionsSnapshot = (int) (clone $subBase)->where('status', 'cancelled')->count();
         $newSubscriptionsInPeriod = (int) (clone $subBase)
             ->whereBetween('created_at', [$periodStart, $periodEnd])
@@ -89,7 +91,7 @@ final class RecurringRevenueMetricsService
             ->sum('amount_pence');
 
         $mrrMonthlyPence = (int) CompanySubscription::query()
-            ->where('status', SubscriptionStatus::Active->value)
+            ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::PastDue->value])
             ->when($companyId !== null, fn (Builder $q) => $q->where('company_id', $companyId))
             ->when($planId !== null, fn (Builder $q) => $q->where('subscription_plan_id', $planId))
             ->whereHas('plan', fn (Builder $q) => $q->where('billing_interval', BillingInterval::Monthly->value))
@@ -138,6 +140,12 @@ final class RecurringRevenueMetricsService
             'arr_pence' => $r['mrr_pence'] * 12,
         ], $mrrTrend);
 
+        $openBillingPeriods = (int) SubscriptionBillingPeriod::query()->whereNull('closed_at')->count();
+        $closedBillingPeriodsInRange = (int) SubscriptionBillingPeriod::query()
+            ->whereNotNull('closed_at')
+            ->whereBetween('closed_at', [$periodStart, $periodEnd])
+            ->count();
+
         $hasTaggedInvoices = Invoice::query()
             ->when($companyId !== null, fn (Builder $q) => $q->where('company_id', $companyId))
             ->where('is_subscription_billing', true)
@@ -148,6 +156,10 @@ final class RecurringRevenueMetricsService
             || $subscriptionPaymentsPence > 0 || $activeSubscriptions > 0;
 
         return [
+            'billing_period_ledger' => [
+                'open_periods_count' => $openBillingPeriods,
+                'closed_periods_in_range_count' => $closedBillingPeriodsInRange,
+            ],
             'has_subscription_rows' => $hasSubscriptionRows,
             'placeholder_message' => self::PLACEHOLDER,
             'reporting_surface_ready' => $reportingSurfaceReady,
@@ -157,7 +169,7 @@ final class RecurringRevenueMetricsService
                 'computable' => $mrrComputable,
                 'reason' => $mrrComputable
                     ? null
-                    : 'No active subscriptions on a monthly plan with a price snapshot in scope, or amounts are zero.',
+                    : 'No monthly-plan subscriptions with status active or past due (with a price snapshot) in scope, or amounts are zero.',
             ],
             'arr' => [
                 'value_pence' => $arrPence,
@@ -169,6 +181,7 @@ final class RecurringRevenueMetricsService
             ],
             'subscription_counts' => [
                 'active' => $activeSubscriptions,
+                'past_due' => $pastDueSubscriptions,
                 'cancelled_snapshot' => $cancelledSubscriptionsSnapshot,
                 'new_in_period' => $newSubscriptionsInPeriod,
                 'cancelled_in_period' => $cancelledSubscriptionsInPeriod,
@@ -203,9 +216,10 @@ final class RecurringRevenueMetricsService
             'mrr_trend' => $mrrTrend,
             'arr_trend' => $arrTrend,
             'definitions' => [
-                'mrr' => 'Sum of price_amount_minor_snapshot for active company_subscriptions whose plan billing_interval is monthly.',
+                'mrr' => 'Sum of price_amount_minor_snapshot for company_subscriptions with status active or past_due whose plan billing_interval is monthly.',
                 'arr' => '12 × MRR when MRR is computable (monthly plans only; not a substitute for audited revenue recognition).',
                 'active' => 'company_subscriptions rows with status = active.',
+                'past_due' => 'company_subscriptions rows with status = past_due (renewal date passed; internal lifecycle until Stripe or staff resolves).',
                 'cancelled_snapshot' => 'Rows with status = cancelled (current snapshot).',
                 'new_in_period' => 'Subscription rows created_at within the selected period.',
                 'cancelled_in_period' => 'Rows with status cancelled and updated_at in period (approximation until cancellation events exist).',
@@ -219,7 +233,8 @@ final class RecurringRevenueMetricsService
                 'active_by_plan' => 'Active subscription rows grouped by subscription plan name (snapshot).',
                 'subscription_revenue' => 'Sum of invoice line totals where line_item_type = subscription on invoices issued in period and is_subscription_billing = true (ex void).',
                 'overage_revenue' => 'Sum of invoice line totals where line_item_type = overage on invoices issued in period and is_subscription_billing = true (ex void).',
-                'mrr_trend' => 'Month-by-month MRR snapshot at each month end (active monthly subscriptions only).',
+                'billing_period_ledger' => 'subscription_billing_periods: open rows have closed_at null; closed_periods_in_range counts rows closed in the selected reporting window.',
+                'mrr_trend' => 'Month-by-month MRR snapshot at each month end (active and past-due monthly subscriptions).',
             ],
             'meta' => [
                 'timezone' => $tz,
@@ -306,7 +321,7 @@ final class RecurringRevenueMetricsService
     {
         $q = CompanySubscription::query()
             ->join('subscription_plans', 'company_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
-            ->where('company_subscriptions.status', SubscriptionStatus::Active->value)
+            ->whereIn('company_subscriptions.status', [SubscriptionStatus::Active->value, SubscriptionStatus::PastDue->value])
             ->when($companyId !== null, fn (Builder $b) => $b->where('company_subscriptions.company_id', $companyId))
             ->when($planId !== null, fn (Builder $b) => $b->where('company_subscriptions.subscription_plan_id', $planId))
             ->selectRaw('subscription_plans.id AS plan_id, subscription_plans.name AS plan_name, COUNT(*) AS c, SUM(company_subscriptions.price_amount_minor_snapshot) AS s')
@@ -440,7 +455,7 @@ final class RecurringRevenueMetricsService
             $monthEnd = $cursor->endOfMonth()->endOfDay();
 
             $q = CompanySubscription::query()
-                ->where('status', SubscriptionStatus::Active->value)
+                ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::PastDue->value])
                 ->when($companyId !== null, fn (Builder $b) => $b->where('company_id', $companyId))
                 ->when($planId !== null, fn (Builder $b) => $b->where('subscription_plan_id', $planId))
                 ->whereNotNull('starts_at')

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PricingRuleKind;
 use App\Enums\ServiceType;
 use App\Models\PricingRule;
 use App\Models\ServiceArea;
@@ -18,7 +19,7 @@ class PricingRuleFactory extends Factory
             'service_area_id' => ServiceArea::factory(),
             'name' => fake()->words(3, true).' rate',
             'service_type' => fake()->randomElement(ServiceType::cases()),
-            'rule_kind' => fake()->randomElement(['per_knife', 'minimum_visit', 'tiered_volume']),
+            'rule_kind' => fake()->randomElement([PricingRuleKind::PerKnife->value, PricingRuleKind::FlatVisit->value]),
             'priority' => fake()->numberBetween(0, 50),
             'amount_pence' => fake()->numberBetween(350, 2500),
             'constraints' => [

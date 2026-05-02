@@ -11,6 +11,7 @@ use App\Enums\SubscriptionStatus;
 use App\Models\CompanySubscription;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\SubscriptionBillingPeriod;
 use App\Models\SubscriptionPlan;
 use App\Services\Notifications\SubscriptionEmailService;
 use Carbon\CarbonInterface;
@@ -71,7 +72,7 @@ final class OrderSubscriptionCoverageService
         }
 
         $sub = CompanySubscription::query()->with('plan')->find($subId);
-        if (! $sub instanceof CompanySubscription || $sub->status !== SubscriptionStatus::Active) {
+        if (! $sub instanceof CompanySubscription || ! in_array($sub->status, [SubscriptionStatus::Active, SubscriptionStatus::PastDue], true)) {
             return;
         }
 
@@ -113,7 +114,7 @@ final class OrderSubscriptionCoverageService
 
         $sub = CompanySubscription::query()
             ->where('company_id', $order->company_id)
-            ->where('status', SubscriptionStatus::Active->value)
+            ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::PastDue->value])
             ->with('plan')
             ->first();
 
@@ -244,10 +245,8 @@ final class OrderSubscriptionCoverageService
 
     public function usageSummaryForSubscription(CompanySubscription $sub): array
     {
-        $sub->loadMissing('plan');
-        $plan = $sub->plan;
-        $period = $this->periodBounds($sub);
-        if ($period === null || ! $plan instanceof SubscriptionPlan) {
+        $bounds = $this->periodBounds($sub);
+        if ($bounds === null) {
             return [
                 'billing_period' => null,
                 'included_collections' => null,
@@ -261,7 +260,36 @@ final class OrderSubscriptionCoverageService
             ];
         }
 
-        [$periodStart, $periodEnd] = $period;
+        [$periodStart, $periodEnd] = $bounds;
+
+        return $this->usageSummaryForWindow($sub, $periodStart, $periodEnd);
+    }
+
+    /**
+     * Usage within an explicit window (for billing-period history rows).
+     *
+     * @return array<string, mixed>
+     */
+    public function usageSummaryForWindow(CompanySubscription $sub, CarbonInterface $periodStart, CarbonInterface $periodEnd): array
+    {
+        $sub->loadMissing('plan');
+        $plan = $sub->plan;
+        if (! $plan instanceof SubscriptionPlan) {
+            return [
+                'billing_period' => [
+                    'start' => $periodStart->toDateString(),
+                    'end' => $periodEnd->toDateString(),
+                ],
+                'included_collections' => null,
+                'included_knife_allowance' => null,
+                'collections_used' => 0,
+                'knives_used' => 0,
+                'collections_overage_units' => 0,
+                'knives_overage_units' => 0,
+                'estimated_overage_pence' => 0,
+                'order_ids' => [],
+            ];
+        }
 
         $orders = Order::query()
             ->where('company_id', $sub->company_id)
@@ -296,8 +324,8 @@ final class OrderSubscriptionCoverageService
 
         return [
             'billing_period' => [
-                'start' => $sub->starts_at?->format('Y-m-d'),
-                'end' => $sub->renews_at?->format('Y-m-d'),
+                'start' => $periodStart->toDateString(),
+                'end' => $periodEnd->toDateString(),
             ],
             'included_collections' => $plan->included_collections,
             'included_knife_allowance' => $plan->included_knife_allowance,
@@ -345,6 +373,19 @@ final class OrderSubscriptionCoverageService
     /** @return array{0: CarbonInterface, 1: CarbonInterface}|null */
     private function periodBounds(CompanySubscription $sub): ?array
     {
+        $open = SubscriptionBillingPeriod::query()
+            ->where('company_subscription_id', $sub->id)
+            ->whereNull('closed_at')
+            ->orderByDesc('period_index')
+            ->first();
+
+        if ($open instanceof SubscriptionBillingPeriod) {
+            $start = $open->starts_on->copy()->startOfDay();
+            $end = $open->ends_on->copy()->endOfDay();
+
+            return [$start, $end];
+        }
+
         if ($sub->starts_at === null || $sub->renews_at === null) {
             return null;
         }

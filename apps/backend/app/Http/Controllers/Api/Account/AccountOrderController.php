@@ -39,7 +39,7 @@ final class AccountOrderController extends TenantAccountController
         /** @phpstan-ignore-next-line */
         $order->loadMissing([
             'company:id,name,city',
-            'booking:id,scheduled_date,booking_status',
+            'booking:id,scheduled_date,booking_status,estimated_knife_count,actual_knife_count,service_type',
             'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(250),
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
             'invoices' => fn ($q) => $q->orderByDesc('created_at')->limit(1),

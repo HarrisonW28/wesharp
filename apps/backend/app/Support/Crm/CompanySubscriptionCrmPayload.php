@@ -12,6 +12,7 @@ use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\Services\Subscriptions\SubscriptionBillingPeriodService;
 use App\Support\Money\MoneyFormatting;
 use App\Support\Permissions;
 use Illuminate\Support\Str;
@@ -33,15 +34,15 @@ final class CompanySubscriptionCrmPayload
         $canViewSubscriptions = Permissions::userMay($viewer, Permissions::SUBSCRIPTIONS_VIEW);
 
         $company->loadMissing([
-            'subscription.plan',
-            'subscription.billingContact',
+            'operationalSubscription.plan',
+            'operationalSubscription.billingContact',
             'subscriptions.plan',
             'subscriptions.billingContact',
         ]);
 
-        $sub = $company->relationLoaded('subscription')
-            ? $company->subscription
-            : $company->subscription()->with(['plan', 'billingContact'])->first();
+        $sub = $company->relationLoaded('operationalSubscription')
+            ? $company->operationalSubscription
+            : $company->operationalSubscription()->with(['plan', 'billingContact'])->first();
 
         if ($sub instanceof CompanySubscription) {
             $sub->loadMissing(['plan', 'billingContact']);
@@ -101,6 +102,9 @@ final class CompanySubscriptionCrmPayload
                 : 'No price snapshot on this row (legacy migration or draft).',
             'crm_actions' => self::crmActions($canManage, true, $hasPrior),
             'subscription_history' => $history,
+            'billing_periods' => $routeManager || ! $canViewSubscriptions
+                ? []
+                : app(SubscriptionBillingPeriodService::class)->periodsWithUsageSummaries($sub, 24),
         ];
 
         if ($routeManager) {

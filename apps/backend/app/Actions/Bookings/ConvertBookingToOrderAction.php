@@ -9,6 +9,8 @@ use App\Models\Booking;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Notifications\OrderEmailService;
+use App\Services\Orders\OrderService;
+use App\Services\Pricing\PricingRuleResolver;
 use App\Support\Bookings\BookingStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -65,7 +67,14 @@ final class ConvertBookingToOrderAction
                 'booking_id' => (string) $booking->id,
             ], $request);
 
-            return $order;
+            $order->loadMissing(['booking', 'company', 'company.locations']);
+            $pence = app(PricingRuleResolver::class)->defaultUnitAmountPenceForOrder($order);
+            if ($pence !== null) {
+                $order->price_per_knife_pence = $pence;
+                $order->save();
+            }
+
+            return app(OrderService::class)->rebuildMonetaryTotals($order->fresh(['knives', 'items']));
         });
 
         $this->orderEmails->sendOrderCreated($order->fresh(['company', 'booking.contact']));

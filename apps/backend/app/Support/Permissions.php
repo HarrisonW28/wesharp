@@ -66,6 +66,11 @@ final class Permissions
     /** Financial reporting (sales, invoices, subscriptions) — admin API `/api/admin/reports/…`. */
     public const REPORTS_FINANCE = 'reports.finance';
 
+    /** Create/view workshop & visit pricing rules (admin). */
+    public const PRICING_VIEW = 'pricing.view';
+
+    public const PRICING_MANAGE = 'pricing.manage';
+
     /** Operational reporting (bookings, orders, routes, knives) — admin API `/api/admin/reports/…`. */
     public const REPORTS_OPERATIONS = 'reports.operations';
 
@@ -141,6 +146,8 @@ final class Permissions
         self::AUDIT_LOGS_VIEW,
         self::REPORTS_FINANCE,
         self::REPORTS_OPERATIONS,
+        self::PRICING_VIEW,
+        self::PRICING_MANAGE,
         self::SUBSCRIPTIONS_VIEW,
         self::SUBSCRIPTIONS_MANAGE,
     ];
@@ -187,6 +194,8 @@ final class Permissions
             self::PAYMENTS_MANAGE,
             self::ANALYTICS_VIEW,
             self::REPORTS_FINANCE,
+            self::PRICING_VIEW,
+            self::PRICING_MANAGE,
             self::SUBSCRIPTIONS_VIEW,
             self::SUBSCRIPTIONS_MANAGE,
             self::SETTINGS_VIEW,

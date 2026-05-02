@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminSubscriptionDashboardController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BookingController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Admin\NotificationDeliveryController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\OrderSubscriptionCoverageController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\PricingRuleController;
 use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\ReportingController;
 use App\Http\Controllers\Admin\RouteController;
@@ -112,6 +114,10 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
         Route::post('{plan}/archive', [SubscriptionPlanController::class, 'archive'])->whereUuid('plan')->name('api.admin.subscription_plans.archive');
     });
 
+    Route::middleware('permission:pricing.view')->get('pricing-rules', [PricingRuleController::class, 'index'])->name('api.admin.pricing_rules.index');
+    Route::middleware('permission:pricing.manage')->post('pricing-rules', [PricingRuleController::class, 'store'])->name('api.admin.pricing_rules.store');
+    Route::middleware('permission:pricing.manage')->put('pricing-rules/{pricingRule}', [PricingRuleController::class, 'update'])->whereUuid('pricingRule')->name('api.admin.pricing_rules.update');
+
     Route::middleware('permission:users.view')->get('users', [UserDirectoryController::class, 'index'])->name('api.admin.users.index');
     Route::middleware('permission:users.view')->get('users/{target}', [UserDirectoryController::class, 'show'])->whereNumber('target')->name('api.admin.users.show');
     Route::middleware('permission:users.manage')->put('users/{target}', [UserDirectoryController::class, 'update'])->whereNumber('target')->name('api.admin.users.update');
@@ -132,7 +138,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:companies.view')->get('companies', [CompanyController::class, 'index'])->name('api.admin.companies.index');
     Route::middleware('permission:companies.create')->post('companies', [CompanyController::class, 'store'])->name('api.admin.companies.store');
     Route::middleware('permission:companies.view')->get('companies/{company}', [CompanyController::class, 'show'])->whereUuid('company')->name('api.admin.companies.show');
-    Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscriptions', [CompanySubscriptionController::class, 'index'])->whereUuid('company')->name('api.admin.companies.subscriptions.index');
+    Route::middleware('permission:subscriptions.view')->get('subscription-billing/dashboard', [AdminSubscriptionDashboardController::class, 'index'])->name('api.admin.subscription_billing.dashboard');
+    Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscription-billing-periods', [CompanySubscriptionController::class, 'billingPeriods'])->whereUuid('company')->name('api.admin.companies.subscription_billing_periods.index');
     Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscription-usage', [CompanySubscriptionController::class, 'usage'])->whereUuid('company')->name('api.admin.companies.subscription_usage');
     Route::middleware('permission:invoices.create')->post('companies/{company}/subscriptions/{subscription}/invoice-draft', [CompanySubscriptionController::class, 'generateInvoiceDraft'])
         ->whereUuid(['company', 'subscription'])
@@ -142,7 +149,9 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions/cancel', [CompanySubscriptionController::class, 'cancel'])->whereUuid('company')->name('api.admin.companies.subscriptions.cancel');
     Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions/reactivate', [CompanySubscriptionController::class, 'reactivate'])->whereUuid('company')->name('api.admin.companies.subscriptions.reactivate');
     Route::middleware('permission:subscriptions.view')->get('companies/{company}/subscriptions/{subscription}/notifications', [NotificationDeliveryController::class, 'subscriptionIndex'])->whereUuid(['company', 'subscription'])->name('api.admin.companies.subscriptions.notifications.index');
-    Route::middleware('permission:subscriptions.manage')->patch('companies/{company}/subscriptions/{subscription}', [CompanySubscriptionController::class, 'updateBillingContact'])->whereUuid(['company', 'subscription'])->name('api.admin.companies.subscriptions.update_billing_contact');
+    Route::middleware('permission:subscriptions.manage')->post('companies/{company}/subscriptions/{subscription}/renew-billing-period', [CompanySubscriptionController::class, 'renewBillingPeriod'])
+        ->whereUuid(['company', 'subscription'])
+        ->name('api.admin.companies.subscriptions.renew_billing_period');
     Route::middleware('permission:companies.update')->put('companies/{company}', [CompanyController::class, 'update'])->whereUuid('company')->name('api.admin.companies.update');
     Route::middleware('permission:companies.delete')->delete('companies/{company}', [CompanyController::class, 'destroy'])->whereUuid('company')->name('api.admin.companies.destroy');
     Route::middleware('permission:companies.view')->get('companies/{company}/summary', [CompanyController::class, 'summary'])->whereUuid('company')->name('api.admin.companies.summary');

@@ -34,9 +34,9 @@ final class CompanyCrmOverview
         $primaryContact = self::resolvePrimaryContact($company);
         $latestBooking = self::resolveLatestBooking($company);
         $activeOrder = self::resolveActiveOrder($company);
-        $subscription = $company->relationLoaded('subscription')
-            ? $company->subscription
-            : $company->subscription()->with('plan')->first();
+        $subscription = $company->relationLoaded('operationalSubscription')
+            ? $company->operationalSubscription
+            : $company->operationalSubscription()->with('plan')->first();
 
         $unpaidBalancePence = (int) $company->invoices()->outstanding()->sum('total_pence');
 

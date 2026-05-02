@@ -308,3 +308,146 @@ End with:
 - deployment checklist
 - smoke test checklist
 - remaining setup needed outside codebase
+
+---
+
+## Sprint 11.7 — UX, Reporting, Webhooks and Deployment Workflow Regression QA
+
+### Context
+Sprints 11.1–11.6 added or improved:
+- customer trust/service pages
+- public site conversion polish
+- admin operations UX
+- route/agent/photo evidence workflows
+- reporting/export readiness
+- webhook foundation and event idempotency
+- staging, GitLab workflow and deployment safety
+
+### Goal
+Regression test all Sprint 11 work together before moving into Sprint 12 production hardening.
+
+### Rules
+- Do not add new product features.
+- Do not start Sprint 12 work.
+- Fix only bugs related to Sprint 11 work.
+- Prioritise customer trust, admin usability, photo permissions, reporting accuracy, webhook idempotency and deployment documentation.
+- If a wider issue is found, document it unless it blocks Sprint 11 functionality.
+
+### QA areas
+
+#### 1. Public/customer UX regression
+Check:
+- homepage copy and layout
+- service pages
+- pricing pages
+- how-it-works/FAQ pages if present
+- booking CTAs
+- business/subscription CTAs
+- mobile nav
+- sign-in/sign-up links
+- no double header/footer
+- no dead links
+- no admin wording on customer pages
+
+#### 2. Customer portal regression
+Check:
+- customer dashboard
+- booking creation
+- booking status
+- order status
+- pricing/invoice summary
+- subscription usage
+- customer-friendly wording
+- mobile layout
+- empty/loading/error states
+
+#### 3. Admin UX regression
+Check:
+- admin dashboard
+- customer/company management
+- bookings
+- routes
+- orders
+- knives
+- pricing
+- invoices
+- subscriptions
+- reports
+- clear actions and statuses
+- useful empty/loading/error states
+- no raw UUIDs in normal workflows
+- destructive actions have confirmations
+- superadmins have option to delete records/users
+- pills are all same size/one line
+
+#### 4. Route/photo evidence regression
+Check:
+- route user mobile workflow
+- assigned route detail
+- collection/arrival/returned statuses
+- photo upload/capture
+- timestamps
+- photos linked to correct knife/order/customer
+- customer visibility rules
+- admin photo review
+- failed uploads handled clearly
+- take photo button/upload 
+
+#### 5. Reporting/export regression
+Check:
+- dashboard numbers match backend records
+- booking/order volume metrics
+- knife count metrics
+- invoice/payment metrics
+- subscription usage metrics
+- one-off vs recurring revenue split
+- overage revenue
+- date filters
+- exports if implemented
+- no fake or misleading placeholder data
+
+#### 6. Webhook regression
+Check:
+- webhook event logging
+- signature verification
+- Clerk user.created sync
+- Clerk user.updated sync
+- Clerk user.deleted handling if implemented
+- duplicate event idempotency
+- new Clerk users default to customer
+- admin roles are not overwritten accidentally
+- payment/subscription webhook placeholders or handlers are safe
+- webhook failures are logged
+
+#### 7. Deployment workflow regression
+Check:
+- environment docs exist
+- staging/prod separation documented
+- GitLab branch workflow documented
+- CI checks documented or configured
+- staging deployment checklist exists
+- production deployment checklist exists
+- rollback checklist exists
+- no secrets committed
+- no production data usage in staging docs unless anonymised
+
+### Acceptance criteria
+- Sprint 11 features work together.
+- Public site feels trustworthy and customer-facing.
+- Customer portal remains usable.
+- Admin operations are clearer and safer.
+- Route/photo evidence is secure and useful.
+- Reports are accurate enough for admin/finance use.
+- Webhooks are safe and idempotent.
+- Deployment workflow is documented.
+- No P0/P1 bugs remain from Sprint 11.
+- Any deferred issues are clearly documented.
+
+### Required output
+At the end, provide:
+- QA checks completed
+- bugs found
+- bugs fixed
+- files changed
+- deferred issues
+- Sprint 11 final verdict: PASS / FAIL

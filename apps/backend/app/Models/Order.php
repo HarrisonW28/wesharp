@@ -36,6 +36,9 @@ class Order extends Model
         'discount_pence',
         'payment_status',
         'completed_at',
+        'is_complimentary',
+        'manual_charge_subtotal_pence',
+        'manual_charge_reason',
     ];
 
     protected function casts(): array
@@ -48,6 +51,7 @@ class Order extends Model
             'subscription_coverage' => 'array',
             'subscription_coverage_computed_at' => 'datetime',
             'subscription_coverage_overridden' => 'boolean',
+            'is_complimentary' => 'boolean',
         ];
     }
 

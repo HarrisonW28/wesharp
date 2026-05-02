@@ -73,6 +73,13 @@ class CompanySubscription extends Model
         return $this->hasMany(Order::class, 'company_subscription_id');
     }
 
+    /** @return HasMany<SubscriptionBillingPeriod, CompanySubscription> */
+    public function billingPeriods(): HasMany
+    {
+        return $this->hasMany(SubscriptionBillingPeriod::class, 'company_subscription_id')
+            ->orderBy('period_index');
+    }
+
     /**
      * Display name for exports and legacy payloads (plan catalogue name).
      */

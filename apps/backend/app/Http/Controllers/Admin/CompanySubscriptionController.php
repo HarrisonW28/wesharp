@@ -12,6 +12,7 @@ use App\Http\Requests\Admin\CancelCompanySubscriptionRequest;
 use App\Http\Requests\Admin\ChangeCompanySubscriptionPlanRequest;
 use App\Http\Requests\Admin\GenerateSubscriptionInvoiceDraftRequest;
 use App\Http\Requests\Admin\ReactivateCompanySubscriptionRequest;
+use App\Http\Requests\Admin\RenewCompanySubscriptionBillingPeriodRequest;
 use App\Http\Requests\Admin\UpdateCompanySubscriptionBillingContactRequest;
 use App\Http\Resources\CompanySubscriptionResource;
 use App\Models\Company;
@@ -23,6 +24,7 @@ use App\Services\Audit\AuditRecorder;
 use App\Services\Notifications\SubscriptionEmailService;
 use App\Services\Subscriptions\CompanySubscriptionProvisioningService;
 use App\Services\Subscriptions\OrderSubscriptionCoverageService;
+use App\Services\Subscriptions\SubscriptionBillingPeriodService;
 use App\Support\ApiResponses;
 use App\Support\Invoices\InvoiceJson;
 use App\Support\Permissions;
@@ -284,24 +286,84 @@ final class CompanySubscriptionController extends Controller
             abort(403);
         }
 
-        $sub = $company->subscription()->with('plan')->first();
+        $sub = $company->operationalSubscription()->with('plan')->first();
         if ($sub === null) {
             return ApiResponses::success([
-                'active_subscription' => null,
+                'operational_subscription' => null,
                 'usage' => null,
+                'billing_periods' => [],
             ]);
         }
 
         $usage = app(OrderSubscriptionCoverageService::class)->usageSummaryForSubscription($sub);
+        $periods = app(SubscriptionBillingPeriodService::class)->periodsWithUsageSummaries($sub, 36);
 
         return ApiResponses::success([
-            'active_subscription' => [
+            'operational_subscription' => [
                 'id' => (string) $sub->id,
                 'plan_name' => $sub->plan?->name,
+                'status' => $sub->status?->value,
                 'starts_at' => $sub->starts_at?->format('Y-m-d'),
                 'renews_at' => $sub->renews_at?->format('Y-m-d'),
             ],
             'usage' => $usage,
+            'billing_periods' => $periods,
+        ]);
+    }
+
+    public function billingPeriods(Request $request, Company $company, SubscriptionBillingPeriodService $periods): JsonResponse
+    {
+        $this->authorize('view', $company);
+
+        $user = $request->user();
+        \assert($user instanceof User);
+        if (! Permissions::userMay($user, Permissions::SUBSCRIPTIONS_VIEW)) {
+            abort(403);
+        }
+
+        $sub = $company->operationalSubscription()->with('plan')->first();
+        if ($sub === null) {
+            return ApiResponses::success(['items' => []]);
+        }
+
+        return ApiResponses::success([
+            'items' => $periods->periodsWithUsageSummaries($sub, 48),
+        ]);
+    }
+
+    public function renewBillingPeriod(
+        RenewCompanySubscriptionBillingPeriodRequest $request,
+        Company $company,
+        CompanySubscription $subscription,
+        SubscriptionBillingPeriodService $periods,
+    ): JsonResponse {
+        $this->authorize('view', $company);
+        $this->authorize('update', $subscription);
+
+        if ((string) $subscription->company_id !== (string) $company->id) {
+            abort(404);
+        }
+
+        $v = $request->validated();
+        $force = (bool) ($v['force'] ?? false);
+
+        $result = $periods->renewOperationalSubscription($subscription, $force);
+
+        AuditRecorder::record($request->user(), $result['subscription'], 'company_subscription.billing_period_renewed', [
+            'company_id' => (string) $company->id,
+            'new_starts_at' => $result['subscription']->starts_at?->toDateString(),
+            'new_renews_at' => $result['subscription']->renews_at?->toDateString(),
+            'period_id' => (string) $result['new_period']->id,
+        ], $request);
+
+        return ApiResponses::success([
+            'subscription' => CompanySubscriptionResource::make($result['subscription']),
+            'new_period' => [
+                'id' => (string) $result['new_period']->id,
+                'period_index' => (int) $result['new_period']->period_index,
+                'starts_on' => $result['new_period']->starts_on->toDateString(),
+                'ends_on' => $result['new_period']->ends_on->toDateString(),
+            ],
         ]);
     }
 
@@ -318,8 +380,8 @@ final class CompanySubscriptionController extends Controller
             abort(404);
         }
 
-        if ($subscription->status !== SubscriptionStatus::Active) {
-            abort(422, 'Subscription must be active to generate a billing invoice draft.');
+        if (! in_array($subscription->status, [SubscriptionStatus::Active, SubscriptionStatus::PastDue], true)) {
+            abort(422, 'Subscription must be active or past due to generate a billing invoice draft.');
         }
 
         $v = $request->validated();

@@ -5,13 +5,15 @@ namespace App\Services\Orders;
 use App\Actions\Orders\CompleteOrderAction;
 use App\Enums\InvoiceStatus;
 use App\Enums\KnifeServiceKind;
+use App\Enums\OrderStatus;
+use App\Enums\SubscriptionOrderItemBillingKind;
 use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Knives\KnifeService;
-use App\Services\Notifications\OrderEmailService;
 use App\Services\Knives\KnifeServiceAssignmentRecorder;
+use App\Services\Notifications\OrderEmailService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -32,7 +34,7 @@ final class OrderService
 
         $with = [
             'company:id,name,city',
-            'booking:id,scheduled_date,booking_status',
+            'booking:id,scheduled_date,booking_status,estimated_knife_count,actual_knife_count,service_type',
         ];
         if ($withOperationalRoute) {
             $with[] = 'operationalRoute:id,name,route_status,scheduled_date';
@@ -127,6 +129,10 @@ final class OrderService
         return DB::transaction(function () use ($order, $patch, $actor, $request): Order {
             unset($patch['order_status']);
 
+            $pricingKeys = ['is_complimentary', 'manual_charge_subtotal_pence', 'manual_charge_reason'];
+            /** @phpstan-ignore-next-line */
+            $beforePricing = $order->only($pricingKeys);
+
             /** @phpstan-ignore-next-line */
             $keys = array_keys($patch);
             /** @phpstan-ignore-next-line */
@@ -140,13 +146,20 @@ final class OrderService
                 'after' => $order->only($keys),
             ], $request);
 
+            if (array_intersect($keys, $pricingKeys) !== []) {
+                AuditRecorder::record($actor, $order, 'order.pricing_terms_updated', [
+                    'before' => $beforePricing,
+                    'after' => $order->only($pricingKeys),
+                ], $request);
+            }
+
             return $this->rebuildMonetaryTotals($order->fresh(['knives', 'items']));
         });
     }
 
     public function rebuildMonetaryTotals(Order $order): Order
     {
-        $order->loadMissing(['knives', 'items']);
+        $order->loadMissing(['knives', 'items', 'booking']);
 
         $rows = $order->knives->count();
         $planned = max(0, (int) ($order->knife_count ?? 0));
@@ -155,12 +168,31 @@ final class OrderService
 
         $order->knife_count = $rows > 0 ? $rows : $planned;
 
+        if ($order->is_complimentary) {
+            $order->subtotal_pence = 0;
+            $order->tax_pence = 0;
+            $order->total_pence = 0;
+            $order->save();
+
+            return $order->fresh();
+        }
+
+        $manual = $order->manual_charge_subtotal_pence;
+        $manualReason = $order->manual_charge_reason !== null ? trim((string) $order->manual_charge_reason) : '';
+        if ($manual !== null && $manualReason !== '') {
+            $netBeforeVat = max(0, (int) $manual - (int) $order->discount_pence);
+            $tax = (int) round($netBeforeVat * 0.20);
+
+            $order->subtotal_pence = $netBeforeVat;
+            $order->tax_pence = $tax;
+            $order->total_pence = $netBeforeVat + $tax;
+            $order->save();
+
+            return $order->fresh();
+        }
+
         if ($order->items->isNotEmpty()) {
-            /** @var int $lineNet */
-            $lineNet = $order->items->sum(
-                /** @param  OrderItem  $i */
-                fn (OrderItem $i): int => (int) $i->quantity * (int) $i->unit_amount_pence
-            );
+            $lineNet = $this->sumOrderItemsNetPence($order);
             $netBeforeVat = max(0, $lineNet - (int) $order->discount_pence);
             $tax = (int) round($netBeforeVat * 0.20);
 
@@ -188,6 +220,34 @@ final class OrderService
         $order->save();
 
         return $order->fresh();
+    }
+
+    private function sumOrderItemsNetPence(Order $order): int
+    {
+        $cov = $order->subscription_coverage;
+        $subMode = is_array($cov)
+            && ($cov['mode'] ?? '') === 'subscription'
+            && $order->order_status === OrderStatus::Completed;
+        $ovRate = $subMode ? (int) ($cov['overage_unit_price_pence'] ?? 0) : 0;
+
+        $sum = 0;
+        foreach ($order->items as $i) {
+            $qty = max(1, (int) $i->quantity);
+            if ($subMode) {
+                $kind = $i->subscription_billing_kind;
+                if ($kind === SubscriptionOrderItemBillingKind::Included) {
+                    continue;
+                }
+                if ($kind === SubscriptionOrderItemBillingKind::Overage) {
+                    $sum += $ovRate * $qty;
+
+                    continue;
+                }
+            }
+            $sum += (int) $i->unit_amount_pence * $qty;
+        }
+
+        return $sum;
     }
 
     /** @param  array<string, mixed>  $knifePayload */

@@ -13,6 +13,7 @@ use App\Models\Invoice;
 use App\Models\Knife;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\Pricing\PricingRuleResolver;
 use App\Support\Audit\AuditLogPresenter;
 use App\Support\Evidence\EvidencePhotoJson;
 use App\Support\Knives\KnifeJson;
@@ -82,6 +83,9 @@ final class OrderJson
             'formatted_amount' => MoneyFormatting::formatGbpFromPence((int) $order->total_pence),
             'total_amount_minor' => (int) $order->total_pence,
             'currency' => $order->currency,
+            'is_complimentary' => (bool) $order->is_complimentary,
+            'estimated_knife_count' => $order->relationLoaded('booking') ? $order->booking?->estimated_knife_count : null,
+            'actual_knife_count' => $order->relationLoaded('booking') ? $order->booking?->actual_knife_count : null,
             'company' => $order->relationLoaded('company') && $order->company !== null ? [
                 'name' => $order->company->name,
                 'city' => $order->company->city,
@@ -384,6 +388,9 @@ final class OrderJson
             'id' => (string) $b->id,
             'reference' => BookingResource::reference($b),
             'scheduled_date' => $b->scheduled_date?->format('Y-m-d'),
+            'service_type' => $b->service_type?->value,
+            'estimated_knife_count' => $b->estimated_knife_count,
+            'actual_knife_count' => $b->actual_knife_count,
             'status' => $b->booking_status?->value,
             'contact' => $contact,
             'location' => $location,
@@ -519,6 +526,24 @@ final class OrderJson
         $payload['subscription_coverage_computed_at'] = $order->subscription_coverage_computed_at?->toIso8601String();
         $payload['subscription_coverage_overridden'] = (bool) $order->subscription_coverage_overridden;
         $payload['subscription_coverage_override_reason'] = $order->subscription_coverage_override_reason;
+
+        $resolver = app(PricingRuleResolver::class);
+        $order->loadMissing(['booking', 'company', 'company.locations']);
+        $matched = $resolver->resolveForOrder($order);
+        $payload['pricing_hint'] = [
+            'default_unit_amount_pence' => $resolver->defaultUnitAmountPenceForOrder($order),
+            'matched_rule' => $matched !== null ? [
+                'id' => (string) $matched->id,
+                'name' => $matched->name,
+                'rule_kind' => $matched->rule_kind,
+                'priority' => (int) $matched->priority,
+            ] : null,
+        ];
+        $payload['is_complimentary'] = (bool) $order->is_complimentary;
+        $payload['manual_charge_subtotal_pence'] = $order->manual_charge_subtotal_pence !== null
+            ? (int) $order->manual_charge_subtotal_pence
+            : null;
+        $payload['manual_charge_reason'] = $order->manual_charge_reason;
 
         return $payload;
     }

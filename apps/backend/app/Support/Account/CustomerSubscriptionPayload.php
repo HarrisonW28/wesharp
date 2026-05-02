@@ -7,6 +7,7 @@ use App\Models\CompanySubscription;
 use App\Models\Invoice;
 use App\Models\SubscriptionPlan;
 use App\Services\Subscriptions\OrderSubscriptionCoverageService;
+use App\Services\Subscriptions\SubscriptionBillingPeriodService;
 use App\Support\Invoices\InvoiceJson;
 use App\Support\Invoices\InvoicePresentation;
 use App\Support\Money\MoneyFormatting;
@@ -26,7 +27,7 @@ final class CustomerSubscriptionPayload
         /** @phpstan-ignore-next-line */
         $sub = CompanySubscription::query()
             ->where('company_id', $companyId)
-            ->where('status', SubscriptionStatus::Active->value)
+            ->whereIn('status', [SubscriptionStatus::Active->value, SubscriptionStatus::PastDue->value])
             ->with(['plan', 'billingContact', 'company:id,billing_email,name'])
             ->first();
 
@@ -50,6 +51,7 @@ final class CustomerSubscriptionPayload
         $collectionsUsed = (int) ($usage['collections_used'] ?? 0);
         $knivesUsed = (int) ($usage['knives_used'] ?? 0);
         $hasUsageActivity = $collectionsUsed > 0 || $knivesUsed > 0;
+        $periodLedger = app(SubscriptionBillingPeriodService::class)->periodsWithUsageSummaries($sub, 6);
 
         return [
             'plan_name' => $plan !== null ? $plan->name : $sub->planName(),
@@ -65,6 +67,7 @@ final class CustomerSubscriptionPayload
                 : null,
             'summary' => self::summaryLine($plan),
             'billing_contact' => self::billingContactForPortal($sub),
+            'recent_billing_periods' => self::trimPeriodsForPortal($periodLedger),
             'recent_invoices' => self::formatInvoices($recentInvoices),
             'period_usage' => [
                 'billing_period' => $usage['billing_period'],
@@ -93,7 +96,38 @@ final class CustomerSubscriptionPayload
             return 'Active';
         }
 
+        if ($st === SubscriptionStatus::PastDue) {
+            return 'Payment needed';
+        }
+
         return $st !== null ? Str::headline($st->value) : 'Unknown';
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $periods
+     * @return list<array<string, mixed>>
+     */
+    private static function trimPeriodsForPortal(array $periods): array
+    {
+        $out = [];
+        foreach ($periods as $row) {
+            $usage = is_array($row['usage'] ?? null) ? $row['usage'] : [];
+            $bp = is_array($usage['billing_period'] ?? null) ? $usage['billing_period'] : [];
+            $start = is_string($bp['start'] ?? null) ? $bp['start'] : null;
+            $end = is_string($bp['end'] ?? null) ? $bp['end'] : null;
+            $label = is_string($start) && is_string($end) ? self::formatBillingPeriodLabel($start, $end) : null;
+            $out[] = [
+                'period_label' => $label,
+                'starts_on' => $row['starts_on'] ?? null,
+                'ends_on' => $row['ends_on'] ?? null,
+                'was_completed_billing_cycle' => ($row['is_closed'] ?? false) === true,
+                'collections_used' => (int) ($usage['collections_used'] ?? 0),
+                'knives_used' => (int) ($usage['knives_used'] ?? 0),
+                'formatted_estimated_overage_gbp' => MoneyFormatting::formatGbpFromPence((int) ($usage['estimated_overage_pence'] ?? 0)),
+            ];
+        }
+
+        return $out;
     }
 
     /**

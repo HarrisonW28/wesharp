@@ -34,6 +34,7 @@ final class RecurringRevenueReportService
             $f->toArray(),
             [
                 'active_subscriptions_count' => (int) $counts['active'],
+                'past_due_subscriptions_count' => (int) ($counts['past_due'] ?? 0),
                 'cancelled_subscriptions_snapshot_count' => (int) $counts['cancelled_snapshot'],
                 'new_subscriptions_in_period_count' => (int) $counts['new_in_period'],
                 'cancelled_subscriptions_in_period_count' => (int) $counts['cancelled_in_period'],

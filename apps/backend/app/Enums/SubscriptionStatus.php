@@ -8,6 +8,7 @@ enum SubscriptionStatus: string
 {
     case Draft = 'draft';
     case Active = 'active';
+    case PastDue = 'past_due';
     case Paused = 'paused';
     case Cancelled = 'cancelled';
     case Expired = 'expired';

@@ -7,8 +7,8 @@ use App\Actions\Orders\BulkOrderWorkshopAction;
 use App\Actions\Orders\CancelOrderAction;
 use App\Actions\Orders\TransitionOrderItemServiceStatusAction;
 use App\Actions\Orders\TransitionOrderStatusAction;
-use App\Enums\KnifeStatus;
 use App\Enums\InvoiceStatus;
+use App\Enums\KnifeStatus;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
@@ -25,11 +25,13 @@ use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Orders\OrderService;
+use App\Services\Pricing\PricingRuleResolver;
 use App\Support\ApiResponses;
 use App\Support\Knives\KnifeJson;
 use App\Support\Orders\OrderJson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 final class OrderController extends Controller
 {
@@ -40,6 +42,7 @@ final class OrderController extends Controller
         private readonly TransitionOrderStatusAction $transitionOrderStatusAction,
         private readonly TransitionOrderItemServiceStatusAction $transitionOrderItemServiceStatusAction,
         private readonly BulkOrderWorkshopAction $bulkOrderWorkshopAction,
+        private readonly PricingRuleResolver $pricingResolver,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -310,10 +313,25 @@ final class OrderController extends Controller
     {
         $this->authorize('manipulateKnives', $order);
 
+        $validated = $request->validated();
+        $base = $order->fresh(['booking', 'company']);
+        $base->loadMissing(['company.locations']);
+        $default = $this->pricingResolver->defaultUnitAmountPenceForOrder($base);
+        foreach ($validated['items'] as $i => $row) {
+            if (! array_key_exists('unit_amount_pence', $row) || $row['unit_amount_pence'] === null) {
+                if ($default === null) {
+                    throw ValidationException::withMessages([
+                        "items.$i.unit_amount_pence" => 'No matching active per-knife pricing rule for this order. Enter a unit price or configure pricing.',
+                    ]);
+                }
+                $validated['items'][$i]['unit_amount_pence'] = $default;
+            }
+        }
+
         /** @phpstan-ignore-next-line */
         $fresh = $this->orderService->bulkAddOrderItems(
             $order->fresh(),
-            $request->validated(),
+            $validated,
             $request->user(),
             $request
         );

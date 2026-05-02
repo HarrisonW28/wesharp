@@ -39,6 +39,8 @@ final class BillingReportService
 
         $periodInvoiceBase = $this->invoiceIssuedInPeriod($f);
 
+        $lineRevenueBreakdown = $this->invoiceLineRevenueByType($periodInvoiceBase);
+
         $invoicesSentCount = (int) (clone $periodInvoiceBase)
             ->whereNotIn('invoices.invoice_status', [InvoiceStatus::Draft, InvoiceStatus::Void])
             ->count();
@@ -155,6 +157,7 @@ final class BillingReportService
                 'payment_method_breakdown' => $paymentMethodBreakdown,
                 'payments_by_day' => $paymentsByDay,
                 'outstanding_by_customer' => $outstandingByCustomer,
+                'invoice_line_revenue_by_type' => $lineRevenueBreakdown,
             ],
             [
                 'columns' => [
@@ -183,6 +186,7 @@ final class BillingReportService
                 'payments_received_count' => 'Payment rows in that paid_at window.',
                 'average_days_to_pay' => 'Mean days from issued_on to last payment paid_at for invoices marked paid with issued_on in range; null if none.',
                 'ageing' => 'Outstanding residuals bucketed by days past COALESCE(due_on, issued_on) vs date_to.',
+                'invoice_line_revenue_by_type' => 'Sum of invoice line totals in the period by line_item_type (one_off_service, subscription, overage, adjustment); issued invoices only, draft/void excluded.',
             ],
         );
 
@@ -225,6 +229,30 @@ final class BillingReportService
                 ],
             ],
         ]);
+    }
+
+    /**
+     * @param  Builder<Invoice>  $periodInvoiceBase
+     * @return list<array{line_item_type: string, line_total_pence: int}>
+     */
+    private function invoiceLineRevenueByType(Builder $periodInvoiceBase): array
+    {
+        $issued = (clone $periodInvoiceBase)
+            ->whereNotIn('invoices.invoice_status', [InvoiceStatus::Draft, InvoiceStatus::Void]);
+
+        $rows = DB::query()
+            ->from('invoice_items')
+            ->joinSub($issued->select('invoices.id')->toBase(), 'i', 'invoice_items.invoice_id', '=', 'i.id')
+            ->selectRaw('invoice_items.line_item_type AS t')
+            ->selectRaw('SUM(invoice_items.line_total_pence) AS pence')
+            ->groupBy('invoice_items.line_item_type')
+            ->orderBy('invoice_items.line_item_type')
+            ->get();
+
+        return $rows->map(static fn ($r): array => [
+            'line_item_type' => (string) $r->t,
+            'line_total_pence' => (int) $r->pence,
+        ])->values()->all();
     }
 
     /**

@@ -323,3 +323,161 @@ End with:
 - smoke test checklist
 - launch blockers
 - production readiness verdict
+
+---
+
+## Sprint 12.8 — Final Production Readiness QA
+
+### Context
+Sprints 12.1–12.7 covered:
+- full system audit
+- critical bug fixing
+- end-to-end QA
+- UX/UI production polish
+- security, permissions and data protection review
+- production cleanup
+- production deployment readiness
+
+### Goal
+Final production readiness QA before launch candidate.
+
+### Rules
+- Do not add new product features.
+- Fix only launch-blocking bugs.
+- Anything non-blocking should be documented as post-launch backlog.
+- Confirm the app is safe to use with real customers/admin staff.
+- Confirm production deployment can be performed repeatably.
+- Confirm there are no known P0/P1 launch blockers.
+
+### Final QA areas
+
+#### 1. Core customer journey
+Check:
+- public site loads
+- customer can sign up
+- customer can log in
+- new users default to customer role
+- customer can create booking
+- customer can choose/request time window
+- customer can view booking status
+- customer can view order status
+- customer can view knife/photo updates where allowed
+- customer can view invoice/payment status
+- customer can view subscription usage where applicable
+- customer cannot access admin areas
+
+#### 2. Core admin journey
+Check:
+- admin can log in
+- admin can manage customers/companies
+- admin can create/update booking
+- admin can assign booking to route
+- admin can convert booking to order
+- admin can add knives/items
+- admin can price order
+- admin can generate/issue invoice
+- admin can complete order
+- admin can view audit/activity where applicable
+
+#### 3. POS journey
+Check:
+- POS mode opens
+- POS guides the sales interaction
+- customer lookup/create works
+- booking/order creation works
+- knife count/pricing works
+- photo skip/continue-later behaviour works if implemented
+- summary/confirmation is clear
+- mobile/tablet layout is usable
+
+#### 4. Route/agent journey
+Check:
+- route user can log in
+- route user sees assigned work only
+- status updates work
+- photos can be captured/uploaded
+- photos are timestamped
+- photos link to correct knife/order/customer
+- customers only see allowed photos
+
+#### 5. Finance/subscription journey
+Check:
+- invoices work
+- payment statuses work where implemented
+- pricing/revenue totals are accurate
+- subscription usage is accurate
+- recurring revenue reporting makes sense
+- overage revenue is separated
+- unpaid/overdue values are clear
+
+#### 6. Emails and webhooks
+Check:
+- booking emails
+- order emails
+- invoice/payment emails
+- subscription emails
+- notification preferences/logs
+- failed send logging
+- duplicate-send prevention
+- Clerk webhook signature verification
+- webhook idempotency
+- new Clerk users default to customer
+
+#### 7. Security and permissions
+Check:
+- customer cannot access admin UI/API
+- route manager permissions are limited
+- finance permissions are limited
+- admin/super_admin permissions work
+- customers cannot access other customers' data
+- photos/uploads are protected
+- API errors do not expose stack traces/secrets
+- APP_DEBUG is false for production
+
+#### 8. Production cleanup
+Check:
+- no dd()/dump()
+- no console spam in production paths
+- no hardcoded test users
+- no hardcoded local URLs
+- demo seeders are not required
+- production does not rely on fake data
+- no migrate:fresh in production docs
+- logs are writable
+- storage is configured
+- environment variables are documented
+
+#### 9. Deployment readiness
+Check:
+- staging/prod separation documented
+- production database separate
+- production Clerk app separate
+- backups documented
+- rollback documented
+- deployment checklist works
+- smoke test checklist exists
+- /api/health returns JSON
+- frontend production build passes
+- backend install/cache/migrate steps documented
+
+### Acceptance criteria
+- No P0 launch blockers remain.
+- No P1 launch blockers remain unless explicitly accepted.
+- Core customer journey works.
+- Core admin journey works.
+- POS/route/photo flows work.
+- Pricing/invoice/subscription reporting is accurate enough for launch.
+- Permissions and data isolation are safe.
+- Production cleanup is complete.
+- Deployment/rollback process is documented.
+- Final launch risks are documented.
+
+### Required output
+At the end, provide:
+- final QA checks completed
+- launch blockers found
+- launch blockers fixed
+- files changed
+- post-launch backlog
+- production risks
+- final production readiness verdict: READY / NOT READY

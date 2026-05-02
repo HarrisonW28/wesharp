@@ -57,7 +57,7 @@ final class CompanySubscriptionProvisioningService
         $this->assertPlanAssignable($plan, $allowInactivePlan);
         $this->assertBillingContact($company, $billingContactId);
 
-        if ($company->subscription()->exists()) {
+        if ($company->operationalSubscription()->exists()) {
             throw ValidationException::withMessages([
                 'status' => 'This company already has an active subscription. Cancel it or change plan instead.',
             ]);
@@ -97,7 +97,7 @@ final class CompanySubscriptionProvisioningService
         $this->assertPlanAssignable($newPlan, $allowInactivePlan);
         $this->assertBillingContact($company, $billingContactId);
 
-        $active = $company->subscription()->first();
+        $active = $company->operationalSubscription()->first();
         if (! $active instanceof CompanySubscription) {
             throw ValidationException::withMessages([
                 'company_id' => 'This company has no active subscription to change.',
@@ -119,6 +119,8 @@ final class CompanySubscriptionProvisioningService
             $cancelNote = $additionalNotes !== null && $additionalNotes !== ''
                 ? $this->appendNote($active->notes, 'Plan change: '.$additionalNotes)
                 : $this->appendNote($active->notes, 'Plan change — superseded.');
+
+            app(SubscriptionBillingPeriodService::class)->closeAllOpenPeriodsForSubscription($active);
 
             $active->update([
                 'status' => SubscriptionStatus::Cancelled,
@@ -155,6 +157,7 @@ final class CompanySubscriptionProvisioningService
 
             $active->refresh();
             $created->refresh();
+            app(SubscriptionBillingPeriodService::class)->createInitialPeriod($created);
 
             return [$active, $created];
         });
@@ -165,7 +168,7 @@ final class CompanySubscriptionProvisioningService
         ?string $cancellationNotes,
         ?CarbonInterface $cancelledAt = null,
     ): CompanySubscription {
-        $active = $company->subscription()->first();
+        $active = $company->operationalSubscription()->first();
         if (! $active instanceof CompanySubscription) {
             throw ValidationException::withMessages([
                 'company_id' => 'This company has no active subscription to cancel.',
@@ -177,6 +180,8 @@ final class CompanySubscriptionProvisioningService
         $notes = $cancellationNotes !== null && $cancellationNotes !== ''
             ? $this->appendNote($active->notes, 'Cancellation: '.$cancellationNotes)
             : $active->notes;
+
+        app(SubscriptionBillingPeriodService::class)->closeAllOpenPeriodsForSubscription($active);
 
         $active->update([
             'status' => SubscriptionStatus::Cancelled,
@@ -204,7 +209,7 @@ final class CompanySubscriptionProvisioningService
         $this->assertPlanAssignable($plan, $allowInactivePlan);
         $this->assertBillingContact($company, $billingContactId);
 
-        if ($company->subscription()->exists()) {
+        if ($company->operationalSubscription()->exists()) {
             throw ValidationException::withMessages([
                 'status' => 'This company already has an active subscription.',
             ]);
@@ -237,9 +242,9 @@ final class CompanySubscriptionProvisioningService
             ]);
         }
 
-        if ($subscription->status !== SubscriptionStatus::Active) {
+        if (! in_array($subscription->status, [SubscriptionStatus::Active, SubscriptionStatus::PastDue], true)) {
             throw ValidationException::withMessages([
-                'subscription' => 'Only active subscriptions can have their billing contact updated here.',
+                'subscription' => 'Only active or past-due subscriptions can have their billing contact updated here.',
             ]);
         }
 
@@ -272,7 +277,7 @@ final class CompanySubscriptionProvisioningService
         $this->assertPlanAssignable($plan, $allowInactivePlan);
         $this->assertBillingContact($company, $billingContactId);
 
-        if ($initialStatus === SubscriptionStatus::Active && $company->subscription()->exists()) {
+        if ($initialStatus === SubscriptionStatus::Active && $company->operationalSubscription()->exists()) {
             throw ValidationException::withMessages([
                 'status' => 'This company already has an active subscription. Cancel or expire it before activating another.',
             ]);
@@ -343,6 +348,10 @@ final class CompanySubscriptionProvisioningService
                 throw $e;
             }
 
+            if (in_array($status, [SubscriptionStatus::Active, SubscriptionStatus::PastDue], true) && $renewsAt !== null) {
+                app(SubscriptionBillingPeriodService::class)->createInitialPeriod($sub);
+            }
+
             return $sub;
         });
     }
@@ -401,6 +410,7 @@ final class CompanySubscriptionProvisioningService
         $msg = $e->getMessage();
 
         return str_contains($msg, 'company_subscriptions_one_active_per_company')
+            || str_contains($msg, 'company_subscriptions_one_operational_slot')
             || str_contains($msg, 'UNIQUE constraint failed: company_subscriptions.company_id');
     }
 }
