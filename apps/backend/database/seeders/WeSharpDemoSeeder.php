@@ -99,6 +99,9 @@ final class WeSharpDemoSeeder extends Seeder
             'region' => 'Greater Manchester',
             'country' => 'GB',
             'postcode_prefix' => 'M',
+            'centre_latitude' => 53.4808,
+            'centre_longitude' => -2.2426,
+            'radius_metres' => 15_000,
             'active' => true,
         ]);
 
@@ -108,6 +111,9 @@ final class WeSharpDemoSeeder extends Seeder
             'region' => 'Merseyside',
             'country' => 'GB',
             'postcode_prefix' => 'L',
+            'centre_latitude' => 53.4084,
+            'centre_longitude' => -2.9916,
+            'radius_metres' => 12_000,
             'active' => true,
         ]);
 

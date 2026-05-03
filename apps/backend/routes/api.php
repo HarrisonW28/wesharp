@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\ReportingController;
 use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\RouteStopController;
+use App\Http\Controllers\Admin\ServiceAreaController;
 use App\Http\Controllers\Admin\ServiceAreaWaitlistController;
 use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
@@ -206,6 +207,14 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
 
     Route::middleware('permission:companies.view')->get('companies', [CompanyController::class, 'index'])->name('api.admin.companies.index');
     Route::middleware('permission:companies.view')->get('service-area-waitlist', [ServiceAreaWaitlistController::class, 'index'])->name('api.admin.service_area_waitlist.index');
+    Route::middleware('permission:service_areas.view')->get('service-areas', [ServiceAreaController::class, 'index'])->name('api.admin.service_areas.index');
+    Route::middleware('permission:service_areas.manage')->post('service-areas', [ServiceAreaController::class, 'store'])->name('api.admin.service_areas.store');
+    Route::middleware('permission:service_areas.manage')->put('service-areas/{service_area}', [ServiceAreaController::class, 'update'])
+        ->whereUuid('service_area')
+        ->name('api.admin.service_areas.update');
+    Route::middleware('permission:service_areas.manage')->delete('service-areas/{service_area}', [ServiceAreaController::class, 'destroy'])
+        ->whereUuid('service_area')
+        ->name('api.admin.service_areas.destroy');
     Route::middleware('permission:companies.create')->post('companies', [CompanyController::class, 'store'])->name('api.admin.companies.store');
     Route::middleware('permission:companies.view')->get('companies/{company}', [CompanyController::class, 'show'])->whereUuid('company')->name('api.admin.companies.show');
     Route::middleware('permission:subscriptions.view')->get('subscription-billing/dashboard', [AdminSubscriptionDashboardController::class, 'index'])->name('api.admin.subscription_billing.dashboard');

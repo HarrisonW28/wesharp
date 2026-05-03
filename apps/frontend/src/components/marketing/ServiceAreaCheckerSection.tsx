@@ -52,7 +52,9 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
   const [checkResult, setCheckResult] = useState<{
     covered: boolean;
     areaLabel: string | null;
+    areaCity: string | null;
     nextCollection: string | null;
+    checkedPostcode: string;
   } | null>(null);
 
   const [waitlistForm, setWaitlistForm] = useState<PublicServiceAreaWaitlistFormValues>({
@@ -66,6 +68,15 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
 
   const [waitlistSucceeded, setWaitlistSucceeded] = useState(false);
 
+  const bookHrefWithPostcode = useMemo(() => {
+    if (!checkResult?.covered) {
+      return null;
+    }
+    const q = new URLSearchParams();
+    q.set("postcode", checkResult.checkedPostcode);
+    return `/book?${q.toString()}`;
+  }, [checkResult]);
+
   async function runCheck() {
     setCheckError(null);
     setCheckResult(null);
@@ -78,7 +89,7 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
 
     const pc = postcodeInput.trim();
     if (pc.length < 2) {
-      setCheckError("Enter a full postcode.");
+      setCheckError("Enter a UK postcode (for example M1 1AA).");
       return;
     }
 
@@ -91,9 +102,13 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
       });
       const json: unknown = await res.json();
       if (!res.ok) {
+        const err =
+          typeof json === "object" && json !== null && "error" in json
+            ? (json as { error?: { message?: string; code?: string } }).error
+            : undefined;
         const msg =
-          typeof json === "object" && json !== null && "error" in json && typeof (json as { error?: { message?: string } }).error?.message === "string"
-            ? (json as { error: { message: string } }).error.message
+          typeof err?.message === "string" && err.message !== ""
+            ? err.message
             : "Something went wrong — please try again.";
         setCheckError(msg);
         return;
@@ -107,7 +122,9 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
       setCheckResult({
         covered: parsed.data.covered,
         areaLabel: parsed.data.area?.label ?? null,
+        areaCity: parsed.data.area?.city ?? null,
         nextCollection: parsed.data.next_collection_date,
+        checkedPostcode: pc,
       });
       setWaitlistForm((prev) => ({ ...prev, postcode: pc }));
     } catch {
@@ -168,6 +185,10 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
           setWaitlistBanner({ variant: "destructive", text: msg ?? "This postcode is already in our collection area — use Book a collection instead." });
           return;
         }
+        if (code === "invalid_postcode") {
+          setWaitlistBanner({ variant: "destructive", text: msg ?? "We could not recognise that postcode — check the spelling and try again." });
+          return;
+        }
         setWaitlistBanner({ variant: "destructive", text: msg ?? "Please check the form and try again." });
         return;
       }
@@ -194,8 +215,8 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
           Check your postcode
         </CardTitle>
         <CardDescription>
-          See if we currently collect in your area. If not, you can leave your details and we’ll keep you in mind when we
-          expand.
+          Enter your UK postcode — we’ll check against our live service areas. If we don’t cover you yet, you can join the
+          waitlist below.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -218,6 +239,12 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
               autoComplete="postal-code"
               value={postcodeInput}
               onChange={(e) => setPostcodeInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void runCheck();
+                }
+              }}
               aria-invalid={Boolean(checkError)}
             />
           </div>
@@ -243,26 +270,47 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
           <Alert className="border-emerald-500/40 bg-emerald-500/5">
             <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
             <AlertDescription className="space-y-3 text-foreground">
-              <p className="font-medium text-emerald-950 dark:text-emerald-50">Yes — we collect in your area.</p>
-              {checkResult.areaLabel ? (
+              <p className="font-medium text-emerald-950 dark:text-emerald-50">Great news — we collect in your area.</p>
+              {(checkResult.areaLabel ?? checkResult.areaCity) ? (
                 <p className="text-sm text-muted-foreground">
-                  Your postcode falls within <span className="font-medium text-foreground">{checkResult.areaLabel}</span>.
+                  {checkResult.areaLabel ? (
+                    <>
+                      Your postcode is in <span className="font-medium text-foreground">{checkResult.areaLabel}</span>
+                    </>
+                  ) : (
+                    <>We serve the <span className="font-medium text-foreground">{checkResult.areaCity}</span> area</>
+                  )}
+                  {checkResult.areaLabel && checkResult.areaCity ? (
+                    <>
+                      {" "}
+                      (<span className="text-foreground">{checkResult.areaCity}</span>)
+                    </>
+                  ) : null}
+                  .
                 </p>
               ) : null}
               {checkResult.nextCollection ? (
                 <p className="text-sm text-muted-foreground">
-                  Our next routed collection day on the schedule is{" "}
+                  The next scheduled collection day on our calendar is{" "}
                   <span className="font-medium text-foreground">{formatNextCollectionLabel(checkResult.nextCollection)}</span>
                   . We&apos;ll confirm an exact window when you book.
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground">Request a collection to choose a date — we&apos;ll confirm the window with you.</p>
+                <p className="text-sm text-muted-foreground">Continue below — we&apos;ll help you pick a date after you send your enquiry.</p>
               )}
-              <Button asChild className="h-11 w-full rounded-lg sm:w-auto">
-                <Link href="/book">
-                  Book a collection <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
-                </Link>
-              </Button>
+              {bookHrefWithPostcode ? (
+                <>
+                  <Button asChild className="h-11 w-full rounded-lg sm:h-auto sm:min-w-[12rem]">
+                    <Link href={bookHrefWithPostcode}>
+                      Book a collection <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+                    </Link>
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    We&apos;ll carry <span className="font-medium text-foreground">{checkResult.checkedPostcode}</span> into the
+                    booking form so you don&apos;t have to type it again.
+                  </p>
+                </>
+              ) : null}
             </AlertDescription>
           </Alert>
         ) : null}
@@ -270,9 +318,10 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
         {checkResult && !checkResult.covered ? (
           <div className="space-y-4 rounded-xl border bg-muted/20 p-4 dark:bg-muted/10">
             <div className="space-y-1">
-              <p className="font-medium">We don&apos;t cover that postcode yet</p>
+              <p className="font-medium">We don&apos;t list that postcode in our areas yet</p>
               <p className="text-sm text-muted-foreground">
-                Leave your details and we&apos;ll reach out if we start collecting near you.
+                That doesn&apos;t always mean we can never help — join the waitlist and we&apos;ll be in touch if we expand
+                nearby.
               </p>
             </div>
 

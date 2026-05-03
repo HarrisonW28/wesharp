@@ -18,6 +18,9 @@ class ServiceAreaFactory extends Factory
             'region' => fake()->randomElement(['Greater Manchester', 'Merseyside']),
             'country' => 'GB',
             'postcode_prefix' => fake()->randomElement(['M', 'L']).fake()->numerify('#'),
+            'centre_latitude' => null,
+            'centre_longitude' => null,
+            'radius_metres' => null,
             'active' => true,
         ];
     }

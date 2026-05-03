@@ -60,6 +60,9 @@ export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/payments")) {
     return "payments.view";
   }
+  if (pathname.startsWith("/admin/service-areas")) {
+    return "service_areas.view";
+  }
   if (pathname.startsWith("/admin/subscription-plans")) {
     return "subscriptions.view";
   }

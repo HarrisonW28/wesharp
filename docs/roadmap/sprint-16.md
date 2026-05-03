@@ -341,3 +341,34 @@ At the end, provide:
 - files changed
 - deferred UI issues
 - Sprint 16 verdict: PASS / FAIL
+
+### 16.7 — Completed (2026-05-01)
+
+**QA checks completed (automated / static)**
+
+| Area | Method | Result |
+| --- | --- | --- |
+| Type safety | `npm run typecheck` (`apps/frontend`) | Pass |
+| Lint | `npm run lint` | Pass |
+| Unit tests | `npm run test` (Vitest: forms, buttons, StatusBadge, schemas) | Pass (16 tests) |
+| Production build | `npm run build` | Pass — all app routes compiled |
+| Desktop / tablet / mobile layouts | Not run as real-device/browser matrix in this pass | **Deferred** — see below |
+| Customer / admin / route / booking / forms / tables / nav / Clerk / permissions | Covered indirectly by **build** + spot review of Sprint 16 touchpoints; no dedicated E2E run | Partial |
+
+**Bugs found (from automated suite)**  
+None.
+
+**Bugs fixed**  
+None required for green automated gate.
+
+**Files changed (this 16.7 slice)**  
+`docs/roadmap/sprint-16.md` only (this subsection).
+
+**Deferred UI issues** (still valid for manual or follow-up)
+
+- **Device matrix:** real phone/tablet passes on customer dashboard, admin lists, route Today + stop detail, public booking wizard, Clerk sign-in/up.
+- **POS:** Sprint 16.1 audit — no dedicated “POS” shell name in frontend; treat workshop/POS flows as **admin order** surfaces until product mapping is explicit.
+- **Playwright:** `npm run test:e2e` not executed here (needs env, auth, API).
+- **16.1 carryovers:** e.g. marketing `md`–`lg` hamburger-only nav, very dense admin order/knife pages — out of scope for Sprint 16 regression automation.
+
+**Sprint 16 verdict:** **PASS** for **automated regression + production build** on `apps/frontend`. **Recommend** a short **manual smoke** on the checklist above before calling the full sprint “shipped to production” complete.

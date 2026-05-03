@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Enums\OperationalRouteStatus;
+use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\OperationalRoute;
 use App\Models\ServiceArea;
 use App\Models\ServiceAreaWaitlistSignup;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 final class ServiceAreaPublicApiTest extends TestCase
@@ -34,6 +36,113 @@ final class ServiceAreaPublicApiTest extends TestCase
             ->assertJsonPath('data.covered', true)
             ->assertJsonPath('data.area.city', 'Manchester')
             ->assertJsonPath('data.area.label', 'Greater Manchester');
+    }
+
+    public function test_check_returns_422_when_postcode_unknown_and_radius_in_use(): void
+    {
+        Http::fake([
+            'api.postcodes.io/*' => Http::response(['error' => 'Invalid postcode'], 404),
+        ]);
+
+        ServiceArea::factory()->create([
+            'postcode_prefix' => 'M',
+            'active' => true,
+            'centre_latitude' => 53.4808,
+            'centre_longitude' => -2.2426,
+            'radius_metres' => 50_000,
+        ]);
+
+        $this->postJson('/api/public/service-area/check', [
+            'postcode' => 'ZZ99 9ZZ',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('error.code', 'invalid_postcode');
+    }
+
+    public function test_check_covers_by_radius_when_inside_circle(): void
+    {
+        Http::fake([
+            'api.postcodes.io/*' => Http::response([
+                'status' => 200,
+                'result' => [
+                    'latitude' => 53.4808,
+                    'longitude' => -2.2426,
+                ],
+            ], 200),
+        ]);
+
+        ServiceArea::factory()->create([
+            'postcode_prefix' => 'Z',
+            'active' => true,
+            'name' => 'Manchester cell',
+            'city' => 'Manchester',
+            'region' => 'Greater Manchester',
+            'centre_latitude' => 53.4808,
+            'centre_longitude' => -2.2426,
+            'radius_metres' => 5_000,
+        ]);
+
+        $this->postJson('/api/public/service-area/check', [
+            'postcode' => 'M1 1AA',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.covered', true)
+            ->assertJsonPath('data.area.city', 'Manchester');
+    }
+
+    public function test_check_not_covered_when_outside_radius_and_no_prefix_fallback(): void
+    {
+        Http::fake([
+            'api.postcodes.io/*' => Http::response([
+                'status' => 200,
+                'result' => [
+                    'latitude' => 51.5074,
+                    'longitude' => -0.1278,
+                ],
+            ], 200),
+        ]);
+
+        ServiceArea::factory()->create([
+            'postcode_prefix' => null,
+            'active' => true,
+            'name' => 'Manchester only',
+            'city' => 'Manchester',
+            'centre_latitude' => 53.4808,
+            'centre_longitude' => -2.2426,
+            'radius_metres' => 5_000,
+        ]);
+
+        $this->postJson('/api/public/service-area/check', [
+            'postcode' => 'SW1A 1AA',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.covered', false)
+            ->assertJsonPath('data.area', null);
+    }
+
+    public function test_waitlist_returns_422_invalid_postcode_when_radius_in_use_and_unknown_postcode(): void
+    {
+        Http::fake([
+            'api.postcodes.io/*' => Http::response([], 404),
+        ]);
+
+        ServiceArea::factory()->create([
+            'active' => true,
+            'centre_latitude' => 53.0,
+            'centre_longitude' => -2.0,
+            'radius_metres' => 10_000,
+        ]);
+
+        $this->postJson('/api/public/service-area/waitlist', [
+            'name' => 'Sam Sharp',
+            'email' => 'sam@example.com',
+            'postcode' => 'ZZ99 9ZZ',
+            'customer_type' => 'home',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('error.code', 'invalid_postcode');
+
+        self::assertSame(0, ServiceAreaWaitlistSignup::query()->count());
     }
 
     public function test_check_prefers_longest_prefix(): void
@@ -144,7 +253,7 @@ final class ServiceAreaPublicApiTest extends TestCase
     public function test_admin_index_requires_staff_and_lists_rows(): void
     {
         $user = User::factory()->create([
-            'role' => \App\Enums\UserRole::SuperAdmin,
+            'role' => UserRole::SuperAdmin,
         ]);
 
         ServiceAreaWaitlistSignup::factory()->create([

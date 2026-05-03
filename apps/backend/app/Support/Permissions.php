@@ -71,6 +71,12 @@ final class Permissions
 
     public const PRICING_MANAGE = 'pricing.manage';
 
+    /** List/view service coverage areas (postcode + optional map radius). */
+    public const SERVICE_AREAS_VIEW = 'service_areas.view';
+
+    /** Create, update, delete service areas (admin / finance). */
+    public const SERVICE_AREAS_MANAGE = 'service_areas.manage';
+
     /** Operational reporting (bookings, orders, routes, knives) — admin API `/api/admin/reports/…`. */
     public const REPORTS_OPERATIONS = 'reports.operations';
 
@@ -160,6 +166,8 @@ final class Permissions
         self::REPORTS_OPERATIONS,
         self::PRICING_VIEW,
         self::PRICING_MANAGE,
+        self::SERVICE_AREAS_VIEW,
+        self::SERVICE_AREAS_MANAGE,
         self::SUBSCRIPTIONS_VIEW,
         self::SUBSCRIPTIONS_MANAGE,
     ];
@@ -216,6 +224,7 @@ final class Permissions
                 self::KNIVES_UPDATE,
                 self::ANALYTICS_VIEW,
                 self::REPORTS_OPERATIONS,
+                self::SERVICE_AREAS_VIEW,
                 self::SETTINGS_VIEW,
                 self::AUDIT_LOGS_VIEW,
             ],
@@ -237,6 +246,8 @@ final class Permissions
                 self::REPORTS_FINANCE,
                 self::PRICING_VIEW,
                 self::PRICING_MANAGE,
+                self::SERVICE_AREAS_VIEW,
+                self::SERVICE_AREAS_MANAGE,
                 self::SUBSCRIPTIONS_VIEW,
                 self::SUBSCRIPTIONS_MANAGE,
                 self::SETTINGS_VIEW,

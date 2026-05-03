@@ -7,6 +7,8 @@ use App\Http\Requests\Public\StorePublicServiceAreaWaitlistRequest;
 use App\Models\ServiceAreaWaitlistSignup;
 use App\Services\Audit\AuditRecorder;
 use App\Support\ApiResponses;
+use App\Support\ServiceAreas\InvalidUkPostcodeException;
+use App\Support\ServiceAreas\ServiceAreaCoverageResolver;
 use App\Support\ServiceAreas\ServiceAreaPostcodeMatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -18,7 +20,17 @@ final class PublicServiceAreaWaitlistController extends Controller
         $validated = $request->validated();
         $normalized = ServiceAreaPostcodeMatcher::normalize((string) $validated['postcode']);
 
-        if (ServiceAreaPostcodeMatcher::resolveActiveArea($normalized) !== null) {
+        try {
+            $resolved = ServiceAreaCoverageResolver::resolveForPublicApi($normalized);
+        } catch (InvalidUkPostcodeException) {
+            return ApiResponses::error(
+                'We could not find that UK postcode. Check the spelling and try again.',
+                'invalid_postcode',
+                422
+            );
+        }
+
+        if ($resolved !== null) {
             return ApiResponses::error(
                 'That postcode is already inside our collection area — you can request a pickup on the booking page.',
                 'in_service_area',

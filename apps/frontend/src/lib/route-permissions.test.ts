@@ -7,6 +7,7 @@ describe("adminPermissionForPath", () => {
     expect(adminPermissionForPath("/admin/webhooks/inbox")).toBe("system.tools.view");
     expect(adminPermissionForPath("/admin/audit")).toBe("audit_logs.view");
     expect(adminPermissionForPath("/admin/waitlist")).toBe("companies.view");
+    expect(adminPermissionForPath("/admin/service-areas")).toBe("service_areas.view");
     expect(adminPermissionForPath("/admin/subscription-plans")).toBe("subscriptions.view");
     expect(adminPermissionForPath("/admin/subscriptions")).toBe("subscriptions.view");
     expect(adminPermissionForPath("/admin/content-settings/booking")).toBe("settings.manage");

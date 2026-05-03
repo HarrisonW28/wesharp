@@ -41,6 +41,10 @@ Audit existing service area/postcode data and decide the simplest safe model.
 - A simple target model is chosen.
 - No duplicate service area system is created if one exists.
 
+### Implemented (2026-05-01)
+
+Audit write-up: [`sprint-17.1-service-area-audit.md`](./sprint-17.1-service-area-audit.md).
+
 ---
 
 ## 17.2 — Admin Service Area Map and Radius UI
@@ -76,6 +80,12 @@ Allow admin users to manage accepted coverage visually.
 - Service areas are stored backend-side.
 - Permissions protect admin management.
 
+### Implemented (2026-05-01)
+
+- **API:** `GET|POST /api/admin/service-areas`, `PUT|DELETE /api/admin/service-areas/{id}` with permissions `service_areas.view` / `service_areas.manage`. Model fields: `centre_latitude`, `centre_longitude`, `radius_metres` (nullable; postcode prefix unchanged).
+- **UI:** `/admin/service-areas` — Leaflet map with OpenStreetMap tiles (no API key; do not use private geocoder keys in the browser). Route managers have read-only access; finance / admin roles can mutate.
+- **Docs:** Radius + centre are stored for admin visibility and for Sprint **17.3** to extend the public checker; coverage checks are still prefix-based until then.
+
 ---
 
 ## 17.3 — Backend Coverage Check API
@@ -100,6 +110,12 @@ Provide a backend endpoint/service to check if a postcode/address is covered.
 - Covered and not-covered responses are clear.
 - Invalid postcodes are handled cleanly.
 
+### Implemented (2026-05-01)
+
+- **`ServiceAreaCoverageResolver`** unifies **radius** (great-circle vs area centre + `radius_metres`) and **postcode prefix** rules for active areas. When coordinates are available for a postcode, radius-defined areas use distance only (prefix is not a fallback for “outside the circle”). When coordinates are missing, prefix matching applies.
+- **`UkPostcodeGeocoder`** calls **`api.postcodes.io`** (no API key). Public check and waitlist use **strict** behaviour when any active area has a map radius: **HTTP 404 → `422` `invalid_postcode`**. Transient API failures fall back to prefix-only matching for the check response.
+- **`POST /api/public/service-area/check`** and **`POST /api/public/service-area/waitlist`** use the resolver; **`PricingRuleResolver`** uses the same area-matching rules with optional geocoding for estimates and orders.
+
 ---
 
 ## 17.4 — Public Service Area Checker
@@ -122,6 +138,10 @@ Let customers check coverage before or during booking.
 - Result is friendly and clear.
 - Covered customers can continue booking.
 - Mobile layout works.
+
+### Implemented (2026-05-01)
+
+- **`ServiceAreaCheckerSection`** (marketing / service-areas page): clearer covered vs not-covered copy; **`Book a collection`** links to **`/book?postcode=…`** using the checked value so the public booking wizard pre-fills the address step (see `BookPageClient` query seeding). Enter submits the postcode field on keyboards. API errors (including **`invalid_postcode`**) surface the server message; waitlist handles **`invalid_postcode`** distinctly from **`in_service_area`**.
 
 ---
 

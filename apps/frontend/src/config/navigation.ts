@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LineChart,
   ListTodo,
+  Map as MapLucide,
   MapPinned,
   Newspaper,
   Receipt,
@@ -138,6 +139,12 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     items: [
       { title: "Companies", href: "/admin/crm", icon: Users, permission: "companies.view" },
       { title: "Waitlist", href: "/admin/waitlist", icon: Inbox, permission: "companies.view" },
+      {
+        title: "Service areas",
+        href: "/admin/service-areas",
+        icon: MapLucide,
+        permission: "service_areas.view",
+      },
       { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
       { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
       { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },
@@ -327,6 +334,12 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
     label: "Operations",
     items: [
       { title: "Waitlist", href: "/admin/waitlist", icon: Inbox, permission: "companies.view" },
+      {
+        title: "Service areas",
+        href: "/admin/service-areas",
+        icon: MapLucide,
+        permission: "service_areas.view",
+      },
       { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
       { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
       { title: "Knives", href: "/admin/knives", icon: Utensils, permission: "knives.view" },

@@ -18,6 +18,9 @@ class ServiceArea extends Model
         'region',
         'country',
         'postcode_prefix',
+        'centre_latitude',
+        'centre_longitude',
+        'radius_metres',
         'active',
     ];
 
@@ -25,6 +28,9 @@ class ServiceArea extends Model
     {
         return [
             'active' => 'boolean',
+            'centre_latitude' => 'float',
+            'centre_longitude' => 'float',
+            'radius_metres' => 'integer',
         ];
     }
 

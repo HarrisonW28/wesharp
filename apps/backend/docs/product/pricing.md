@@ -16,7 +16,7 @@ For an order, rules are scanned **highest `priority` first**:
 
 1. **`active`** must be true.
 2. **`service_type`**: if set on the rule, it must equal the booking’s `service_type`. If the rule is null, it applies to any service type.
-3. **`service_area_id`**: if null, rule is global for the service type. If set, the company’s **default non-archived location** postcode (normalised, no spaces) must **start with** the service area’s `postcode_prefix` (case-insensitive). The service area must be **active**.
+3. **`service_area_id`**: if null, rule is global for the service type. If set, the company’s **default non-archived location** postcode (normalised, no spaces) must match the linked **active** service area using the same rules as public coverage: **inside the area’s map radius** when latitude/longitude/radius are set and postcodes.io returns coordinates for that postcode; otherwise the postcode must **start with** the area’s `postcode_prefix` when the prefix is set (prefix acts as fallback when geocoding is unavailable or when the area has no radius). If an area uses a radius and coordinates are available, prefix is **not** used for that area—the point must fall inside the circle.
 
 The first matching rule wins.
 

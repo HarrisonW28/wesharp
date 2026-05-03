@@ -11,10 +11,12 @@ use App\Models\CompanyLocation;
 use App\Models\Order;
 use App\Models\PricingRule;
 use App\Models\ServiceArea;
+use App\Support\ServiceAreas\ServiceAreaCoverageResolver;
+use App\Support\ServiceAreas\UkPostcodeGeocoder;
 
 /**
  * Picks the highest-priority active pricing rule for an order’s booking service type
- * and company location postcode vs service area prefix.
+ * and company location postcode vs service area radius/prefix rules.
  */
 final class PricingRuleResolver
 {
@@ -35,6 +37,9 @@ final class PricingRuleResolver
             ->orderByDesc('created_at')
             ->get();
 
+        $norm = $this->normalizedPostcodeFromLocation($location);
+        [$lat, $lng] = $this->customerCoordinatesForMatching($norm);
+
         foreach ($rules as $rule) {
             if (! $rule instanceof PricingRule) {
                 continue;
@@ -44,7 +49,7 @@ final class PricingRuleResolver
                     continue;
                 }
             }
-            if (! $this->ruleMatchesServiceArea($rule, $location)) {
+            if (! self::ruleMatchesNormalizedPostcode($rule, $norm, $lat, $lng)) {
                 continue;
             }
 
@@ -79,22 +84,15 @@ final class PricingRuleResolver
             ->first();
     }
 
-    private function ruleMatchesServiceArea(PricingRule $rule, ?CompanyLocation $location): bool
-    {
-        $norm = null;
-        if ($location !== null) {
-            $pc = strtoupper(preg_replace('/\s+/', '', (string) $location->postcode) ?? '');
-            $norm = $pc !== '' ? $pc : null;
-        }
-
-        return self::ruleMatchesNormalizedPostcode($rule, $norm);
-    }
-
     /**
      * @param  non-empty-string|null  $normalizedPostcode  Uppercase outbound code without spaces (e.g. M11AA).
      */
-    public static function ruleMatchesNormalizedPostcode(PricingRule $rule, ?string $normalizedPostcode): bool
-    {
+    public static function ruleMatchesNormalizedPostcode(
+        PricingRule $rule,
+        ?string $normalizedPostcode,
+        ?float $customerLat = null,
+        ?float $customerLng = null,
+    ): bool {
         if ($rule->service_area_id === null) {
             return true;
         }
@@ -112,12 +110,7 @@ final class PricingRuleResolver
             return false;
         }
 
-        $prefix = strtoupper(trim((string) $area->postcode_prefix));
-        if ($prefix === '') {
-            return false;
-        }
-
-        return str_starts_with($normalizedPostcode, $prefix);
+        return ServiceAreaCoverageResolver::postcodeMatchesArea($area, $normalizedPostcode, $customerLat, $customerLng);
     }
 
     /**
@@ -131,6 +124,8 @@ final class PricingRuleResolver
             ->orderByDesc('created_at')
             ->get();
 
+        [$lat, $lng] = $this->customerCoordinatesForMatching($normalizedPostcode);
+
         foreach ($rules as $rule) {
             if (! $rule instanceof PricingRule) {
                 continue;
@@ -138,7 +133,7 @@ final class PricingRuleResolver
             if ($rule->service_type !== null && $rule->service_type !== $serviceType) {
                 continue;
             }
-            if (! self::ruleMatchesNormalizedPostcode($rule, $normalizedPostcode)) {
+            if (! self::ruleMatchesNormalizedPostcode($rule, $normalizedPostcode, $lat, $lng)) {
                 continue;
             }
 
@@ -146,5 +141,38 @@ final class PricingRuleResolver
         }
 
         return null;
+    }
+
+    private function normalizedPostcodeFromLocation(?CompanyLocation $location): ?string
+    {
+        if ($location === null) {
+            return null;
+        }
+
+        $pc = strtoupper(preg_replace('/\s+/', '', (string) $location->postcode) ?? '');
+
+        return $pc !== '' ? $pc : null;
+    }
+
+    /**
+     * @param  non-empty-string|null  $normalizedPostcode
+     * @return array{0: ?float, 1: ?float}
+     */
+    private function customerCoordinatesForMatching(?string $normalizedPostcode): array
+    {
+        if ($normalizedPostcode === null || $normalizedPostcode === '') {
+            return [null, null];
+        }
+
+        if (! ServiceAreaCoverageResolver::anyActiveAreaUsesRadius()) {
+            return [null, null];
+        }
+
+        $geo = UkPostcodeGeocoder::lookupOptional($normalizedPostcode);
+        if ($geo === null) {
+            return [null, null];
+        }
+
+        return [$geo['lat'], $geo['lng']];
     }
 }
