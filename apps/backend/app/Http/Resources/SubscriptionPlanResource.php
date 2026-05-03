@@ -44,6 +44,9 @@ final class SubscriptionPlanResource extends JsonResource
                 ? trim((string) $this->public_cta_label)
                 : null,
             'recommended' => (bool) $this->recommended,
+            'stripe_price_id' => $this->stripe_price_id !== null && trim((string) $this->stripe_price_id) !== ''
+                ? trim((string) $this->stripe_price_id)
+                : null,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

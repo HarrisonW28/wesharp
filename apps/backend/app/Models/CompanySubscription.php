@@ -33,6 +33,8 @@ class CompanySubscription extends Model
         'price_amount_minor_snapshot',
         'currency',
         'notes',
+        'stripe_subscription_id',
+        'stripe_last_payment_failed_at',
     ];
 
     protected function casts(): array
@@ -43,6 +45,7 @@ class CompanySubscription extends Model
             'renews_at' => 'date',
             'cancelled_at' => 'datetime',
             'price_amount_minor_snapshot' => 'integer',
+            'stripe_last_payment_failed_at' => 'datetime',
         ];
     }
 

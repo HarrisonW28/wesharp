@@ -18,6 +18,8 @@ class AccountUpdateSettingsRequest extends FormRequest
         return [
             'user' => ['sometimes', 'array'],
             'user.name' => ['sometimes', 'string', 'max:190'],
+            'user.accept_portal_terms' => ['sometimes', 'boolean'],
+            'user.marketing_opt_in' => ['sometimes', 'boolean'],
             'user.email_notification_preferences' => ['sometimes', 'array'],
             'user.email_notification_preferences.booking_updates' => ['sometimes', 'boolean'],
             'user.email_notification_preferences.order_updates' => ['sometimes', 'boolean'],

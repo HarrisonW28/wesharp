@@ -38,6 +38,7 @@ class SubscriptionPlan extends Model
         'public_highlights',
         'public_cta_label',
         'recommended',
+        'stripe_price_id',
     ];
 
     protected function casts(): array

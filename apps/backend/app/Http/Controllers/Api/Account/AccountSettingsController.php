@@ -36,6 +36,10 @@ final class AccountSettingsController extends TenantAccountController
                 'name' => $actor->name,
                 'email' => $actor->email,
                 'email_notification_preferences' => NotificationPreferenceNormalizer::normalize($actor->email_notification_preferences),
+                'terms_accepted_at' => $actor->terms_accepted_at?->toIso8601String(),
+                'marketing_opt_in' => (bool) ($actor->marketing_opt_in ?? false),
+                'marketing_opt_in_at' => $actor->marketing_opt_in_at?->toIso8601String(),
+                'marketing_opt_in_source' => $actor->marketing_opt_in_source,
             ],
             'company' => [
                 'id' => (string) $company->id,
@@ -88,6 +92,29 @@ final class AccountSettingsController extends TenantAccountController
             User::query()->whereKey($actor->id)->update(['name' => (string) data_get($validated, 'user.name')]);
             /** @phpstan-ignore-next-line */
             $actor->refresh();
+        }
+
+        if (data_get($validated, 'user.accept_portal_terms') === true) {
+            /** @phpstan-ignore-next-line */
+            $this->authorize('updateOwnBasicProfile', $actor);
+            User::query()->whereKey($actor->id)->update(['terms_accepted_at' => now()]);
+            /** @phpstan-ignore-next-line */
+            $actor->refresh();
+        }
+
+        if (data_get($validated, 'user.marketing_opt_in') !== null) {
+            /** @phpstan-ignore-next-line */
+            $this->authorize('updateOwnBasicProfile', $actor);
+            $optIn = (bool) data_get($validated, 'user.marketing_opt_in');
+            if ($optIn !== (bool) ($actor->marketing_opt_in ?? false)) {
+                User::query()->whereKey($actor->id)->update([
+                    'marketing_opt_in' => $optIn,
+                    'marketing_opt_in_at' => now(),
+                    'marketing_opt_in_source' => 'account_settings',
+                ]);
+                /** @phpstan-ignore-next-line */
+                $actor->refresh();
+            }
         }
 
         $companyPayload = data_get($validated, 'company');

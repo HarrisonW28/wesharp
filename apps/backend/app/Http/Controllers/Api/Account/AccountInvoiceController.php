@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Account;
 
 use App\Actions\Invoices\SyncInvoiceOverdueStatusAction;
+use App\Actions\Payments\CreateStripeHostedCheckoutSessionAction;
 use App\Models\Invoice;
 use App\Services\Invoices\InvoiceService;
 use App\Support\ApiResponses;
@@ -40,5 +41,15 @@ final class AccountInvoiceController extends TenantAccountController
         $invoice = $this->syncInvoiceOverdueStatusAction->execute($invoice, $request->user(), $request);
 
         return ApiResponses::success(InvoiceJson::portalDetail($invoice));
+    }
+
+    public function stripeCheckoutSession(Request $request, Invoice $invoice, CreateStripeHostedCheckoutSessionAction $action): JsonResponse
+    {
+        $this->authorize('startStripeCheckout', $invoice);
+
+        /** @phpstan-ignore-next-line */
+        $invoice = $this->syncInvoiceOverdueStatusAction->execute($invoice, $request->user(), $request);
+
+        return ApiResponses::success($action->execute($invoice)->toArray());
     }
 }

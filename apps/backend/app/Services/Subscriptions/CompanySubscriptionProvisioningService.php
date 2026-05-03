@@ -263,6 +263,54 @@ final class CompanySubscriptionProvisioningService
         return $company->subscriptions()->with('plan')->first();
     }
 
+    /**
+     * Authoritative activation from Stripe Checkout (mode=subscription) — call only after verified webhooks.
+     */
+    public function activateOperationalSubscriptionFromStripe(
+        Company $company,
+        SubscriptionPlan $plan,
+        string $stripeCustomerId,
+        string $stripeSubscriptionId,
+        CarbonInterface $periodStart,
+        CarbonInterface $periodEnd,
+    ): CompanySubscription {
+        $dup = CompanySubscription::query()
+            ->where('stripe_subscription_id', $stripeSubscriptionId)
+            ->first();
+        if ($dup instanceof CompanySubscription) {
+            $company->forceFill(['stripe_customer_id' => $stripeCustomerId])->save();
+
+            return $dup;
+        }
+
+        $this->assertPlanAssignable($plan, true);
+        $this->assertBillingContact($company, null);
+
+        if ($company->operationalSubscription()->exists()) {
+            throw new \RuntimeException('Company already has an active or past-due subscription.');
+        }
+
+        $company->forceFill(['stripe_customer_id' => $stripeCustomerId])->save();
+
+        $snapshot = (int) $plan->price_amount_minor;
+        $notes = 'Stripe subscription '.$stripeSubscriptionId;
+
+        $sub = $this->persistNewSubscription(
+            $company,
+            $plan,
+            SubscriptionStatus::Active,
+            $periodStart,
+            $periodEnd,
+            null,
+            null,
+            $snapshot,
+            $notes,
+        );
+        $sub->forceFill(['stripe_subscription_id' => $stripeSubscriptionId])->save();
+
+        return $sub->refresh();
+    }
+
     private function createSubscriptionWithSchedule(
         Company $company,
         SubscriptionPlan $plan,

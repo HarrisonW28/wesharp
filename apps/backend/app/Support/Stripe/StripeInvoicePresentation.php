@@ -43,7 +43,7 @@ final class StripeInvoicePresentation
     public static function adminDetailPanel(Invoice $invoice): array
     {
         $provider = app(StripePaymentProvider::class);
-        $r = $provider->hostedCheckoutAvailability($invoice);
+        $r = $provider->invoiceHostedCheckoutPreview($invoice);
 
         return [
             'driver' => $provider->driver(),
@@ -58,21 +58,20 @@ final class StripeInvoicePresentation
     }
 
     /**
-     * Customer portal CTA — never claims checkout works until a URL is returned.
+     * Customer portal CTA — driven by preview gates; settlement is webhook-authoritative.
      *
      * @return array{online_checkout_available: bool, cta_label: string, cta_hint: string}
      */
     public static function portalPaymentCta(Invoice $invoice): array
     {
         $provider = app(StripePaymentProvider::class);
-        $r = $provider->hostedCheckoutAvailability($invoice);
-        $hasUrl = $r->available && is_string($r->checkoutUrl) && $r->checkoutUrl !== '';
+        $r = $provider->invoiceHostedCheckoutPreview($invoice);
 
         return [
-            'online_checkout_available' => $hasUrl,
+            'online_checkout_available' => $r->available,
             'cta_label' => 'Pay online',
-            'cta_hint' => $hasUrl
-                ? 'Pay securely online.'
+            'cta_hint' => $r->available
+                ? 'You will be redirected to secure checkout. Payment is confirmed when Stripe notifies us — not from the return page alone.'
                 : self::portalHintForCustomers($r->disabledReason),
         ];
     }

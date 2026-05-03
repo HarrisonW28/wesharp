@@ -17,8 +17,12 @@ interface PaymentProviderInterface
     public function driver(): string;
 
     /**
-     * Whether hosted checkout could be offered for this invoice (config + invoice state).
-     * One-off AR: Checkout **mode=payment** from an issued invoice. Does not imply a checkout URL exists until implemented.
+     * Preview for UI: whether Checkout could be offered (config + invoice state). Never includes a session URL.
      */
-    public function hostedCheckoutAvailability(Invoice $invoice): HostedCheckoutAvailability;
+    public function invoiceHostedCheckoutPreview(Invoice $invoice): HostedCheckoutAvailability;
+
+    /**
+     * Create a Stripe Checkout Session for the invoice outstanding balance (**mode=payment**).
+     */
+    public function createInvoiceHostedCheckoutSession(Invoice $invoice): HostedCheckoutAvailability;
 }

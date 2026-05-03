@@ -9,9 +9,9 @@ use App\Models\SubscriptionPlan;
 use App\Services\Subscriptions\OrderSubscriptionCoverageService;
 use App\Services\Subscriptions\SubscriptionBillingPeriodService;
 use App\Support\Invoices\InvoiceJson;
-use App\Support\Portal\CustomerActivityTimelinePresenter;
 use App\Support\Invoices\InvoicePresentation;
 use App\Support\Money\MoneyFormatting;
+use App\Support\Portal\CustomerActivityTimelinePresenter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -61,6 +61,8 @@ final class CustomerSubscriptionPayload
             'status_label' => self::customerStatusLabel($sub),
             'renews_at' => $sub->renews_at?->format('Y-m-d'),
             'current_period_end' => $sub->renews_at?->format('Y-m-d'),
+            'last_stripe_payment_failed_at' => $sub->stripe_last_payment_failed_at?->toIso8601String(),
+            'stripe_programme_billing_notice' => self::stripeProgrammeBillingNotice($sub),
             'included_services' => $plan?->description,
             'allowance_summary' => self::allowanceSummaryFromPlan($plan),
             'price_amount_minor_snapshot' => (int) $sub->price_amount_minor_snapshot,
@@ -103,6 +105,19 @@ final class CustomerSubscriptionPayload
         }
 
         return $st !== null ? Str::headline($st->value) : 'Unknown';
+    }
+
+    private static function stripeProgrammeBillingNotice(CompanySubscription $sub): ?string
+    {
+        if ($sub->status !== SubscriptionStatus::PastDue) {
+            return null;
+        }
+
+        if ($sub->stripe_last_payment_failed_at !== null) {
+            return 'We could not charge your card for a recent programme invoice. Please update your payment method in Stripe (link from your billing email) or contact us so your cover stays uninterrupted.';
+        }
+
+        return 'Your programme billing needs attention. Please check recent invoices or contact us.';
     }
 
     /**

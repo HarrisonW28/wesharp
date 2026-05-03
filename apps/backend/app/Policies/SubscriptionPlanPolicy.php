@@ -34,4 +34,26 @@ final class SubscriptionPlanPolicy
     {
         return Permissions::userMay($user, Permissions::SUBSCRIPTIONS_MANAGE);
     }
+
+    /**
+     * Tenant Checkout for recurring plans (Stripe mode=subscription). Customers only for public-site plans.
+     */
+    public function subscribeHosted(User $user, SubscriptionPlan $plan): bool
+    {
+        if (! $plan->is_active || $plan->trashed()) {
+            return false;
+        }
+
+        $priceId = trim((string) ($plan->stripe_price_id ?? ''));
+        if ($priceId === '') {
+            return false;
+        }
+
+        if (Permissions::userMay($user, Permissions::SUBSCRIPTIONS_MANAGE)) {
+            return true;
+        }
+
+        return Permissions::userMay($user, Permissions::SUBSCRIPTIONS_VIEW)
+            && (bool) $plan->show_on_public_site;
+    }
 }

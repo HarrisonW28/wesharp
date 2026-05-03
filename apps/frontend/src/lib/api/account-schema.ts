@@ -33,6 +33,8 @@ export const TenantSubscriptionSummarySchema = z.object({
   summary: z.string().nullable().optional(),
   usage_summary_line: z.string().nullable().optional(),
   overage_warning: z.string().nullable().optional(),
+  last_stripe_payment_failed_at: z.string().nullable().optional(),
+  stripe_programme_billing_notice: z.string().nullable().optional(),
 });
 
 export const TenantSubscriptionPeriodUsageSchema = z.object({
@@ -606,6 +608,10 @@ export const SettingsResponseSchema = z.object({
       name: z.string().nullable(),
       email: z.string().nullable(),
       email_notification_preferences: EmailNotificationPreferencesSchema.optional(),
+      terms_accepted_at: z.string().nullable().optional(),
+      marketing_opt_in: z.boolean().optional(),
+      marketing_opt_in_at: z.string().nullable().optional(),
+      marketing_opt_in_source: z.string().nullable().optional(),
     }),
     company: z.object({
       id: z.string(),

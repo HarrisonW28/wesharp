@@ -5,27 +5,33 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Webhooks;
 
 use App\Support\ApiResponses;
+use App\Support\Stripe\StripeWebhookPaymentProcessor;
 use App\Support\Stripe\StripeWebhookSignature;
+use App\Support\Stripe\StripeWebhookSubscriptionProcessor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
 /**
- * Stripe webhook ingress: signature verification + idempotent event id storage.
+ * Stripe webhook ingress: signature verification + idempotent event handling.
  *
- * Business handlers (payment_intent.succeeded → Payment row) must:
- * - run only after verification
- * - use DB idempotency (e.g. unique stripe_payment_intent_id on payments) so external retries never duplicate ledger rows
+ * - Duplicate {@see $eventId}: second request short-circuits after insertOrIgnore (still 200).
+ * - {@see processing_state} = processed: handlers are not run again.
+ * - {@see processing_state} = failed: Stripe retries are honoured (handlers run again).
  */
 final class StripeWebhookController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
-    {
+    public function __invoke(
+        Request $request,
+        StripeWebhookPaymentProcessor $paymentProcessor,
+        StripeWebhookSubscriptionProcessor $subscriptionProcessor,
+    ): JsonResponse {
         $secret = (string) config('stripe.webhook_secret', '');
         $raw = $request->getContent();
 
@@ -50,6 +56,7 @@ final class StripeWebhookController extends Controller
             return ApiResponses::error('Webhook validation failed.', 'webhook_error', SymfonyResponse::HTTP_BAD_REQUEST);
         }
 
+        /** @var array<string, mixed>|null $data */
         $data = json_decode($raw, true);
         if (! is_array($data)) {
             return ApiResponses::error('Invalid JSON payload.', 'webhook_bad_request', SymfonyResponse::HTTP_BAD_REQUEST);
@@ -63,7 +70,7 @@ final class StripeWebhookController extends Controller
         $type = isset($data['type']) && is_string($data['type']) ? $data['type'] : 'unknown';
         $now = now();
 
-        $inserted = DB::table('stripe_webhook_events')->insertOrIgnore([
+        DB::table('stripe_webhook_events')->insertOrIgnore([
             'id' => $eventId,
             'type' => $type,
             'received_at' => $now,
@@ -72,22 +79,51 @@ final class StripeWebhookController extends Controller
             'updated_at' => $now,
         ]);
 
-        if ($inserted === 0) {
-            return response()->json(['received' => true], SymfonyResponse::HTTP_OK);
+        $handlerError = null;
+
+        DB::transaction(function () use (
+            $eventId,
+            $data,
+            $paymentProcessor,
+            $subscriptionProcessor,
+            &$handlerError,
+        ): void {
+            $row = DB::table('stripe_webhook_events')->where('id', $eventId)->lockForUpdate()->first();
+            if ($row === null) {
+                return;
+            }
+
+            if ($row->processing_state === 'processed') {
+                return;
+            }
+
+            try {
+                $paymentProcessor->process($data);
+                $subscriptionProcessor->process($data);
+                DB::table('stripe_webhook_events')->where('id', $eventId)->update([
+                    'processing_state' => 'processed',
+                    'processed_at' => now(),
+                    'last_error' => null,
+                    'updated_at' => now(),
+                ]);
+            } catch (Throwable $e) {
+                Log::error('stripe.webhook.handler_failed', [
+                    'stripe_event_id' => $eventId,
+                    'type' => $data['type'] ?? null,
+                    'message' => $e->getMessage(),
+                ]);
+                DB::table('stripe_webhook_events')->where('id', $eventId)->update([
+                    'processing_state' => 'failed',
+                    'last_error' => Str::limit($e->getMessage(), 2000),
+                    'updated_at' => now(),
+                ]);
+                $handlerError = $e;
+            }
+        });
+
+        if ($handlerError instanceof Throwable) {
+            return response()->json(['received' => false], SymfonyResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // TODO (go-live): dispatch a queued job; map payment_intent.succeeded / checkout.session.completed
-        // to RecordManualPaymentAction or a dedicated Stripe settlement path. Never trust the frontend.
-        Log::info('stripe.webhook.placeholder_ack', [
-            'stripe_event_id' => $eventId,
-            'type' => $type,
-        ]);
-
-        DB::table('stripe_webhook_events')->where('id', $eventId)->update([
-            'processed_at' => $now,
-            'processing_state' => 'placeholder_ack',
-            'updated_at' => $now,
-        ]);
 
         return response()->json(['received' => true], SymfonyResponse::HTTP_OK);
     }

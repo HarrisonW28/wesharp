@@ -22,6 +22,10 @@ use Illuminate\Notifications\Notifiable;
     'company_id',
     'status',
     'email_notification_preferences',
+    'terms_accepted_at',
+    'marketing_opt_in',
+    'marketing_opt_in_at',
+    'marketing_opt_in_source',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -40,6 +44,9 @@ class User extends Authenticatable
             'role' => UserRole::class,
             'status' => UserStatus::class,
             'email_notification_preferences' => 'array',
+            'terms_accepted_at' => 'datetime',
+            'marketing_opt_in' => 'boolean',
+            'marketing_opt_in_at' => 'datetime',
         ];
     }
 

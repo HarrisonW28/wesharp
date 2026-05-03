@@ -36,6 +36,7 @@ final class UpsertSubscriptionPlanRequest extends FormRequest
             'public_highlights.*' => ['string', 'max:200'],
             'public_cta_label' => ['sometimes', 'nullable', 'string', 'max:80'],
             'recommended' => ['sometimes', 'boolean'],
+            'stripe_price_id' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 
@@ -49,7 +50,7 @@ final class UpsertSubscriptionPlanRequest extends FormRequest
             ? strtoupper($v['currency'])
             : 'GBP';
 
-        return [
+        $payload = [
             'name' => trim((string) $v['name']),
             'public_name' => array_key_exists('public_name', $v)
                 ? self::normalizePublicName($v['public_name'])
@@ -75,6 +76,12 @@ final class UpsertSubscriptionPlanRequest extends FormRequest
                 : null,
             'recommended' => array_key_exists('recommended', $v) ? (bool) $v['recommended'] : false,
         ];
+
+        if (array_key_exists('stripe_price_id', $v)) {
+            $payload['stripe_price_id'] = self::normalizeStripePriceId($v['stripe_price_id']);
+        }
+
+        return $payload;
     }
 
     /** @return list<string>|null */
@@ -142,5 +149,18 @@ final class UpsertSubscriptionPlanRequest extends FormRequest
         $t = trim($raw);
 
         return $t === '' ? null : mb_substr($t, 0, 80);
+    }
+
+    private static function normalizeStripePriceId(mixed $raw): ?string
+    {
+        if ($raw === null) {
+            return null;
+        }
+        if (! is_string($raw)) {
+            return null;
+        }
+        $t = trim($raw);
+
+        return $t === '' ? null : mb_substr($t, 0, 255);
     }
 }

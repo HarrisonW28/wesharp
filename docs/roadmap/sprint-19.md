@@ -99,6 +99,12 @@ Implement invoice-first Stripe Checkout for one-off payments.
 - Invalid invoices cannot create checkout.
 - Payment record is created/updated via webhook.
 
+### Implemented (2026-05-01)
+
+- **`PaymentProviderInterface`** — **`invoiceHostedCheckoutPreview`** / **`createInvoiceHostedCheckoutSession`**; **`StripePaymentProvider`** creates **`mode=payment`** sessions (outstanding balance, metadata on session + payment intent).
+- **API** — admin + account **`POST …/invoices/{invoice}/stripe-checkout-session`**; **`InvoicePolicy::startStripeCheckout`**.
+- **Settlement** — **`SettleInvoiceFromStripePaymentIntentAction`** + unique **`payments.stripe_payment_intent_id`** (see **`StripeWebhookPaymentProcessor`**).
+
 ---
 
 ## 19.3 — Stripe Payment Webhooks and Settlement
@@ -130,9 +136,18 @@ Make Stripe webhooks authoritative and idempotent.
 - Failed/expired events are recorded.
 - Developer can inspect webhook logs.
 
+### Implemented (2026-05-01)
+
+- **Ingress** — **`StripeWebhookController`**: signature verification, **`stripe_webhook_events`** rows with **`insertOrIgnore`** + per-event **`lockForUpdate`**; **`processed`** skips handlers; **`failed`** allows Stripe retries; **`last_error`** on failure (no raw payload exposure on this route).
+- **Invoice settlement** — **`StripeWebhookPaymentProcessor`**: **`checkout.session.completed`** / **`payment_intent.succeeded`** (payment mode only) → **`SettleInvoiceFromStripePaymentIntentAction`**; **`payment_intent.payment_failed`** and **`checkout.session.expired`** logged.
+- **Subscriptions (Checkout `mode=subscription`)** — **`StripeSubscriptionCheckoutService`**, **`POST /api/account/subscription/stripe-checkout-session`**, plan field **`stripe_price_id`**; webhook **`StripeWebhookSubscriptionProcessor`** completes checkout → **`CompanySubscriptionProvisioningService::activateOperationalSubscriptionFromStripe`**, syncs **`customer.subscription.updated` / `deleted`**, logs **`invoice.paid` / `invoice.payment_failed`**.
+- **Observability** — **`GET /api/admin/stripe-webhook-events`** (**`system.tools.view`**, metadata only).
+
 ---
 
 ## 19.4 — Stripe Subscriptions
+
+> **Note:** Subscription **Checkout** and **`customer.subscription.*`** webhooks were implemented in **19.3**. **19.4** adds Stripe Billing **`invoice.*`** sync and tenant consent storage (below).
 
 ### Goal
 
@@ -161,6 +176,13 @@ Implement subscription checkout for recurring plans.
 - Failed payment is visible.
 - Usage/allowance remains Laravel-owned.
 - One-off payments still work.
+
+### Implemented (2026-05-01)
+
+- **`invoice.payment_failed`** → local **`CompanySubscription`**: **`PastDue`**, **`stripe_last_payment_failed_at`** (portal shows **`stripe_programme_billing_notice`** via **`CustomerSubscriptionPayload`**).
+- **`invoice.paid`** → retrieve Stripe **`Subscription`**, sync status / **`renews_at`**, clear failure timestamp (**`StripeWebhookSubscriptionProcessor`**).
+- **Marketing consent (separate from terms)** — **`users`**: **`terms_accepted_at`**, **`marketing_opt_in`**, **`marketing_opt_in_at`**, **`marketing_opt_in_source`**; settings API **`user.accept_portal_terms`** vs **`user.marketing_opt_in`** independently; account UI explains separation.
+- **Tests** — **`StripeSubscriptionInvoiceWebhookTest`**, **`AccountSettingsConsentTest`**.
 
 ---
 

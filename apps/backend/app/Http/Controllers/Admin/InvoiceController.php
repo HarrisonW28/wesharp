@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Invoices\CreateInvoiceFromOrderAction;
-use App\Actions\Payments\CreateStripeHostedCheckoutSessionAction;
 use App\Actions\Invoices\MarkInvoicePaidAction;
 use App\Actions\Invoices\ReopenInvoiceDraftAction;
 use App\Actions\Invoices\SendInvoicePlaceholderAction;
 use App\Actions\Invoices\SyncInvoiceOverdueStatusAction;
 use App\Actions\Invoices\UpdateDraftInvoiceLinesAction;
 use App\Actions\Invoices\VoidInvoiceAction;
+use App\Actions\Payments\CreateStripeHostedCheckoutSessionAction;
 use App\Enums\InvoiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInvoiceRequest;
@@ -217,15 +217,13 @@ final class InvoiceController extends Controller
         return ApiResponses::success(InvoiceJson::detail($invoice));
     }
 
-    /**
-     * Placeholder for Stripe Checkout — returns availability only (no session URL until API is wired).
-     */
     public function stripeCheckoutSession(Request $request, Invoice $invoice, CreateStripeHostedCheckoutSessionAction $action): JsonResponse
     {
-        $this->authorize('recordManualPayment', $invoice);
+        $this->authorize('startStripeCheckout', $invoice);
 
-        $result = $action->execute($invoice);
+        /** @phpstan-ignore-next-line */
+        $invoice = $this->syncInvoiceOverdueStatusAction->execute($invoice, $request->user(), $request);
 
-        return ApiResponses::success($result->toArray());
+        return ApiResponses::success($action->execute($invoice)->toArray());
     }
 }

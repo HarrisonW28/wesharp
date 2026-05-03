@@ -69,6 +69,15 @@ export default function AccountSubscriptionPage() {
         <p className="text-base text-destructive">{(query.error as Error).message}</p>
       ) : sub ? (
         <div className="space-y-6">
+          {sub.stripe_programme_billing_notice ? (
+            <Alert variant="destructive" className="border-destructive/60">
+              <AlertTitle className="text-base">Programme billing</AlertTitle>
+              <AlertDescription className="text-base text-muted-foreground">
+                {sub.stripe_programme_billing_notice}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
           {sub.overage_warning ? (
             <Alert className="border-amber-500/40 bg-amber-500/5">
               <AlertTitle className="text-base">Heads up about usage this period</AlertTitle>

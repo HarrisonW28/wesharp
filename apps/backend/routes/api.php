@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\RouteStopController;
 use App\Http\Controllers\Admin\ServiceAreaController;
 use App\Http\Controllers\Admin\ServiceAreaWaitlistController;
 use App\Http\Controllers\Admin\SiteContentController;
+use App\Http\Controllers\Admin\StripeWebhookEventsController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserDirectoryController;
 use App\Http\Controllers\Admin\WebhookInboxController;
@@ -82,6 +83,7 @@ Route::prefix('public')->middleware('throttle:tracking-public')->group(function 
 Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (): void {
     Route::middleware('permission:dashboard.view')->get('dashboard', [AccountDashboardController::class, 'show'])->name('api.account.dashboard');
     Route::middleware('permission:dashboard.view')->get('subscription', [AccountSubscriptionController::class, 'show'])->name('api.account.subscription.show');
+    Route::middleware('permission:subscriptions.view')->post('subscription/stripe-checkout-session', [AccountSubscriptionController::class, 'stripeCheckoutSession'])->name('api.account.subscription.stripe_checkout_session');
 
     Route::middleware('permission:bookings.view')->get('bookings', [AccountBookingController::class, 'index'])->name('api.account.bookings.index');
     Route::middleware('permission:bookings.create')->post('bookings', [AccountBookingController::class, 'store'])->name('api.account.bookings.store');
@@ -100,6 +102,7 @@ Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (
 
     Route::middleware('permission:invoices.view')->get('invoices', [AccountInvoiceController::class, 'index'])->name('api.account.invoices.index');
     Route::middleware('permission:invoices.view')->get('invoices/{invoice}', [AccountInvoiceController::class, 'show'])->whereUuid('invoice')->name('api.account.invoices.show');
+    Route::middleware('permission:invoices.view')->post('invoices/{invoice}/stripe-checkout-session', [AccountInvoiceController::class, 'stripeCheckoutSession'])->whereUuid('invoice')->name('api.account.invoices.stripe_checkout_session');
 
     Route::middleware('permission:account.locations.manage')->get('locations', [AccountLocationController::class, 'index'])->name('api.account.locations.index');
     Route::middleware('permission:account.locations.manage')->post('locations', [AccountLocationController::class, 'store'])->name('api.account.locations.store');
@@ -158,6 +161,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:audit_logs.view')->get('audit-logs', [AuditLogController::class, 'index'])->name('api.admin.audit_logs.index');
 
     Route::middleware('permission:system.tools.view')->get('webhooks/inbox', [WebhookInboxController::class, 'index'])->name('api.admin.webhooks.inbox.index');
+    Route::middleware('permission:system.tools.view')->get('stripe-webhook-events', [StripeWebhookEventsController::class, 'index'])->name('api.admin.stripe_webhook_events.index');
 
     Route::middleware('permission:notifications.deliveries.view')
         ->get('notifications/deliveries', [NotificationDeliveryController::class, 'globalIndex'])

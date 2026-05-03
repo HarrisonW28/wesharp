@@ -8,73 +8,123 @@ use App\Contracts\Payments\PaymentProviderInterface;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Support\Stripe\StripeCheckoutEnvironmentGuard;
+use Stripe\Exception\ApiErrorException;
 
 final class StripePaymentProvider implements PaymentProviderInterface
 {
+    public function __construct(
+        private readonly StripeCheckoutSessionClient $checkoutSessions,
+    ) {}
+
     public function driver(): string
     {
         return 'stripe';
     }
 
-    public function hostedCheckoutAvailability(Invoice $invoice): HostedCheckoutAvailability
+    public function invoiceHostedCheckoutPreview(Invoice $invoice): HostedCheckoutAvailability
     {
-        $secret = (string) config('stripe.secret', '');
-
-        if ($secret === '') {
-            return new HostedCheckoutAvailability(false, 'Stripe is not configured (STRIPE_SECRET_KEY missing).', null);
+        $reason = $this->invoiceCheckoutBlockingReason($invoice);
+        if ($reason !== null) {
+            return new HostedCheckoutAvailability(false, $reason, null);
         }
 
-        if (str_starts_with($secret, 'sk_live_') && ! (bool) config('stripe.allow_live', false)) {
+        return new HostedCheckoutAvailability(true, null, null);
+    }
+
+    public function createInvoiceHostedCheckoutSession(Invoice $invoice): HostedCheckoutAvailability
+    {
+        $reason = $this->invoiceCheckoutBlockingReason($invoice);
+        if ($reason !== null) {
+            return new HostedCheckoutAvailability(false, $reason, null);
+        }
+
+        $invoice->loadMissing(['payments', 'company']);
+        $received = (int) $invoice->payments->sum(fn (Payment $p): int => (int) $p->amount_pence);
+        /** @phpstan-ignore-next-line */
+        $total = (int) $invoice->total_pence;
+        $outstanding = max(1, $total - $received);
+
+        $successUrl = trim((string) config('stripe.checkout_success_url', ''));
+        $cancelUrl = trim((string) config('stripe.checkout_cancel_url', ''));
+
+        $metadata = [
+            'invoice_id' => (string) $invoice->id,
+            'company_id' => (string) $invoice->company_id,
+            'order_id' => $invoice->order_id !== null ? (string) $invoice->order_id : '',
+        ];
+
+        $params = [
+            'mode' => 'payment',
+            'client_reference_id' => (string) $invoice->id,
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+            'line_items' => [
+                [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => strtolower((string) $invoice->currency),
+                        'unit_amount' => $outstanding,
+                        'product_data' => [
+                            'name' => 'Invoice '.(string) $invoice->invoice_number,
+                        ],
+                    ],
+                ],
+            ],
+            'metadata' => $metadata,
+            'payment_intent_data' => [
+                'metadata' => $metadata,
+            ],
+        ];
+
+        $company = $invoice->company;
+        if ($company !== null && is_string($company->stripe_customer_id) && $company->stripe_customer_id !== '') {
+            $params['customer'] = $company->stripe_customer_id;
+        } elseif ($company !== null && is_string($company->billing_email) && trim($company->billing_email) !== '') {
+            $params['customer_email'] = trim($company->billing_email);
+        }
+
+        try {
+            $session = $this->checkoutSessions->createCheckoutSession($params, [
+                'idempotency_key' => 'invoice_checkout_'.(string) $invoice->id,
+            ]);
+        } catch (ApiErrorException $e) {
             return new HostedCheckoutAvailability(
                 false,
-                'Live Stripe keys are blocked until STRIPE_ALLOW_LIVE=true and webhooks are verified.',
+                'Stripe could not start checkout: '.$e->getMessage(),
                 null,
             );
         }
 
-        if (! str_starts_with($secret, 'sk_test_') && ! str_starts_with($secret, 'sk_live_')) {
-            return new HostedCheckoutAvailability(false, 'STRIPE_SECRET_KEY must be a standard sk_test_* or sk_live_* key.', null);
+        $sessionId = $session->id ?? null;
+        $url = $session->url ?? null;
+        if (! is_string($sessionId) || $sessionId === '' || ! is_string($url) || $url === '') {
+            return new HostedCheckoutAvailability(false, 'Stripe returned an incomplete checkout session.', null);
         }
 
-        if (! (bool) config('stripe.hosted_checkout_enabled', false)) {
-            return new HostedCheckoutAvailability(
-                false,
-                'Stripe hosted checkout is disabled (set STRIPE_HOSTED_CHECKOUT_ENABLED=true only when ready to test).',
-                null,
-            );
-        }
+        $invoice->forceFill(['stripe_checkout_session_id' => $sessionId])->save();
 
-        if ((string) config('stripe.webhook_secret', '') === '') {
-            return new HostedCheckoutAvailability(
-                false,
-                'Stripe webhook signing secret is required before offering checkout (STRIPE_WEBHOOK_SECRET).',
-                null,
-            );
-        }
+        return new HostedCheckoutAvailability(true, null, $url);
+    }
 
-        if ((bool) config('stripe.hosted_checkout_enabled', false)) {
-            $successUrl = trim((string) config('stripe.checkout_success_url', ''));
-            $cancelUrl = trim((string) config('stripe.checkout_cancel_url', ''));
-            if ($successUrl === '' || $cancelUrl === '') {
-                return new HostedCheckoutAvailability(
-                    false,
-                    'Stripe checkout redirect URLs are required when STRIPE_HOSTED_CHECKOUT_ENABLED=true (STRIPE_CHECKOUT_SUCCESS_URL and STRIPE_CHECKOUT_CANCEL_URL).',
-                    null,
-                );
-            }
+    private function invoiceCheckoutBlockingReason(Invoice $invoice): ?string
+    {
+        $env = StripeCheckoutEnvironmentGuard::blockingReason();
+        if ($env !== null) {
+            return $env;
         }
 
         $st = $invoice->invoice_status;
         if ($st === InvoiceStatus::Void) {
-            return new HostedCheckoutAvailability(false, 'Void invoices cannot use checkout.', null);
+            return 'Void invoices cannot use checkout.';
         }
 
         if ($st === InvoiceStatus::Draft) {
-            return new HostedCheckoutAvailability(false, 'Send the invoice before offering Stripe checkout.', null);
+            return 'Send the invoice before offering Stripe checkout.';
         }
 
         if ($st === InvoiceStatus::Paid) {
-            return new HostedCheckoutAvailability(false, 'Invoice is already paid.', null);
+            return 'Invoice is already paid.';
         }
 
         $invoice->loadMissing('payments');
@@ -82,13 +132,9 @@ final class StripePaymentProvider implements PaymentProviderInterface
         /** @phpstan-ignore-next-line */
         $total = (int) $invoice->total_pence;
         if ($total - $received <= 0) {
-            return new HostedCheckoutAvailability(false, 'Nothing outstanding on this invoice.', null);
+            return 'Nothing outstanding on this invoice.';
         }
 
-        return new HostedCheckoutAvailability(
-            false,
-            'Stripe Checkout session creation is not implemented yet (Sprint 19.2 — invoice-first Checkout in mode=payment). Use manual payment meanwhile.',
-            null,
-        );
+        return null;
     }
 }

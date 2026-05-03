@@ -25,6 +25,8 @@ export default function AccountSettingsPage() {
     order_updates: true,
     subscription_digest: true,
   });
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [portalTermsAccepted, setPortalTermsAccepted] = useState(false);
 
   const profileQuery = useQuery({
     queryKey: ["account-settings"],
@@ -64,6 +66,18 @@ export default function AccountSettingsPage() {
     }
   }, [d?.user.email_notification_preferences]);
 
+  useEffect(() => {
+    if (d?.user.marketing_opt_in !== undefined) {
+      setMarketingOptIn(d.user.marketing_opt_in);
+    }
+  }, [d?.user.marketing_opt_in]);
+
+  useEffect(() => {
+    if (d?.user.terms_accepted_at) {
+      setPortalTermsAccepted(false);
+    }
+  }, [d?.user.terms_accepted_at]);
+
   return (
     <PortalPage>
       <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Settings" }]} />
@@ -84,15 +98,20 @@ export default function AccountSettingsPage() {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
             mutation.reset();
-            void mutation.mutateAsync({
-              user: {
-                name: String(fd.get("user.name") ?? ""),
-                email_notification_preferences: {
-                  booking_updates: emailPrefs.booking_updates,
-                  order_updates: emailPrefs.order_updates,
-                  subscription_digest: emailPrefs.subscription_digest,
-                },
+            const user: Record<string, unknown> = {
+              name: String(fd.get("user.name") ?? ""),
+              email_notification_preferences: {
+                booking_updates: emailPrefs.booking_updates,
+                order_updates: emailPrefs.order_updates,
+                subscription_digest: emailPrefs.subscription_digest,
               },
+              marketing_opt_in: marketingOptIn,
+            };
+            if (!d?.user.terms_accepted_at && portalTermsAccepted) {
+              user.accept_portal_terms = true;
+            }
+            void mutation.mutateAsync({
+              user,
               company: {
                 name: String(fd.get("company.name") ?? ""),
                 phone: String(fd.get("company.phone") ?? "").trim(),
@@ -151,6 +170,49 @@ export default function AccountSettingsPage() {
                   onChange={(e) => setEmailPrefs((p) => ({ ...p, subscription_digest: e.target.checked }))}
                 />
                 <span className="text-sm">Subscription reminders &amp; usage digests (not billing notices)</span>
+              </label>
+            </div>
+          </div>
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold">Legal &amp; marketing</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Accepting the portal terms does <span className="font-medium">not</span> sign you up for marketing.
+              Marketing email is an explicit, separate choice.
+            </p>
+            <div className="mt-4 space-y-3">
+              {d?.user.terms_accepted_at ? (
+                <p className="text-sm text-muted-foreground">
+                  Portal terms accepted on{" "}
+                  {new Date(d.user.terms_accepted_at).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                  .
+                </p>
+              ) : (
+                <label className="flex cursor-pointer items-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border"
+                    checked={portalTermsAccepted}
+                    onChange={(e) => setPortalTermsAccepted(e.target.checked)}
+                  />
+                  <span className="text-sm">
+                    I have read and accept the WeSharp portal terms of use for this account (required only once).
+                  </span>
+                </label>
+              )}
+              <label className="flex cursor-pointer items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border"
+                  checked={marketingOptIn}
+                  onChange={(e) => setMarketingOptIn(e.target.checked)}
+                />
+                <span className="text-sm">
+                  Email me occasional product tips and updates (optional marketing — you can turn this off anytime).
+                </span>
               </label>
             </div>
           </div>

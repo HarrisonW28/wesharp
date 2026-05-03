@@ -10,7 +10,8 @@
         "fakerphp/faker": "^1.23",
         "firebase/php-jwt": "^7",
         "laravel/framework": "^13.0",
-        "laravel/tinker": "^3.0"
+        "laravel/tinker": "^3.0",
+        "stripe/stripe-php": "^17"
     },
     "require-dev": {
         "laravel/pail": "^1.2.5",

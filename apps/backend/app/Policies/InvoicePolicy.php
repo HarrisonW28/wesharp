@@ -65,4 +65,29 @@ final class InvoicePolicy
         return Permissions::userMay($user, Permissions::PAYMENTS_MANAGE)
             && Permissions::userMayForCompany($user, Permissions::INVOICES_VIEW, (string) $invoice->company_id);
     }
+
+    /**
+     * Stripe Checkout for an issued invoice — customers only when Sent/Overdue; staff need PAYMENTS_MANAGE.
+     */
+    public function startStripeCheckout(User $user, Invoice $invoice): bool
+    {
+        if (in_array($invoice->invoice_status, [InvoiceStatus::Void, InvoiceStatus::Paid], true)) {
+            return false;
+        }
+
+        if ($user->resolvedRole()->isCustomer()) {
+            if ($invoice->invoice_status === InvoiceStatus::Draft) {
+                return false;
+            }
+
+            if (! in_array($invoice->invoice_status, [InvoiceStatus::Sent, InvoiceStatus::Overdue], true)) {
+                return false;
+            }
+
+            return Permissions::userMayForCompany($user, Permissions::INVOICES_VIEW, (string) $invoice->company_id);
+        }
+
+        return Permissions::userMay($user, Permissions::PAYMENTS_MANAGE)
+            && Permissions::userMayForCompany($user, Permissions::INVOICES_VIEW, (string) $invoice->company_id);
+    }
 }
