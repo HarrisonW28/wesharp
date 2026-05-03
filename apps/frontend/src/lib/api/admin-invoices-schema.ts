@@ -127,6 +127,7 @@ export const InvoiceStripePanelSchema = z
     checkout_url: z.string().nullable().optional(),
     publishable_key_configured: z.boolean().optional(),
     webhook_secret_configured: z.boolean().optional(),
+    checkout_redirect_urls_configured: z.boolean().optional(),
     live_mode_blocked: z.boolean().optional(),
   })
   .passthrough();

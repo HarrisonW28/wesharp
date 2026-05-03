@@ -24,6 +24,12 @@ final class StripeInvoicePresentation
         return (string) config('stripe.webhook_secret', '') !== '';
     }
 
+    public static function areCheckoutRedirectUrlsConfigured(): bool
+    {
+        return trim((string) config('stripe.checkout_success_url', '')) !== ''
+            && trim((string) config('stripe.checkout_cancel_url', '')) !== '';
+    }
+
     public static function isLiveModeBlockedByPolicy(): bool
     {
         $secret = (string) config('stripe.secret', '');
@@ -46,6 +52,7 @@ final class StripeInvoicePresentation
             'checkout_url' => $r->checkoutUrl,
             'publishable_key_configured' => self::isPublishableKeyConfigured(),
             'webhook_secret_configured' => self::isWebhookSecretConfigured(),
+            'checkout_redirect_urls_configured' => self::areCheckoutRedirectUrlsConfigured(),
             'live_mode_blocked' => self::isLiveModeBlockedByPolicy(),
         ];
     }
@@ -80,6 +87,7 @@ final class StripeInvoicePresentation
             str_contains($reason, 'STRIPE_')
             || str_contains($reason, 'not implemented')
             || str_contains($reason, 'webhook signing secret')
+            || str_contains($reason, 'redirect URLs')
         ) {
             return 'Online card payment is not available yet. Use the payment details on your invoice or contact us.';
         }

@@ -58,6 +58,14 @@ Audit current Stripe stubs/docs and prepare configuration.
 - Feature flag behaviour is clear.
 - No payment code is enabled without config.
 
+### Implemented (2026-05-01)
+
+- **`docs/integrations/stripe.md`** — Sprint **19.1** audit table, **invoice-first** model (**`mode=payment`** for one-off invoices; **`mode=subscription`** called out for programmes later), full **env** list including **`STRIPE_CHECKOUT_SUCCESS_URL`** / **`STRIPE_CHECKOUT_CANCEL_URL`**, feature-flag ladder, developer checklist.
+- **`config/stripe.php`** + **`apps/backend/.env.example`** — checkout redirect URL keys (used when **`STRIPE_HOSTED_CHECKOUT_ENABLED=true`**).
+- **`StripePaymentProvider`** — when hosted checkout is enabled, **both** redirect URLs must be set (otherwise availability stays **`false`** with a clear reason); placeholder message references **19.2** / **`mode=payment`**.
+- **`StripeInvoicePresentation`**, admin invoice **UI** + **Zod** schema — **`checkout_redirect_urls_configured`** badge (no secrets).
+- Code comments — **`CreateStripeHostedCheckoutSessionAction`**, **`PaymentProviderInterface`**: invoice-first, not subscription-only.
+
 ---
 
 ## 19.2 — One-Off Invoice Checkout

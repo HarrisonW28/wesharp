@@ -18,7 +18,7 @@ interface PaymentProviderInterface
 
     /**
      * Whether hosted checkout could be offered for this invoice (config + invoice state).
-     * Does not imply a checkout URL exists until the Stripe Checkout API is implemented.
+     * One-off AR: Checkout **mode=payment** from an issued invoice. Does not imply a checkout URL exists until implemented.
      */
     public function hostedCheckoutAvailability(Invoice $invoice): HostedCheckoutAvailability;
 }

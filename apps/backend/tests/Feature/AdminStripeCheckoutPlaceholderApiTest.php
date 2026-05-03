@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\User;
 use Database\Seeders\WeSharpDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 final class AdminStripeCheckoutPlaceholderApiTest extends TestCase
@@ -33,6 +34,29 @@ final class AdminStripeCheckoutPlaceholderApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.hosted_checkout_available', false)
             ->assertJsonPath('data.checkout_url', null);
+    }
+
+    public function test_when_hosted_checkout_enabled_without_redirect_urls_returns_disabled_reason(): void
+    {
+        Config::set('stripe.secret', 'sk_test_'.str_repeat('a', 24));
+        Config::set('stripe.webhook_secret', 'whsec_test_placeholder');
+        Config::set('stripe.hosted_checkout_enabled', true);
+        Config::set('stripe.checkout_success_url', '');
+        Config::set('stripe.checkout_cancel_url', '');
+
+        $finance = User::query()->where('email', 'finance@demo.wesharp.test')->firstOrFail();
+        /** @phpstan-ignore-next-line */
+        $invoice = Invoice::query()->where('invoice_status', InvoiceStatus::Sent->value)->firstOrFail();
+
+        $res = $this->withHeader('X-WeSharp-Test-User-Id', (string) $finance->id)
+            ->postJson("/api/admin/invoices/{$invoice->id}/stripe-checkout-session");
+
+        $res->assertOk()
+            ->assertJsonPath('data.hosted_checkout_available', false)
+            ->assertJsonPath('data.checkout_url', null);
+
+        $reason = (string) $res->json('data.disabled_reason');
+        self::assertStringContainsString('STRIPE_CHECKOUT_SUCCESS_URL', $reason);
     }
 
     public function test_route_manager_cannot_request_stripe_checkout_placeholder(): void

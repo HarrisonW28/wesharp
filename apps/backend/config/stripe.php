@@ -29,4 +29,12 @@ return [
     */
     'allow_live' => filter_var(env('STRIPE_ALLOW_LIVE', false), FILTER_VALIDATE_BOOL),
 
+    /*
+    | Redirect URLs for Stripe Checkout (mode=payment for invoices; see Sprint 19).
+    | Required only when hosted checkout is enabled — used when creating Checkout Sessions.
+    */
+    'checkout_success_url' => env('STRIPE_CHECKOUT_SUCCESS_URL'),
+
+    'checkout_cancel_url' => env('STRIPE_CHECKOUT_CANCEL_URL'),
+
 ];

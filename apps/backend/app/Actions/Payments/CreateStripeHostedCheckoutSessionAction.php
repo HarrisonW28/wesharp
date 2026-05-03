@@ -10,8 +10,9 @@ use App\Services\Payments\HostedCheckoutAvailability;
 
 /**
  * Placeholder for {@see https://stripe.com/docs/api/checkout/sessions/create Stripe Checkout}.
+ * One-off invoices use **mode=payment** (invoice-first). Subscription programmes use **mode=subscription** separately — do not make Stripe subscription-only.
  *
- * Returns availability metadata only — no PaymentIntent / Session is created until explicitly built and audited.
+ * Returns availability metadata only — no session is created until Sprint 19.2+ wiring and webhooks are verified.
  */
 final class CreateStripeHostedCheckoutSessionAction
 {

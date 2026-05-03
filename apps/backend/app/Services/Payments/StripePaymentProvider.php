@@ -52,6 +52,18 @@ final class StripePaymentProvider implements PaymentProviderInterface
             );
         }
 
+        if ((bool) config('stripe.hosted_checkout_enabled', false)) {
+            $successUrl = trim((string) config('stripe.checkout_success_url', ''));
+            $cancelUrl = trim((string) config('stripe.checkout_cancel_url', ''));
+            if ($successUrl === '' || $cancelUrl === '') {
+                return new HostedCheckoutAvailability(
+                    false,
+                    'Stripe checkout redirect URLs are required when STRIPE_HOSTED_CHECKOUT_ENABLED=true (STRIPE_CHECKOUT_SUCCESS_URL and STRIPE_CHECKOUT_CANCEL_URL).',
+                    null,
+                );
+            }
+        }
+
         $st = $invoice->invoice_status;
         if ($st === InvoiceStatus::Void) {
             return new HostedCheckoutAvailability(false, 'Void invoices cannot use checkout.', null);
@@ -75,7 +87,7 @@ final class StripePaymentProvider implements PaymentProviderInterface
 
         return new HostedCheckoutAvailability(
             false,
-            'Stripe Checkout session creation is not implemented yet (Sprint 7.4 foundation). Use manual payment or wait for API wiring.',
+            'Stripe Checkout session creation is not implemented yet (Sprint 19.2 — invoice-first Checkout in mode=payment). Use manual payment meanwhile.',
             null,
         );
     }

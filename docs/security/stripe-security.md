@@ -14,7 +14,7 @@ After verification, **`stripe_webhook_events`** stores each **`evt_*` id**; dupl
 
 ## Frontend / publishable keys
 
-**`STRIPE_PUBLISHABLE_KEY`** (if used in Next.js) must be **`NEXT_PUBLIC_*`** only for truly public keys — never embed secret keys client-side.
+**`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`** (or legacy `STRIPE_PUBLISHABLE_KEY` in docs) must be **`NEXT_PUBLIC_*`** only for truly public keys — never embed secret keys client-side.
 
 ## Manual QA
 

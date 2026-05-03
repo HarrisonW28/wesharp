@@ -599,6 +599,11 @@ export default function AdminInvoiceDetailPage() {
             ) : (
               <Badge variant="outline">Publishable key not set</Badge>
             )}
+            {inv.stripe.checkout_redirect_urls_configured ? (
+              <Badge variant="secondary">Checkout redirect URLs set</Badge>
+            ) : (
+              <Badge variant="outline">Checkout redirect URLs not set</Badge>
+            )}
             {inv.stripe.live_mode_blocked ? <Badge variant="destructive">Live keys blocked by policy</Badge> : null}
           </div>
           <div className="mt-4">
