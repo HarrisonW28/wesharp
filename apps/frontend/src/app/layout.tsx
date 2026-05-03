@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Sora } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
 
@@ -32,6 +33,7 @@ export default function RootLayout({
     <html lang="en-GB" suppressHydrationWarning>
       <body className={`${sora.variable} ${geistMono.variable} min-h-screen font-sans font-medium`}>
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
