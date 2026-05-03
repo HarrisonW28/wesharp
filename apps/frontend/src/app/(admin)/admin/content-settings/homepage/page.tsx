@@ -23,6 +23,7 @@ function HomepageEditor() {
         <CardContent className="grid gap-4 md:grid-cols-2">
           <Field label="Hero badge / region pill" value={h.hero_badge} onChange={(v) => setDraft({ ...draft, homepage: { ...h, hero_badge: v } })} />
           <Field label="CTA · book" value={h.cta_book} onChange={(v) => setDraft({ ...draft, homepage: { ...h, cta_book: v } })} />
+          <Field label="CTA · check postcode (hero)" value={h.cta_coverage} onChange={(v) => setDraft({ ...draft, homepage: { ...h, cta_coverage: v } })} />
           <div className="md:col-span-2">
             <Area label="Hero title" value={h.hero_title} onChange={(v) => setDraft({ ...draft, homepage: { ...h, hero_title: v } })} />
           </div>

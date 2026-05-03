@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Home, Mail, MessageSquareText, HelpCircle, Layers, BookOpen } from "lucide-react";
+import { ChevronRight, Home, Mail, MessageSquareText, HelpCircle, Layers, BookOpen, Shield } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -42,6 +42,12 @@ const SECTIONS = [
     title: "FAQ",
     description: "FAQ page title, lead, and question list.",
     icon: HelpCircle,
+  },
+  {
+    href: "/admin/content-settings/safety",
+    title: "Safety & trust",
+    description: "Public safety page — lead and trust bullets.",
+    icon: Shield,
   },
   {
     href: "/admin/content-settings/contact",

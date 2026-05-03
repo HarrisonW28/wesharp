@@ -27,6 +27,7 @@ final class SiteContentDefaults
                 'hero_subtitle' => 'Book a slot, hand over your blades, and get them back sharp and inspected — without leaving your kitchen off the pass for long.',
                 'hero_supporting' => 'Most kitchens book in under a minute — choose a date, tell us roughly how many knives, and you\'re done.',
                 'cta_book' => 'Book a collection',
+                'cta_coverage' => 'Check your postcode',
                 'cta_pricing' => 'See prices',
                 'cta_how' => 'How it works',
                 'cta_sign_in' => 'Sign in',
@@ -85,25 +86,29 @@ final class SiteContentDefaults
                 'title' => 'Pricing',
                 'lead' => 'Every kitchen is different — we price by volume, how often we visit, and turnaround. Figures below are guide rates in GBP; we confirm a written quote before you commit.',
             ],
+            'subscriptions_page' => [
+                'title' => 'Subscriptions & regular programmes',
+                'lead' => 'If you run knives through the pass every week, ad-hoc collections aren\'t always enough. We offer rolling routes and care-style programmes with included visits and knife allowances — so you know when we\'re coming and what\'s covered.',
+            ],
             'how_it_works' => [
                 'title' => 'How it works',
-                'lead' => 'You book a collection. We collect your knives, sharpen and inspect them in our workshop, then return them — with plain-English updates in your account so you always know what\'s happening.',
+                'lead' => 'You book a collection. We collect, log, sharpen, and inspect your knives in our workshop, then return them — with plain updates in your account (and photos when your programme includes them).',
                 'steps' => [
                     [
                         'title' => 'Book',
-                        'body' => 'No account is required for your first enquiry.',
+                        'body' => 'Send a collection enquiry with your postcode, a rough knife count, and when you need us — no account is required for the first message.',
                     ],
                     [
                         'title' => 'Collect',
-                        'body' => 'We arrive in an agreed window, log each blade, and transport everything safely to our workshop.',
+                        'body' => 'We arrive in the agreed window, identify each blade against your booking, pack everything for transport, and hand over clearly to your on-site contact.',
                     ],
                     [
                         'title' => 'Sharpen & check',
-                        'body' => 'Professional edges and a quality pass before anything leaves the workshop.',
+                        'body' => 'Knives are sharpened and inspected in our workshop. Anything that doesn\'t meet our quality bar is flagged for discussion before it goes back on the van.',
                     ],
                     [
                         'title' => 'Return',
-                        'body' => 'Your knives come back ready to use. With an account you can follow bookings and orders — and see customer-visible photos when they\'re part of your programme.',
+                        'body' => 'We return blades on a scheduled run, ready for service. With a free account you follow status end-to-end. If your programme includes customer-visible evidence, timestamped photos can appear in your portal — internal-only shots never show in your account.',
                     ],
                 ],
                 'subscriptions_prompt' => 'Interested in rolling visits? Read',
@@ -121,10 +126,22 @@ final class SiteContentDefaults
                 ['q' => 'How do invoices and payment work?', 'a' => 'We raise invoices in GBP for the work we’ve done. In your account you can see what’s outstanding; our team will agree payment terms with you when you’re set up.'],
                 ['q' => 'Where do you collect?', 'a' => 'We currently serve Greater Manchester and Liverpool. Add your postcode when you book — we’ll only confirm if you’re in an area we cover.'],
                 ['q' => 'Do you work with restaurants only?', 'a' => 'We work with professional kitchens of all sizes — restaurants, hotels, butchers, caterers — and with serious home cooks who want the same service.'],
+                ['q' => 'What if a knife is damaged in your care?', 'a' => 'We log condition at handover and again in the workshop. If anything doesn’t look right, we pause and contact you before sharpening. Specific terms can be agreed when you’re on-boarded as a regular customer — use Contact if you need paperwork in advance.'],
+                ['q' => 'Can you follow our RAMS or site rules?', 'a' => 'Yes. Share access rules, inductions, or RAMS when you book or via Contact — we’ll work with your estates or H&S contact so collections fit your site policy.'],
             ],
             'faq_page' => [
                 'title' => 'FAQ',
                 'lead' => 'Straight answers before you book. If something’s not here, use Contact and we’ll reply in working hours.',
+            ],
+            'safety_page' => [
+                'title' => 'Safety & trust',
+                'lead' => 'Kitchen teams hand over sharp tools every day — we match that seriousness with clear custody from collection through the workshop and back to your pass.',
+                'points' => [
+                    'Named access windows and on-site contacts for every collection — no surprise knock-on-the-door moments.',
+                    'Each blade tied to your booking in our systems so nothing goes unaccounted for between your kitchen and return.',
+                    'If something arrives in unexpected condition, we record it and speak with you before work continues.',
+                    'Risk assessments or RAMS from your estates team? Mention them on enquiry or Contact and we’ll align with your process.',
+                ],
             ],
             'contact' => [
                 'title' => 'Contact',

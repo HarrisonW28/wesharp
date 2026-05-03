@@ -1,13 +1,28 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 import { HomeHero } from "@/components/marketing/HomeHero";
+import { HomeHowStepsGrid } from "@/components/marketing/HomeHowStepsGrid";
 import { PublicSubscriptionPlansCatalog } from "@/components/marketing/PublicSubscriptionPlansCatalog";
+import { ServiceAreaCheckerSection } from "@/components/marketing/ServiceAreaCheckerSection";
 import { Button } from "@/components/ui/button";
 import { PRICING } from "@/config/pricing";
 import { SERVICE_AREAS } from "@/config/service-areas";
 import { formatGBP } from "@/lib/format/money";
 import { fetchPublicSiteData } from "@/lib/site-content/fetch-site-content";
+
+export const metadata: Metadata = {
+  title: "Professional knife sharpening | WeSharp",
+  description:
+    "Doorstep collection and return for Greater Manchester & Liverpool. Book online, track your order, and get blades back workshop-sharp.",
+  openGraph: {
+    title: "WeSharp — Professional knife sharpening",
+    description:
+      "Book knife sharpening with collection from your kitchen. Serving Greater Manchester & Liverpool.",
+    type: "website",
+  },
+};
 
 export const revalidate = 60;
 
@@ -20,28 +35,42 @@ export default async function HomePage() {
     <>
       <HomeHero homepage={h} />
 
+      <section id="check-coverage" className="scroll-mt-20 border-b bg-muted/20 py-14 md:py-20">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          <div className="mx-auto max-w-2xl text-center md:mx-0 md:max-w-xl md:text-left">
+            <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{h.areas_section_title}</h2>
+            <p className="mt-3 text-sm text-muted-foreground md:text-base">{h.areas_section_lead}</p>
+          </div>
+          <div className="mt-8 md:mt-10">
+            <ServiceAreaCheckerSection />
+          </div>
+          <div className="mt-8 flex flex-wrap justify-center gap-2 md:justify-start">
+            {SERVICE_AREAS.map((area) => (
+              <span
+                key={area.id}
+                className="rounded-full border bg-background px-3 py-1.5 text-xs text-muted-foreground md:text-sm"
+              >
+                {area.label}
+              </span>
+            ))}
+          </div>
+          <p className="mt-4 text-center text-xs text-muted-foreground md:text-left">
+            The checker above is the live result for your postcode. Labels are a quick regional guide only.
+          </p>
+        </div>
+      </section>
+
       <section id="how-it-works" className="scroll-mt-20 border-b bg-background py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">{h.how_section_title}</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground md:text-base">
             {h.how_section_lead}
           </p>
-          <ol className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {(h.how_steps ?? []).map(({ step, title, body }) => (
-              <li key={step} className="relative rounded-2xl border bg-card p-6 shadow-sm">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
-                  {step}
-                </span>
-                <h3 className="mt-4 text-base font-semibold">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-10 flex justify-center">
-            <Button variant="outline" className="rounded-lg" asChild>
-              <Link href="/how-it-works">{h.how_section_more_label}</Link>
-            </Button>
-          </div>
+          <HomeHowStepsGrid
+            steps={h.how_steps ?? []}
+            moreLabel={h.how_section_more_label}
+            moreHref="/how-it-works"
+          />
         </div>
       </section>
 
@@ -64,6 +93,45 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <section className="border-b bg-background py-16 md:py-20">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">Pick your path</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground md:text-base">
+            One-off visits, rolling programmes, or multi-site accounts — the same workshop quality and tracking.
+          </p>
+          <div className="mt-12 grid gap-6 md:grid-cols-2">
+            <div className="flex flex-col rounded-2xl border bg-card p-8 shadow-sm">
+              <h3 className="text-lg font-semibold">Home cooks &amp; single kitchens</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                Book when you need us. See guide pricing first, then a written quote before any work — no surprises.
+              </p>
+              <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Button className="rounded-lg" asChild>
+                  <Link href="/book">Book a collection</Link>
+                </Button>
+                <Button variant="outline" className="rounded-lg" asChild>
+                  <Link href="/pricing">View pricing</Link>
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-col rounded-2xl border bg-card p-8 shadow-sm ring-1 ring-primary/15">
+              <h3 className="text-lg font-semibold">Business &amp; hospitality</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                Routes your brigades can rely on, programmes with allowances, and consolidated billing across sites.
+              </p>
+              <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Button className="rounded-lg" asChild>
+                  <Link href="/trade-accounts">Trade accounts</Link>
+                </Button>
+                <Button variant="outline" className="rounded-lg" asChild>
+                  <Link href="/subscriptions">Programmes</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="border-b py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">{h.benefits_title}</h2>
@@ -78,23 +146,6 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section id="areas" className="border-b bg-muted/25 py-14 md:py-16">
-        <div className="mx-auto max-w-7xl px-4 text-center md:px-8">
-          <h2 className="text-xl font-semibold tracking-tight md:text-2xl">{h.areas_section_title}</h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">{h.areas_section_lead}</p>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            {SERVICE_AREAS.map((area) => (
-              <span key={area.id} className="rounded-full border bg-background px-3 py-1.5 text-sm">
-                {area.label}
-              </span>
-            ))}
-          </div>
-          <Button className="mt-8 rounded-lg" variant="outline" asChild>
-            <Link href="/service-areas">{h.areas_see_coverage}</Link>
-          </Button>
         </div>
       </section>
 

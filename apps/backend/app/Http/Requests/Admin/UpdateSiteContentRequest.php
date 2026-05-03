@@ -30,6 +30,7 @@ final class UpdateSiteContentRequest extends FormRequest
             "{$h}.hero_subtitle" => ['required', 'string', 'max:2000'],
             "{$h}.hero_supporting" => ['required', 'string', 'max:2000'],
             "{$h}.cta_book" => ['required', 'string', 'max:120'],
+            "{$h}.cta_coverage" => ['required', 'string', 'max:120'],
             "{$h}.cta_pricing" => ['required', 'string', 'max:120'],
             "{$h}.cta_how" => ['required', 'string', 'max:120'],
             "{$h}.cta_sign_in" => ['required', 'string', 'max:120'],
@@ -79,6 +80,10 @@ final class UpdateSiteContentRequest extends FormRequest
             "{$s}.pricing_page.title" => ['required', 'string', 'max:200'],
             "{$s}.pricing_page.lead" => ['required', 'string', 'max:3000'],
 
+            "{$s}.subscriptions_page" => ['required', 'array'],
+            "{$s}.subscriptions_page.title" => ['required', 'string', 'max:200'],
+            "{$s}.subscriptions_page.lead" => ['required', 'string', 'max:3000'],
+
             "{$s}.how_it_works" => ['required', 'array'],
             "{$s}.how_it_works.title" => ['required', 'string', 'max:200'],
             "{$s}.how_it_works.lead" => ['required', 'string', 'max:3000'],
@@ -98,6 +103,12 @@ final class UpdateSiteContentRequest extends FormRequest
             "{$s}.faq_page" => ['required', 'array'],
             "{$s}.faq_page.title" => ['required', 'string', 'max:200'],
             "{$s}.faq_page.lead" => ['required', 'string', 'max:2000'],
+
+            "{$s}.safety_page" => ['required', 'array'],
+            "{$s}.safety_page.title" => ['required', 'string', 'max:200'],
+            "{$s}.safety_page.lead" => ['required', 'string', 'max:3000'],
+            "{$s}.safety_page.points" => ['required', 'array', 'max:12'],
+            "{$s}.safety_page.points.*" => ['required', 'string', 'max:800'],
 
             "{$s}.contact" => ['required', 'array'],
             "{$s}.contact.title" => ['required', 'string', 'max:200'],

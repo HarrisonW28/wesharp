@@ -119,7 +119,8 @@ export function PublicPricingCalculator({ className }: { className?: string }) {
           Price guide calculator
         </CardTitle>
         <CardDescription>
-          Rough numbers from the same rules and subscription plans we use in the workshop — not a final quote.
+          Amounts are in GBP (£). Rough numbers from the same rules and subscription plans we use in the workshop — not a
+          final quote.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
