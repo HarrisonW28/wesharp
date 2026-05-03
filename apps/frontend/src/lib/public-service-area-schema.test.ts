@@ -22,7 +22,19 @@ describe("public-service-area-schema", () => {
       postcode: "B1 1TT",
       customer_type: "business",
       estimated_knife_count: 20,
+      contact_consent: true,
     });
     expect(parsed.success).toBe(true);
+  });
+
+  it("rejects waitlist without contact consent", () => {
+    const parsed = PublicServiceAreaWaitlistFormSchema.safeParse({
+      name: "Alex",
+      email: "alex@example.com",
+      postcode: "B1 1TT",
+      customer_type: "business",
+      contact_consent: false,
+    });
+    expect(parsed.success).toBe(false);
   });
 });

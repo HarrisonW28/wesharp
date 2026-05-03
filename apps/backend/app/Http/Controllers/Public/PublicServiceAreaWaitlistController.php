@@ -38,6 +38,10 @@ final class PublicServiceAreaWaitlistController extends Controller
             );
         }
 
+        $source = isset($validated['source']) && is_string($validated['source']) && $validated['source'] !== ''
+            ? (string) $validated['source']
+            : 'service_areas_page';
+
         $signup = ServiceAreaWaitlistSignup::query()->create([
             'name' => (string) $validated['name'],
             'email' => strtolower(trim((string) $validated['email'])),
@@ -50,11 +54,14 @@ final class PublicServiceAreaWaitlistController extends Controller
             'notes' => isset($validated['notes']) && is_string($validated['notes']) && $validated['notes'] !== ''
                 ? (string) $validated['notes']
                 : null,
+            'source' => $source,
+            'contact_consent' => true,
         ]);
 
         AuditRecorder::record(null, $signup, 'public.service_area_waitlist_signup', [
             'customer_type' => $signup->customer_type,
             'email_domain' => Str::after($signup->email, '@') ?: '-',
+            'source' => $signup->source,
         ], $request);
 
         return ApiResponses::success([

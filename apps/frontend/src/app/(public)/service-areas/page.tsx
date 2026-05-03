@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { ServiceAreaCheckerSection } from "@/components/marketing/ServiceAreaCheckerSection";
 import { SERVICE_AREAS } from "@/config/service-areas";
@@ -11,7 +13,11 @@ export default async function ServiceAreasPage() {
 
   return (
     <MarketingArticle title={s.title} lead={s.lead}>
-      <ServiceAreaCheckerSection className="mb-8" />
+      <Suspense
+        fallback={<div className="mb-8 h-56 animate-pulse rounded-xl border bg-muted/30" aria-busy="true" aria-label="Loading postcode checker" />}
+      >
+        <ServiceAreaCheckerSection className="mb-8" />
+      </Suspense>
       <div className="flex flex-wrap gap-2">
         {SERVICE_AREAS.map((area) => (
           <span key={area.id} className="rounded-full border bg-card px-3 py-1.5 text-sm text-foreground">

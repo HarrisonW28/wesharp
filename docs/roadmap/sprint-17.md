@@ -166,6 +166,11 @@ Integrate service area checking into booking without overfacing customers.
 - Admin override is controlled if implemented.
 - Backend still validates coverage where required.
 
+### Implemented (2026-05-01)
+
+- **Public booking wizard** (`BookPageClient`): on the address step, **collection** flows call **`POST /api/public/service-area/check`** (via `postPublicBookingServiceAreaCheck`) before advancing when **`NEXT_PUBLIC_API_ORIGIN`** is set. **On-site** flows skip the check.
+- **In area:** user continues as usual. **Invalid postcode:** server message on the postcode field (e.g. `invalid_postcode`). **Out of area:** sticky **Continue** is disabled until the user uses **Continue anyway** (explicit acknowledgement) or changes postcode / service type; copy links to **`/service-areas`** for waitlist/support. **Back** to the address step clears the out-of-area acknowledgement so coverage is re-checked on the next forward attempt.
+
 ---
 
 ## 17.6 — Waitlist / Out-of-Area Leads
@@ -189,6 +194,13 @@ Capture demand outside the current service area.
 - Admin can view waitlist leads.
 - Consent is not confused with terms.
 - Data is validated.
+
+### Implemented (2026-05-01)
+
+- **Public waitlist** — existing **`POST /api/public/service-area/waitlist`** extended with **`source`** (`service_areas_page` \| `booking_wizard`, default **`service_areas_page`**) and required **`contact_consent`** (must be accepted / true). Stored on **`service_area_waitlist_signups`**; audit metadata includes **`source`**.
+- **Marketing form** — **`ServiceAreaCheckerSection`**: explicit **email consent** checkbox (copy distinguishes waitlist from booking terms); submits **`source`** from URL (`from=book` → **`booking_wizard`**); **`postcode`** query prefills checker + waitlist when present; wrapped in **`Suspense`** for **`useSearchParams`**.
+- **Booking flow** — out-of-area CTA links to **`/service-areas?from=book&postcode=…`**.
+- **Admin** — **`/admin/waitlist`** table shows **Source** and **Consent** columns.
 
 ---
 
@@ -219,3 +231,32 @@ At the end, provide:
 - files changed
 - deferred mapping issues
 - Sprint 17 verdict: PASS / FAIL
+
+### QA report (2026-05-01)
+
+**Checks completed (automated / static)**
+
+| Area | How verified |
+| ---- | ------------ |
+| Admin service areas API + permissions | `php artisan test tests/Feature/AdminServiceAreasApiTest.php` (CRUD finance, route manager read-only + POST 403, developer GET 403, radius validation) |
+| Public coverage + waitlist + throttle + admin waitlist index | `php artisan test tests/Feature/ServiceAreaPublicApiTest.php` |
+| Pricing / service area alignment | `php artisan test tests/Feature/PublicPricingEstimateApiTest.php` |
+| Public booking enquiries API | `php artisan test tests/Feature/PublicBookingEnquiryApiTest.php` |
+| Frontend types + schema + route permissions | `npm run typecheck`, `vitest run` (`public-service-area-schema`, `route-permissions`), `npm run lint` |
+
+**Manual / not exercised in CI:** Leaflet map interactions, real-device mobile layouts, `NEXT_PUBLIC_API_ORIGIN` against a live API (local smoke only implied by tests).
+
+**Bugs found:** None in Sprint 17 scope during this pass.
+
+**Bugs fixed:** None (no regressions detected).
+
+**Files changed (this QA pass):** `docs/roadmap/sprint-17.md` only.
+
+**Deferred mapping / product issues (not failures)**
+
+- **`next_collection_date`** on the public check API is **fleet-wide** (earliest future route), not guaranteed per-postcode / per-zone — documented in `sprint-17.1-service-area-audit.md` §4.
+- **Static** `SERVICE_AREAS` marketing labels may drift from DB `service_areas` UUIDs; checker copy should prefer API `area` where shown (audit §6).
+
+**Env / provider docs:** OpenStreetMap tiles in admin map need no browser geocoder API key; server-side postcode lookup uses **postcodes.io** (no key) per Sprint 17.3 implementation notes in this doc and `public-website.md`.
+
+**Sprint 17 verdict: PASS**

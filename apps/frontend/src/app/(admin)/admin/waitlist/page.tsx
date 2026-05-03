@@ -18,6 +18,11 @@ const CUSTOMER_TYPE_COPY: Record<string, string> = {
   other: "Other",
 };
 
+const SOURCE_COPY: Record<string, string> = {
+  service_areas_page: "Service areas page",
+  booking_wizard: "Booking flow",
+};
+
 export default function AdminWaitlistPage() {
   const admin = useAdminApi();
   const q = useQuery({
@@ -74,7 +79,7 @@ export default function AdminWaitlistPage() {
             <CardTitle className="text-base font-semibold">{rows.length} lead{rows.length === 1 ? "" : "s"}</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
-            <table className="w-full min-w-[640px] border-collapse text-sm">
+            <table className="w-full min-w-[860px] border-collapse text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="pb-2 pr-4 font-medium">Date</th>
@@ -82,7 +87,9 @@ export default function AdminWaitlistPage() {
                   <th className="pb-2 pr-4 font-medium">Email</th>
                   <th className="pb-2 pr-4 font-medium">Postcode</th>
                   <th className="pb-2 pr-4 font-medium">Type</th>
+                  <th className="pb-2 pr-4 font-medium">Source</th>
                   <th className="pb-2 pr-4 font-medium">Knives</th>
+                  <th className="pb-2 pr-4 font-medium">Consent</th>
                   <th className="pb-2 font-medium">Notes</th>
                 </tr>
               </thead>
@@ -100,8 +107,14 @@ export default function AdminWaitlistPage() {
                     </td>
                     <td className="py-3 pr-4">{row.postcode}</td>
                     <td className="py-3 pr-4">{CUSTOMER_TYPE_COPY[row.customer_type] ?? row.customer_type}</td>
+                    <td className="py-3 pr-4 text-muted-foreground">
+                      {row.source ? SOURCE_COPY[row.source] ?? row.source : "—"}
+                    </td>
                     <td className="py-3 pr-4 tabular-nums text-muted-foreground">
                       {row.estimated_knife_count != null ? row.estimated_knife_count : "—"}
+                    </td>
+                    <td className="py-3 pr-4 tabular-nums text-muted-foreground">
+                      {row.contact_consent === true ? "Yes" : row.contact_consent === false ? "No" : "—"}
                     </td>
                     <td className="py-3 max-w-[14rem] text-muted-foreground">
                       {row.notes ? <span className="line-clamp-3 whitespace-pre-wrap">{row.notes}</span> : "—"}

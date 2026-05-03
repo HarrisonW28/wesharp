@@ -21,12 +21,15 @@ class ServiceAreaWaitlistSignup extends Model
         'customer_type',
         'estimated_knife_count',
         'notes',
+        'source',
+        'contact_consent',
     ];
 
     protected function casts(): array
     {
         return [
             'estimated_knife_count' => 'integer',
+            'contact_consent' => 'boolean',
         ];
     }
 }

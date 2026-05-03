@@ -138,6 +138,7 @@ final class ServiceAreaPublicApiTest extends TestCase
             'email' => 'sam@example.com',
             'postcode' => 'ZZ99 9ZZ',
             'customer_type' => 'home',
+            'contact_consent' => true,
         ])
             ->assertStatus(422)
             ->assertJsonPath('error.code', 'invalid_postcode');
@@ -211,6 +212,8 @@ final class ServiceAreaPublicApiTest extends TestCase
             'customer_type' => 'business',
             'estimated_knife_count' => 24,
             'notes' => 'New restaurant opening soon.',
+            'source' => 'booking_wizard',
+            'contact_consent' => true,
         ]);
 
         $response->assertCreated()
@@ -221,6 +224,8 @@ final class ServiceAreaPublicApiTest extends TestCase
         self::assertSame('sam@example.com', $row->email);
         self::assertSame('B11AA', $row->postcode_normalized);
         self::assertSame(24, $row->estimated_knife_count);
+        self::assertSame('booking_wizard', $row->source);
+        self::assertTrue($row->contact_consent);
 
         self::assertTrue(
             AuditLog::query()
@@ -228,6 +233,25 @@ final class ServiceAreaPublicApiTest extends TestCase
                 ->where('auditable_type', ServiceAreaWaitlistSignup::class)
                 ->exists()
         );
+    }
+
+    public function test_waitlist_defaults_source_when_omitted(): void
+    {
+        ServiceArea::factory()->create([
+            'postcode_prefix' => 'M',
+            'active' => true,
+        ]);
+
+        $this->postJson('/api/public/service-area/waitlist', [
+            'name' => 'Sam Sharp',
+            'email' => 'sam@example.com',
+            'postcode' => 'B1 1AA',
+            'customer_type' => 'home',
+            'contact_consent' => true,
+        ])
+            ->assertCreated();
+
+        self::assertSame('service_areas_page', ServiceAreaWaitlistSignup::query()->firstOrFail()->source);
     }
 
     public function test_waitlist_rejects_in_area_postcode(): void
@@ -242,10 +266,30 @@ final class ServiceAreaPublicApiTest extends TestCase
             'email' => 'sam@example.com',
             'postcode' => 'M1 1AA',
             'customer_type' => 'home',
+            'contact_consent' => true,
         ]);
 
         $response->assertStatus(422)
             ->assertJsonPath('error.code', 'in_service_area');
+
+        self::assertSame(0, ServiceAreaWaitlistSignup::query()->count());
+    }
+
+    public function test_waitlist_returns_422_when_contact_consent_not_accepted(): void
+    {
+        ServiceArea::factory()->create([
+            'postcode_prefix' => 'M',
+            'active' => true,
+        ]);
+
+        $this->postJson('/api/public/service-area/waitlist', [
+            'name' => 'Sam Sharp',
+            'email' => 'sam@example.com',
+            'postcode' => 'B1 1AA',
+            'customer_type' => 'home',
+            'contact_consent' => false,
+        ])
+            ->assertStatus(422);
 
         self::assertSame(0, ServiceAreaWaitlistSignup::query()->count());
     }

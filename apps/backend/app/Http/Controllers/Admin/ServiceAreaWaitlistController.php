@@ -29,6 +29,8 @@ final class ServiceAreaWaitlistController extends Controller
             'customer_type' => $row->customer_type,
             'estimated_knife_count' => $row->estimated_knife_count,
             'notes' => $row->notes,
+            'source' => $row->source,
+            'contact_consent' => $row->contact_consent,
             'created_at' => $row->created_at?->toIso8601String(),
         ]);
 

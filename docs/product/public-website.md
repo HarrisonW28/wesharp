@@ -7,7 +7,7 @@ Visitors can check whether a postcode falls inside an active **`service_areas`**
 | Item | Detail |
 | --- | --- |
 | Check | **`POST /api/public/service-area/check`** — body `{ "postcode": "…" }`; **`200`** returns **`data.covered`**, optional **`data.area`** (`id`, `label`, `city`), and **`data.next_collection_date`** (next future non-completed route date, or **`null`**) when covered. |
-| Waitlist | **`POST /api/public/service-area/waitlist`** — **`name`**, **`email`**, **`postcode`**, **`customer_type`** (`home` \| `business` \| `other`), optional **`estimated_knife_count`**, optional **`notes`**; **`422`** with code **`in_service_area`** if the postcode is already covered. **`201`** returns **`data.accepted`** + **`message`** only (no row UUID). |
+| Waitlist | **`POST /api/public/service-area/waitlist`** — **`name`**, **`email`**, **`postcode`**, **`customer_type`** (`home` \| `business` \| `other`), optional **`estimated_knife_count`**, optional **`notes`**, optional **`source`** (`service_areas_page` \| `booking_wizard`; default **`service_areas_page`**), required **`contact_consent`** (must be true); **`422`** with code **`in_service_area`** if the postcode is already covered. **`201`** returns **`data.accepted`** + **`message`** only (no row UUID). |
 | Rate limit | **`throttle:service-area-public`** — **20 requests per minute per IP** (`RateLimiter::for('service-area-public')`). |
 | Audit | **`AuditRecorder::record(null, signup, 'public.service_area_waitlist_signup', …)`**. |
 | Marketing UI | **`/service-areas`** — `ServiceAreaCheckerSection` (see `apps/frontend/src/components/marketing/ServiceAreaCheckerSection.tsx`). |

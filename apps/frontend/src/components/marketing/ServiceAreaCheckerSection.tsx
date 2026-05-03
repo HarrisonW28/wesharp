@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Loader2, MapPin } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -37,6 +38,11 @@ const CUSTOMER_TYPE_LABEL: Record<PublicServiceAreaWaitlistFormValues["customer_
 };
 
 export function ServiceAreaCheckerSection({ className }: { className?: string }) {
+  const searchParams = useSearchParams();
+  const seededUrlPostcodeRef = useRef(false);
+
+  const waitlistSource = searchParams.get("from") === "book" ? "booking_wizard" : "service_areas_page";
+
   const checkUrl = useMemo(() => `${apiOrigin()}/api/public/service-area/check`, []);
   const waitlistUrl = useMemo(() => `${apiOrigin()}/api/public/service-area/waitlist`, []);
 
@@ -64,9 +70,24 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
     customer_type: "home",
     estimated_knife_count: undefined,
     notes: "",
+    contact_consent: false,
   });
 
   const [waitlistSucceeded, setWaitlistSucceeded] = useState(false);
+
+  useEffect(() => {
+    if (seededUrlPostcodeRef.current) {
+      return;
+    }
+    const raw = searchParams.get("postcode")?.trim();
+    if (!raw) {
+      return;
+    }
+    seededUrlPostcodeRef.current = true;
+    const pc = raw.slice(0, 24);
+    setPostcodeInput(pc);
+    setWaitlistForm((p) => ({ ...p, postcode: pc }));
+  }, [searchParams]);
 
   const bookHrefWithPostcode = useMemo(() => {
     if (!checkResult?.covered) {
@@ -169,6 +190,8 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
           customer_type: parsed.data.customer_type,
           estimated_knife_count: parsed.data.estimated_knife_count,
           notes: parsed.data.notes && parsed.data.notes !== "" ? parsed.data.notes : undefined,
+          source: waitlistSource,
+          contact_consent: true,
         }),
       });
       const json: unknown = await res.json();
@@ -200,6 +223,14 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
       const successText = typeof data.message === "string" ? data.message : "Thanks — you’re on the list.";
       setWaitlistBanner({ variant: "default", text: successText });
       setWaitlistSucceeded(true);
+      setWaitlistForm((p) => ({
+        ...p,
+        name: "",
+        email: "",
+        estimated_knife_count: undefined,
+        notes: "",
+        contact_consent: false,
+      }));
     } catch {
       setWaitlistBanner({ variant: "destructive", text: "Network error — please try again." });
     } finally {
@@ -424,6 +455,29 @@ export function ServiceAreaCheckerSection({ className }: { className?: string })
                       aria-invalid={Boolean(waitlistFieldErrors.notes)}
                     />
                     {waitlistFieldErrors.notes ? <p className="text-xs text-destructive">{waitlistFieldErrors.notes}</p> : null}
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-input"
+                        checked={waitlistForm.contact_consent}
+                        onChange={(e) => setWaitlistForm((p) => ({ ...p, contact_consent: e.target.checked }))}
+                        aria-invalid={Boolean(waitlistFieldErrors.contact_consent)}
+                        aria-describedby={
+                          waitlistFieldErrors.contact_consent ? "waitlist-consent-error" : "waitlist-consent-hint"
+                        }
+                      />
+                      <span id="waitlist-consent-hint">
+                        I agree that WeSharp may email me if we expand collection to my area. This is separate from a booking
+                        enquiry — you are not confirming a service or contract.
+                      </span>
+                    </label>
+                    {waitlistFieldErrors.contact_consent ? (
+                      <p id="waitlist-consent-error" className="text-xs text-destructive">
+                        {waitlistFieldErrors.contact_consent}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
                 <Button type="submit" className="h-11 w-full sm:w-auto" disabled={waitlistLoading || apiOrigin() === ""}>

@@ -23,6 +23,8 @@ class ServiceAreaWaitlistSignupFactory extends Factory
             'customer_type' => 'home',
             'estimated_knife_count' => null,
             'notes' => null,
+            'source' => 'service_areas_page',
+            'contact_consent' => true,
         ];
     }
 }

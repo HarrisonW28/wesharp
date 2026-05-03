@@ -8,6 +8,8 @@ export const ServiceAreaWaitlistRowSchema = z.object({
   customer_type: z.string(),
   estimated_knife_count: z.number().nullable(),
   notes: z.string().nullable(),
+  source: z.string().nullable(),
+  contact_consent: z.boolean().nullable(),
   created_at: z.string(),
 });
 

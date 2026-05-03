@@ -27,6 +27,9 @@ export const PublicServiceAreaWaitlistFormSchema = z.object({
     return Number.isNaN(n) ? undefined : n;
   }, z.number().int().min(0).max(50_000).optional()),
   notes: z.string().trim().max(5000).optional().or(z.literal("")),
+  contact_consent: z.boolean().refine((v) => v === true, {
+    message: "Confirm we may email you if we expand collection to your area.",
+  }),
 });
 
 export type PublicServiceAreaWaitlistFormValues = z.infer<typeof PublicServiceAreaWaitlistFormSchema>;

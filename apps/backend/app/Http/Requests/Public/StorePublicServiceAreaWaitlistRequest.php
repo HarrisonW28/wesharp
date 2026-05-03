@@ -22,6 +22,8 @@ class StorePublicServiceAreaWaitlistRequest extends FormRequest
             'customer_type' => ['required', 'string', Rule::in(['home', 'business', 'other'])],
             'estimated_knife_count' => ['nullable', 'integer', 'min:0', 'max:50000'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'source' => ['nullable', 'string', 'max:64', Rule::in(['service_areas_page', 'booking_wizard'])],
+            'contact_consent' => ['required', 'accepted'],
         ];
     }
 }

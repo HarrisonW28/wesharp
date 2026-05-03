@@ -18,6 +18,7 @@ import {
   validatePublicBookingWizardStep,
   type PublicBookingFieldErrors,
 } from "@/lib/public-booking-schema";
+import { postPublicBookingServiceAreaCheck } from "@/lib/public-booking-service-area-check";
 import type { SiteContent } from "@/lib/site-content/site-content-defaults";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +81,9 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
   const [globalMessage, setGlobalMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [step, setStep] = useState(0);
+  const [coverageCheckLoading, setCoverageCheckLoading] = useState(false);
+  const [coverageGateBlocked, setCoverageGateBlocked] = useState(false);
+  const [outOfAreaAcknowledged, setOutOfAreaAcknowledged] = useState(false);
 
   const endpoint = useMemo(() => `${apiOrigin()}/api/public/booking-enquiries`, []);
 
@@ -148,6 +152,16 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
       setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
       setGlobalMessage(null);
     };
+
+  const serviceAreasWaitlistHref = useMemo(() => {
+    const q = new URLSearchParams();
+    q.set("from", "book");
+    const pc = values.postcode.trim();
+    if (pc !== "") {
+      q.set("postcode", pc);
+    }
+    return `/service-areas?${q.toString()}`;
+  }, [values.postcode]);
 
   const submitEnquiry = async () => {
     setGlobalMessage(null);
@@ -278,7 +292,14 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
     }
   };
 
-  const goNext = () => {
+  const advanceToNextStep = () => {
+    setFieldErrors({});
+    setStatus("idle");
+    setCoverageGateBlocked(false);
+    setStep((s) => Math.min(s + 1, PUBLIC_BOOKING_WIZARD_STEP_COUNT - 1));
+  };
+
+  const handleAdvanceStep = async () => {
     setGlobalMessage(null);
     const v = validatePublicBookingWizardStep(step, values);
     if (!v.ok) {
@@ -286,6 +307,43 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
       setStatus("error");
       return;
     }
+
+    const runCollectionCoverage =
+      step === 2 && values.service_type === "collection" && apiOrigin() !== "" && !outOfAreaAcknowledged;
+
+    if (runCollectionCoverage) {
+      setCoverageCheckLoading(true);
+      setCoverageGateBlocked(false);
+      try {
+        const result = await postPublicBookingServiceAreaCheck(apiOrigin(), values.postcode.trim());
+        if (!result.ok) {
+          if (result.status === 422 && result.code === "invalid_postcode") {
+            setFieldErrors((prev) => ({ ...prev, postcode: result.message }));
+          } else {
+            setGlobalMessage(result.message);
+          }
+          setStatus("error");
+          return;
+        }
+        if (!result.data.covered) {
+          setCoverageGateBlocked(true);
+          return;
+        }
+      } catch {
+        setGlobalMessage("Network error — could not verify coverage. Check your connection or try again.");
+        setStatus("error");
+        return;
+      } finally {
+        setCoverageCheckLoading(false);
+      }
+    }
+
+    advanceToNextStep();
+  };
+
+  const proceedAfterOutOfAreaAck = () => {
+    setOutOfAreaAcknowledged(true);
+    setCoverageGateBlocked(false);
     setFieldErrors({});
     setStatus("idle");
     setStep((s) => Math.min(s + 1, PUBLIC_BOOKING_WIZARD_STEP_COUNT - 1));
@@ -295,7 +353,15 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
     setGlobalMessage(null);
     setFieldErrors({});
     setStatus("idle");
-    setStep((s) => Math.max(0, s - 1));
+    setCoverageCheckLoading(false);
+    setCoverageGateBlocked(false);
+    setStep((s) => {
+      const next = Math.max(0, s - 1);
+      if (next === 2) {
+        setOutOfAreaAcknowledged(false);
+      }
+      return next;
+    });
   };
 
   const successBullets = booking.success_bullets ?? [];
@@ -329,6 +395,8 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
 
   const meta = STEP_HEADINGS[step] ?? STEP_HEADINGS[0];
   const isReviewStep = step === PUBLIC_BOOKING_WIZARD_STEP_COUNT - 1;
+  const continueBlockedByCoverage =
+    step === 2 && values.service_type === "collection" && apiOrigin() !== "" && coverageGateBlocked;
   const programmeLabel =
     values.programme_interest === "one_off"
       ? "One-off visit"
@@ -394,7 +462,7 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
         onSubmit={(e) => {
           e.preventDefault();
           if (!isReviewStep) {
-            goNext();
+            void handleAdvanceStep();
             return;
           }
           void submitEnquiry();
@@ -597,7 +665,11 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
                     autoComplete="postal-code"
                     className="h-11 text-base md:text-sm"
                     value={values.postcode}
-                    onChange={(ev) => patch("postcode")(ev.target.value)}
+                    onChange={(ev) => {
+                      setOutOfAreaAcknowledged(false);
+                      setCoverageGateBlocked(false);
+                      patch("postcode")(ev.target.value);
+                    }}
                     aria-invalid={fieldErrors.postcode ? "true" : undefined}
                     aria-describedby={fieldErrors.postcode ? "postcode-error" : undefined}
                     required
@@ -609,6 +681,30 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
                   )}
                 </div>
               </div>
+              {values.service_type === "collection" && apiOrigin() !== "" && coverageGateBlocked ? (
+                <Alert className="border-amber-500/40 bg-amber-500/5 dark:border-amber-500/30 dark:bg-amber-950/20">
+                  <AlertDescription className="text-sm text-foreground">
+                    <p className="font-medium text-foreground">That postcode is outside our collection area</p>
+                    <p className="mt-2 text-muted-foreground">
+                      Check coverage or join the waitlist on our service areas page. You can still send an enquiry — we’ll
+                      confirm what’s possible.
+                    </p>
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                      <Button asChild variant="outline" className="h-10 touch-manipulation rounded-lg sm:w-auto">
+                        <Link href={serviceAreasWaitlistHref}>Service areas &amp; waitlist</Link>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="h-10 touch-manipulation rounded-lg sm:w-auto"
+                        onClick={proceedAfterOutOfAreaAck}
+                      >
+                        Continue anyway
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
             </>
           ) : null}
 
@@ -857,8 +953,19 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
           </Button>
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             {!isReviewStep ? (
-              <Button type="submit" className="h-11 min-h-11 touch-manipulation rounded-lg" disabled={apiOrigin() === ""}>
-                Continue
+              <Button
+                type="submit"
+                className="h-11 min-h-11 touch-manipulation rounded-lg"
+                disabled={apiOrigin() === "" || status === "submitting" || coverageCheckLoading || continueBlockedByCoverage}
+              >
+                {coverageCheckLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                    Checking coverage…
+                  </>
+                ) : (
+                  "Continue"
+                )}
               </Button>
             ) : (
               <Button
