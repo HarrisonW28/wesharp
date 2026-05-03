@@ -213,6 +213,14 @@ Make every public page guide users toward booking or checking service area.
 - Booking journey is not buried.
 - Mobile CTA works well.
 
+### Implemented (2026-05-01)
+
+- **`MarketingArticle`** default footer: **Book a collection** · **Check coverage** (`/service-areas`) · **Ask a question** (ghost) — same pattern on long-form pages that use the default footer.
+- **`PublicShell`**: **desktop** primary **Book** in the header (`md+`); **mobile** fixed bottom bar (hidden on `/book`, `/login`, `/register`, `/auth/*`) — Book + Coverage with safe-area padding; main column **`pb-[4.75rem] md:pb-0`** when the bar is shown so content isn’t obscured.
+- **`/services`**: uses default article footer; mid-page **Pricing calculator** only (avoids duplicating Book).
+- **`/contact`**: Book + Check coverage row under contact details.
+- **Custom footers** (`/how-it-works`, `/faq`, `/safety`): same **Book → Check coverage → contact** priority where applicable.
+
 ---
 
 ## 18.7 — SEO, Performance and Accessibility Pass

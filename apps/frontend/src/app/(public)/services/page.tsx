@@ -24,7 +24,7 @@ export default async function ServicesPage() {
   const s = site.services;
 
   return (
-    <MarketingArticle showFooterCtas={false} title={s.title} lead={s.lead}>
+    <MarketingArticle showFooterCtas title={s.title} lead={s.lead}>
       <section className="space-y-4 rounded-2xl border bg-muted/30 p-5 md:p-6">
         <h2 className="text-base font-semibold text-foreground">Home &amp; kitchen packages</h2>
         <p className="text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -115,17 +115,12 @@ export default async function ServicesPage() {
         <h2 className="text-base font-semibold text-foreground">After you book</h2>
         <p className="mb-0 text-sm md:text-base">
           Create a free account when you&apos;re ready to track collections, orders, and invoices — or start with an
-          enquiry and we&apos;ll guide you.
+          enquiry and we&apos;ll guide you. Use the links at the end of this page to book, confirm your postcode, or open
+          the pricing calculator.
         </p>
         <div className="flex flex-wrap gap-3 pt-2">
-          <Button className="rounded-lg" asChild>
-            <Link href="/book">Book a collection</Link>
-          </Button>
           <Button variant="outline" className="rounded-lg" asChild>
             <Link href="/pricing">Pricing calculator</Link>
-          </Button>
-          <Button variant="ghost" className="rounded-lg" asChild>
-            <Link href="/contact">Ask a question</Link>
           </Button>
         </div>
       </section>

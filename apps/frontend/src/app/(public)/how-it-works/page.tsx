@@ -106,6 +106,9 @@ export default async function HowItWorksPage() {
           <Link href="/book">Book a collection</Link>
         </Button>
         <Button variant="outline" className="rounded-lg" asChild>
+          <Link href="/service-areas">Check coverage</Link>
+        </Button>
+        <Button variant="outline" className="rounded-lg" asChild>
           <Link href="/contact">Contact the team</Link>
         </Button>
       </div>

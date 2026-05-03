@@ -41,6 +41,9 @@ export default async function SafetyPage() {
           <Link href="/book">Book a collection</Link>
         </Button>
         <Button variant="outline" className="rounded-lg" asChild>
+          <Link href="/service-areas">Check coverage</Link>
+        </Button>
+        <Button variant="outline" className="rounded-lg" asChild>
           <Link href="/contact">Speak to the team</Link>
         </Button>
         <Button variant="ghost" className="rounded-lg" asChild>

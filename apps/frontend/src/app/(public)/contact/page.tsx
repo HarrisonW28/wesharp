@@ -30,9 +30,12 @@ export default async function ContactPage() {
       ) : null}
       <p>{c.hint_paragraph}</p>
       <p className="text-sm text-muted-foreground">{site.business.hours_line}</p>
-      <div className="pt-2">
+      <div className="flex flex-wrap gap-3 pt-2">
         <Button className="rounded-lg" asChild>
           <Link href="/book">{c.cta_book}</Link>
+        </Button>
+        <Button variant="outline" className="rounded-lg" asChild>
+          <Link href="/service-areas">Check coverage</Link>
         </Button>
       </div>
     </MarketingArticle>

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { useState } from "react";
 
-import { ArrowRight, LayoutDashboard, Menu } from "lucide-react";
+import { ArrowRight, LayoutDashboard, MapPin, Menu } from "lucide-react";
 
 import { PUBLIC_SITE_NAV_LINKS } from "@/config/public-site-nav";
 
@@ -12,8 +13,20 @@ import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+
+function hidePublicMobileStickyCta(pathname: string): boolean {
+  return (
+    pathname.startsWith("/book") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/auth/")
+  );
+}
 
 export function PublicShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() ?? "";
+  const hideStickyBar = hidePublicMobileStickyCta(pathname);
   const [open, setOpen] = useState(false);
 
   const navLinkClass =
@@ -51,6 +64,12 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
 
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
             <ThemeToggle />
+            <Button size="sm" className="hidden rounded-lg md:inline-flex" asChild>
+              <Link href="/book">
+                Book
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" aria-hidden />
+              </Link>
+            </Button>
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button size="icon" variant="outline" type="button" className="lg:hidden" aria-label="Open menu">
@@ -122,7 +141,35 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <div className="min-w-0 flex-1 overflow-x-hidden">{children}</div>
+      <div
+        className={cn(
+          "min-w-0 flex-1 overflow-x-hidden",
+          !hideStickyBar && "pb-[4.75rem] md:pb-0",
+        )}
+      >
+        {children}
+      </div>
+      {!hideStickyBar ? (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] backdrop-blur-md supports-[backdrop-filter]:bg-background/80 md:hidden">
+          <div
+            className="mx-auto flex max-w-lg gap-2 px-3 pt-3"
+            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          >
+            <Button className="h-11 min-h-11 flex-1 touch-manipulation rounded-lg" asChild>
+              <Link href="/book">
+                Book a collection
+                <ArrowRight className="ml-1.5 h-4 w-4 shrink-0" aria-hidden />
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-11 min-h-11 flex-1 touch-manipulation rounded-lg" asChild>
+              <Link href="/service-areas">
+                <MapPin className="mr-1.5 h-4 w-4 shrink-0" aria-hidden />
+                Coverage
+              </Link>
+            </Button>
+          </div>
+        </div>
+      ) : null}
       <footer className="border-t py-10 text-center text-xs text-muted-foreground">
         <div className="mx-auto flex max-w-7xl flex-col flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 sm:flex-row">
           <span>© {new Date().getFullYear()} WeSharp</span>

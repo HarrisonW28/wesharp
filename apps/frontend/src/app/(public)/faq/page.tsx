@@ -51,10 +51,13 @@ export default async function FaqPage() {
         </div>
         <div className="mt-4 flex shrink-0 flex-col gap-2 sm:flex-row md:mt-0">
           <Button className="rounded-lg" asChild>
-            <Link href="/contact">Contact us</Link>
+            <Link href="/book">Book a collection</Link>
           </Button>
           <Button variant="outline" className="rounded-lg" asChild>
-            <Link href="/book">Book a collection</Link>
+            <Link href="/service-areas">Check coverage</Link>
+          </Button>
+          <Button variant="outline" className="rounded-lg" asChild>
+            <Link href="/contact">Contact us</Link>
           </Button>
         </div>
       </section>

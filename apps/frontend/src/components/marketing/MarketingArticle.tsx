@@ -35,6 +35,9 @@ export function MarketingArticle({
             </Link>
           </Button>
           <Button variant="outline" className="rounded-lg" asChild>
+            <Link href="/service-areas">Check coverage</Link>
+          </Button>
+          <Button variant="ghost" className="rounded-lg" asChild>
             <Link href="/contact">Ask a question</Link>
           </Button>
         </div>
