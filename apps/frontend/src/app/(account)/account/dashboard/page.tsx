@@ -323,7 +323,7 @@ export default function AccountDashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-2 md:flex md:flex-wrap">
+      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap">
         <Button type="button" variant="secondary" size="sm" className="rounded-lg justify-center" asChild>
           <Link href="/account/bookings">My bookings</Link>
         </Button>
@@ -695,14 +695,19 @@ export default function AccountDashboardPage() {
                 ) : (
                   <p className="text-sm text-muted-foreground">No programme invoices showing yet.</p>
                 )}
-                <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
+                <div className="grid grid-cols-2 gap-2 pt-1 sm:flex sm:flex-row sm:flex-wrap">
                   <Button type="button" variant="default" size="default" className="h-11 w-full rounded-lg sm:w-auto" asChild>
                     <Link href="/account/subscription">View plan &amp; usage</Link>
                   </Button>
                   <Button type="button" variant="outline" size="default" className="h-11 w-full rounded-lg sm:w-auto" asChild>
                     <Link href="/account/invoices">View invoices</Link>
                   </Button>
-                  <Button type="button" variant="link" className="h-auto px-0 text-base" asChild>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="col-span-2 h-auto px-0 text-base sm:col-span-1"
+                    asChild
+                  >
                     <Link href="/pricing">Pricing</Link>
                   </Button>
                 </div>
@@ -710,7 +715,7 @@ export default function AccountDashboardPage() {
             ) : (
               <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-8 text-center">
                 <p className="text-muted-foreground">No active plan on this account yet.</p>
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-center">
                   <Button type="button" className="h-11 rounded-lg" variant="secondary" asChild>
                     <Link href="/pricing">View pricing</Link>
                   </Button>

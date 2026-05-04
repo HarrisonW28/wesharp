@@ -693,7 +693,7 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
                       Check coverage or join the waitlist on our service areas page. You can still send an enquiry — we’ll
                       confirm what’s possible.
                     </p>
-                    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
                       <Button asChild variant="outline" className="h-10 touch-manipulation rounded-lg sm:w-auto">
                         <Link href={serviceAreasWaitlistHref}>Service areas &amp; waitlist</Link>
                       </Button>
@@ -955,7 +955,7 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
             <ChevronLeft className="mr-1 h-4 w-4" aria-hidden />
             Back
           </Button>
-          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-3">
             {!isReviewStep ? (
               <Button
                 type="submit"

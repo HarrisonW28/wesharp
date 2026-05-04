@@ -259,7 +259,7 @@ export function PublicPricingCalculator({ className }: { className?: string }) {
             {result.overage_note ? <p className="text-xs text-muted-foreground">{result.overage_note}</p> : null}
             {result.visit_note ? <p className="text-xs text-muted-foreground">{result.visit_note}</p> : null}
             <p className="text-xs text-muted-foreground">{result.disclaimer}</p>
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
               <Button asChild className="h-11 rounded-lg">
                 <Link href={bookHref}>
                   Book a collection <ArrowRight className="ml-2 h-4 w-4" aria-hidden />

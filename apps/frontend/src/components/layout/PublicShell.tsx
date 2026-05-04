@@ -155,16 +155,16 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       {!hideStickyBar ? (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] backdrop-blur-md supports-[backdrop-filter]:bg-background/80 md:hidden">
           <div
-            className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "flex gap-2 pt-3")}
+            className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "grid grid-cols-2 gap-2 pt-3")}
             style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
           >
-            <Button className="h-11 min-h-11 flex-1 touch-manipulation rounded-lg" asChild>
+            <Button className="h-11 min-h-11 min-w-0 touch-manipulation rounded-lg" asChild>
               <Link href="/book">
                 Book a collection
                 <ArrowRight className="ml-1.5 h-4 w-4 shrink-0" aria-hidden />
               </Link>
             </Button>
-            <Button variant="outline" className="h-11 min-h-11 flex-1 touch-manipulation rounded-lg" asChild>
+            <Button variant="outline" className="h-11 min-h-11 min-w-0 touch-manipulation rounded-lg" asChild>
               <Link href="/service-areas">
                 <MapPin className="mr-1.5 h-4 w-4 shrink-0" aria-hidden />
                 Coverage
