@@ -4,6 +4,7 @@ import { adminPermissionForPath } from "@/lib/route-permissions";
 
 describe("adminPermissionForPath", () => {
   it("maps Sprint 15 shell paths to Laravel permission keys", () => {
+    expect(adminPermissionForPath("/admin/system/stripe")).toBe("system.integrations.manage");
     expect(adminPermissionForPath("/admin/webhooks/inbox")).toBe("system.tools.view");
     expect(adminPermissionForPath("/admin/audit")).toBe("audit_logs.view");
     expect(adminPermissionForPath("/admin/waitlist")).toBe("companies.view");

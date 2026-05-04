@@ -6,6 +6,7 @@ namespace App\Support\Stripe;
 
 use App\Models\Invoice;
 use App\Services\Payments\StripePaymentProvider;
+use Illuminate\Support\Facades\App;
 
 /**
  * Admin / portal JSON helpers — no secrets exposed.
@@ -14,27 +15,29 @@ final class StripeInvoicePresentation
 {
     public static function isPublishableKeyConfigured(): bool
     {
-        $k = (string) config('stripe.public', '');
+        $k = App::make(ResolvedStripeConfig::class)->publicKey();
 
         return $k !== '' && (str_starts_with($k, 'pk_test_') || str_starts_with($k, 'pk_live_'));
     }
 
     public static function isWebhookSecretConfigured(): bool
     {
-        return (string) config('stripe.webhook_secret', '') !== '';
+        return App::make(ResolvedStripeConfig::class)->webhookSecret() !== '';
     }
 
     public static function areCheckoutRedirectUrlsConfigured(): bool
     {
-        return trim((string) config('stripe.checkout_success_url', '')) !== ''
-            && trim((string) config('stripe.checkout_cancel_url', '')) !== '';
+        $cfg = App::make(ResolvedStripeConfig::class);
+
+        return $cfg->checkoutSuccessUrl() !== '' && $cfg->checkoutCancelUrl() !== '';
     }
 
     public static function isLiveModeBlockedByPolicy(): bool
     {
-        $secret = (string) config('stripe.secret', '');
+        $cfg = App::make(ResolvedStripeConfig::class);
+        $secret = $cfg->secretKey();
 
-        return str_starts_with($secret, 'sk_live_') && ! (bool) config('stripe.allow_live', false);
+        return str_starts_with($secret, 'sk_live_') && ! $cfg->allowLive();
     }
 
     /**

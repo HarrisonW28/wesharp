@@ -1,8 +1,10 @@
 import { LoadingSkeleton } from "@/components/feedback/LoadingSkeleton";
+import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
+import { cn } from "@/lib/utils";
 
 export default function PublicLoading() {
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-4 py-10 md:px-8">
+    <div className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "space-y-6 py-10")}>
       <LoadingSkeleton />
     </div>
   );

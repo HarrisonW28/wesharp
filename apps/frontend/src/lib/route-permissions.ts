@@ -1,5 +1,8 @@
 /** Map portal URL segments to Laravel permission strings (belt with API + route gates). */
 export function adminPermissionForPath(pathname: string): string {
+  if (pathname.startsWith("/admin/system")) {
+    return "system.integrations.manage";
+  }
   if (pathname.startsWith("/admin/webhooks")) {
     return "system.tools.view";
   }

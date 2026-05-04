@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { PRICING } from "@/config/pricing";
 import { SERVICE_AREAS } from "@/config/service-areas";
 import { formatGBP } from "@/lib/format/money";
+import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
 import { fetchPublicSiteData } from "@/lib/site-content/fetch-site-content";
 
 export const metadata: Metadata = {
@@ -36,7 +37,7 @@ export default async function HomePage() {
       <HomeHero homepage={h} />
 
       <section id="check-coverage" className="scroll-mt-20 border-b bg-muted/20 py-14 md:py-20">
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
           <div className="mx-auto max-w-2xl text-center md:mx-0 md:max-w-xl md:text-left">
             <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{h.areas_section_title}</h2>
             <p className="mt-3 text-sm text-muted-foreground md:text-base">{h.areas_section_lead}</p>
@@ -61,7 +62,7 @@ export default async function HomePage() {
       </section>
 
       <section id="how-it-works" className="scroll-mt-20 border-b bg-background py-16 md:py-20">
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">{h.how_section_title}</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground md:text-base">
             {h.how_section_lead}
@@ -75,7 +76,7 @@ export default async function HomePage() {
       </section>
 
       <section className="bg-muted/30 py-16 md:py-20">
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">{h.who_for_title}</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground md:text-base">
             {h.who_for_lead}
@@ -94,7 +95,7 @@ export default async function HomePage() {
       </section>
 
       <section className="border-b bg-background py-16 md:py-20">
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">Pick your path</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground md:text-base">
             One-off visits, rolling programmes, or multi-site accounts — the same workshop quality and tracking.
@@ -133,7 +134,7 @@ export default async function HomePage() {
       </section>
 
       <section className="border-b py-16 md:py-20">
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">{h.benefits_title}</h2>
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {(h.benefits ?? []).map(({ title, body }) => (
@@ -150,7 +151,7 @@ export default async function HomePage() {
       </section>
 
       <section id="pricing" className="py-16 md:py-20">
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">{h.pricing_section_title}</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground">
             {h.pricing_section_lead}{" "}
@@ -191,7 +192,8 @@ export default async function HomePage() {
       </section>
 
       <section className="border-t bg-gradient-to-b from-primary/10 to-background py-20 md:py-24">
-        <div className="mx-auto max-w-2xl px-4 text-center md:px-8">
+        <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
+          <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl">{h.footer_cta_title}</h2>
           <p className="mt-4 text-muted-foreground">{h.footer_cta_lead}</p>
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:justify-center">
@@ -208,6 +210,7 @@ export default async function HomePage() {
               <Link href="/register">{h.footer_cta_register}</Link>
             </Button>
           </div>
+        </div>
         </div>
       </section>
     </>

@@ -11,13 +11,14 @@ final class StripeCheckoutEnvironmentGuard
 {
     public static function blockingReason(): ?string
     {
-        $secret = (string) config('stripe.secret', '');
+        $cfg = app(ResolvedStripeConfig::class);
+        $secret = $cfg->secretKey();
 
         if ($secret === '') {
             return 'Stripe is not configured (STRIPE_SECRET_KEY missing).';
         }
 
-        if (str_starts_with($secret, 'sk_live_') && ! (bool) config('stripe.allow_live', false)) {
+        if (str_starts_with($secret, 'sk_live_') && ! $cfg->allowLive()) {
             return 'Live Stripe keys are blocked until STRIPE_ALLOW_LIVE=true and webhooks are verified.';
         }
 
@@ -25,16 +26,16 @@ final class StripeCheckoutEnvironmentGuard
             return 'STRIPE_SECRET_KEY must be a standard sk_test_* or sk_live_* key.';
         }
 
-        if (! (bool) config('stripe.hosted_checkout_enabled', false)) {
+        if (! $cfg->hostedCheckoutEnabled()) {
             return 'Stripe hosted checkout is disabled (set STRIPE_HOSTED_CHECKOUT_ENABLED=true only when ready to test).';
         }
 
-        if ((string) config('stripe.webhook_secret', '') === '') {
+        if ($cfg->webhookSecret() === '') {
             return 'Stripe webhook signing secret is required before offering checkout (STRIPE_WEBHOOK_SECRET).';
         }
 
-        $successUrl = trim((string) config('stripe.checkout_success_url', ''));
-        $cancelUrl = trim((string) config('stripe.checkout_cancel_url', ''));
+        $successUrl = $cfg->checkoutSuccessUrl();
+        $cancelUrl = $cfg->checkoutCancelUrl();
         if ($successUrl === '' || $cancelUrl === '') {
             return 'Stripe checkout redirect URLs are required when STRIPE_HOSTED_CHECKOUT_ENABLED=true (STRIPE_CHECKOUT_SUCCESS_URL and STRIPE_CHECKOUT_CANCEL_URL).';
         }

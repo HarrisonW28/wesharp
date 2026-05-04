@@ -8,6 +8,7 @@ use App\Contracts\Payments\PaymentProviderInterface;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Support\Stripe\ResolvedStripeConfig;
 use App\Support\Stripe\StripeCheckoutEnvironmentGuard;
 use Stripe\Exception\ApiErrorException;
 
@@ -15,6 +16,7 @@ final class StripePaymentProvider implements PaymentProviderInterface
 {
     public function __construct(
         private readonly StripeCheckoutSessionClient $checkoutSessions,
+        private readonly ResolvedStripeConfig $stripe,
     ) {}
 
     public function driver(): string
@@ -45,8 +47,8 @@ final class StripePaymentProvider implements PaymentProviderInterface
         $total = (int) $invoice->total_pence;
         $outstanding = max(1, $total - $received);
 
-        $successUrl = trim((string) config('stripe.checkout_success_url', ''));
-        $cancelUrl = trim((string) config('stripe.checkout_cancel_url', ''));
+        $successUrl = $this->stripe->checkoutSuccessUrl();
+        $cancelUrl = $this->stripe->checkoutCancelUrl();
 
         $metadata = [
             'invoice_id' => (string) $invoice->id,

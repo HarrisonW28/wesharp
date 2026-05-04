@@ -7,6 +7,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Camera, ListChecks, PoundSterling, Sparkles, UserRound } from "lucide-react";
 
 import type { SiteContent } from "@/lib/site-content/site-content-defaults";
+import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,7 +39,7 @@ export function HomeHero({ homepage }: { homepage: SiteContent["homepage"] }) {
         className="wesharp-hero-blob-b pointer-events-none absolute -right-16 bottom-[15%] hidden h-64 w-64 rounded-full bg-primary/20 blur-3xl md:block dark:bg-primary/15"
         aria-hidden
       />
-      <div className="relative mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20 lg:py-24">
+      <div className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "relative py-14 md:py-20 lg:py-24")}>
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
           <div className={cn("mx-auto max-w-xl lg:mx-0 lg:max-w-none", "text-center lg:text-left")}>
             <motion.div

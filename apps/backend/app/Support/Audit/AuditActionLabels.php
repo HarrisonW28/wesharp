@@ -130,6 +130,7 @@ final class AuditActionLabels
         'demo.audit.event' => 'Demo audit event',
         'site_content.updated' => 'Site content updated',
         'site_content.cleared' => 'Site content reset to defaults',
+        'stripe_settings.updated' => 'Stripe integration settings updated',
     ];
 
     public static function label(string $action): string

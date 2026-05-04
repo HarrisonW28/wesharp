@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Payments;
 
+use App\Support\Stripe\ResolvedStripeConfig;
 use Stripe\Checkout\Session;
 
 /**
@@ -11,13 +12,17 @@ use Stripe\Checkout\Session;
  */
 class StripeCheckoutSessionClient
 {
+    public function __construct(
+        private readonly ResolvedStripeConfig $stripe,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $params
      * @param  array<string, mixed>  $options
      */
     public function createCheckoutSession(array $params, array $options = []): Session
     {
-        $key = (string) config('stripe.secret', '');
+        $key = $this->stripe->secretKey();
         if ($key !== '' && ! isset($options['api_key'])) {
             $options['api_key'] = $key;
         }

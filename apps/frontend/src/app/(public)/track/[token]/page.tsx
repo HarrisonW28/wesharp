@@ -9,6 +9,7 @@ import { CustomerTrackingView } from "@/components/account/CustomerTrackingView"
 import { Button } from "@/components/ui/button";
 import { fetchPublicBookingTracking } from "@/lib/api/public-tracking";
 import { Card, CardContent } from "@/components/ui/card";
+import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
 
 export default function PublicTrackBookingPage() {
   const params = useParams<{ token: string }>();
@@ -21,7 +22,8 @@ export default function PublicTrackBookingPage() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl min-w-0 overflow-x-hidden px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] md:px-6 md:py-14">
+    <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
+      <div className="mx-auto max-w-3xl min-w-0 overflow-x-hidden py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] md:py-14">
       {query.status === "pending" ? (
         <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
@@ -47,6 +49,7 @@ export default function PublicTrackBookingPage() {
       ) : query.data ? (
         <CustomerTrackingView data={query.data} variant="public" />
       ) : null}
+      </div>
     </div>
   );
 }

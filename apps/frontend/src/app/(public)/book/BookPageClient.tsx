@@ -20,6 +20,7 @@ import {
 } from "@/lib/public-booking-schema";
 import { postPublicBookingServiceAreaCheck } from "@/lib/public-booking-service-area-check";
 import type { SiteContent } from "@/lib/site-content/site-content-defaults";
+import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
 import { cn } from "@/lib/utils";
 
 const STEP_HEADINGS = [
@@ -368,7 +369,8 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
 
   if (status === "success") {
     return (
-      <div className="mx-auto min-w-0 max-w-xl space-y-6 overflow-x-hidden px-4 py-16 pb-[max(4rem,env(safe-area-inset-bottom))] md:py-24">
+      <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
+        <div className="mx-auto min-w-0 max-w-xl space-y-6 overflow-x-hidden py-16 pb-[max(4rem,env(safe-area-inset-bottom))] md:py-24">
         <div className="flex justify-center md:justify-start">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 className="h-9 w-9" aria-hidden />
@@ -389,6 +391,7 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
             <Link href="/">Back home</Link>
           </Button>
         </div>
+        </div>
       </div>
     );
   }
@@ -407,7 +410,8 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
           : "—";
 
   return (
-    <div className="mx-auto min-w-0 max-w-2xl space-y-8 overflow-x-hidden px-4 py-12 pb-[max(3rem,env(safe-area-inset-bottom))] md:space-y-10 md:py-20">
+    <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
+      <div className="mx-auto min-w-0 max-w-2xl space-y-8 overflow-x-hidden py-12 pb-[max(3rem,env(safe-area-inset-bottom))] md:space-y-10 md:py-20">
       <div className="space-y-3">
         <p className="text-sm font-medium text-primary">{booking.page_kicker}</p>
         <h1 className="text-balance text-3xl font-semibold tracking-tight">{booking.page_title}</h1>
@@ -995,6 +999,7 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
           mention it in your description on step 1.
         </p>
       </form>
+      </div>
     </div>
   );
 }

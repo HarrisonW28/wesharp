@@ -116,6 +116,9 @@ final class Permissions
     /** Webhook inbox and integration diagnostics — {@see UserRole::Developer} and super admins only (Sprint 15.3). */
     public const SYSTEM_TOOLS_VIEW = 'system.tools.view';
 
+    /** Stored Stripe secrets and integration flags (encrypted at rest); developer + super_admin only. */
+    public const SYSTEM_INTEGRATIONS_MANAGE = 'system.integrations.manage';
+
     /** Cross-resource notification delivery list (ops / finance visibility for failures). */
     public const NOTIFICATIONS_DELIVERIES_VIEW = 'notifications.deliveries.view';
 
@@ -161,6 +164,7 @@ final class Permissions
         self::USERS_MANAGE,
         self::AUDIT_LOGS_VIEW,
         self::SYSTEM_TOOLS_VIEW,
+        self::SYSTEM_INTEGRATIONS_MANAGE,
         self::NOTIFICATIONS_DELIVERIES_VIEW,
         self::REPORTS_FINANCE,
         self::REPORTS_OPERATIONS,
@@ -189,6 +193,7 @@ final class Permissions
             UserRole::Admin->value => array_values(array_diff(self::ALL_PERMISSIONS, [
                 self::AUDIT_LOGS_VIEW,
                 self::SYSTEM_TOOLS_VIEW,
+                self::SYSTEM_INTEGRATIONS_MANAGE,
             ])),
 
             UserRole::Developer->value => [
@@ -197,6 +202,7 @@ final class Permissions
                 self::USERS_VIEW,
                 self::AUDIT_LOGS_VIEW,
                 self::SYSTEM_TOOLS_VIEW,
+                self::SYSTEM_INTEGRATIONS_MANAGE,
                 self::NOTIFICATIONS_DELIVERIES_VIEW,
                 /** Marketing copy + notification template settings (same middleware group as site-content). */
                 self::SETTINGS_MANAGE,

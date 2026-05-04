@@ -2,7 +2,7 @@
 
 ## Webhook endpoint
 
-- **`POST /api/webhooks/stripe`** — **no** Bearer auth; validates **`Stripe-Signature`** with **`STRIPE_WEBHOOK_SECRET`** ( **`config('stripe.webhook_secret')`** ).
+- **`POST /api/webhooks/stripe`** — **no** Bearer auth; validates **`Stripe-Signature`** with the effective webhook secret (**`App\Support\Stripe\ResolvedStripeConfig::webhookSecret()`** — database override or **`STRIPE_WEBHOOK_SECRET`** / **`config('stripe.webhook_secret')`**).
 - Missing secret → **503** + **`error.code: webhook_not_configured`** (safe message).
 - Invalid / expired signature → **400** + **`webhook_bad_request`** / **`webhook_error`**.
 
@@ -24,6 +24,10 @@ After verification, **`stripe_webhook_events`** stores each **`evt_*` id**; dupl
 ## Tests
 
 - **`tests/Feature/Security/StripeWebhookSecurityTest.php`** — missing secret + happy signature path.
+
+## Admin Stripe settings (developers)
+
+- **`GET|PUT /api/admin/stripe-settings`** — Bearer + **`system.integrations.manage`** only. Secrets stored in **`stripe_settings`** use Laravel **encrypted** attributes; API responses never include full key material.
 
 ## Known risks
 

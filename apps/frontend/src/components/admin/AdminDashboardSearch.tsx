@@ -203,12 +203,12 @@ export function AdminDashboardSearch() {
         </Button>
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-h-[min(85vh,36rem)] gap-0 overflow-hidden p-0 sm:max-w-2xl">
+      <DialogContent className="max-h-[min(85vh,36rem)] max-w-[min(42rem,calc(100vw-2rem))] gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="sr-only">
           <DialogTitle>Search workspace</DialogTitle>
           <DialogDescription>Find companies, bookings, orders, knives, and more.</DialogDescription>
         </DialogHeader>
-        <div className="border-b px-3 py-2">
+        <div className="border-b px-4 py-3">
           <Input
             ref={inputRef}
             id={inputId}
@@ -221,7 +221,7 @@ export function AdminDashboardSearch() {
           />
         </div>
         <ScrollArea className="h-[min(60vh,22rem)]">
-          <div className="space-y-4 p-3 pb-4">
+          <div className="space-y-4 px-4 py-3 pb-4">
             {!canSearch ? (
               <p className="px-1 text-sm text-muted-foreground">Type at least two characters to search.</p>
             ) : searchQuery.isPending ? (

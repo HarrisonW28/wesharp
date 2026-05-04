@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\RouteStopController;
 use App\Http\Controllers\Admin\ServiceAreaController;
 use App\Http\Controllers\Admin\ServiceAreaWaitlistController;
 use App\Http\Controllers\Admin\SiteContentController;
+use App\Http\Controllers\Admin\StripeSettingsController;
 use App\Http\Controllers\Admin\StripeWebhookEventsController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserDirectoryController;
@@ -162,6 +163,13 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
 
     Route::middleware('permission:system.tools.view')->get('webhooks/inbox', [WebhookInboxController::class, 'index'])->name('api.admin.webhooks.inbox.index');
     Route::middleware('permission:system.tools.view')->get('stripe-webhook-events', [StripeWebhookEventsController::class, 'index'])->name('api.admin.stripe_webhook_events.index');
+
+    Route::middleware('permission:system.integrations.manage')->group(function (): void {
+        Route::get('stripe-settings', [StripeSettingsController::class, 'show'])->name('api.admin.stripe_settings.show');
+        Route::put('stripe-settings', [StripeSettingsController::class, 'update'])
+            ->middleware('throttle:20,1')
+            ->name('api.admin.stripe_settings.update');
+    });
 
     Route::middleware('permission:notifications.deliveries.view')
         ->get('notifications/deliveries', [NotificationDeliveryController::class, 'globalIndex'])

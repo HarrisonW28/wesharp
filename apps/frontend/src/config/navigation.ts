@@ -7,6 +7,7 @@ import {
   CalendarClock,
   CircleDollarSign,
   ClipboardList,
+  CreditCard,
   Gauge,
   Inbox,
   Landmark,
@@ -270,11 +271,11 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
             description: "Who changed what, with immutable history",
           },
           {
-            title: "Webhook inbox",
-            href: "/admin/webhooks/inbox",
-            icon: Webhook,
-            permission: "system.tools.view",
-            description: "Inbound integration and Stripe events",
+            title: "Stripe",
+            href: "/admin/system/stripe",
+            icon: CreditCard,
+            permission: "system.integrations.manage",
+            description: "Encrypted keys and checkout flags (developer)",
           },
         ],
       },
@@ -384,6 +385,12 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
     items: [
       { title: "Audit log", href: "/admin/audit", icon: ScrollText, permission: "audit_logs.view" },
       { title: "Webhook inbox", href: "/admin/webhooks/inbox", icon: Webhook, permission: "system.tools.view" },
+      {
+        title: "Stripe",
+        href: "/admin/system/stripe",
+        icon: CreditCard,
+        permission: "system.integrations.manage",
+      },
     ],
   },
 ];

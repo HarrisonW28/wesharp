@@ -20,6 +20,7 @@ use App\Models\Payment;
 use App\Models\PricingRule;
 use App\Models\RouteStop;
 use App\Models\ServiceArea;
+use App\Models\StripeSetting;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Models\WebhookInbox;
@@ -50,6 +51,7 @@ use App\Services\Payments\StripePaymentProvider;
 use App\Services\SiteContent\SiteContentService;
 use App\Services\Stripe\StripeSubscriptionRetrieveClient;
 use App\Services\Subscriptions\StripeSubscriptionCheckoutService;
+use App\Support\Stripe\ResolvedStripeConfig;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -71,6 +73,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(StripeSubscriptionCheckoutService::class);
         $this->app->singleton(StripePaymentProvider::class);
         $this->app->singleton(PaymentProviderInterface::class, StripePaymentProvider::class);
+        $this->app->singleton(ResolvedStripeConfig::class, function (): ResolvedStripeConfig {
+            return new ResolvedStripeConfig(StripeSetting::current());
+        });
         $this->app->singleton(SiteContentService::class);
     }
 

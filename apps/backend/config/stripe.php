@@ -4,7 +4,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Stripe (PSP foundation — no secrets committed; use .env only)
+    | Stripe (PSP — secrets from .env and/or encrypted DB row; see ResolvedStripeConfig)
     |--------------------------------------------------------------------------
     |
     | See docs/integrations/stripe.md for webhook setup and go-live checklist.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Webhooks;
 
 use App\Support\ApiResponses;
+use App\Support\Stripe\ResolvedStripeConfig;
 use App\Support\Stripe\StripeWebhookPaymentProcessor;
 use App\Support\Stripe\StripeWebhookSignature;
 use App\Support\Stripe\StripeWebhookSubscriptionProcessor;
@@ -29,10 +30,11 @@ final class StripeWebhookController extends Controller
 {
     public function __invoke(
         Request $request,
+        ResolvedStripeConfig $stripeConfig,
         StripeWebhookPaymentProcessor $paymentProcessor,
         StripeWebhookSubscriptionProcessor $subscriptionProcessor,
     ): JsonResponse {
-        $secret = (string) config('stripe.webhook_secret', '');
+        $secret = $stripeConfig->webhookSecret();
         $raw = $request->getContent();
 
         try {

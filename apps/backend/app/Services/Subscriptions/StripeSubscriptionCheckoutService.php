@@ -9,6 +9,7 @@ use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Services\Payments\HostedCheckoutAvailability;
 use App\Services\Payments\StripeCheckoutSessionClient;
+use App\Support\Stripe\ResolvedStripeConfig;
 use App\Support\Stripe\StripeCheckoutEnvironmentGuard;
 use Stripe\Exception\ApiErrorException;
 
@@ -19,6 +20,7 @@ final class StripeSubscriptionCheckoutService
 {
     public function __construct(
         private readonly StripeCheckoutSessionClient $checkoutSessions,
+        private readonly ResolvedStripeConfig $stripe,
     ) {}
 
     public function createCheckoutSession(Company $company, SubscriptionPlan $plan, User $user): HostedCheckoutAvailability
@@ -41,8 +43,8 @@ final class StripeSubscriptionCheckoutService
             return new HostedCheckoutAvailability(false, 'Your organisation already has an active or past-due subscription.', null);
         }
 
-        $successUrl = trim((string) config('stripe.checkout_success_url', ''));
-        $cancelUrl = trim((string) config('stripe.checkout_cancel_url', ''));
+        $successUrl = $this->stripe->checkoutSuccessUrl();
+        $cancelUrl = $this->stripe->checkoutCancelUrl();
 
         $metadata = [
             'company_id' => (string) $company->id,

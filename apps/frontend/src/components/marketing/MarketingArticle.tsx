@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
+import { cn } from "@/lib/utils";
 
 type MarketingArticleProps = {
   /** Small line above H1 — keep customer-facing, not internal. */
@@ -21,7 +23,7 @@ export function MarketingArticle({
   children,
 }: MarketingArticleProps) {
   return (
-    <article className="mx-auto max-w-3xl px-4 py-12 sm:py-16 md:px-6 lg:py-20">
+    <article className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "py-12 sm:py-16 lg:py-20")}>
       <p className="text-sm font-medium text-primary">{eyebrow}</p>
       <h1 className="mt-3 text-balance text-3xl font-semibold tracking-tight">{title}</h1>
       {lead ? <p className="mt-4 max-w-prose text-base leading-relaxed text-muted-foreground">{lead}</p> : null}

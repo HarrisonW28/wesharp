@@ -58,8 +58,8 @@ export function TopBar({ title, subtitle, onMenuClick, showMenu, center, trailin
         {subtitle ? <p className="truncate text-xs text-muted-foreground">{subtitle}</p> : null}
       </div>
       {center ? (
-        <div className="flex min-w-0 flex-1 justify-center px-0.5 md:px-2">
-          <div className="w-full max-w-2xl">{center}</div>
+        <div className="flex shrink-0 items-center md:min-w-0 md:flex-1 md:justify-center md:px-2">
+          <div className="w-full min-w-0 max-w-2xl md:w-full">{center}</div>
         </div>
       ) : null}
       <div className="flex shrink-0 items-center gap-2">

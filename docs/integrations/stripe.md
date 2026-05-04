@@ -27,6 +27,16 @@ Copy from **`apps/backend/.env.example`**. Never commit secrets.
 
 Naming: the sprint spec also allows **`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`** on the **frontend** for Stripe.js only — see **`apps/frontend/env.local.example`**. The Laravel config key remains **`STRIPE_PUBLIC_KEY`** (`config('stripe.public')`).
 
+### System settings (encrypted database overrides)
+
+Developers and super admins may store Stripe secrets and flags in **`stripe_settings`** (Laravel `encrypted` casts — **requires stable `APP_KEY`**). Values in the database **override** the environment for runtime resolution via **`App\Support\Stripe\ResolvedStripeConfig`**.
+
+- **API:** **`GET|PUT /api/admin/stripe-settings`** — permission **`system.integrations.manage`** (withheld from **`admin`** and other staff roles).
+- **UI:** Admin **Settings → System → Stripe** (`/admin/system/stripe`).
+- **Responses:** Full keys are never returned; only masked previews for database-stored values plus effective booleans/URLs.
+- **Audit:** Updates emit **`stripe_settings.updated`** (field names only — no secret values).
+- **Clearing an override:** send an empty string for a key field to remove the database value and fall back to **`.env`**.
+
 ## Feature-flag behaviour (no accidental charges)
 
 Shared gates live in **`App\Support\Stripe\StripeCheckoutEnvironmentGuard`** (used for both one-off and subscription Checkout):
@@ -78,7 +88,7 @@ Shared gates live in **`App\Support\Stripe\StripeCheckoutEnvironmentGuard`** (us
 
 - **`tests/Feature/AdminStripeCheckoutPlaceholderApiTest`**, **`AdminStripeCheckoutSessionCreateTest`**
 - **`tests/Feature/StripeWebhookInvoiceSettlementTest`**, **`StripeWebhookIdempotencyTest`**, **`StripeWebhookSubscriptionActivationTest`**
-- **`tests/Feature/StripeSubscriptionInvoiceWebhookTest`**, **`AccountSettingsConsentTest`**
+- **`tests/Feature/StripeSubscriptionInvoiceWebhookTest`**, **`AccountSettingsConsentTest`**, **`AdminStripeSettingsApiTest`**
 - **Stripe CLI:** `stripe listen --forward-to localhost:8000/api/webhooks/stripe`
 
 ## Related
