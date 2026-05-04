@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { useState } from "react";
 
-import { ArrowRight, MapPin, Menu } from "lucide-react";
+import { ArrowRight, LayoutDashboard, MapPin, Menu } from "lucide-react";
 
-import { PUBLIC_SITE_NAV_LINKS } from "@/config/public-site-nav";
+import { PUBLIC_SITE_NAV_SECTIONS } from "@/config/public-site-nav";
 
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
-import { PublicAccountMenu, PublicMobileAccountNav } from "@/components/layout/PublicAccountMenu";
+import { PublicSiteNavMenu } from "@/components/layout/PublicSiteNavMenu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -34,8 +35,6 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
     "text-sm text-muted-foreground transition-colors hover:text-foreground aria-[current]:font-medium aria-[current]:text-foreground";
   /** Mobile sheet: comfortable tap targets */
   const navLinkMobileClass = `${navLinkClass} inline-flex min-h-11 touch-manipulation items-center py-2`;
-  /** Desktop header: keep labels on one row between logo and CTAs */
-  const navLinkDesktopClass = `${navLinkClass} whitespace-nowrap`;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -54,13 +53,9 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
 
           <nav
             aria-label="Primary"
-            className="hidden max-w-[min(100%,52rem)] flex-wrap items-center justify-center gap-x-3 gap-y-1 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2 2xl:max-w-none 2xl:flex-nowrap 2xl:gap-x-4"
+            className="hidden items-center justify-center lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2"
           >
-            {PUBLIC_SITE_NAV_LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className={navLinkDesktopClass}>
-                {l.label}
-              </Link>
-            ))}
+            <PublicSiteNavMenu />
           </nav>
 
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
@@ -87,22 +82,55 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
                   <div className="flex flex-col gap-8 text-base">
                     <section aria-label="Website">
-                      <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <p className="mb-3 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
                         Website
                       </p>
-                      <nav className="flex flex-col gap-1">
-                        {PUBLIC_SITE_NAV_LINKS.map((l) => (
-                          <Link key={l.href} href={l.href} className={navLinkMobileClass} onClick={() => setOpen(false)}>
-                            {l.label}
-                          </Link>
+                      <div className="flex flex-col gap-5">
+                        {PUBLIC_SITE_NAV_SECTIONS.map((section) => (
+                          <div key={section.label} className="rounded-xl border bg-muted/30 p-3">
+                            <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                              {section.label}
+                            </p>
+                            <nav className="flex flex-col gap-0.5">
+                              {section.links.map((l) => (
+                                <Link
+                                  key={l.href}
+                                  href={l.href}
+                                  className={navLinkMobileClass}
+                                  onClick={() => setOpen(false)}
+                                >
+                                  {l.label}
+                                </Link>
+                              ))}
+                            </nav>
+                          </div>
                         ))}
-                      </nav>
+                      </div>
                     </section>
                     <section aria-label="Account">
                       <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
                         Account
                       </p>
-                      <PublicMobileAccountNav onNavigate={() => setOpen(false)} />
+                      <nav className="flex flex-col gap-1">
+                        <SignedOut>
+                          <Link href="/login" className={navLinkMobileClass} onClick={() => setOpen(false)}>
+                            Sign in
+                          </Link>
+                          <Link href="/register" className={navLinkMobileClass} onClick={() => setOpen(false)}>
+                            Create account
+                          </Link>
+                        </SignedOut>
+                        <SignedIn>
+                          <Link
+                            href="/auth/continue"
+                            className={`${navLinkMobileClass} gap-2`}
+                            onClick={() => setOpen(false)}
+                          >
+                            <LayoutDashboard className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+                            My account
+                          </Link>
+                        </SignedIn>
+                      </nav>
                     </section>
                     <Button asChild className="h-11 min-h-11 w-full shrink-0 touch-manipulation rounded-lg">
                       <Link href="/book" onClick={() => setOpen(false)}>
@@ -118,7 +146,22 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            <PublicAccountMenu />
+            <SignedOut>
+              <Button variant="outline" size="sm" asChild className="hidden md:inline-flex">
+                <Link href="/register">Create account</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+                <Link href="/login">Sign in</Link>
+              </Button>
+            </SignedOut>
+            <SignedIn>
+              <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+                <Link href="/auth/continue" className="gap-2">
+                  <LayoutDashboard className="h-4 w-4" aria-hidden />
+                  My account
+                </Link>
+              </Button>
+            </SignedIn>
           </div>
         </div>
       </header>

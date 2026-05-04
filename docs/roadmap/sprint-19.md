@@ -41,7 +41,7 @@ Audit current Stripe stubs/docs and prepare configuration.
 - subscription models
 - env variables
 - docs/integrations/stripe.md
-- allow developer to setup keys/setup iundern system 
+- allow developer to set up keys in **Admin → System** (Stripe and related integrations)
 
 ### Required env
 

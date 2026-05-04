@@ -3,15 +3,39 @@ export type PublicSiteLink = {
   label: string;
 };
 
-/** Top-level marketing routes (shown in header + mobile sheet). One source of truth — no duplicate nav in shell. */
-export const PUBLIC_SITE_NAV_LINKS: PublicSiteLink[] = [
-  { href: "/services", label: "Services" },
-  { href: "/trade-accounts", label: "For business" },
-  { href: "/subscriptions", label: "Subscriptions" },
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/service-areas", label: "Areas we cover" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/contact", label: "Contact" },
-  { href: "/safety", label: "Safety" },
+export type PublicSiteNavSection = {
+  label: string;
+  links: PublicSiteLink[];
+};
+
+/**
+ * Marketing IA — grouped for header dropdown + mobile sheet. Flat list derived below for
+ * any code that needs a single array.
+ */
+export const PUBLIC_SITE_NAV_SECTIONS: PublicSiteNavSection[] = [
+  {
+    label: "Services & bookings",
+    links: [
+      { href: "/services", label: "Services" },
+      { href: "/pricing", label: "Pricing" },
+      { href: "/subscriptions", label: "Subscriptions" },
+      { href: "/how-it-works", label: "How it works" },
+    ],
+  },
+  {
+    label: "Business",
+    links: [{ href: "/trade-accounts", label: "For business" }],
+  },
+  {
+    label: "Coverage & help",
+    links: [
+      { href: "/service-areas", label: "Areas we cover" },
+      { href: "/faq", label: "FAQ" },
+      { href: "/contact", label: "Contact" },
+      { href: "/safety", label: "Safety" },
+    ],
+  },
 ];
+
+/** All header targets in one list (order follows sections). */
+export const PUBLIC_SITE_NAV_LINKS: PublicSiteLink[] = PUBLIC_SITE_NAV_SECTIONS.flatMap((s) => s.links);
