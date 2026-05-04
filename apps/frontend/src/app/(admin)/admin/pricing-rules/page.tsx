@@ -240,7 +240,12 @@ export default function AdminPricingRulesPage() {
 
   return (
     <>
-      <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Pay-as-you-go rules" }]} />
+      <Breadcrumbs
+        crumbs={[
+          { label: "Plans & pricing", href: "/admin/subscription-plans" },
+          { label: "Pay-as-you-go rules" },
+        ]}
+      />
       <PageHeader
         title="Pay-as-you-go pricing rules"
         description="Per-knife and visit rates used for quotes, public estimates, and default order line prices. Higher priority wins when multiple rules match a service type and postcode."

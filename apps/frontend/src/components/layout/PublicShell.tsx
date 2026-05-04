@@ -3,17 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ArrowRight, LayoutDashboard, MapPin, Menu } from "lucide-react";
 
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
-import { PublicSiteNavSectionsCards } from "@/components/layout/PublicSiteNavCards";
+import { PublicSiteNavSectionCards, PublicSiteNavSectionsCards } from "@/components/layout/PublicSiteNavCards";
 import { PublicSiteNavMenu } from "@/components/layout/PublicSiteNavMenu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
+import type { PublicSiteNavSection } from "@/config/public-site-nav";
+import { publicSiteNavTriggerId } from "@/config/public-site-nav";
+import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS, PUBLIC_SITE_NAV_DROPDOWN_WIDTH_CLASS } from "@/lib/public-site-layout";
 import { cn } from "@/lib/utils";
 
 function hidePublicMobileStickyCta(pathname: string): boolean {
@@ -29,35 +31,69 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "";
   const hideStickyBar = hidePublicMobileStickyCta(pathname);
   const [open, setOpen] = useState(false);
+  const [megaSection, setMegaSection] = useState<PublicSiteNavSection | null>(null);
 
   const navLinkClass =
     "text-sm text-muted-foreground transition-colors hover:text-foreground aria-[current]:font-medium aria-[current]:text-foreground";
   /** Mobile sheet: comfortable tap targets */
   const navLinkMobileClass = `${navLinkClass} inline-flex min-h-11 touch-manipulation items-center py-2`;
 
+  useEffect(() => {
+    if (!megaSection) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMegaSection(null);
+    };
+    const onPointerDown = (e: PointerEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (!el) return;
+      if (el.closest("#public-site-mega-panel") || el.closest("[data-public-mega-triggers]")) return;
+      setMegaSection(null);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+    };
+  }, [megaSection]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => {
+      if (!mq.matches) setMegaSection(null);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
-        <div className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "relative flex h-14 flex-nowrap items-center justify-between gap-2 md:h-16 md:gap-3")}>
-          <div className="flex shrink-0 items-center gap-3">
-            <Link
-              href="/"
-              className="group inline-flex shrink-0 items-center rounded-md text-foreground no-underline opacity-90 outline-none ring-offset-background transition-opacity duration-200 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              aria-label="WeSharp home"
+        <div className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "relative")}>
+          <div className="flex h-14 flex-nowrap items-center justify-between gap-2 md:h-16 md:gap-3">
+            <div className="flex shrink-0 items-center gap-3">
+              <Link
+                href="/"
+                className="group inline-flex shrink-0 items-center rounded-md text-foreground no-underline opacity-90 outline-none ring-offset-background transition-opacity duration-200 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="WeSharp home"
+              >
+                <WeSharpLogo className="h-8 w-auto sm:h-9 lg:h-10" />
+              </Link>
+              <span className="hidden h-7 w-px bg-border/70 lg:block" aria-hidden />
+            </div>
+
+            <nav
+              aria-label="Primary"
+              className="hidden items-center justify-center lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2"
             >
-              <WeSharpLogo className="h-8 w-auto sm:h-9 lg:h-10" />
-            </Link>
-            <span className="hidden h-7 w-px bg-border/70 lg:block" aria-hidden />
-          </div>
+              <PublicSiteNavMenu
+                openSection={megaSection}
+                onOpenSection={setMegaSection}
+                onClose={() => setMegaSection(null)}
+              />
+            </nav>
 
-          <nav
-            aria-label="Primary"
-            className="hidden items-center justify-center lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2"
-          >
-            <PublicSiteNavMenu />
-          </nav>
-
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <Button size="sm" className="hidden rounded-lg md:inline-flex" asChild>
               <Link href="/book">
                 Book
@@ -141,6 +177,28 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
               <ThemeToggle />
             </span>
           </div>
+          </div>
+
+          {megaSection ? (
+            <div
+              id="public-site-mega-panel"
+              role="region"
+              aria-labelledby={publicSiteNavTriggerId(megaSection.label)}
+              aria-label={megaSection.label}
+              className={cn(
+                PUBLIC_SITE_NAV_DROPDOWN_WIDTH_CLASS,
+                "pointer-events-auto absolute left-1/2 top-full z-50 hidden -translate-x-1/2 pt-2 lg:block",
+              )}
+            >
+              <div className="pointer-events-auto max-h-[min(85vh,40rem)] overflow-x-auto overflow-y-auto overscroll-contain rounded-xl border bg-popover p-4 text-popover-foreground shadow-lg sm:p-5">
+                <PublicSiteNavSectionCards
+                  section={megaSection}
+                  layout="menu"
+                  onNavigate={() => setMegaSection(null)}
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
       </header>
       <div

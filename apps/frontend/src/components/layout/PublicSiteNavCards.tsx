@@ -49,7 +49,7 @@ function NavCard({
       className={cn(
         "group flex gap-3 rounded-xl border border-border/80 bg-card p-4 text-left shadow-sm outline-none transition-colors",
         "hover:border-primary/30 hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        menuRow && "min-w-0 flex-1 basis-0",
+        menuRow && "min-h-full min-w-0 w-full max-w-none",
       )}
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -67,7 +67,8 @@ type LayoutMode = "menu" | "sheet";
 
 function sectionCardsClass(layout: LayoutMode): string {
   return layout === "menu"
-    ? "flex flex-row flex-nowrap items-stretch gap-3"
+    ? /** Four columns so each card has a fixed “quarter row” width even when a section has fewer links. */
+      "grid grid-cols-4 gap-3"
     : "grid grid-cols-1 gap-3 sm:grid-cols-2";
 }
 

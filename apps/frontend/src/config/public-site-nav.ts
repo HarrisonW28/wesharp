@@ -77,5 +77,10 @@ export const PUBLIC_SITE_NAV_SECTIONS: PublicSiteNavSection[] = [
   },
 ];
 
-/** All header targets in one list (order follows sections). */
-export const PUBLIC_SITE_NAV_LINKS: PublicSiteLink[] = PUBLIC_SITE_NAV_SECTIONS.flatMap((s) => s.links);
+/** Stable id for desktop mega-menu triggers (a11y + aria-controls). */
+export function publicSiteNavTriggerId(sectionLabel: string): string {
+  return `public-nav-trigger-${sectionLabel
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")}`;
+}
