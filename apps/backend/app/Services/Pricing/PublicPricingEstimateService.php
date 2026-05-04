@@ -170,6 +170,7 @@ final class PublicPricingEstimateService
             return [
                 'estimate_title' => 'Pay-as-you-go visit',
                 'amount_pence' => null,
+                'first_order_amount_pence' => null,
                 'currency' => 'GBP',
                 'suggested_package_label' => $this->suggestVisitLabel($knives),
                 'pricing_rule_name' => null,
@@ -179,16 +180,23 @@ final class PublicPricingEstimateService
                 'visit_note' => $normalizedPostcode === null
                     ? 'Add your postcode for an estimate tied to your area — or use Book a collection for a firm quote.'
                     : 'No active price rule matched this postcode and service type — we’ll quote when you enquire.',
+                'first_order_note' => null,
             ];
         }
 
+        $constraints = is_array($rule->constraints) ? $rule->constraints : [];
         $kind = PricingRuleKind::tryFrom((string) $rule->rule_kind);
         $amountPence = null;
+        $firstOrderAmountPence = null;
         if ($kind === PricingRuleKind::PerKnife) {
-            $minUnits = (int) ($rule->constraints['minimum_units'] ?? 1);
+            $minUnits = (int) ($constraints['minimum_units'] ?? 1);
             $units = max($knives, $minUnits);
             $unit = (int) ($rule->amount_pence ?? 0);
             $amountPence = $units * $unit;
+            if (array_key_exists('first_order_per_knife_pence', $constraints) && $constraints['first_order_per_knife_pence'] !== null) {
+                $firstUnit = (int) $constraints['first_order_per_knife_pence'];
+                $firstOrderAmountPence = $units * $firstUnit;
+            }
         } elseif ($kind === PricingRuleKind::FlatVisit) {
             $amountPence = (int) ($rule->amount_pence ?? 0);
         }
@@ -203,11 +211,17 @@ final class PublicPricingEstimateService
             $onsiteNote = 'This reflects the visit / bench rate — per-item sharpening may be added on the quote.';
         }
 
+        $firstOrderNote = null;
+        if ($firstOrderAmountPence !== null) {
+            $firstOrderNote = 'First completed-visit rate for new accounts (if this would be your first sharpened order). Returning customer estimate uses the standard rate above.';
+        }
+
         return [
             'estimate_title' => $serviceType === ServiceType::Collection
                 ? 'Estimated one-off collection (workshop pricing)'
                 : 'Estimated on-site visit',
             'amount_pence' => $amountPence,
+            'first_order_amount_pence' => $firstOrderAmountPence,
             'currency' => 'GBP',
             'suggested_package_label' => $this->suggestVisitLabel($knives),
             'pricing_rule_name' => (string) $rule->name,
@@ -215,6 +229,7 @@ final class PublicPricingEstimateService
             'subscription_plan' => null,
             'overage_note' => $onsiteNote,
             'visit_note' => $visitNote,
+            'first_order_note' => $firstOrderNote,
         ];
     }
 

@@ -2,6 +2,8 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 
+import { useUser } from "@clerk/nextjs";
+
 import { ACCOUNT_NAV_SECTIONS, filterNavSections } from "@/config/navigation";
 
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
@@ -9,6 +11,7 @@ import { TenantRouteGate } from "@/components/auth/TenantRouteGate";
 import { ShellPermissionBoundary } from "@/components/auth/ShellPermissionBoundary";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { MobileDrawer } from "@/components/navigation/MobileDrawer";
+import { AccountMobileDrawerProfile } from "@/components/navigation/AccountMobileDrawerProfile";
 import { InAppNotificationBell } from "@/components/notifications/InAppNotificationBell";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
 import { TopBar } from "@/components/navigation/TopBar";
@@ -18,6 +21,7 @@ import { useBackendMe } from "@/hooks/use-backend-me";
 export function AccountShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { data } = useBackendMe();
+  const { user } = useUser();
 
   const permissions = useMemo(() => new Set(data?.data?.permissions ?? []), [data?.data?.permissions]);
   const navSections = useMemo(
@@ -27,10 +31,25 @@ export function AccountShell({ children }: { children: ReactNode }) {
 
   const accountDrawerQuickLinks = useMemo(
     () => [
-      { href: "/account/dashboard", label: "Overview" },
       { href: "/account/bookings/new", label: "Book a collection" },
-      { href: "/", label: "WeSharp website" },
+      { href: "/", label: "Visit marketing site" },
     ],
+    [],
+  );
+
+  const mobileTopTitle = useMemo(() => {
+    const profileName = data?.data?.user.name?.trim() || user?.fullName?.trim() || "";
+    const first = profileName.split(/\s+/)[0] || "";
+    return (
+      <>
+        <span className="sm:hidden">{first !== "" ? `Hi, ${first}` : "Your account"}</span>
+        <span className="hidden sm:inline">Customer portal</span>
+      </>
+    );
+  }, [data?.data?.user.name, user?.fullName]);
+
+  const accountLead = useMemo(
+    () => <AccountMobileDrawerProfile onNavigate={() => setDrawerOpen(false)} />,
     [],
   );
 
@@ -50,7 +69,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
           <div className="flex min-w-0 flex-1 flex-col">
             <TopBar
               className="app-chrome print:hidden"
-              title="Customer portal"
+              title={mobileTopTitle}
               showMenu
               onMenuClick={() => setDrawerOpen(true)}
               trailing={
@@ -73,6 +92,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
               brandSuffix="Account"
               quickLinks={accountDrawerQuickLinks}
               logoHref="/"
+              leadContent={accountLead}
             />
           </div>
         </div>

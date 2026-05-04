@@ -27,6 +27,8 @@ final class StorePricingRuleRequest extends FormRequest
             'priority' => ['sometimes', 'integer', 'min:0', 'max:100000'],
             'amount_pence' => ['nullable', 'integer', 'min:0', 'max:100000000'],
             'constraints' => ['nullable', 'array'],
+            'constraints.minimum_units' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:10000'],
+            'constraints.first_order_per_knife_pence' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:100000000'],
             'active' => ['sometimes', 'boolean'],
         ];
     }

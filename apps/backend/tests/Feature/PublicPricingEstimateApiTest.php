@@ -52,6 +52,39 @@ final class PublicPricingEstimateApiTest extends TestCase
             ->assertJsonPath('data.pricing_rule_name', 'Collection per blade');
     }
 
+    public function test_pay_as_you_go_includes_first_order_amount_when_configured(): void
+    {
+        $area = ServiceArea::factory()->create([
+            'postcode_prefix' => 'M',
+            'active' => true,
+        ]);
+
+        PricingRule::factory()->create([
+            'service_area_id' => $area->id,
+            'name' => 'Collection intro',
+            'service_type' => ServiceType::Collection,
+            'rule_kind' => PricingRuleKind::PerKnife,
+            'priority' => 10,
+            'amount_pence' => 850,
+            'constraints' => ['minimum_units' => 5, 'first_order_per_knife_pence' => 600],
+            'active' => true,
+        ]);
+
+        $response = $this->postJson('/api/public/pricing-estimate', [
+            'knife_count' => 12,
+            'postcode' => 'M1 1AA',
+            'programme_mode' => 'pay_as_you_go',
+            'service_type' => 'collection',
+            'visit_pattern' => 'single',
+            'customer_kind' => 'home',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.amount_pence', 12 * 850)
+            ->assertJsonPath('data.first_order_amount_pence', 12 * 600);
+        self::assertNotEmpty($response->json('data.first_order_note'));
+    }
+
     public function test_subscription_picks_smallest_allowance_that_covers_knives(): void
     {
         if (! Schema::hasColumn('subscription_plans', 'show_on_public_site')) {

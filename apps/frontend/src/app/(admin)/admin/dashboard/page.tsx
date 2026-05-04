@@ -116,7 +116,7 @@ export default function AdminDashboardPage() {
           </div>
           <Skeleton className="h-9 w-40 shrink-0" />
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-4 md:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <Skeleton key={i} className="h-32 w-full" />
           ))}
@@ -173,7 +173,7 @@ export default function AdminDashboardPage() {
       ) : null}
 
       {!fault ? (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-4 md:grid-cols-3">
           {kpis ? (
             <>
               <StatCard

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import type { ReactNode } from "react";
+
 import type { NavItem, NavSection } from "@/config/navigation";
 
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
@@ -24,6 +26,8 @@ type MobileDrawerProps = {
   logoHref?: string;
   /** Primary home link at top of drawer (Sprint 13.1). */
   quickLinks?: MobileNavQuickLink[];
+  /** Optional block directly under the logo row (e.g. tenant profile on mobile). */
+  leadContent?: ReactNode;
 };
 
 export function MobileDrawer({
@@ -34,6 +38,7 @@ export function MobileDrawer({
   brandSuffix,
   logoHref,
   quickLinks,
+  leadContent,
 }: MobileDrawerProps) {
   const sheetLabel = brandSuffix ? `WeSharp ${brandSuffix}` : "WeSharp";
 
@@ -56,6 +61,7 @@ export function MobileDrawer({
             </span>
           </SheetTitle>
         </SheetHeader>
+        {leadContent}
         {quickLinks !== undefined && quickLinks.length > 0 ? (
           <div className="shrink-0 flex flex-col gap-px border-b bg-muted/40">
             {quickLinks.map((q) => (

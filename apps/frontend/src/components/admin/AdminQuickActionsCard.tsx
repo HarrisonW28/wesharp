@@ -38,19 +38,21 @@ export function AdminQuickActionsCard() {
 
   return (
     <Card className="border-primary/15 bg-gradient-to-br from-primary/5 via-background to-background">
-      <CardHeader className="space-y-0 pb-0">
+      <CardHeader className={cn("space-y-0", open ? "pb-0" : "pb-4")}>
         <Button
           type="button"
           variant="ghost"
-          className="h-auto w-full justify-between gap-3 rounded-lg px-0 py-1 text-left font-normal hover:bg-muted/40"
+          className="h-auto w-full min-w-0 justify-between gap-3 rounded-lg px-0 py-1 text-left font-normal hover:bg-muted/40"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls="admin-quick-actions-panel"
           id="admin-quick-actions-trigger"
         >
-          <span className="min-w-0 space-y-1">
-            <span className="block text-base font-semibold leading-none tracking-tight">Where to go next</span>
-            <span className="block text-sm text-muted-foreground">
+          <span className="min-w-0 flex-1 space-y-1.5 pr-1 text-left">
+            <span className="block text-balance text-base font-semibold leading-snug tracking-tight">
+              Where to go next
+            </span>
+            <span className="block break-words text-sm leading-snug text-muted-foreground">
               Jump straight into day-to-day work — same permissions as the sidebar.
             </span>
           </span>
@@ -61,20 +63,25 @@ export function AdminQuickActionsCard() {
         </Button>
       </CardHeader>
       {open ? (
-        <CardContent className="pt-4" id="admin-quick-actions-panel" role="region" aria-labelledby="admin-quick-actions-trigger">
+        <CardContent
+          className="pt-4 pb-4 sm:pb-5"
+          id="admin-quick-actions-panel"
+          role="region"
+          aria-labelledby="admin-quick-actions-trigger"
+        >
           <ul className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
             {ACTIONS.map(({ href, label, hint, icon: Icon }) => (
-              <li key={href}>
+              <li key={href} className="min-w-0">
                 <Link
                   href={href}
-                  className="flex min-h-[4.25rem] flex-col rounded-lg border bg-card/80 p-3 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex min-h-[4.25rem] min-w-0 flex-col rounded-lg border bg-card/80 p-3 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                    <span className="min-w-0 leading-snug">{label}</span>
-                    <ArrowRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-40" aria-hidden />
+                  <span className="flex items-start gap-2 text-sm font-medium text-foreground">
+                    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                    <span className="min-w-0 flex-1 break-words leading-snug">{label}</span>
+                    <ArrowRight className="mt-0.5 ml-auto h-3.5 w-3.5 shrink-0 opacity-40" aria-hidden />
                   </span>
-                  <span className="mt-1 text-xs text-muted-foreground">{hint}</span>
+                  <span className="mt-1 break-words text-xs leading-snug text-muted-foreground">{hint}</span>
                 </Link>
               </li>
             ))}

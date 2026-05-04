@@ -34,9 +34,12 @@ const NAV_CARD_ICONS: Record<string, LucideIcon> = {
 function NavCard({
   link,
   onNavigate,
+  menuRow,
 }: {
   link: PublicSiteLink;
   onNavigate?: () => void;
+  /** Desktop mega-menu: equal-width tiles on one row. */
+  menuRow?: boolean;
 }) {
   const Icon = NAV_CARD_ICONS[link.href] ?? Sparkles;
   return (
@@ -46,6 +49,7 @@ function NavCard({
       className={cn(
         "group flex gap-3 rounded-xl border border-border/80 bg-card p-4 text-left shadow-sm outline-none transition-colors",
         "hover:border-primary/30 hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        menuRow && "min-w-0 flex-1 basis-0",
       )}
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -61,8 +65,10 @@ function NavCard({
 
 type LayoutMode = "menu" | "sheet";
 
-function sectionGridClass(layout: LayoutMode): string {
-  return layout === "menu" ? "grid grid-cols-1 gap-3 sm:grid-cols-2" : "grid grid-cols-1 gap-3 sm:grid-cols-2";
+function sectionCardsClass(layout: LayoutMode): string {
+  return layout === "menu"
+    ? "flex flex-row flex-nowrap items-stretch gap-3"
+    : "grid grid-cols-1 gap-3 sm:grid-cols-2";
 }
 
 /** Card links for one IA section (parent label lives on the menu trigger or sheet heading). */
@@ -78,9 +84,9 @@ export function PublicSiteNavSectionCards({
   className?: string;
 }) {
   return (
-    <div className={cn(sectionGridClass(layout), className)}>
+    <div className={cn(sectionCardsClass(layout), className)}>
       {section.links.map((link) => (
-        <NavCard key={link.href} link={link} onNavigate={onNavigate} />
+        <NavCard key={link.href} link={link} onNavigate={onNavigate} menuRow={layout === "menu"} />
       ))}
     </div>
   );

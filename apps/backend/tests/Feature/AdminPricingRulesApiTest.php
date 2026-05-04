@@ -33,10 +33,13 @@ final class AdminPricingRulesApiTest extends TestCase
             'rule_kind' => PricingRuleKind::PerKnife->value,
             'priority' => 10,
             'amount_pence' => 999,
+            'constraints' => ['minimum_units' => 3, 'first_order_per_knife_pence' => 600],
             'active' => true,
         ]);
         $res->assertCreated();
         $id = (string) $res->json('data.rule.id');
+        self::assertSame(600, (int) $res->json('data.rule.constraints.first_order_per_knife_pence'));
+        self::assertSame(3, (int) $res->json('data.rule.constraints.minimum_units'));
 
         $upd = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)->putJson('/api/admin/pricing-rules/'.$id, [
             'active' => false,

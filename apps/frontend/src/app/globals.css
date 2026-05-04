@@ -187,8 +187,8 @@
 
 /**
  * Public `<SignIn />` / `<SignUp />` embeds only (`wesharp-clerk-auth-card` wrapper in login + register).
- * Clerk’s official “remove branding” hooks are paid; marketing footer is a normal anchor we can scope out.
- * Prefer narrow href patterns so custom Terms/Privacy URLs on your domain are untouched.
+ * Clerk’s official “remove branding” hooks are paid; we hide vendor footer links here.
+ * A WeSharp wordmark is rendered below the card in `ClerkAuthWordmarkFooter`.
  */
 .wesharp-clerk-auth-card .cl-footer a[href*="go.clerk."],
 .wesharp-clerk-auth-card .cl-footer a[href*="dashboard.clerk."],

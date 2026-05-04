@@ -4,6 +4,7 @@ import { ChevronDown } from "lucide-react";
 
 import { PublicSiteNavSectionCards } from "@/components/layout/PublicSiteNavCards";
 import { PUBLIC_SITE_NAV_SECTIONS } from "@/config/public-site-nav";
+import { PUBLIC_SITE_NAV_DROPDOWN_WIDTH_CLASS } from "@/lib/public-site-layout";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,10 +38,13 @@ export function PublicSiteNavMenu() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              align="start"
+              align="center"
               sideOffset={8}
               collisionPadding={16}
-              className="max-h-[min(85vh,40rem)] w-[min(calc(100vw-2rem),22rem)] overflow-y-auto overscroll-contain p-4 sm:w-[min(28rem,calc(100vw-2rem))] sm:p-5"
+              className={cn(
+                PUBLIC_SITE_NAV_DROPDOWN_WIDTH_CLASS,
+                "max-h-[min(85vh,40rem)] overflow-x-auto overflow-y-auto overscroll-contain p-4 sm:p-5",
+              )}
               onCloseAutoFocus={(e) => e.preventDefault()}
             >
               <PublicSiteNavSectionCards section={section} layout="menu" />

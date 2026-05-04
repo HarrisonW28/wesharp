@@ -25,7 +25,14 @@ The first matching rule wins.
 - **`per_knife`** — `amount_pence` is the default **per-blade / per line** workshop price. Used when bulk-adding order lines **without** `unit_amount_pence`, and to pre-fill `price_per_knife_pence` when converting a booking to an order.
 - **`flat_visit`** — stored for catalogue purposes; **default unit price** resolution still requires a **`per_knife`** rule (flat visit lines are not auto-applied to multi-line intake in this sprint).
 
-## Order totals (`OrderService::rebuildMonetaryTotals`)
+### Constraints (`constraints` JSON)
+
+Optional keys (validated on create/update):
+
+- **`minimum_units`** (integer ≥ 1) — public PAYG estimates and per-knife line math use `max(knife_count, minimum_units)` for unit totals when present.
+- **`first_order_per_knife_pence`** (integer pence ≥ 0) — **intro per-blade rate** for companies that have **no** prior orders in **`completed`**, **`invoiced`**, or **`returned`**. `PricingRuleResolver::defaultUnitAmountPenceForOrder` picks this instead of `amount_pence` for eligibility; the current order id is excluded when checking history. Public `/api/public/pricing-estimate` returns `first_order_amount_pence` and `first_order_note` when this is set on the matched rule.
+
+Configure rules in the admin app under **Finance → Pay-as-you-go rules** (`/admin/pricing-rules`).
 
 Applied after updates, line intake, and **order completion** (after subscription coverage is computed).
 

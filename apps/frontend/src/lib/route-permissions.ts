@@ -54,6 +54,9 @@ export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/reports/knives")) {
     return "reports.operations";
   }
+  if (pathname.startsWith("/admin/pricing-rules")) {
+    return "pricing.view";
+  }
   if (pathname.startsWith("/admin/finance")) {
     return "payments.view";
   }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Pricing;
 
+use App\Enums\OrderStatus;
 use App\Enums\PricingRuleKind;
 use App\Enums\ServiceType;
 use App\Models\Company;
@@ -59,7 +60,11 @@ final class PricingRuleResolver
         return null;
     }
 
-    /** Per-blade list price from a matching {@see PricingRuleKind::PerKnife} rule. */
+    /**
+     * Per-blade list price from a matching {@see PricingRuleKind::PerKnife} rule.
+     * When the rule sets {@code constraints.first_order_per_knife_pence} and the company has no
+     * completed / invoiced / returned orders yet (excluding this order), that amount is used instead.
+     */
     public function defaultUnitAmountPenceForOrder(Order $order): ?int
     {
         $rule = $this->resolveForOrder($order);
@@ -71,7 +76,45 @@ final class PricingRuleResolver
             return null;
         }
 
-        return $rule->amount_pence !== null ? (int) $rule->amount_pence : null;
+        if ($rule->amount_pence === null) {
+            return null;
+        }
+
+        $standard = (int) $rule->amount_pence;
+        $constraints = is_array($rule->constraints) ? $rule->constraints : [];
+        $first = $constraints['first_order_per_knife_pence'] ?? null;
+        if ($first !== null && $first !== '' && $this->companyEligibleForFirstOrderPricing($order)) {
+            return (int) $first;
+        }
+
+        return $standard;
+    }
+
+    /**
+     * First sharpening is “first order” when the company has no terminal workshop orders yet
+     * ({@see OrderStatus::Completed}, {@see OrderStatus::Invoiced}, {@see OrderStatus::Returned}).
+     */
+    public function companyEligibleForFirstOrderPricing(Order $order): bool
+    {
+        $companyId = $order->company_id;
+        if ($companyId === null) {
+            return false;
+        }
+
+        $terminal = array_map(
+            static fn (OrderStatus $s): string => $s->value,
+            [OrderStatus::Completed, OrderStatus::Invoiced, OrderStatus::Returned],
+        );
+
+        $q = Order::query()
+            ->where('company_id', $companyId)
+            ->whereIn('order_status', $terminal);
+
+        if ($order->exists && $order->getKey() !== null) {
+            $q->where('id', '!=', $order->getKey());
+        }
+
+        return ! $q->exists();
     }
 
     private function defaultLocationForCompany(Company $company): ?CompanyLocation

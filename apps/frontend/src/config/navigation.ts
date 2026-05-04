@@ -22,6 +22,7 @@ import {
   ScrollText,
   Settings,
   ShoppingCart,
+  Tag,
   UserCog,
   Users,
   Utensils,
@@ -179,6 +180,13 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
       { title: "Payments", href: "/admin/payments", icon: Banknote, permission: "payments.view" },
       { title: "Invoices", href: "/admin/invoices", icon: Receipt, permission: "invoices.view" },
       {
+        title: "Pay-as-you-go rules",
+        href: "/admin/pricing-rules",
+        icon: Tag,
+        permission: "pricing.view",
+        description: "Per-knife prices, areas, and first-visit discounts",
+      },
+      {
         title: "Plans & subscriptions",
         icon: ShoppingCart,
         permission: "subscriptions.view",
@@ -286,8 +294,15 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
 /** Full admin flat list — every navigable href (tests / legacy helpers). */
 export const ADMIN_NAV: NavLeaf[] = navSectionsToLeaves(ADMIN_NAV_SECTIONS);
 
-/** Tenant account — grouped for collapsible mobile / narrow sidebars. */
+/** Tenant account — grouped for collapsible mobile / narrow sidebars. Personal items first for phone UX. */
 export const ACCOUNT_NAV_SECTIONS: NavSection[] = [
+  {
+    label: "Profile & places",
+    items: [
+      { title: "Settings", href: "/account/settings", icon: Settings, permission: "account.settings.update" },
+      { title: "Locations", href: "/account/locations", icon: MapPinned, permission: "account.locations.manage" },
+    ],
+  },
   {
     label: "Overview",
     items: [
@@ -303,13 +318,6 @@ export const ACCOUNT_NAV_SECTIONS: NavSection[] = [
       { title: "My orders", href: "/account/orders", icon: ClipboardList, permission: "orders.view" },
       { title: "Knives", href: "/account/knives", icon: Utensils, permission: "knives.view" },
       { title: "Invoices", href: "/account/invoices", icon: Receipt, permission: "invoices.view" },
-    ],
-  },
-  {
-    label: "Account",
-    items: [
-      { title: "Locations", href: "/account/locations", icon: MapPinned, permission: "account.locations.manage" },
-      { title: "Settings", href: "/account/settings", icon: Settings, permission: "account.settings.update" },
     ],
   },
 ];

@@ -70,14 +70,16 @@ function InsightCard(props: {
   footnote?: string;
 }) {
   return (
-    <Card className="h-full">
+    <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{props.title}</CardTitle>
-        {props.description ? <CardDescription className="text-xs">{props.description}</CardDescription> : null}
+        <CardTitle className="text-sm font-medium leading-snug text-muted-foreground">{props.title}</CardTitle>
+        {props.description ? <CardDescription className="text-xs leading-snug">{props.description}</CardDescription> : null}
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-1 flex-col">
         <p className="text-2xl font-semibold tabular-nums tracking-tight">{props.value}</p>
-        {props.footnote ? <p className="mt-2 text-xs text-muted-foreground">{props.footnote}</p> : null}
+        {props.footnote ? (
+          <p className="mt-auto break-words pt-2 text-xs leading-snug text-muted-foreground">{props.footnote}</p>
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -85,13 +87,13 @@ function InsightCard(props: {
 
 function ChartShell(props: { title: string; description?: string; children: ReactNode; empty?: boolean }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader>
         <CardTitle className="text-base">{props.title}</CardTitle>
         {props.description ? <CardDescription className="text-xs">{props.description}</CardDescription> : null}
       </CardHeader>
       <Separator />
-      <CardContent className="min-h-[280px] w-full pb-6 pt-4">
+      <CardContent className="flex min-h-[280px] min-w-0 flex-1 flex-col pb-6 pt-4">
         {props.empty ? <p className="text-sm text-muted-foreground">No data in this filter window.</p> : props.children}
       </CardContent>
     </Card>
@@ -327,7 +329,7 @@ type ErrWithStatus = Error & { status?: number };
       ) : null}
 
       {!isLoading && kpis ? (
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <InsightCard
             title="Revenue this calendar month"
             description="Recognised revenue from orders marked completed."
@@ -376,7 +378,7 @@ type ErrWithStatus = Error & { status?: number };
       {!isLoading && kpis ? (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground">Finance &amp; throughput · filter dates</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <InsightCard
               title="Invoiced · subscription flagged"
               description={`issued_on ${overview?.filters?.date_from ?? ""} → ${overview?.filters?.date_to ?? ""}`}
@@ -424,7 +426,7 @@ type ErrWithStatus = Error & { status?: number };
         </section>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid items-stretch gap-6 xl:grid-cols-2">
         <ChartShell
           title="Revenue over time"
           description={"Completed-order revenue summed per UTC day"}
