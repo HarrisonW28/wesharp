@@ -103,4 +103,34 @@ final class AdminSubscriptionPlanApiTest extends TestCase
         self::assertTrue(AuditLog::query()->where('action', 'subscription_plan.updated')->exists());
         self::assertTrue(AuditLog::query()->where('action', 'subscription_plan.deactivated')->exists());
     }
+
+    public function test_finance_can_archive_plan(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Finance]);
+        $plan = SubscriptionPlan::factory()->create(['name' => 'To archive']);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->postJson('/api/admin/subscription-plans/'.$plan->id.'/archive')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.archived', true);
+
+        self::assertSoftDeleted('subscription_plans', ['id' => $plan->id]);
+        self::assertTrue(AuditLog::query()->where('action', 'subscription_plan.archived')->exists());
+    }
+
+    public function test_developer_can_list_plans_but_cannot_archive(): void
+    {
+        $user = User::factory()->create(['role' => UserRole::Developer]);
+        $plan = SubscriptionPlan::factory()->create(['name' => 'Catalog row']);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/admin/subscription-plans')
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->postJson('/api/admin/subscription-plans/'.$plan->id.'/archive')
+            ->assertForbidden();
+    }
 }

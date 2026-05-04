@@ -12,6 +12,7 @@ import {
   type SubscriptionPlanRow,
 } from "@/lib/api/admin-subscription-plans-schema";
 import { formatGBP } from "@/lib/format/money";
+import { useBackendMe } from "@/hooks/use-backend-me";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -25,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -167,6 +168,11 @@ function draftToApiPayload(d: PlanDraft): Record<string, unknown> {
 export default function AdminSubscriptionPlansPage() {
   const admin = useAdminApi();
   const qc = useQueryClient();
+  const { data: mePayload } = useBackendMe();
+  const canManage = useMemo(
+    () => new Set(mePayload?.data?.permissions ?? []).has("subscriptions.manage"),
+    [mePayload?.data?.permissions],
+  );
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createDraft, setCreateDraft] = useState<PlanDraft>(() => defaultDraft());
@@ -248,6 +254,7 @@ export default function AdminSubscriptionPlansPage() {
     },
     onSuccess: async () => {
       toast.success("Plan archived.");
+      setArchiveConfirm(null);
       await qc.invalidateQueries({ queryKey: ["admin-subscription-plans"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Archive failed."),
@@ -255,6 +262,7 @@ export default function AdminSubscriptionPlansPage() {
 
   const rows = useMemo(() => plansQuery.data ?? [], [plansQuery.data]);
   const saving = createPlan.isPending || updatePlan.isPending || toggleActive.isPending || archivePlan.isPending;
+  const actionsDisabled = saving || !canManage;
 
   const activeCount = useMemo(() => rows.filter((r) => r.is_active).length, [rows]);
 
@@ -269,12 +277,16 @@ export default function AdminSubscriptionPlansPage() {
 
       <PageHeader
         title="Subscription plans"
-        description="Manage the plan catalogue. Existing company subscriptions keep price snapshots for historical accuracy."
+        description={
+          canManage
+            ? "Manage the plan catalogue. Existing company subscriptions keep price snapshots for historical accuracy."
+            : "View the plan catalogue. Editing and archiving require subscriptions.manage (finance / administrators)."
+        }
         actions={
           <Button
             type="button"
             onClick={() => setCreateOpen((v) => !v)}
-            disabled={saving || !admin.origin}
+            disabled={actionsDisabled || !admin.origin}
           >
             <Plus className="mr-2 h-4 w-4" aria-hidden />
             New plan
@@ -381,7 +393,7 @@ export default function AdminSubscriptionPlansPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          disabled={saving}
+                          disabled={actionsDisabled}
                           onClick={() => {
                             setEditId(p.id);
                             setEditDraft(toDraft(p));
@@ -393,7 +405,7 @@ export default function AdminSubscriptionPlansPage() {
                         <Button
                           type="button"
                           variant={p.is_active ? "secondary" : "default"}
-                          disabled={saving}
+                          disabled={actionsDisabled}
                           onClick={() =>
                             setToggleConfirm({ id: p.id, name: p.name ?? "This plan", makeActive: !p.is_active })
                           }
@@ -404,7 +416,7 @@ export default function AdminSubscriptionPlansPage() {
                         <Button
                           type="button"
                           variant="destructive"
-                          disabled={saving}
+                          disabled={actionsDisabled}
                           onClick={() => setArchiveConfirm({ id: p.id, name: p.name ?? "This plan" })}
                         >
                           <Trash2 className="mr-2 h-4 w-4" aria-hidden />
@@ -491,17 +503,23 @@ export default function AdminSubscriptionPlansPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              type="button"
-              className={buttonVariants({ variant: "destructive" })}
-              onClick={() => {
-                if (archiveConfirm) {
-                  archivePlan.mutate({ id: archiveConfirm.id });
-                }
-                setArchiveConfirm(null);
-              }}
-            >
-              Archive plan
+            <AlertDialogAction asChild>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={archivePlan.isPending}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (!archiveConfirm) return;
+                  try {
+                    await archivePlan.mutateAsync({ id: archiveConfirm.id });
+                  } catch {
+                    /* toast via mutation onError */
+                  }
+                }}
+              >
+                {archivePlan.isPending ? "Archiving…" : "Archive plan"}
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

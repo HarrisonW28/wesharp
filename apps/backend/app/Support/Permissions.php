@@ -206,6 +206,8 @@ final class Permissions
                 self::NOTIFICATIONS_DELIVERIES_VIEW,
                 /** Marketing copy + notification template settings (same middleware group as site-content). */
                 self::SETTINGS_MANAGE,
+                /** Read-only catalogue (mutations require {@see self::SUBSCRIPTIONS_MANAGE}). */
+                self::SUBSCRIPTIONS_VIEW,
                 /** Remove demo / seeded CRM and rare draft booking hard-deletes — not for production operators. */
                 self::COMPANIES_VIEW,
                 self::COMPANIES_DELETE,
