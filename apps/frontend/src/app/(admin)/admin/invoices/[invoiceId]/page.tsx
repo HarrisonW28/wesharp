@@ -8,7 +8,7 @@ import { Loader2, Pencil, Printer } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { InvoiceDetailResponseSchema } from "@/lib/api/admin-invoices-schema";
+import { InvoiceDetailResponseSchema, InvoiceStripeCheckoutSessionResponseSchema } from "@/lib/api/admin-invoices-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP, parseGbpInputToMinorUnits } from "@/lib/format/money";
 import { humanizeUnderscored, invoiceStatusLabel } from "@/lib/helpers/status-helpers";
@@ -230,6 +230,30 @@ export default function AdminInvoiceDetailPage() {
       setPayNotes("");
       setPaidAt("");
       invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const stripeCheckoutMut = useMutation({
+    mutationFn: async () => {
+      const res = await admin.json<unknown>(`/api/admin/invoices/${invoiceId}/stripe-checkout-session`, {
+        method: "POST",
+        body: "{}",
+      });
+      if (!res.ok) throw new Error(res.message);
+      const parsed = InvoiceStripeCheckoutSessionResponseSchema.safeParse(res.data);
+      if (!parsed.success) throw new Error("Unexpected Stripe checkout response.");
+      return parsed.data.data;
+    },
+    onSuccess: (data) => {
+      if (data.checkout_url && data.checkout_url !== "") {
+        window.location.assign(data.checkout_url);
+        return;
+      }
+      if (!data.hosted_checkout_available) {
+        toast.error(data.disabled_reason ?? "Stripe checkout is not available for this invoice.");
+        invalidate();
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -583,10 +607,13 @@ export default function AdminInvoiceDetailPage() {
 
       {inv.stripe ? (
         <Card className="mb-6 p-4 print:hidden">
-          <div className="text-xs font-semibold uppercase text-muted-foreground">Stripe (foundation)</div>
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Stripe</div>
           <p className="mt-2 text-sm text-muted-foreground">
-            {inv.stripe.hosted_checkout_disabled_reason ??
-              "Online checkout is not enabled yet. Manual payment below remains the supported flow."}
+            {inv.stripe.hosted_checkout_disabled_reason
+              ? inv.stripe.hosted_checkout_disabled_reason
+              : inv.stripe.hosted_checkout_available
+                ? "Opens Stripe Checkout. The invoice is marked paid only after Stripe confirms payment via webhook — not when you return from Stripe."
+                : "Hosted checkout is turned off or missing configuration. Use manual payment below, or finish Stripe setup (see badges)."}
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
             {inv.stripe.webhook_secret_configured ? (
@@ -607,11 +634,34 @@ export default function AdminInvoiceDetailPage() {
             {inv.stripe.live_mode_blocked ? <Badge variant="destructive">Live keys blocked by policy</Badge> : null}
           </div>
           <div className="mt-4">
-            <Button type="button" variant="secondary" size="lg" disabled className="w-full sm:w-auto">
-              Pay with Stripe — not enabled yet
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              className="w-full sm:w-auto"
+              disabled={
+                stripeCheckoutMut.isPending ||
+                !canPay ||
+                !inv.stripe.hosted_checkout_available
+              }
+              onClick={() => stripeCheckoutMut.mutate()}
+            >
+              {stripeCheckoutMut.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  Opening checkout…
+                </>
+              ) : (
+                "Pay with Stripe"
+              )}
             </Button>
             <p className="mt-2 text-xs text-muted-foreground">
-              Card capture and Checkout URLs are deferred. Invoices are not marked paid from the browser.
+              {!canPay
+                ? "Your role cannot start checkout (needs payments.manage). Ask finance to open this link or record payment manually."
+                : !inv.stripe.hosted_checkout_available
+                  ? (inv.stripe.hosted_checkout_disabled_reason ??
+                    "Enable hosted checkout in environment / Stripe settings (secret key, webhook secret, success/cancel URLs), then send the invoice if it is still a draft.")
+                  : "You will leave this app for Stripe. Settlement and “paid” status are driven by webhooks."}
             </p>
           </div>
         </Card>

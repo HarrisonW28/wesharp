@@ -180,13 +180,6 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
       { title: "Payments", href: "/admin/payments", icon: Banknote, permission: "payments.view" },
       { title: "Invoices", href: "/admin/invoices", icon: Receipt, permission: "invoices.view" },
       {
-        title: "Pay-as-you-go rules",
-        href: "/admin/pricing-rules",
-        icon: Tag,
-        permission: "pricing.view",
-        description: "Per-knife prices, areas, and first-visit discounts",
-      },
-      {
         title: "Plans & subscriptions",
         icon: ShoppingCart,
         permission: "subscriptions.view",
@@ -204,6 +197,13 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
             icon: Repeat,
             permission: "subscriptions.view",
             description: "Live subscriptions across tenants",
+          },
+          {
+            title: "Pay-as-you-go rules",
+            href: "/admin/pricing-rules",
+            icon: Tag,
+            permission: "pricing.view",
+            description: "Per-knife prices, areas, and first-visit discounts",
           },
         ],
       },
@@ -358,10 +358,32 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
     label: "Programmes",
     items: [
       {
-        title: "Plans & price rules",
-        href: "/admin/subscription-plans",
-        icon: Repeat,
+        title: "Plans & subscriptions",
+        icon: ShoppingCart,
         permission: "subscriptions.view",
+        children: [
+          {
+            title: "Plans & pricing",
+            href: "/admin/subscription-plans",
+            icon: ShoppingCart,
+            permission: "subscriptions.view",
+            description: "Catalogue, tiers, and price rules",
+          },
+          {
+            title: "Active subscriptions",
+            href: "/admin/subscriptions",
+            icon: Repeat,
+            permission: "subscriptions.view",
+            description: "Live subscriptions across tenants",
+          },
+          {
+            title: "Pay-as-you-go rules",
+            href: "/admin/pricing-rules",
+            icon: Tag,
+            permission: "pricing.view",
+            description: "Per-knife prices, areas, and first-visit discounts",
+          },
+        ],
       },
     ],
   },

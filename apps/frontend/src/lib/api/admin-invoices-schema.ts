@@ -161,6 +161,16 @@ export const InvoiceDetailResponseSchema = z.object({
   data: InvoiceDetailSchema,
 });
 
+/** Response for `POST` …/invoices/{id}/stripe-checkout-session (admin + account). */
+export const InvoiceStripeCheckoutSessionResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    hosted_checkout_available: z.boolean(),
+    disabled_reason: z.string().nullable().optional(),
+    checkout_url: z.string().nullable().optional(),
+  }),
+});
+
 export const PaginatedInvoicesResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({ items: z.array(InvoiceRowSchema) }),

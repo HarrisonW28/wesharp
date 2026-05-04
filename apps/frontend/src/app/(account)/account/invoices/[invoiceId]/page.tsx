@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ClipboardList, Download, Loader2, Printer, Receipt } from "lucide-react";
+import { toast } from "sonner";
 
 import { AccountInvoiceDetailResponseSchema } from "@/lib/api/account-schema";
+import { InvoiceStripeCheckoutSessionResponseSchema } from "@/lib/api/admin-invoices-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 import { CustomerOrderStatusBadge } from "@/components/orders/CustomerOrderStatusBadge";
 import { humanizeUnderscored, invoiceStatusLabel } from "@/lib/helpers/status-helpers";
@@ -32,6 +34,7 @@ import {
 export default function AccountInvoiceDetailPage() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const api = useAccountApi();
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: ["account-invoice", invoiceId],
@@ -49,15 +52,31 @@ export default function AccountInvoiceDetailPage() {
     },
   });
 
+  const stripeCheckoutMut = useMutation({
+    mutationFn: async () => {
+      const res = await api.json<unknown>(`/api/account/invoices/${invoiceId}/stripe-checkout-session`, {
+        method: "POST",
+        body: "{}",
+      });
+      if (!res.ok) throw new Error(res.message);
+      const parsed = InvoiceStripeCheckoutSessionResponseSchema.safeParse(res.data);
+      if (!parsed.success) throw new Error("Unexpected Stripe checkout response.");
+      return parsed.data.data;
+    },
+    onSuccess: (data) => {
+      if (data.checkout_url && data.checkout_url !== "") {
+        window.location.assign(data.checkout_url);
+        return;
+      }
+      if (!data.hosted_checkout_available) {
+        toast.error(data.disabled_reason ?? "Online payment is not available for this invoice.");
+        void queryClient.invalidateQueries({ queryKey: ["account-invoice", invoiceId] });
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const inv = query.data;
-  const showPayCta = Boolean(
-    inv &&
-      inv.payment &&
-      !inv.payment.online_checkout_available &&
-      (inv.amount_due_pence ?? 0) > 0 &&
-      inv.status !== "void" &&
-      inv.status !== "paid",
-  );
 
   const docTitle = inv?.display_reference ?? "Invoice";
   const issuer = inv?.issuer ?? { legal_name: "WeSharp", address_lines: [] as string[] };
@@ -75,6 +94,9 @@ export default function AccountInvoiceDetailPage() {
   const outstanding = inv?.outstanding_pence ?? inv?.amount_due_pence ?? 0;
   const showLineKinds = Boolean(
     inv?.items?.some((row) => row.line_item_type && row.line_item_type !== "one_off_service"),
+  );
+  const showPaymentCard = Boolean(
+    inv?.payment && outstanding > 0 && inv.status !== "void" && inv.status !== "paid",
   );
 
   return (
@@ -184,17 +206,31 @@ export default function AccountInvoiceDetailPage() {
           />
 
           <div className="grid gap-4 print:hidden lg:grid-cols-3">
-            {showPayCta ? (
+            {showPaymentCard ? (
               <Card className="rounded-xl lg:col-span-3">
                 <CardHeader>
                   <CardTitle className="text-base">Payment</CardTitle>
                   <CardDescription>{inv.payment?.cta_hint}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div className="font-medium">{inv.payment?.cta_label ?? "Pay online"}</div>
-                  <Button type="button" size="sm" className="rounded-lg" disabled>
-                    Pay now (coming soon)
-                  </Button>
+                  {inv.payment?.online_checkout_available ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="rounded-lg"
+                      disabled={stripeCheckoutMut.isPending}
+                      onClick={() => stripeCheckoutMut.mutate()}
+                    >
+                      {stripeCheckoutMut.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                          Redirecting…
+                        </>
+                      ) : (
+                        (inv.payment.cta_label ?? "Pay online")
+                      )}
+                    </Button>
+                  ) : null}
                 </CardContent>
               </Card>
             ) : null}
