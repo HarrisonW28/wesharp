@@ -29,7 +29,7 @@ export function MarketingArticle({
       {lead ? <p className="mt-4 max-w-prose text-base leading-relaxed text-muted-foreground">{lead}</p> : null}
       <div className="mt-10 space-y-5 text-sm leading-relaxed text-muted-foreground md:text-base">{children}</div>
       {showFooterCtas ? (
-        <div className="mt-12 flex flex-wrap gap-3 border-t pt-8">
+        <div className="mt-12 grid grid-cols-2 gap-3 border-t pt-8 md:flex md:flex-row md:flex-wrap">
           <Button className="rounded-lg" asChild>
             <Link href="/book">
               Book a collection
@@ -39,7 +39,7 @@ export function MarketingArticle({
           <Button variant="outline" className="rounded-lg" asChild>
             <Link href="/service-areas">Check coverage</Link>
           </Button>
-          <Button variant="ghost" className="rounded-lg" asChild>
+          <Button variant="ghost" className="col-span-2 rounded-lg md:col-span-1" asChild>
             <Link href="/contact">Ask a question</Link>
           </Button>
         </div>

@@ -77,7 +77,7 @@ export function HomeHero({ homepage }: { homepage: SiteContent["homepage"] }) {
               {homepage.hero_supporting}
             </motion.p>
             <motion.div
-              className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap lg:justify-start"
+              className="mt-8 grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={fade(0.35, 0.14)}
@@ -112,7 +112,7 @@ export function HomeHero({ homepage }: { homepage: SiteContent["homepage"] }) {
                 {homepage.cta_how}
               </Link>
             </nav>
-            <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4 lg:justify-start">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:justify-center sm:gap-4 lg:justify-start">
               <SignedOut>
                 <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
                   <Link href="/login">{homepage.cta_sign_in}</Link>
@@ -122,7 +122,7 @@ export function HomeHero({ homepage }: { homepage: SiteContent["homepage"] }) {
                 </Button>
               </SignedOut>
               <SignedIn>
-                <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
+                <Button variant="ghost" size="sm" className="col-span-2 justify-center text-muted-foreground sm:col-span-1" asChild>
                   <Link href="/auth/continue">{homepage.cta_my_account}</Link>
                 </Button>
               </SignedIn>

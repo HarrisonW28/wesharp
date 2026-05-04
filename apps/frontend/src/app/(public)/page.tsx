@@ -106,7 +106,7 @@ export default async function HomePage() {
               <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
                 Book when you need us. See guide pricing first, then a written quote before any work — no surprises.
               </p>
-              <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <div className="mt-6 grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
                 <Button className="rounded-lg" asChild>
                   <Link href="/book">Book a collection</Link>
                 </Button>
@@ -180,7 +180,7 @@ export default async function HomePage() {
               <PublicSubscriptionPlansCatalog footer={h.pricing_section_programme_footer} />
             </div>
           </div>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <div className="mx-auto mt-8 grid max-w-md grid-cols-2 gap-3 sm:max-w-none sm:flex sm:flex-wrap sm:justify-center">
             <Button variant="outline" className="rounded-lg" asChild>
               <Link href="/subscriptions">{h.pricing_cta_subscriptions}</Link>
             </Button>
@@ -196,7 +196,7 @@ export default async function HomePage() {
           <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl">{h.footer_cta_title}</h2>
           <p className="mt-4 text-muted-foreground">{h.footer_cta_lead}</p>
-          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:justify-center">
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:flex-wrap sm:justify-center">
             <Button size="lg" className="rounded-lg sm:min-w-[220px]" asChild>
               <Link href="/book">
                 {h.footer_cta_book}
@@ -206,7 +206,7 @@ export default async function HomePage() {
             <Button size="lg" variant="outline" className="rounded-lg sm:min-w-[220px]" asChild>
               <Link href="/contact">{h.footer_cta_talk}</Link>
             </Button>
-            <Button size="lg" variant="secondary" className="rounded-lg sm:min-w-[220px]" asChild>
+            <Button size="lg" variant="secondary" className="col-span-2 rounded-lg sm:col-span-1 sm:min-w-[220px]" asChild>
               <Link href="/register">{h.footer_cta_register}</Link>
             </Button>
           </div>
