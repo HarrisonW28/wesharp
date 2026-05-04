@@ -184,3 +184,25 @@
     break-inside: avoid;
   }
 }
+
+/**
+ * Public `<SignIn />` / `<SignUp />` embeds only (`wesharp-clerk-auth-card` wrapper in login + register).
+ * Clerk’s official “remove branding” hooks are paid; marketing footer is a normal anchor we can scope out.
+ * Prefer narrow href patterns so custom Terms/Privacy URLs on your domain are untouched.
+ */
+.wesharp-clerk-auth-card .cl-footer a[href*="go.clerk."],
+.wesharp-clerk-auth-card .cl-footer a[href*="dashboard.clerk."],
+.wesharp-clerk-auth-card .cl-footer a[href*="accounts.clerk."],
+.wesharp-clerk-auth-card .cl-footer a[href*="clerk.com/choose-plan"],
+.wesharp-clerk-auth-card .cl-footer a[href^="https://clerk.com/?"],
+.wesharp-clerk-auth-card .cl-footer a[href^="https://www.clerk.com/?"] {
+  display: none !important;
+}
+
+.wesharp-clerk-auth-card .cl-footer > div:has(> a[href*="go.clerk."]),
+.wesharp-clerk-auth-card .cl-footer > div:has(> a[href*="dashboard.clerk."]),
+.wesharp-clerk-auth-card .cl-footer > div:has(> a[href*="accounts.clerk."]),
+.wesharp-clerk-auth-card .cl-footer > div:has(> a[href^="https://clerk.com/?"]),
+.wesharp-clerk-auth-card .cl-footer > div:has(> a[href^="https://www.clerk.com/?"]) {
+  display: none !important;
+}
