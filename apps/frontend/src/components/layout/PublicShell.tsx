@@ -57,8 +57,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
             <PublicSiteNavMenu />
           </nav>
 
-          <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
-            <ThemeToggle />
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <Button size="sm" className="hidden rounded-lg md:inline-flex" asChild>
               <Link href="/book">
                 Book
@@ -80,12 +79,9 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                 </SheetHeader>
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
                   <div className="flex flex-col gap-8 text-base">
-                    <section aria-label="Website">
-                      <p className="mb-3 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Website
-                      </p>
+                    <nav aria-label="Site pages">
                       <PublicSiteNavSectionsCards layout="sheet" onNavigate={() => setOpen(false)} />
-                    </section>
+                    </nav>
                     <section aria-label="Account">
                       <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
                         Account
@@ -141,6 +137,9 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </Button>
             </SignedIn>
+            <span className="ms-0.5 shrink-0 lg:ms-1">
+              <ThemeToggle />
+            </span>
           </div>
         </div>
       </header>

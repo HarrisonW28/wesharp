@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MapPin } from "lucide-react";
 
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { PublicPricingCalculator } from "@/components/marketing/PublicPricingCalculator";
 import { PublicSubscriptionPlansCatalog } from "@/components/marketing/PublicSubscriptionPlansCatalog";
-import { Button } from "@/components/ui/button";
 import { fetchPublicSiteData } from "@/lib/site-content/fetch-site-content";
 
 export const metadata: Metadata = {
   title: "Pricing | WeSharp",
   description:
-    "Guide pricing in GBP (£): live calculator and subscription programmes from our API. Written quote before you commit.",
+    "Live pricing estimate and subscription programmes. Written quote before you commit.",
   openGraph: {
     title: "WeSharp — Pricing guide",
     description: "Estimate knife sharpening costs with our live calculator. Programmes loaded from the server.",
@@ -27,22 +25,6 @@ export default async function PricingPage() {
 
   return (
     <MarketingArticle title={p.title} lead={p.lead}>
-      <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4 md:p-5">
-        <p className="text-sm font-semibold text-foreground">British pounds (GBP)</p>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          Totals and tiers on this page are shown in <span className="font-medium text-foreground">£</span> (GBP). The
-          calculator calls our <span className="font-medium text-foreground">pricing-estimate API</span>; programme cards load
-          from <span className="font-medium text-foreground">subscription-plans API</span> — the same sources we use when
-          preparing your quote (allowances, overage rules, and service area matching).
-        </p>
-        <Button variant="outline" size="sm" className="rounded-lg" asChild>
-          <Link href="/service-areas">
-            <MapPin className="mr-2 h-4 w-4" aria-hidden />
-            Check your postcode first
-          </Link>
-        </Button>
-      </div>
-
       <section className="space-y-2 rounded-xl border bg-muted/20 p-4 md:p-5">
         <h2 className="text-base font-semibold text-foreground">One-off visit vs subscription</h2>
         <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-muted-foreground">

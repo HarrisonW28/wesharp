@@ -36,31 +36,6 @@ export default async function HomePage() {
     <>
       <HomeHero homepage={h} />
 
-      <section id="check-coverage" className="scroll-mt-20 border-b bg-muted/20 py-14 md:py-20">
-        <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
-          <div className="mx-auto max-w-2xl text-center md:mx-0 md:max-w-xl md:text-left">
-            <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{h.areas_section_title}</h2>
-            <p className="mt-3 text-sm text-muted-foreground md:text-base">{h.areas_section_lead}</p>
-          </div>
-          <div className="mt-8 md:mt-10">
-            <ServiceAreaCheckerSection />
-          </div>
-          <div className="mt-8 flex flex-wrap justify-center gap-2 md:justify-start">
-            {SERVICE_AREAS.map((area) => (
-              <span
-                key={area.id}
-                className="rounded-full border bg-background px-3 py-1.5 text-xs text-muted-foreground md:text-sm"
-              >
-                {area.label}
-              </span>
-            ))}
-          </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground md:text-left">
-            The checker above is the live result for your postcode. Labels are a quick regional guide only.
-          </p>
-        </div>
-      </section>
-
       <section id="how-it-works" className="scroll-mt-20 border-b bg-background py-16 md:py-20">
         <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">{h.how_section_title}</h2>
@@ -120,7 +95,7 @@ export default async function HomePage() {
               <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
                 Routes your brigades can rely on, programmes with allowances, and consolidated billing across sites.
               </p>
-              <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <div className="mt-6 grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
                 <Button className="rounded-lg" asChild>
                   <Link href="/trade-accounts">Trade accounts</Link>
                 </Button>
@@ -150,6 +125,31 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <section id="check-coverage" className="scroll-mt-20 border-b bg-muted/20 py-14 md:py-20">
+        <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
+          <div className="mx-auto max-w-2xl text-center md:mx-0 md:max-w-xl md:text-left">
+            <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{h.areas_section_title}</h2>
+            <p className="mt-3 text-sm text-muted-foreground md:text-base">{h.areas_section_lead}</p>
+          </div>
+          <div className="mt-8 md:mt-10">
+            <ServiceAreaCheckerSection />
+          </div>
+          <div className="mt-8 flex flex-wrap justify-center gap-2 md:justify-start">
+            {SERVICE_AREAS.map((area) => (
+              <span
+                key={area.id}
+                className="rounded-full border bg-background px-3 py-1.5 text-xs text-muted-foreground md:text-sm"
+              >
+                {area.label}
+              </span>
+            ))}
+          </div>
+          <p className="mt-4 text-center text-xs text-muted-foreground md:text-left">
+            The checker above is the live result for your postcode. Labels are a quick regional guide only.
+          </p>
+        </div>
+      </section>
+
       <section id="pricing" className="py-16 md:py-20">
         <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
           <h2 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">{h.pricing_section_title}</h2>
@@ -159,8 +159,8 @@ export default async function HomePage() {
               Full pricing
             </Link>
           </p>
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            <div className="rounded-2xl border bg-card p-8 shadow-sm">
+          <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+            <div className="rounded-2xl border bg-card p-8 shadow-sm lg:col-span-5 xl:col-span-4">
               <div className="text-sm font-semibold text-primary">{h.pricing_section_payg_label}</div>
               <p className="mt-1 text-xs text-muted-foreground">{h.pricing_section_payg_hint}</p>
               <p className="mt-4 text-3xl font-semibold tabular-nums tracking-tight">From {formatGBP(paygFromMinor)}</p>
@@ -174,10 +174,12 @@ export default async function HomePage() {
                 ))}
               </ul>
             </div>
-            <div className="rounded-2xl border bg-card p-8 shadow-sm">
+            <div className="min-w-0 rounded-2xl border bg-card p-8 shadow-sm lg:col-span-7 xl:col-span-8">
               <div className="text-sm font-semibold text-primary">{h.pricing_section_programme_label}</div>
               <p className="mt-1 text-xs text-muted-foreground">{h.pricing_section_programme_hint}</p>
-              <PublicSubscriptionPlansCatalog footer={h.pricing_section_programme_footer} />
+              <div className="mt-4">
+                <PublicSubscriptionPlansCatalog footer={h.pricing_section_programme_footer} />
+              </div>
             </div>
           </div>
           <div className="mx-auto mt-8 grid max-w-md grid-cols-2 gap-3 sm:max-w-none sm:flex sm:flex-wrap sm:justify-center">

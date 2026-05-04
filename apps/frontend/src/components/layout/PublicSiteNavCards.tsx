@@ -14,7 +14,7 @@ import {
   Tag,
 } from "lucide-react";
 
-import type { PublicSiteLink } from "@/config/public-site-nav";
+import type { PublicSiteLink, PublicSiteNavSection } from "@/config/public-site-nav";
 import { PUBLIC_SITE_NAV_SECTIONS } from "@/config/public-site-nav";
 
 import { cn } from "@/lib/utils";
@@ -59,28 +59,48 @@ function NavCard({
   );
 }
 
+type LayoutMode = "menu" | "sheet";
+
+function sectionGridClass(layout: LayoutMode): string {
+  return layout === "menu" ? "grid grid-cols-1 gap-3 sm:grid-cols-2" : "grid grid-cols-1 gap-3 sm:grid-cols-2";
+}
+
+/** Card links for one IA section (parent label lives on the menu trigger or sheet heading). */
+export function PublicSiteNavSectionCards({
+  section,
+  layout,
+  onNavigate,
+  className,
+}: {
+  section: PublicSiteNavSection;
+  layout: LayoutMode;
+  onNavigate?: () => void;
+  className?: string;
+}) {
+  return (
+    <div className={cn(sectionGridClass(layout), className)}>
+      {section.links.map((link) => (
+        <NavCard key={link.href} link={link} onNavigate={onNavigate} />
+      ))}
+    </div>
+  );
+}
+
 type PublicSiteNavSectionsCardsProps = {
-  /** Sheet: single column. Menu: two columns from sm up (dashboard-style grid). */
-  layout: "menu" | "sheet";
+  layout: LayoutMode;
   onNavigate?: () => void;
   className?: string;
 };
 
-/** Grouped card grids — matches customer dashboard card density and icon treatment. */
+/** Mobile / full list: each parent heading then its card grid. */
 export function PublicSiteNavSectionsCards({ layout, onNavigate, className }: PublicSiteNavSectionsCardsProps) {
-  const gridClass = layout === "menu" ? "grid grid-cols-1 gap-3 sm:grid-cols-2" : "grid grid-cols-1 gap-3";
-
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("flex flex-col gap-8", className)}>
       {PUBLIC_SITE_NAV_SECTIONS.map((section) => (
-        <div key={section.label}>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{section.label}</p>
-          <div className={gridClass}>
-            {section.links.map((link) => (
-              <NavCard key={link.href} link={link} onNavigate={onNavigate} />
-            ))}
-          </div>
-        </div>
+        <section key={section.label} aria-label={section.label}>
+          <h2 className="mb-3 text-sm font-semibold leading-tight text-foreground">{section.label}</h2>
+          <PublicSiteNavSectionCards section={section} layout={layout} onNavigate={onNavigate} />
+        </section>
       ))}
     </div>
   );

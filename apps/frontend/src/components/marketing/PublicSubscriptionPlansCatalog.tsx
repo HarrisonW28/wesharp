@@ -44,7 +44,7 @@ type CatalogueState =
 
 function CatalogueSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true" aria-label="Loading programmes">
+    <div className={cn(catalogueGridClass)} aria-busy="true" aria-label="Loading programmes">
       {[0, 1, 2].map((k) => (
         <div key={k} className="h-64 animate-pulse rounded-2xl border bg-muted/40" />
       ))}
@@ -57,6 +57,9 @@ type Props = {
   footer?: string;
   className?: string;
 };
+
+const catalogueGridClass =
+  "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(17.5rem,1fr))]";
 
 /**
  * Live subscription plan cards from **`GET /api/public/subscription-plans`**, plus an always-on bespoke CTA card.
@@ -130,7 +133,7 @@ export function PublicSubscriptionPlansCatalog(props: Props) {
               below or book a collection to talk it through.
             </p>
           ) : null}
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className={cn(catalogueGridClass)}>
             {state.plans.map((plan) => {
               const recommended = Boolean(plan.recommended);
               const priceLabel =

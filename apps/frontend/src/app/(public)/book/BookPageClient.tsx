@@ -956,6 +956,9 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
             Back
           </Button>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-3">
+            <Button type="button" variant="outline" className="h-11 min-h-11 touch-manipulation rounded-lg" asChild>
+              <Link href="/">Cancel</Link>
+            </Button>
             {!isReviewStep ? (
               <Button
                 type="submit"
@@ -987,9 +990,6 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
                 )}
               </Button>
             )}
-            <Button type="button" variant="outline" className="h-11 min-h-11 touch-manipulation rounded-lg" asChild>
-              <Link href="/">Cancel</Link>
-            </Button>
           </div>
         </div>
         </div>
