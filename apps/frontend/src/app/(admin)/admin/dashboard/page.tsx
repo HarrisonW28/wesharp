@@ -116,17 +116,12 @@ export default function AdminDashboardPage() {
           </div>
           <Skeleton className="h-9 w-40 shrink-0" />
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {[1, 2, 3].map((i) => (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <Skeleton key={i} className="h-32 w-full" />
           ))}
+          <Skeleton className="col-span-2 h-72 w-full md:col-span-3" />
         </div>
-        <div className="grid gap-4 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-28 w-full" />
-          ))}
-        </div>
-        <Skeleton className="h-72 w-full max-w-4xl" />
       </PortalPage>
     );
   }
@@ -177,75 +172,70 @@ export default function AdminDashboardPage() {
         </Alert>
       ) : null}
 
-      {!fault && kpis ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatCard
-            title="New bookings · this week"
-            value={String(kpis.new_bookings_this_week)}
-            hint={`${overviewQuery.data?.distinct_cities?.length ?? 0} cities in this window`}
-            icon={CalendarDays}
-          />
-          <StatCard
-            title="Knives sharpened · this week"
-            value={String(kpis.knives_sharpened_this_week)}
-            trend={`Active customers · ${kpis.active_customers}`}
-            trendPositive
-            icon={UtensilsCrossed}
-          />
-          <StatCard
-            title="Revenue · this week"
-            value={formatGBP(kpis.revenue_this_week_pence)}
-            trend={`This month · ${formatGBP(kpis.revenue_this_month_pence)}`}
-            trendPositive={kpis.revenue_this_month_pence >= kpis.revenue_this_week_pence}
-            icon={CircleDollarSign}
-          />
-        </div>
-      ) : null}
-
-      {!fault && kpis ? (
-        <div className="grid gap-4 lg:grid-cols-3">
-          <StatCard title="Outstanding invoices" value={String(kpis.outstanding_invoice_count)} hint="Issued invoices with balance" icon={Receipt} />
-          <StatCard title="Outstanding balance" value={formatGBP(kpis.outstanding_invoice_amount_pence)} hint="Totals minus receipts" icon={Landmark} />
-          <StatCard title="Avg price / blade" value={formatGBP(kpis.average_price_per_knife_pence)} hint="Completed orders · filter window" icon={Banknote} />
-        </div>
-      ) : null}
-
       {!fault ? (
-      <ChartCard
-        title="Revenue pulse · trailing week"
-        description="Daily GBP for the last seven days in range."
-      >
-        {!chartIsEmpty ? (
-          <div className="w-full min-w-0">
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={chartData} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="fillRevDash" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="oklch(0.62 0.2 252)" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="oklch(0.62 0.2 252)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="4 6" className="stroke-border/70" />
-                <XAxis dataKey="label" tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis
-                  tickFormatter={(v: number) => formatGBP(Number(v))}
-                  tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  formatter={(value) => formatGBP(Number(value ?? 0))}
-                  labelFormatter={(label) => `Bucket · ${label}`}
-                  contentStyle={{ borderRadius: 12 }}
-                />
-                <Area type="monotone" dataKey="revenueMinor" stroke="oklch(0.62 0.2 252)" strokeWidth={2} fill="url(#fillRevDash)" />
-              </AreaChart>
-            </ResponsiveContainer>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+          {kpis ? (
+            <>
+              <StatCard
+                title="New bookings · this week"
+                value={String(kpis.new_bookings_this_week)}
+                hint={`${overviewQuery.data?.distinct_cities?.length ?? 0} cities in this window`}
+                icon={CalendarDays}
+              />
+              <StatCard
+                title="Knives sharpened · this week"
+                value={String(kpis.knives_sharpened_this_week)}
+                trend={`Active customers · ${kpis.active_customers}`}
+                trendPositive
+                icon={UtensilsCrossed}
+              />
+              <StatCard
+                title="Revenue · this week"
+                value={formatGBP(kpis.revenue_this_week_pence)}
+                trend={`This month · ${formatGBP(kpis.revenue_this_month_pence)}`}
+                trendPositive={kpis.revenue_this_month_pence >= kpis.revenue_this_week_pence}
+                icon={CircleDollarSign}
+              />
+              <StatCard title="Outstanding invoices" value={String(kpis.outstanding_invoice_count)} hint="Issued invoices with balance" icon={Receipt} />
+              <StatCard title="Outstanding balance" value={formatGBP(kpis.outstanding_invoice_amount_pence)} hint="Totals minus receipts" icon={Landmark} />
+              <StatCard title="Avg price / blade" value={formatGBP(kpis.average_price_per_knife_pence)} hint="Completed orders · filter window" icon={Banknote} />
+            </>
+          ) : null}
+          <div className="col-span-2 min-w-0 md:col-span-3">
+            <ChartCard title="Revenue pulse · trailing week" description="Daily GBP for the last seven days in range.">
+              {!chartIsEmpty ? (
+                <div className="w-full min-w-0">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={chartData} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="fillRevDash" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="oklch(0.62 0.2 252)" stopOpacity={0.35} />
+                          <stop offset="95%" stopColor="oklch(0.62 0.2 252)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="4 6" className="stroke-border/70" />
+                      <XAxis dataKey="label" tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis
+                        tickFormatter={(v: number) => formatGBP(Number(v))}
+                        tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        formatter={(value) => formatGBP(Number(value ?? 0))}
+                        labelFormatter={(label) => `Bucket · ${label}`}
+                        contentStyle={{ borderRadius: 12 }}
+                      />
+                      <Area type="monotone" dataKey="revenueMinor" stroke="oklch(0.62 0.2 252)" strokeWidth={2} fill="url(#fillRevDash)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="py-16 text-center text-sm text-muted-foreground">No revenue buckets in range yet.</p>
+              )}
+            </ChartCard>
           </div>
-        ) : (
-          <p className="py-16 text-center text-sm text-muted-foreground">No revenue buckets in range yet.</p>
-        )}
-      </ChartCard>
+        </div>
       ) : null}
     </PortalPage>
   );

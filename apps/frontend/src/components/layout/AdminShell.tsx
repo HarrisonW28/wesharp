@@ -37,18 +37,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
     [role, permissions],
   );
 
+  /** Mobile drawer: optional shortcuts only (sidebar already lists dashboard & work queue). */
   const drawerQuickLinks = useMemo(() => {
     if (role === "route_manager") {
-      return [
-        { href: "/admin/routes/today", label: "Today's stops" },
-        { href: "/admin/dashboard", label: "Operations overview" },
-        { href: "/admin/work-queue", label: "Work queue" },
-      ];
+      return [{ href: "/admin/routes/today", label: "Today's stops" }];
     }
-    return [
-      { href: "/admin/dashboard", label: "Operations dashboard" },
-      { href: "/admin/work-queue", label: "Work queue" },
-    ];
+    return [];
   }, [role]);
 
   const topBarTitle = role === "route_manager" ? "Route manager" : "Operations console";
@@ -94,8 +88,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               open={drawerOpen}
               onOpenChange={setDrawerOpen}
               sections={navSections}
-              brandSuffix="Ops"
-              quickLinks={drawerQuickLinks}
+              quickLinks={drawerQuickLinks.length > 0 ? drawerQuickLinks : undefined}
               logoHref="/admin/dashboard"
             />
           </div>

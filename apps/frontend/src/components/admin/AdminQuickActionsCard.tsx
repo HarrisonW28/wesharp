@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import {
   ArrowRight,
   Banknote,
   Building2,
   CalendarDays,
+  ChevronDown,
   ClipboardList,
   Landmark,
   ListTodo,
@@ -12,7 +16,9 @@ import {
   Repeat2,
 } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const ACTIONS: { href: string; label: string; hint: string; icon: typeof CalendarDays }[] = [
   { href: "/admin/work-queue", label: "Work queue", hint: "Role-aware next steps", icon: ListTodo },
@@ -26,35 +32,55 @@ const ACTIONS: { href: string; label: string; hint: string; icon: typeof Calenda
   { href: "/admin/subscriptions", label: "Subscriptions", hint: "Plans on accounts", icon: Repeat2 },
 ];
 
-/** Compact “next step” grid for the operations dashboard (Sprint 11.2). */
+/** Compact “next step” grid for the operations dashboard (Sprint 11.2). Collapsed by default to reduce noise. */
 export function AdminQuickActionsCard() {
+  const [open, setOpen] = useState(false);
+
   return (
     <Card className="border-primary/15 bg-gradient-to-br from-primary/5 via-background to-background">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Where to go next</CardTitle>
-        <CardDescription className="text-sm">
-          Jump straight into day-to-day work — same permissions as the sidebar.
-        </CardDescription>
+      <CardHeader className="space-y-0 pb-0">
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-auto w-full justify-between gap-3 rounded-lg px-0 py-1 text-left font-normal hover:bg-muted/40"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="admin-quick-actions-panel"
+          id="admin-quick-actions-trigger"
+        >
+          <span className="min-w-0 space-y-1">
+            <span className="block text-base font-semibold leading-none tracking-tight">Where to go next</span>
+            <span className="block text-sm text-muted-foreground">
+              Jump straight into day-to-day work — same permissions as the sidebar.
+            </span>
+          </span>
+          <ChevronDown
+            className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200", open && "rotate-180")}
+            aria-hidden
+          />
+        </Button>
       </CardHeader>
-      <CardContent>
-        <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          {ACTIONS.map(({ href, label, hint, icon: Icon }) => (
-            <li key={href}>
-              <Link
-                href={href}
-                className="flex min-h-[4.25rem] flex-col rounded-lg border bg-card/80 p-3 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  {label}
-                  <ArrowRight className="ml-auto h-3.5 w-3.5 opacity-40" aria-hidden />
-                </span>
-                <span className="mt-1 text-xs text-muted-foreground">{hint}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
+      {open ? (
+        <CardContent className="pt-4" id="admin-quick-actions-panel" role="region" aria-labelledby="admin-quick-actions-trigger">
+          <ul className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
+            {ACTIONS.map(({ href, label, hint, icon: Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  className="flex min-h-[4.25rem] flex-col rounded-lg border bg-card/80 p-3 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                    <span className="min-w-0 leading-snug">{label}</span>
+                    <ArrowRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-40" aria-hidden />
+                  </span>
+                  <span className="mt-1 text-xs text-muted-foreground">{hint}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      ) : null}
     </Card>
   );
 }

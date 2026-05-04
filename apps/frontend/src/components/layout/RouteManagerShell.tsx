@@ -40,20 +40,6 @@ export function RouteManagerShell({
             <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">
               Route manager
             </div>
-            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium">
-              <Link
-                href="/admin/dashboard"
-                className="text-slate-300 underline-offset-2 hover:text-white hover:underline md:text-muted-foreground md:hover:text-foreground"
-              >
-                Operations dashboard
-              </Link>
-              <Link
-                href="/admin/work-queue"
-                className="text-slate-300 underline-offset-2 hover:text-white hover:underline md:text-muted-foreground md:hover:text-foreground"
-              >
-                Work queue
-              </Link>
-            </div>
             <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
               <div className="min-w-0">
                 <div className="truncate text-xl font-bold leading-tight md:text-lg">{title}</div>

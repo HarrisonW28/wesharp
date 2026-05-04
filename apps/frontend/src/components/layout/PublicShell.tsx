@@ -7,9 +7,8 @@ import { useState } from "react";
 
 import { ArrowRight, LayoutDashboard, MapPin, Menu } from "lucide-react";
 
-import { PUBLIC_SITE_NAV_SECTIONS } from "@/config/public-site-nav";
-
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
+import { PublicSiteNavSectionsCards } from "@/components/layout/PublicSiteNavCards";
 import { PublicSiteNavMenu } from "@/components/layout/PublicSiteNavMenu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -74,7 +73,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="flex h-full max-h-[100dvh] w-[min(100vw-2rem,20rem)] flex-col gap-0 overflow-hidden p-0"
+                className="flex h-full max-h-[100dvh] w-[min(100vw-1rem,24rem)] flex-col gap-0 overflow-hidden p-0"
               >
                 <SheetHeader className="shrink-0 space-y-0 border-b px-6 py-4 text-left">
                   <SheetTitle>Navigate</SheetTitle>
@@ -85,27 +84,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                       <p className="mb-3 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
                         Website
                       </p>
-                      <div className="flex flex-col gap-5">
-                        {PUBLIC_SITE_NAV_SECTIONS.map((section) => (
-                          <div key={section.label} className="rounded-xl border bg-muted/30 p-3">
-                            <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                              {section.label}
-                            </p>
-                            <nav className="flex flex-col gap-0.5">
-                              {section.links.map((l) => (
-                                <Link
-                                  key={l.href}
-                                  href={l.href}
-                                  className={navLinkMobileClass}
-                                  onClick={() => setOpen(false)}
-                                >
-                                  {l.label}
-                                </Link>
-                              ))}
-                            </nav>
-                          </div>
-                        ))}
-                      </div>
+                      <PublicSiteNavSectionsCards layout="sheet" onNavigate={() => setOpen(false)} />
                     </section>
                     <section aria-label="Account">
                       <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">

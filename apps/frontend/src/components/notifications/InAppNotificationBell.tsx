@@ -111,7 +111,15 @@ export function InAppNotificationBell({
           ) : null}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-96">
+      <DropdownMenuContent
+        align="end"
+        side="bottom"
+        sideOffset={6}
+        collisionPadding={16}
+        className={cn(
+          "z-50 max-w-[calc(100vw-2rem)] w-[min(24rem,calc(100vw-2rem))] sm:max-w-none sm:w-96",
+        )}
+      >
         <DropdownMenuLabel className="flex items-center justify-between gap-2 font-normal">
           <span className="text-sm font-medium">Notifications</span>
           {unread > 0 ? (
