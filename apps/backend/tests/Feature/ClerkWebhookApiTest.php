@@ -160,9 +160,63 @@ final class ClerkWebhookApiTest extends TestCase
 
         $this->postClerkWebhook($raw, $svixId, time(), $whsec)->assertOk()->assertJson(['received' => true]);
 
-        self::assertTrue(User::query()->where('clerk_user_id', 'user_clerk_new_1')->where('email', 'ada@example.test')->exists());
+        $row = User::query()->where('clerk_user_id', 'user_clerk_new_1')->firstOrFail();
+        self::assertSame('ada@example.test', $row->email);
+        self::assertSame(UserRole::CustomerOwner, $row->role);
         self::assertSame(1, (int) DB::table('webhook_inbox')->where('provider', 'clerk')->where('external_id', $svixId)->count());
         self::assertSame('processed', (string) DB::table('webhook_inbox')->where('external_id', $svixId)->value('processing_state'));
+    }
+
+    public function test_user_created_defaults_customer_owner_when_env_role_is_internal(): void
+    {
+        $whsec = $this->sampleWhsecSecret();
+        Config::set('clerk.webhook_signing_secret', $whsec);
+        Config::set('clerk.default_role', UserRole::Developer->value);
+
+        $payload = [
+            'type' => 'user.created',
+            'data' => [
+                'id' => 'user_clerk_badcfg',
+                'first_name' => 'Naive',
+                'last_name' => 'Config',
+                'primary_email_address_id' => 'ea_bad',
+                'email_addresses' => [
+                    ['id' => 'ea_bad', 'email_address' => 'badcfg@example.test'],
+                ],
+            ],
+        ];
+        $raw = json_encode($payload, JSON_THROW_ON_ERROR);
+
+        $this->postClerkWebhook($raw, 'msg_bad_role_cfg', time(), $whsec)->assertOk();
+
+        $row = User::query()->where('clerk_user_id', 'user_clerk_badcfg')->firstOrFail();
+        self::assertSame(UserRole::CustomerOwner, $row->role);
+    }
+
+    public function test_user_created_respects_customer_staff_when_configured(): void
+    {
+        $whsec = $this->sampleWhsecSecret();
+        Config::set('clerk.webhook_signing_secret', $whsec);
+        Config::set('clerk.default_role', UserRole::CustomerStaff->value);
+
+        $payload = [
+            'type' => 'user.created',
+            'data' => [
+                'id' => 'user_clerk_staff_d',
+                'first_name' => 'Staff',
+                'last_name' => 'Default',
+                'primary_email_address_id' => 'ea_sd',
+                'email_addresses' => [
+                    ['id' => 'ea_sd', 'email_address' => 'staffdef@example.test'],
+                ],
+            ],
+        ];
+        $raw = json_encode($payload, JSON_THROW_ON_ERROR);
+
+        $this->postClerkWebhook($raw, 'msg_staff_def', time(), $whsec)->assertOk();
+
+        $row = User::query()->where('clerk_user_id', 'user_clerk_staff_d')->firstOrFail();
+        self::assertSame(UserRole::CustomerStaff, $row->role);
     }
 
     public function test_duplicate_svix_delivery_is_idempotent(): void

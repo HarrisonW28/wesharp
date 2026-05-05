@@ -13,6 +13,13 @@ enum UserRole: string
     case Admin = 'admin';
     case Developer = 'developer';
     case RouteManager = 'route_manager';
+
+    /** Assigned runs only; stop + evidence updates — no route planning or finance. */
+    case Driver = 'driver';
+
+    /** Front-of-house: customers, bookings, orders — no routes or finance. */
+    case Sales = 'sales';
+
     case Finance = 'finance';
     case CustomerOwner = 'customer_owner';
     case CustomerStaff = 'customer_staff';
@@ -25,6 +32,8 @@ enum UserRole: string
             self::Admin,
             self::Developer,
             self::RouteManager,
+            self::Driver,
+            self::Sales,
             self::Finance,
         ];
     }

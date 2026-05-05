@@ -237,6 +237,38 @@ final class Permissions
                 self::AUDIT_LOGS_VIEW,
             ],
 
+            UserRole::Driver->value => [
+                self::DASHBOARD_VIEW,
+                self::ROUTES_VIEW,
+                self::ROUTE_STOPS_UPDATE,
+                self::BOOKINGS_VIEW,
+                self::ORDERS_VIEW,
+                self::KNIVES_VIEW,
+                self::KNIVES_UPDATE,
+                self::SETTINGS_VIEW,
+                self::AUDIT_LOGS_VIEW,
+            ],
+
+            UserRole::Sales->value => [
+                self::DASHBOARD_VIEW,
+                self::COMPANIES_VIEW,
+                self::COMPANIES_CREATE,
+                self::COMPANIES_UPDATE,
+                self::BOOKINGS_VIEW,
+                self::BOOKINGS_CREATE,
+                self::BOOKINGS_UPDATE,
+                self::BOOKINGS_CANCEL,
+                self::ORDERS_VIEW,
+                self::ORDERS_CREATE,
+                self::ORDERS_UPDATE,
+                self::KNIVES_VIEW,
+                self::KNIVES_UPDATE,
+                self::PRICING_VIEW,
+                self::SERVICE_AREAS_VIEW,
+                self::ANALYTICS_VIEW,
+                self::SETTINGS_VIEW,
+            ],
+
             UserRole::Finance->value => [
                 self::DASHBOARD_VIEW,
                 self::COMPANIES_VIEW,

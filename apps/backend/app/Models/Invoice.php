@@ -69,6 +69,11 @@ class Invoice extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function stripeCheckoutAttempts(): HasMany
+    {
+        return $this->hasMany(StripeCheckoutAttempt::class);
+    }
+
     /** Open AR (not settled, not void). */
     public function scopeOutstanding(Builder $query): Builder
     {

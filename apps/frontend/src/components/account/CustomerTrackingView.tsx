@@ -194,6 +194,11 @@ export function CustomerTrackingView(props: {
                 className="min-w-0 break-words border-l-2 border-primary/40 py-1 pl-3 text-sm leading-relaxed text-foreground"
               >
                 <p className="break-words">{note.body}</p>
+                {note.visibility_label ? (
+                  <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {note.visibility_label}
+                  </p>
+                ) : null}
                 {note.created_at ? (
                   <footer className="mt-2 text-xs text-muted-foreground tabular-nums">
                     {formatAt(note.created_at) ?? note.created_at}

@@ -410,6 +410,11 @@ export default function TenantBookingDetailPage() {
                     className="border-l-2 border-primary/50 py-1 pl-3 text-foreground"
                   >
                     <p className="whitespace-pre-wrap leading-relaxed">{note.body}</p>
+                    {note.visibility_label ? (
+                      <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {note.visibility_label}
+                      </p>
+                    ) : null}
                     {note.created_at ? (
                       <footer className="mt-2 text-xs text-muted-foreground tabular-nums">
                         {new Date(note.created_at).toLocaleString("en-GB", {

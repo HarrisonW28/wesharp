@@ -39,6 +39,7 @@ return [
 
     /**
      * When a user signs in via Clerk for the first time, assign this role if not bootstrapped elsewhere.
+     * Only {@see UserRole::CustomerOwner} and {@see UserRole::CustomerStaff} apply; internal roles are ignored (falls back to customer_owner).
      */
     'default_role' => env('CLERK_DEFAULT_USER_ROLE', UserRole::CustomerOwner->value),
 

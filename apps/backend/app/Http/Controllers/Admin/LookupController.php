@@ -17,6 +17,7 @@ use App\Models\OperationalRoute;
 use App\Models\Order;
 use App\Models\User;
 use App\Support\ApiResponses;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -24,6 +25,29 @@ use Illuminate\Support\Str;
 final class LookupController extends Controller
 {
     private const LIMIT = 25;
+
+    /** @param  Builder<OperationalRoute>  $query */
+    private function restrictOperationalRoutesLookupForViewer(Builder $query, User $viewer): void
+    {
+        $role = $viewer->resolvedRole();
+
+        if ($role === UserRole::SuperAdmin || $role === UserRole::Admin) {
+            return;
+        }
+
+        if ($role === UserRole::Driver) {
+            $query->where('driver_user_id', (int) $viewer->getKey());
+
+            return;
+        }
+
+        if ($role === UserRole::RouteManager) {
+            $query->where(function (Builder $q) use ($viewer): void {
+                $q->whereNull('driver_user_id')
+                    ->orWhere('driver_user_id', (int) $viewer->getKey());
+            });
+        }
+    }
 
     public function companies(Request $request): JsonResponse
     {
@@ -203,6 +227,11 @@ final class LookupController extends Controller
                     $sub->orWhere('id', $q);
                 }
             });
+        }
+
+        $user = $request->user();
+        if ($user instanceof User) {
+            $this->restrictOperationalRoutesLookupForViewer($query, $user);
         }
 
         foreach ($query->orderBy('name')->limit(self::LIMIT)->get() as $row) {
@@ -582,6 +611,7 @@ final class LookupController extends Controller
             UserRole::SuperAdmin->value,
             UserRole::Admin->value,
             UserRole::RouteManager->value,
+            UserRole::Driver->value,
         ];
 
         $query = User::query()

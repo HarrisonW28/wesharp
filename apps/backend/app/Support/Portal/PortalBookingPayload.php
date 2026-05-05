@@ -172,7 +172,7 @@ final class PortalBookingPayload
     }
 
     /**
-     * @return list<array{body: string, created_at: string|null}>
+     * @return list<array{body: string, visibility: string, visibility_label: string, created_at: string|null}>
      */
     private static function customerVisibleCompanyNotes(Booking $booking): array
     {
@@ -189,6 +189,8 @@ final class PortalBookingPayload
             ->get()
             ->map(static fn (Note $n): array => [
                 'body' => $n->body,
+                'visibility' => NoteVisibility::Customer->value,
+                'visibility_label' => NoteVisibility::Customer->staffLabel(),
                 'created_at' => $n->created_at?->toIso8601String(),
             ])
             ->values()

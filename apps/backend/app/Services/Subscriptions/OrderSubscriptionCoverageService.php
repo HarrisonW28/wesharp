@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\SubscriptionBillingPeriod;
 use App\Models\SubscriptionPlan;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use App\Services\Notifications\SubscriptionEmailService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,7 @@ final class OrderSubscriptionCoverageService
 {
     public function __construct(
         private readonly SubscriptionEmailService $subscriptionEmails,
+        private readonly InAppNotificationDispatcher $inApp,
     ) {}
 
     public function computeAndPersist(Order $order): void
@@ -80,6 +82,7 @@ final class OrderSubscriptionCoverageService
         $knOv = (int) ($snap['knives_overage_for_order'] ?? 0);
         if ($collOv > 0 || $knOv > 0) {
             $this->subscriptionEmails->sendUsageOverage($order, $sub, $snap);
+            $this->inApp->notifyStaffSubscriptionOverageOnOrder($order, $sub);
         }
 
         $usage = $this->usageSummaryForSubscription($sub);

@@ -48,6 +48,8 @@ const ROLE_OPTIONS: { value: UserRoleValue; label: string }[] = (
     "admin",
     "developer",
     "route_manager",
+    "driver",
+    "sales",
     "finance",
     "customer_owner",
     "customer_staff",

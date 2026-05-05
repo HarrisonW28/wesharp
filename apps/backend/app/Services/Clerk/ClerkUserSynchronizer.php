@@ -122,8 +122,8 @@ final class ClerkUserSynchronizer
             'name' => $profile['name'],
             'email' => $profile['email'],
             'password' => null,
-            'role' => UserRole::tryFrom((string) config('clerk.default_role')) ?? UserRole::CustomerStaff,
-            'status' => UserStatus::tryFrom((string) config('clerk.default_status')) ?? UserStatus::Active,
+            'role' => $this->defaultRoleForNewClerkUser(),
+            'status' => $this->defaultStatusForNewClerkUser(),
             'company_id' => null,
         ]);
         CustomerPortalInviteFulfillment::tryFulfill($created);
@@ -233,8 +233,8 @@ final class ClerkUserSynchronizer
             'name' => $profile['name'],
             'email' => $profile['email'],
             'password' => null,
-            'role' => UserRole::tryFrom((string) config('clerk.default_role')) ?? UserRole::CustomerStaff,
-            'status' => UserStatus::tryFrom((string) config('clerk.default_status')) ?? UserStatus::Active,
+            'role' => $this->defaultRoleForNewClerkUser(),
+            'status' => $this->defaultStatusForNewClerkUser(),
             'company_id' => null,
         ]);
         CustomerPortalInviteFulfillment::tryFulfill($created);
@@ -267,6 +267,27 @@ final class ClerkUserSynchronizer
             'email' => strtolower($email),
             'name' => $resolvedName,
         ];
+    }
+
+    /**
+     * First-time Clerk signups get a portal customer role in Laravel only.
+     * {@see config('clerk.default_role')} may be {@see UserRole::CustomerOwner} or {@see UserRole::CustomerStaff};
+     * internal roles are ignored so Clerk cannot grant staff access by env misconfiguration.
+     */
+    private function defaultRoleForNewClerkUser(): UserRole
+    {
+        $candidate = UserRole::tryFrom((string) config('clerk.default_role'));
+
+        if ($candidate !== null && $candidate->isCustomer()) {
+            return $candidate;
+        }
+
+        return UserRole::CustomerOwner;
+    }
+
+    private function defaultStatusForNewClerkUser(): UserStatus
+    {
+        return UserStatus::tryFrom((string) config('clerk.default_status')) ?? UserStatus::Active;
     }
 
     /**

@@ -84,7 +84,8 @@ Route::prefix('public')->middleware('throttle:tracking-public')->group(function 
 Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (): void {
     Route::middleware('permission:dashboard.view')->get('dashboard', [AccountDashboardController::class, 'show'])->name('api.account.dashboard');
     Route::middleware('permission:dashboard.view')->get('subscription', [AccountSubscriptionController::class, 'show'])->name('api.account.subscription.show');
-    Route::middleware('permission:subscriptions.view')->post('subscription/stripe-checkout-session', [AccountSubscriptionController::class, 'stripeCheckoutSession'])->name('api.account.subscription.stripe_checkout_session');
+    /** Same gate as {@see AccountSubscriptionController::show} — customers do not have `subscriptions.view` (staff/admin only). */
+    Route::middleware('permission:dashboard.view')->post('subscription/stripe-checkout-session', [AccountSubscriptionController::class, 'stripeCheckoutSession'])->name('api.account.subscription.stripe_checkout_session');
 
     Route::middleware('permission:bookings.view')->get('bookings', [AccountBookingController::class, 'index'])->name('api.account.bookings.index');
     Route::middleware('permission:bookings.create')->post('bookings', [AccountBookingController::class, 'store'])->name('api.account.bookings.store');

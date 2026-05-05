@@ -4,6 +4,7 @@ namespace App\Actions\Routes;
 
 use App\Enums\RouteStopStatus;
 use App\Models\RouteStop;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use App\Support\Evidence\EvidencePhotoRequirements;
 use App\Support\Routes\RouteStopBookingStatusSync;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -12,6 +13,10 @@ use Illuminate\Http\Request;
 final class MarkRouteStopSkippedAction
 {
     use MarkRouteStopTrait;
+
+    public function __construct(
+        private readonly InAppNotificationDispatcher $inApp,
+    ) {}
 
     /**
      * @param  array<string, mixed>|null  $failureMeta  e.g. photo placeholder flags for future sprints.
@@ -28,7 +33,7 @@ final class MarkRouteStopSkippedAction
 
         EvidencePhotoRequirements::assertForFailedCollection($stop);
 
-        return $this->transitionStop(
+        $fresh = $this->transitionStop(
             $stop,
             RouteStopStatus::Skipped,
             'route_stop.failed_collection',
@@ -48,5 +53,9 @@ final class MarkRouteStopSkippedAction
                 RouteStopBookingStatusSync::afterStopFailed($fresh, $actor, $request);
             },
         );
+
+        $this->inApp->notifyStaffRouteStopSkipped($fresh);
+
+        return $fresh;
     }
 }

@@ -12,6 +12,7 @@ use App\Models\CustomerPortalUpdate;
 use App\Models\Order;
 use App\Models\RouteStop;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use App\Support\ApiResponses;
 use App\Support\Portal\PortalCustomerUpdateJson;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,10 @@ use Illuminate\Http\Request;
 
 final class CustomerPortalUpdateController extends Controller
 {
+    public function __construct(
+        private readonly InAppNotificationDispatcher $inAppNotifications,
+    ) {}
+
     public function storeForRouteStop(StoreCustomerPortalUpdateRequest $request, RouteStop $stop): JsonResponse
     {
         $this->authorize('manage', $stop);
@@ -51,6 +56,9 @@ final class CustomerPortalUpdateController extends Controller
         ], $request);
 
         $update->load('createdBy:id,name');
+        if ($visibility === EvidencePhotoVisibility::CustomerVisible) {
+            $this->inAppNotifications->notifyCustomersCustomerPortalUpdate($update);
+        }
 
         return ApiResponses::success(PortalCustomerUpdateJson::adminRow($update), 201);
     }
@@ -79,6 +87,9 @@ final class CustomerPortalUpdateController extends Controller
         ], $request);
 
         $update->load('createdBy:id,name');
+        if ($visibility === EvidencePhotoVisibility::CustomerVisible) {
+            $this->inAppNotifications->notifyCustomersCustomerPortalUpdate($update);
+        }
 
         return ApiResponses::success(PortalCustomerUpdateJson::adminRow($update), 201);
     }
@@ -89,6 +100,8 @@ final class CustomerPortalUpdateController extends Controller
 
         /** @var array<string, mixed> $validated */
         $validated = $request->validated();
+
+        $notifyCustomerPortal = false;
 
         if (array_key_exists('visibility', $validated)) {
             $newVis = EvidencePhotoVisibility::from($validated['visibility']);
@@ -103,6 +116,9 @@ final class CustomerPortalUpdateController extends Controller
                     'from' => $before,
                     'to' => $newVis->value,
                 ], $request);
+                if ($newVis === EvidencePhotoVisibility::CustomerVisible) {
+                    $notifyCustomerPortal = true;
+                }
             }
         }
 
@@ -121,6 +137,9 @@ final class CustomerPortalUpdateController extends Controller
 
         $update->save();
         $update->load('createdBy:id,name');
+        if ($notifyCustomerPortal) {
+            $this->inAppNotifications->notifyCustomersCustomerPortalUpdate($update);
+        }
 
         return ApiResponses::success(PortalCustomerUpdateJson::adminRow($update));
     }

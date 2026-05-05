@@ -7,6 +7,7 @@ namespace App\Actions\Invoices;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use App\Services\Notifications\InvoiceEmailService;
 use App\Support\Invoices\InvoiceStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -20,6 +21,7 @@ final class SyncInvoiceOverdueStatusAction
 {
     public function __construct(
         private readonly InvoiceEmailService $invoiceEmails,
+        private readonly InAppNotificationDispatcher $inApp,
     ) {}
 
     public function execute(Invoice $invoice, ?Authenticatable $actor, ?Request $request): Invoice
@@ -63,9 +65,9 @@ final class SyncInvoiceOverdueStatusAction
         });
 
         if ($result['became_overdue']) {
-            $this->invoiceEmails->sendInvoiceOverdue(
-                $result['invoice']->loadMissing(['company', 'order.booking.contact', 'payments', 'items']),
-            );
+            $result['invoice']->loadMissing(['company', 'order.booking.contact', 'payments', 'items']);
+            $this->invoiceEmails->sendInvoiceOverdue($result['invoice']);
+            $this->inApp->notifyStaffInvoiceBecameOverdue($result['invoice']);
         }
 
         return $result['invoice'];

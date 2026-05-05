@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\StripeCheckoutAttemptStatus;
 use App\Models\Company;
 use App\Models\Invoice;
+use App\Models\StripeCheckoutAttempt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +36,20 @@ final class StripeWebhookInvoiceSettlementTest extends TestCase
             'tax_pence' => 0,
             'total_pence' => 5_000,
             'currency' => 'GBP',
+            'stripe_checkout_session_id' => 'cs_test_1',
+        ]);
+
+        StripeCheckoutAttempt::query()->create([
+            'invoice_id' => $invoice->id,
+            'order_id' => null,
+            'company_id' => $company->id,
+            'stripe_checkout_session_id' => 'cs_test_1',
+            'status' => StripeCheckoutAttemptStatus::Pending,
+            'amount_pence' => 5_000,
+            'currency' => 'GBP',
+            'customer_email' => null,
+            'marketing_opt_in' => null,
+            'expires_at' => null,
         ]);
 
         $payload = json_encode([
@@ -42,6 +58,7 @@ final class StripeWebhookInvoiceSettlementTest extends TestCase
             'data' => [
                 'object' => [
                     'id' => 'cs_test_1',
+                    'mode' => 'payment',
                     'payment_status' => 'paid',
                     'amount_total' => 5_000,
                     'payment_intent' => 'pi_test_settle_1',
@@ -71,6 +88,10 @@ final class StripeWebhookInvoiceSettlementTest extends TestCase
         $p = DB::table('payments')->where('stripe_payment_intent_id', 'pi_test_settle_1')->first();
         self::assertNotNull($p);
         self::assertSame(5_000, (int) $p->amount_pence);
+
+        $attempt = StripeCheckoutAttempt::query()->where('stripe_checkout_session_id', 'cs_test_1')->firstOrFail();
+        self::assertSame(StripeCheckoutAttemptStatus::Completed, $attempt->status);
+        self::assertNotNull($attempt->completed_at);
 
         $this->call('POST', '/api/webhooks/stripe', [], [], [], $headers, $payload)->assertOk()->assertJson(['received' => true]);
 

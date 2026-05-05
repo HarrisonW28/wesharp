@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\StripeSetting;
 use App\Models\User;
 use App\Support\Stripe\ResolvedStripeConfig;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -125,5 +126,58 @@ final class AdminStripeSettingsApiTest extends TestCase
         $this->withHeader('X-WeSharp-Test-User-Id', (string) $dev->id)
             ->putJson('/api/admin/stripe-settings', ['secret_key' => 'not_a_stripe_key'])
             ->assertStatus(422);
+    }
+
+    public function test_hosted_checkout_env_false_is_master_switch_even_when_database_true(): void
+    {
+        Config::set('stripe.hosted_checkout_enabled', false);
+        $row = StripeSetting::current();
+        $row->hosted_checkout_enabled = true;
+        $row->save();
+        App::forgetInstance(ResolvedStripeConfig::class);
+        self::assertFalse(App::make(ResolvedStripeConfig::class)->hostedCheckoutEnabled());
+    }
+
+    public function test_hosted_checkout_when_env_true_database_false_is_disabled(): void
+    {
+        Config::set('stripe.hosted_checkout_enabled', true);
+        $row = StripeSetting::current();
+        $row->hosted_checkout_enabled = false;
+        $row->save();
+        App::forgetInstance(ResolvedStripeConfig::class);
+        self::assertFalse(App::make(ResolvedStripeConfig::class)->hostedCheckoutEnabled());
+    }
+
+    public function test_hosted_checkout_when_env_true_database_null_is_enabled(): void
+    {
+        Config::set('stripe.hosted_checkout_enabled', true);
+        $row = StripeSetting::current();
+        $row->hosted_checkout_enabled = null;
+        $row->save();
+        App::forgetInstance(ResolvedStripeConfig::class);
+        self::assertTrue(App::make(ResolvedStripeConfig::class)->hostedCheckoutEnabled());
+    }
+
+    public function test_stripe_settings_payload_includes_env_hosted_checkout_flag(): void
+    {
+        Config::set('stripe.hosted_checkout_enabled', false);
+        App::forgetInstance(ResolvedStripeConfig::class);
+        $row = StripeSetting::current();
+        $row->hosted_checkout_enabled = true;
+        $row->save();
+        App::forgetInstance(ResolvedStripeConfig::class);
+
+        $dev = User::factory()->create([
+            'role' => UserRole::Developer,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $dev->id)
+            ->getJson('/api/admin/stripe-settings')
+            ->assertOk()
+            ->assertJsonPath('data.integration.hosted_checkout_enabled.env_config', false)
+            ->assertJsonPath('data.integration.hosted_checkout_enabled.database_value', true)
+            ->assertJsonPath('data.integration.hosted_checkout_enabled.effective', false);
     }
 }

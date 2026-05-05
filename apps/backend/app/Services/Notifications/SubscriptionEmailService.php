@@ -22,6 +22,7 @@ final class SubscriptionEmailService
 {
     public function __construct(
         private readonly NotificationService $notifications,
+        private readonly InAppNotificationDispatcher $inApp,
     ) {}
 
     public function sendSubscriptionStarted(CompanySubscription $subscription): void
@@ -148,6 +149,15 @@ final class SubscriptionEmailService
         ])));
 
         $this->queue($subscription, $type, $idempotencyKey, 'Subscription renewal coming up', 'Renewal reminder', $body);
+
+        $snippet = mb_substr(trim(str_replace(["\n", "\r"], ' ', $body)), 0, 280);
+        $this->inApp->notifyCustomersSubscription(
+            $subscription,
+            'customer.'.$type,
+            'Renewal reminder',
+            $snippet !== '' ? $snippet : 'Your subscription renews soon.',
+            $renewsYmd,
+        );
     }
 
     /**
@@ -223,6 +233,15 @@ final class SubscriptionEmailService
         ])));
 
         $this->queue($subscription, $type, $idempotencyKey, 'Subscription usage — overage on a recent order', 'Allowance heads-up', $body);
+
+        $snippet = mb_substr(trim(str_replace(["\n", "\r"], ' ', $body)), 0, 280);
+        $this->inApp->notifyCustomersSubscription(
+            $subscription,
+            'customer.'.$type,
+            'Allowance heads-up',
+            $snippet !== '' ? $snippet : 'There was usage beyond your included allowance.',
+            'order:'.$order->id,
+        );
     }
 
     /**

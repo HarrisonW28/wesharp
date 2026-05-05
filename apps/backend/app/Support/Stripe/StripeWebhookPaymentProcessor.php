@@ -6,6 +6,7 @@ namespace App\Support\Stripe;
 
 use App\Actions\Payments\SettleInvoiceFromStripePaymentIntentAction;
 use App\Models\Invoice;
+use App\Services\Payments\StripeInvoiceCheckoutAttemptService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -15,6 +16,7 @@ final class StripeWebhookPaymentProcessor
 {
     public function __construct(
         private readonly SettleInvoiceFromStripePaymentIntentAction $settleInvoiceFromStripePaymentIntent,
+        private readonly StripeInvoiceCheckoutAttemptService $checkoutAttempts,
     ) {}
 
     /** @param  array<string, mixed>  $event */
@@ -121,6 +123,15 @@ final class StripeWebhookPaymentProcessor
                 $checkoutSessionId,
                 null,
             );
+            if ($checkoutSessionId !== null) {
+                $this->checkoutAttempts->markCompleted($checkoutSessionId);
+            } else {
+                $invoice->refresh();
+                $sid = $invoice->stripe_checkout_session_id;
+                if (is_string($sid) && $sid !== '') {
+                    $this->checkoutAttempts->markCompleted($sid);
+                }
+            }
         } catch (\Throwable $e) {
             Log::error('stripe.webhook.settlement_failed', [
                 'invoice_id' => $invoiceId,
@@ -150,9 +161,14 @@ final class StripeWebhookPaymentProcessor
     private function logCheckoutSessionExpired(array $obj): void
     {
         $id = isset($obj['id']) && is_string($obj['id']) ? $obj['id'] : null;
+        $mode = isset($obj['mode']) && is_string($obj['mode']) ? $obj['mode'] : null;
         Log::notice('stripe.webhook.checkout.session.expired', [
             'checkout_session_id' => $id,
-            'mode' => isset($obj['mode']) && is_string($obj['mode']) ? $obj['mode'] : null,
+            'mode' => $mode,
         ]);
+
+        if ($mode === 'payment' && $id !== null && $id !== '') {
+            $this->checkoutAttempts->markExpired($id);
+        }
     }
 }

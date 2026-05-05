@@ -50,12 +50,16 @@ final class ResolvedStripeConfig
 
     public function hostedCheckoutEnabled(): bool
     {
+        if (! filter_var(config('stripe.hosted_checkout_enabled'), FILTER_VALIDATE_BOOL)) {
+            return false;
+        }
+
         $row = $this->setting->hosted_checkout_enabled;
         if ($row !== null) {
             return $row;
         }
 
-        return (bool) config('stripe.hosted_checkout_enabled', false);
+        return true;
     }
 
     public function allowLive(): bool

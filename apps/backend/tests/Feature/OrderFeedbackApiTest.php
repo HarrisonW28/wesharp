@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\OrderFeedback;
 use App\Models\OrderItem;
 use App\Models\User;
+use App\Services\Orders\OrderFeedbackInvitationService;
 use Database\Seeders\WeSharpDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -100,6 +101,60 @@ final class OrderFeedbackApiTest extends TestCase
         self::assertStringContainsString('Great service', (string) $fb->comment);
         self::assertTrue($fb->testimonial_interested);
         self::assertNotNull($fb->submitted_at);
+    }
+
+    public function test_feedback_invitation_dispatch_is_idempotent_when_service_run_twice(): void
+    {
+        Mail::fake();
+
+        $customer = User::query()->where('email', 'kitchen.portal@demo.wesharp.test')->firstOrFail();
+        $company = Company::query()->findOrFail($customer->company_id);
+        $company->forceFill(['billing_email' => 'billing@example.test'])->save();
+
+        $location = CompanyLocation::query()->where('company_id', $company->id)->firstOrFail();
+
+        $booking = Booking::query()->create([
+            'company_id' => $company->id,
+            'company_location_id' => $location->id,
+            'contact_id' => null,
+            'booking_status' => \App\Enums\BookingStatus::Confirmed,
+            'service_type' => \App\Enums\ServiceType::Collection,
+            'scheduled_date' => now()->toDateString(),
+        ]);
+
+        $order = Order::query()->create([
+            'company_id' => $company->id,
+            'booking_id' => $booking->id,
+            'order_status' => OrderStatus::Completed,
+            'payment_status' => \App\Enums\OrderPaymentStatus::Unpaid,
+            'subtotal_pence' => 1000,
+            'tax_pence' => 0,
+            'total_pence' => 1000,
+            'currency' => 'GBP',
+            'knife_count' => 1,
+            'price_per_knife_pence' => 1000,
+            'completed_at' => now(),
+        ]);
+
+        OrderItem::query()->create([
+            'order_id' => $order->id,
+            'knife_id' => null,
+            'description' => 'Test line',
+            'quantity' => 1,
+            'unit_amount_pence' => 1000,
+        ]);
+
+        $order->load(['company', 'booking.contact']);
+        $svc = app(OrderFeedbackInvitationService::class);
+        $svc->inviteAfterOrderCompleted($order);
+        $svc->inviteAfterOrderCompleted($order->fresh(['company', 'booking.contact']));
+
+        Mail::assertSent(GenericNotificationMailable::class, 1);
+
+        self::assertSame(
+            1,
+            OrderFeedback::query()->where('order_id', $order->id)->count(),
+        );
     }
 
     public function test_duplicate_submit_returns_403(): void

@@ -18,7 +18,8 @@ return [
     'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
 
     /*
-    | Even when true, session creation stays guarded — see StripeCheckoutEnvironmentGuard.
+    | Master switch: hosted checkout is always off when this is false, even if the database
+    | override is on. Session creation stays further guarded — see StripeCheckoutEnvironmentGuard.
     */
     'hosted_checkout_enabled' => filter_var(env('STRIPE_HOSTED_CHECKOUT_ENABLED', false), FILTER_VALIDATE_BOOL),
 

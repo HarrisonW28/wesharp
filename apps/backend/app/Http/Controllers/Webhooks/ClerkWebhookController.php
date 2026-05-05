@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Webhooks;
 
 use App\Services\Clerk\ClerkUserSynchronizer;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use App\Support\ApiResponses;
 use App\Support\Clerk\ClerkSvixSignature;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +24,7 @@ final class ClerkWebhookController extends Controller
 {
     public function __construct(
         private readonly ClerkUserSynchronizer $clerkUsers,
+        private readonly InAppNotificationDispatcher $inAppNotifications,
     ) {}
 
     public function __invoke(Request $request): JsonResponse
@@ -111,6 +113,8 @@ final class ClerkWebhookController extends Controller
                     'last_error' => $e->getMessage(),
                     'updated_at' => now(),
                 ]);
+
+            $this->inAppNotifications->notifyStaffWebhookProcessingFailed('clerk', $type, $svixId);
 
             return ApiResponses::error('Webhook handler failed.', 'webhook_handler_error', SymfonyResponse::HTTP_INTERNAL_SERVER_ERROR);
         }

@@ -14,6 +14,7 @@ use App\Enums\InvoiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
+use App\Http\Requests\Invoices\StartInvoiceStripeCheckoutSessionRequest;
 use App\Http\Requests\VoidInvoiceRequest;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -217,13 +218,13 @@ final class InvoiceController extends Controller
         return ApiResponses::success(InvoiceJson::detail($invoice));
     }
 
-    public function stripeCheckoutSession(Request $request, Invoice $invoice, CreateStripeHostedCheckoutSessionAction $action): JsonResponse
+    public function stripeCheckoutSession(StartInvoiceStripeCheckoutSessionRequest $request, Invoice $invoice, CreateStripeHostedCheckoutSessionAction $action): JsonResponse
     {
         $this->authorize('startStripeCheckout', $invoice);
 
         /** @phpstan-ignore-next-line */
         $invoice = $this->syncInvoiceOverdueStatusAction->execute($invoice, $request->user(), $request);
 
-        return ApiResponses::success($action->execute($invoice)->toArray());
+        return ApiResponses::success($action->execute($invoice, $request->marketingOptIn())->toArray());
     }
 }

@@ -49,6 +49,12 @@ final class RouteController extends Controller
             return;
         }
 
+        if ($role === UserRole::Driver) {
+            $base->where('driver_user_id', (int) $user->getKey());
+
+            return;
+        }
+
         if ($role === UserRole::RouteManager) {
             $base->where(function (Builder $q) use ($user): void {
                 $q->whereNull('driver_user_id')

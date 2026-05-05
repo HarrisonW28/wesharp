@@ -259,11 +259,21 @@ export default function AdminStripeSettingsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="inherit">Environment default ({integ.hosted_checkout_enabled.effective ? "on" : "off"})</SelectItem>
+                    <SelectItem value="inherit">
+                      Inherit from env — STRIPE_HOSTED_CHECKOUT_ENABLED{" "}
+                      {integ.hosted_checkout_enabled.env_config ? "on" : "off"}
+                    </SelectItem>
                     <SelectItem value="on">On (database)</SelectItem>
                     <SelectItem value="off">Off (database)</SelectItem>
                   </SelectContent>
                 </Select>
+                {!integ.hosted_checkout_enabled.env_config ? (
+                  <p className="text-xs text-muted-foreground">
+                    Stripe hosted checkout is disabled until <code className="text-xs">STRIPE_HOSTED_CHECKOUT_ENABLED=true</code>{" "}
+                    in Laravel <code className="text-xs">.env</code> (set only when ready to test). Database &quot;on&quot; cannot
+                    override a false env flag.
+                  </p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label>Allow live secret keys</Label>

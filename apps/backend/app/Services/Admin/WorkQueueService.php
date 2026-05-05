@@ -296,6 +296,12 @@ final class WorkQueueService
             return;
         }
 
+        if ($role === UserRole::Driver) {
+            $base->where('driver_user_id', (int) $viewer->getKey());
+
+            return;
+        }
+
         if ($role === UserRole::RouteManager) {
             $base->where(function (Builder $q) use ($viewer): void {
                 $q->whereNull('driver_user_id')

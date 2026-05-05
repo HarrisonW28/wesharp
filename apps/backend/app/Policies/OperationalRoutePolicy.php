@@ -26,6 +26,11 @@ final class OperationalRoutePolicy
             return true;
         }
 
+        if ($role === UserRole::Driver) {
+            return $route->driver_user_id !== null
+                && (int) $route->driver_user_id === (int) $user->getKey();
+        }
+
         if ($role === UserRole::RouteManager) {
             if ($route->driver_user_id === null) {
                 return true;
@@ -52,6 +57,10 @@ final class OperationalRoutePolicy
 
         if ($role === UserRole::SuperAdmin || $role === UserRole::Admin) {
             return true;
+        }
+
+        if ($role === UserRole::Driver) {
+            return false;
         }
 
         if ($role === UserRole::RouteManager) {

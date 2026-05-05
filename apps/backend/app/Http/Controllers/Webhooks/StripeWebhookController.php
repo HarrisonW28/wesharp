@@ -9,6 +9,7 @@ use App\Support\Stripe\ResolvedStripeConfig;
 use App\Support\Stripe\StripeWebhookPaymentProcessor;
 use App\Support\Stripe\StripeWebhookSignature;
 use App\Support\Stripe\StripeWebhookSubscriptionProcessor;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -33,6 +34,7 @@ final class StripeWebhookController extends Controller
         ResolvedStripeConfig $stripeConfig,
         StripeWebhookPaymentProcessor $paymentProcessor,
         StripeWebhookSubscriptionProcessor $subscriptionProcessor,
+        InAppNotificationDispatcher $inAppNotifications,
     ): JsonResponse {
         $secret = $stripeConfig->webhookSecret();
         $raw = $request->getContent();
@@ -89,6 +91,7 @@ final class StripeWebhookController extends Controller
             $paymentProcessor,
             $subscriptionProcessor,
             &$handlerError,
+            $inAppNotifications,
         ): void {
             $row = DB::table('stripe_webhook_events')->where('id', $eventId)->lockForUpdate()->first();
             if ($row === null) {
@@ -114,11 +117,14 @@ final class StripeWebhookController extends Controller
                     'type' => $data['type'] ?? null,
                     'message' => $e->getMessage(),
                 ]);
+                /** @var string $stripeType */
+                $stripeType = is_string($data['type'] ?? null) ? (string) $data['type'] : 'unknown';
                 DB::table('stripe_webhook_events')->where('id', $eventId)->update([
                     'processing_state' => 'failed',
                     'last_error' => Str::limit($e->getMessage(), 2000),
                     'updated_at' => now(),
                 ]);
+                $inAppNotifications->notifyStaffWebhookProcessingFailed('stripe', $stripeType, $eventId);
                 $handlerError = $e;
             }
         });

@@ -17,8 +17,8 @@ final class CreateStripeHostedCheckoutSessionAction
         private readonly PaymentProviderInterface $paymentProvider,
     ) {}
 
-    public function execute(Invoice $invoice): HostedCheckoutAvailability
+    public function execute(Invoice $invoice, bool $marketingOptIn = false): HostedCheckoutAvailability
     {
-        return $this->paymentProvider->createInvoiceHostedCheckoutSession($invoice);
+        return $this->paymentProvider->createInvoiceHostedCheckoutSession($invoice, $marketingOptIn);
     }
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ClipboardList, Download, Loader2, Printer, Receipt } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -35,6 +37,7 @@ export default function AccountInvoiceDetailPage() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const api = useAccountApi();
   const queryClient = useQueryClient();
+  const [checkoutMarketingOptIn, setCheckoutMarketingOptIn] = useState(false);
 
   const query = useQuery({
     queryKey: ["account-invoice", invoiceId],
@@ -56,7 +59,7 @@ export default function AccountInvoiceDetailPage() {
     mutationFn: async () => {
       const res = await api.json<unknown>(`/api/account/invoices/${invoiceId}/stripe-checkout-session`, {
         method: "POST",
-        body: "{}",
+        body: JSON.stringify({ marketing_opt_in: checkoutMarketingOptIn }),
       });
       if (!res.ok) throw new Error(res.message);
       const parsed = InvoiceStripeCheckoutSessionResponseSchema.safeParse(res.data);
@@ -212,7 +215,25 @@ export default function AccountInvoiceDetailPage() {
                   <CardTitle className="text-base">Payment</CardTitle>
                   <CardDescription>{inv.payment?.cta_hint}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-3">
+                  {inv.payment?.online_checkout_available ? (
+                    <div className="flex items-start gap-2.5 rounded-lg border bg-muted/30 p-3">
+                      <input
+                        id="account-invoice-checkout-marketing-opt-in"
+                        type="checkbox"
+                        className="mt-1 size-4 shrink-0 rounded border-input"
+                        checked={checkoutMarketingOptIn}
+                        onChange={(e) => setCheckoutMarketingOptIn(e.target.checked)}
+                      />
+                      <Label
+                        htmlFor="account-invoice-checkout-marketing-opt-in"
+                        className="cursor-pointer text-sm font-normal leading-snug text-muted-foreground"
+                      >
+                        Email me a reminder if I don’t finish paying (optional). Separate from any terms you’ve accepted
+                        — we only follow up when you tick this.
+                      </Label>
+                    </div>
+                  ) : null}
                   {inv.payment?.online_checkout_available ? (
                     <Button
                       type="button"

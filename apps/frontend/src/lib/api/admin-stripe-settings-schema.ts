@@ -16,6 +16,12 @@ const urlBlock = z.object({
   effective: z.string(),
 });
 
+const hostedCheckoutBoolBlock = z.object({
+  database_value: z.boolean().nullable(),
+  env_config: z.boolean(),
+  effective: z.boolean(),
+});
+
 export const AdminStripeSettingsResponseSchema = z
   .object({
     success: z.literal(true),
@@ -24,7 +30,7 @@ export const AdminStripeSettingsResponseSchema = z
         secret_key: keyBlock,
         public_key: keyBlock,
         webhook_secret: keyBlock,
-        hosted_checkout_enabled: boolBlock,
+        hosted_checkout_enabled: hostedCheckoutBoolBlock,
         allow_live: boolBlock,
         checkout_success_url: urlBlock,
         checkout_cancel_url: urlBlock,

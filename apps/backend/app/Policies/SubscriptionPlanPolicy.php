@@ -53,7 +53,10 @@ final class SubscriptionPlanPolicy
             return true;
         }
 
-        return Permissions::userMay($user, Permissions::SUBSCRIPTIONS_VIEW)
-            && (bool) $plan->show_on_public_site;
+        if (Permissions::userMay($user, Permissions::SUBSCRIPTIONS_VIEW)) {
+            return (bool) $plan->show_on_public_site;
+        }
+
+        return $user->resolvedRole()->isCustomer() && (bool) $plan->show_on_public_site;
     }
 }

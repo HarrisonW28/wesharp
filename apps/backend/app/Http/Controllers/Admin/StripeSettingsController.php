@@ -110,6 +110,7 @@ final class StripeSettingsController extends Controller
                 ],
                 'hosted_checkout_enabled' => [
                     'database_value' => $row->hosted_checkout_enabled,
+                    'env_config' => filter_var(config('stripe.hosted_checkout_enabled'), FILTER_VALIDATE_BOOL),
                     'effective' => $effective->hostedCheckoutEnabled(),
                 ],
                 'allow_live' => [

@@ -4,6 +4,7 @@ namespace App\Actions\Public;
 
 use App\Enums\BookingStatus;
 use App\Enums\CompanyStatus;
+use App\Enums\NoteVisibility;
 use App\Enums\ServiceType;
 use App\Models\Booking;
 use App\Models\Company;
@@ -69,6 +70,7 @@ TXT,
             $company->notes()->create([
                 'author_id' => null,
                 'body' => 'Inbound lead: booking enquiry submitted from the WeSharp public website. Review CRM profile and qualifying notes on the booking.',
+                'visibility' => NoteVisibility::Internal,
             ]);
 
             AuditRecorder::record(null, $company, 'public.booking_enquiry', [

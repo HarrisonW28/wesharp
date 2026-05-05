@@ -29,7 +29,9 @@ Naming: the sprint spec also allows **`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`** on 
 
 ### System settings (encrypted database overrides)
 
-Developers and super admins may store Stripe secrets and flags in **`stripe_settings`** (Laravel `encrypted` casts — **requires stable `APP_KEY`**). Values in the database **override** the environment for runtime resolution via **`App\Support\Stripe\ResolvedStripeConfig`**.
+For most fields, developers and super admins may store Stripe secrets and flags in **`stripe_settings`** (Laravel `encrypted` casts — **requires stable `APP_KEY`**); values in the database **override** **`.env`** at runtime via **`App\Support\Stripe\ResolvedStripeConfig`**.
+
+**Hosted checkout is different:** **`STRIPE_HOSTED_CHECKOUT_ENABLED`** (`config('stripe.hosted_checkout_enabled')`) is a **master switch**. When **`false`**, hosted Checkout stays **off** even if **`stripe_settings.hosted_checkout_enabled`** is **`true`**. When the env flag is **`true`**, the database value applies: **`null`** inherits “on”, **`false`** forces off, **`true`** forces on. **`GET /api/admin/stripe-settings`** returns **`env_config`** and **`effective`** for this control.
 
 - **API:** **`GET|PUT /api/admin/stripe-settings`** — permission **`system.integrations.manage`** (withheld from **`admin`** and other staff roles).
 - **UI:** Admin **Settings → System → Stripe** (`/admin/system/stripe`).

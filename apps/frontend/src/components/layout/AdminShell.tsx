@@ -28,24 +28,23 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const permissions = useMemo(() => new Set(data?.data?.permissions ?? []), [data?.data?.permissions]);
 
   const role = data?.data?.user.role;
+  const usesFieldNav = role === "route_manager" || role === "driver";
   const navSections = useMemo(
     () =>
-      filterNavSections(
-        role === "route_manager" ? ROUTE_MANAGER_NAV_SECTIONS : ADMIN_NAV_SECTIONS,
-        permissions,
-      ),
-    [role, permissions],
+      filterNavSections(usesFieldNav ? ROUTE_MANAGER_NAV_SECTIONS : ADMIN_NAV_SECTIONS, permissions),
+    [usesFieldNav, permissions],
   );
 
   /** Mobile drawer: optional shortcuts only (sidebar already lists dashboard & work queue). */
   const drawerQuickLinks = useMemo(() => {
-    if (role === "route_manager") {
+    if (usesFieldNav) {
       return [{ href: "/admin/routes/today", label: "Today's stops" }];
     }
     return [];
-  }, [role]);
+  }, [usesFieldNav]);
 
-  const topBarTitle = role === "route_manager" ? "Route manager" : "Operations console";
+  const topBarTitle =
+    role === "route_manager" ? "Route manager" : role === "driver" ? "Driver" : "Operations console";
 
   return (
     <StaffRouteGate>

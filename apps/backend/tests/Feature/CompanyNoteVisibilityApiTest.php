@@ -102,6 +102,43 @@ final class CompanyNoteVisibilityApiTest extends TestCase
         self::assertIsArray($notes);
         self::assertCount(1, $notes);
         self::assertSame('Hello customer', $notes[0]['body']);
+        self::assertSame('customer', $notes[0]['visibility'] ?? null);
+        self::assertSame(NoteVisibility::Customer->staffLabel(), $notes[0]['visibility_label'] ?? null);
+    }
+
+    public function test_tenant_booking_detail_excludes_route_and_finance_company_notes(): void
+    {
+        $company = Company::factory()->create();
+        $booking = Booking::factory()->create(['company_id' => $company->id]);
+        $user = User::factory()->create([
+            'company_id' => $company->id,
+            'role' => UserRole::CustomerOwner,
+        ]);
+
+        foreach (
+            [
+                ['For route team', NoteVisibility::Route],
+                ['Billing confidential', NoteVisibility::Finance],
+                ['Not for portal', NoteVisibility::Internal],
+                ['Approved for you', NoteVisibility::Customer],
+            ] as [$body, $vis]
+        ) {
+            Note::factory()->create([
+                'noteable_type' => Company::class,
+                'noteable_id' => $company->id,
+                'body' => $body,
+                'visibility' => $vis,
+            ]);
+        }
+
+        $res = $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->getJson('/api/account/bookings/'.$booking->id)
+            ->assertOk();
+
+        $notes = $res->json('data.customer_company_notes');
+        self::assertIsArray($notes);
+        self::assertCount(1, $notes);
+        self::assertSame(['Approved for you'], array_column($notes, 'body'));
     }
 
     public function test_public_tracking_includes_only_customer_company_notes(): void
@@ -131,6 +168,7 @@ final class CompanyNoteVisibilityApiTest extends TestCase
         self::assertIsArray($notes);
         self::assertCount(1, $notes);
         self::assertSame('Welcome', $notes[0]['body']);
+        self::assertSame('customer', $notes[0]['visibility'] ?? null);
         self::assertStringNotContainsString('Staff eyes only', json_encode($json, JSON_THROW_ON_ERROR));
     }
 }

@@ -8,6 +8,7 @@ use App\Contracts\Payments\PaymentProviderInterface;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Services\Payments\StripeInvoiceCheckoutAttemptService;
 use App\Support\Stripe\ResolvedStripeConfig;
 use App\Support\Stripe\StripeCheckoutEnvironmentGuard;
 use Stripe\Exception\ApiErrorException;
@@ -17,6 +18,7 @@ final class StripePaymentProvider implements PaymentProviderInterface
     public function __construct(
         private readonly StripeCheckoutSessionClient $checkoutSessions,
         private readonly ResolvedStripeConfig $stripe,
+        private readonly StripeInvoiceCheckoutAttemptService $checkoutAttempts,
     ) {}
 
     public function driver(): string
@@ -34,7 +36,7 @@ final class StripePaymentProvider implements PaymentProviderInterface
         return new HostedCheckoutAvailability(true, null, null);
     }
 
-    public function createInvoiceHostedCheckoutSession(Invoice $invoice): HostedCheckoutAvailability
+    public function createInvoiceHostedCheckoutSession(Invoice $invoice, bool $marketingOptIn = false): HostedCheckoutAvailability
     {
         $reason = $this->invoiceCheckoutBlockingReason($invoice);
         if ($reason !== null) {
@@ -79,11 +81,17 @@ final class StripePaymentProvider implements PaymentProviderInterface
             ],
         ];
 
+        $customerEmailForAttempt = null;
         $company = $invoice->company;
         if ($company !== null && is_string($company->stripe_customer_id) && $company->stripe_customer_id !== '') {
             $params['customer'] = $company->stripe_customer_id;
         } elseif ($company !== null && is_string($company->billing_email) && trim($company->billing_email) !== '') {
-            $params['customer_email'] = trim($company->billing_email);
+            $trimmed = trim($company->billing_email);
+            $params['customer_email'] = $trimmed;
+        }
+
+        if ($company !== null && is_string($company->billing_email) && trim($company->billing_email) !== '') {
+            $customerEmailForAttempt = trim($company->billing_email);
         }
 
         try {
@@ -105,6 +113,21 @@ final class StripePaymentProvider implements PaymentProviderInterface
         }
 
         $invoice->forceFill(['stripe_checkout_session_id' => $sessionId])->save();
+
+        $expiresRaw = $session->expires_at ?? null;
+        $expiresUnix = is_int($expiresRaw) || is_float($expiresRaw) ? (int) $expiresRaw : null;
+        if ($expiresUnix !== null && $expiresUnix <= 0) {
+            $expiresUnix = null;
+        }
+
+        $this->checkoutAttempts->recordPendingForSession(
+            $invoice->fresh(['company']),
+            $sessionId,
+            $outstanding,
+            $expiresUnix,
+            $customerEmailForAttempt,
+            $marketingOptIn,
+        );
 
         return new HostedCheckoutAvailability(true, null, $url);
     }

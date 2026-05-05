@@ -23,6 +23,8 @@ interface PaymentProviderInterface
 
     /**
      * Create a Stripe Checkout Session for the invoice outstanding balance (**mode=payment**).
+     *
+     * @param  bool  $marketingOptIn  Explicit consent for abandoned-checkout follow-up — never implied from terms.
      */
-    public function createInvoiceHostedCheckoutSession(Invoice $invoice): HostedCheckoutAvailability;
+    public function createInvoiceHostedCheckoutSession(Invoice $invoice, bool $marketingOptIn = false): HostedCheckoutAvailability;
 }

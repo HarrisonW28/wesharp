@@ -29,6 +29,8 @@ export function RouteManagerShell({
   children: ReactNode;
 }) {
   const { data } = useBackendMe();
+  const role = data?.data?.user.role;
+  const fieldModeLabel = role === "driver" ? "Driver" : "Route manager";
   const permissions = useMemo(() => new Set(data?.data?.permissions ?? []), [data?.data?.permissions]);
   const bottomItems = useMemo(() => filterNav(ROUTE_MANAGER_BOTTOM_NAV, permissions), [permissions]);
 
@@ -38,7 +40,7 @@ export function RouteManagerShell({
         <div className="flex items-start justify-between gap-2 px-4 py-3">
           <div className="min-w-0 flex-1 pr-2">
             <div className="text-sm font-semibold uppercase tracking-wide text-slate-400 md:text-muted-foreground">
-              Route manager
+              {fieldModeLabel}
             </div>
             <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
               <div className="min-w-0">

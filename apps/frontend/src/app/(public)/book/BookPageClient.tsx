@@ -370,27 +370,27 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
   if (status === "success") {
     return (
       <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
-        <div className="mx-auto min-w-0 max-w-xl space-y-6 overflow-x-hidden py-16 pb-[max(4rem,env(safe-area-inset-bottom))] md:py-24">
-        <div className="flex justify-center md:justify-start">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-            <CheckCircle2 className="h-9 w-9" aria-hidden />
+        <div className="min-w-0 space-y-6 overflow-x-hidden py-16 pb-[max(4rem,env(safe-area-inset-bottom))] md:py-24">
+          <div className="flex justify-center md:justify-start">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 className="h-9 w-9" aria-hidden />
+            </div>
           </div>
-        </div>
-        <div className="space-y-2 text-center md:text-left">
-          <p className="text-sm font-medium text-primary">{booking.success_kicker}</p>
-          <h1 className="text-balance text-3xl font-semibold tracking-tight">{booking.success_title}</h1>
-          <p className="text-muted-foreground">{booking.success_intro}</p>
-        </div>
-        <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
-          {successBullets.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-        <div className="flex flex-wrap justify-center gap-3 md:justify-start">
-          <Button asChild variant="default" className="h-12 min-h-11 touch-manipulation rounded-lg">
-            <Link href="/">Back home</Link>
-          </Button>
-        </div>
+          <div className="space-y-2 text-center md:text-left">
+            <p className="text-sm font-medium text-primary">{booking.success_kicker}</p>
+            <h1 className="text-balance text-3xl font-semibold tracking-tight">{booking.success_title}</h1>
+            <p className="text-muted-foreground">{booking.success_intro}</p>
+          </div>
+          <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
+            {successBullets.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <div className="flex flex-wrap justify-center gap-3 md:justify-start">
+            <Button asChild variant="default" className="h-12 min-h-11 touch-manipulation rounded-lg">
+              <Link href="/">Back home</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -411,12 +411,12 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
 
   return (
     <div className={PUBLIC_SITE_CONTENT_CONTAINER_CLASS}>
-      <div className="mx-auto min-w-0 max-w-2xl space-y-8 overflow-x-hidden py-12 pb-[max(3rem,env(safe-area-inset-bottom))] md:space-y-10 md:py-20">
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-primary">{booking.page_kicker}</p>
-        <h1 className="text-balance text-3xl font-semibold tracking-tight">{booking.page_title}</h1>
-        <p className="text-muted-foreground">{booking.page_lead}</p>
-      </div>
+      <div className="min-w-0 space-y-8 overflow-x-hidden py-12 pb-[max(3rem,env(safe-area-inset-bottom))] md:space-y-10 md:py-20">
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-primary">{booking.page_kicker}</p>
+          <h1 className="text-balance text-3xl font-semibold tracking-tight">{booking.page_title}</h1>
+          <p className="text-muted-foreground">{booking.page_lead}</p>
+        </div>
 
       <nav aria-label="Booking progress" className="rounded-xl border bg-muted/30 px-3 py-3 md:px-4">
         <div className="space-y-1">

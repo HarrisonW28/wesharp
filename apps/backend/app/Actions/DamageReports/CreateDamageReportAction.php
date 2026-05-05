@@ -7,6 +7,7 @@ use App\Models\DamageReport;
 use App\Models\Knife;
 use App\Models\User;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use App\Services\Notifications\OrderEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ final class CreateDamageReportAction
 {
     public function __construct(
         private readonly OrderEmailService $orderEmails,
+        private readonly InAppNotificationDispatcher $inApp,
     ) {}
 
     /**
@@ -59,6 +61,7 @@ final class CreateDamageReportAction
         });
 
         $this->orderEmails->sendDamageReportCustomerVisible($report);
+        $this->inApp->notifyStaffDamageReportLogged($report);
 
         return $report;
     }

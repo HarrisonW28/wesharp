@@ -19,6 +19,7 @@ use App\Models\Order;
 use App\Models\RouteStop;
 use App\Models\UploadedFile;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Notifications\InAppNotificationDispatcher;
 use App\Support\ApiResponses;
 use App\Support\Evidence\EvidencePhotoJson;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +29,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class EvidencePhotoController extends Controller
 {
+    public function __construct(
+        private readonly InAppNotificationDispatcher $inAppNotifications,
+    ) {}
+
     public function storeForRouteStop(StoreRouteStopEvidencePhotoRequest $request, RouteStop $stop): JsonResponse
     {
         $this->authorize('manage', $stop);
@@ -88,6 +93,7 @@ final class EvidencePhotoController extends Controller
         ], $request);
 
         $photo->load(['uploadedBy:id,name']);
+        $this->fanOutCustomerVisiblePhoto($photo);
 
         return ApiResponses::success(EvidencePhotoJson::adminRow($photo), 201);
     }
@@ -151,6 +157,7 @@ final class EvidencePhotoController extends Controller
         ], $request);
 
         $photo->load(['uploadedBy:id,name']);
+        $this->fanOutCustomerVisiblePhoto($photo);
 
         return ApiResponses::success(EvidencePhotoJson::adminRow($photo), 201);
     }
@@ -209,6 +216,7 @@ final class EvidencePhotoController extends Controller
         ], $request);
 
         $photo->load(['uploadedBy:id,name']);
+        $this->fanOutCustomerVisiblePhoto($photo);
 
         return ApiResponses::success(EvidencePhotoJson::adminRow($photo), 201);
     }
@@ -271,6 +279,7 @@ final class EvidencePhotoController extends Controller
         ], $request);
 
         $photo->load(['uploadedBy:id,name']);
+        $this->fanOutCustomerVisiblePhoto($photo);
 
         return ApiResponses::success(EvidencePhotoJson::adminRow($photo), 201);
     }
@@ -281,6 +290,8 @@ final class EvidencePhotoController extends Controller
 
         /** @var array<string, mixed> $validated */
         $validated = $request->validated();
+
+        $notifyCustomerPhoto = false;
 
         if (array_key_exists('visibility', $validated)) {
             /** @var string $visStr */
@@ -297,6 +308,9 @@ final class EvidencePhotoController extends Controller
                     'from' => $before,
                     'to' => $newVis->value,
                 ], $request);
+                if ($newVis === EvidencePhotoVisibility::CustomerVisible) {
+                    $notifyCustomerPhoto = true;
+                }
             }
         }
 
@@ -322,8 +336,20 @@ final class EvidencePhotoController extends Controller
 
         $photo->save();
         $photo->load(['uploadedBy:id,name']);
+        if ($notifyCustomerPhoto) {
+            $this->fanOutCustomerVisiblePhoto($photo);
+        }
 
         return ApiResponses::success(EvidencePhotoJson::adminRow($photo));
+    }
+
+    private function fanOutCustomerVisiblePhoto(EvidencePhoto $photo): void
+    {
+        if ($photo->visibility !== EvidencePhotoVisibility::CustomerVisible) {
+            return;
+        }
+
+        $this->inAppNotifications->notifyCustomersCustomerVisibleEvidencePhoto($photo);
     }
 
     private function visibilityForCreate(Request $request): EvidencePhotoVisibility

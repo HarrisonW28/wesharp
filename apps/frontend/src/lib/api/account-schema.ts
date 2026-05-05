@@ -196,6 +196,8 @@ export const AccountCustomerMessageSchema = z.object({
 
 export const AccountCompanyCustomerNoteSchema = z.object({
   body: z.string(),
+  visibility: z.string().optional(),
+  visibility_label: z.string().optional(),
   created_at: z.string().nullable().optional(),
 });
 

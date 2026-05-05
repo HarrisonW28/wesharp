@@ -91,6 +91,8 @@ export default function AdminInvoiceDetailPage() {
   const [draftCustomerNotes, setDraftCustomerNotes] = useState("");
   const [draftInternalNotes, setDraftInternalNotes] = useState("");
   const [draftLines, setDraftLines] = useState<DraftLine[]>([]);
+  /** Explicit opt-in for abandoned-checkout reminder — separate from terms; do not infer from legal acceptance. */
+  const [stripeCheckoutMarketingOptIn, setStripeCheckoutMarketingOptIn] = useState(false);
 
   const invQuery = useQuery({
     queryKey: ["admin-invoice", invoiceId],
@@ -238,7 +240,7 @@ export default function AdminInvoiceDetailPage() {
     mutationFn: async () => {
       const res = await admin.json<unknown>(`/api/admin/invoices/${invoiceId}/stripe-checkout-session`, {
         method: "POST",
-        body: "{}",
+        body: JSON.stringify({ marketing_opt_in: stripeCheckoutMarketingOptIn }),
       });
       if (!res.ok) throw new Error(res.message);
       const parsed = InvoiceStripeCheckoutSessionResponseSchema.safeParse(res.data);
@@ -633,7 +635,22 @@ export default function AdminInvoiceDetailPage() {
             )}
             {inv.stripe.live_mode_blocked ? <Badge variant="destructive">Live keys blocked by policy</Badge> : null}
           </div>
-          <div className="mt-4">
+          <div className="mt-4 space-y-3">
+            {inv.stripe.hosted_checkout_available && canPay ? (
+              <div className="flex items-start gap-2.5 rounded-lg border bg-muted/30 p-3">
+                <input
+                  id="stripe-checkout-marketing-opt-in"
+                  type="checkbox"
+                  className="mt-1 size-4 shrink-0 rounded border-input"
+                  checked={stripeCheckoutMarketingOptIn}
+                  onChange={(e) => setStripeCheckoutMarketingOptIn(e.target.checked)}
+                />
+                <Label htmlFor="stripe-checkout-marketing-opt-in" className="cursor-pointer text-sm font-normal leading-snug">
+                  Email me a reminder if I don’t finish paying (optional). This is separate from agreeing to terms —
+                  staff may also be notified to follow up.
+                </Label>
+              </div>
+            ) : null}
             <Button
               type="button"
               variant="secondary"

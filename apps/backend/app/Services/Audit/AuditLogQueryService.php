@@ -91,7 +91,7 @@ final class AuditLogQueryService
             return;
         }
 
-        if ($role === UserRole::RouteManager) {
+        if ($role === UserRole::RouteManager || $role === UserRole::Driver) {
             $query->where(function (Builder $q): void {
                 $q->whereIn('auditable_type', [
                     Booking::class,
