@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 
-import { ArrowRight, LayoutDashboard, MapPin, Menu } from "lucide-react";
+import { ArrowRight, MapPin, Menu } from "lucide-react";
 
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
+import { PublicSiteAccountControl } from "@/components/layout/PublicSiteAccountControl";
 import { PublicSiteNavSectionCards, PublicSiteNavSectionsCards } from "@/components/layout/PublicSiteNavCards";
 import { PublicSiteNavMenu } from "@/components/layout/PublicSiteNavMenu";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -32,11 +32,31 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   const hideStickyBar = hidePublicMobileStickyCta(pathname);
   const [open, setOpen] = useState(false);
   const [megaSection, setMegaSection] = useState<PublicSiteNavSection | null>(null);
+  /** Mobile sticky CTA: on `/` wait until #hero scrolls out; other paths show immediately. */
+  const [showMobileSticky, setShowMobileSticky] = useState(pathname !== "/");
 
-  const navLinkClass =
-    "text-sm text-muted-foreground transition-colors hover:text-foreground aria-[current]:font-medium aria-[current]:text-foreground";
-  /** Mobile sheet: comfortable tap targets */
-  const navLinkMobileClass = `${navLinkClass} inline-flex min-h-11 touch-manipulation items-center py-2`;
+  useEffect(() => {
+    if (hideStickyBar) {
+      setShowMobileSticky(false);
+      return;
+    }
+    if (pathname !== "/") {
+      setShowMobileSticky(true);
+      return;
+    }
+    setShowMobileSticky(false);
+    const hero = document.getElementById("hero");
+    if (!hero) {
+      setShowMobileSticky(true);
+      return;
+    }
+    const obs = new IntersectionObserver(([entry]) => setShowMobileSticky(!entry.isIntersecting), {
+      root: null,
+      threshold: 0,
+    });
+    obs.observe(hero);
+    return () => obs.disconnect();
+  }, [hideStickyBar, pathname]);
 
   useEffect(() => {
     if (!megaSection) return;
@@ -110,39 +130,15 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                 side="right"
                 className="flex h-full max-h-[100dvh] w-[min(100vw-1rem,24rem)] flex-col gap-0 overflow-hidden p-0"
               >
-                <SheetHeader className="shrink-0 space-y-0 border-b px-6 py-4 text-left">
-                  <SheetTitle>Navigate</SheetTitle>
+                <SheetHeader className="flex shrink-0 flex-row flex-wrap items-center justify-between gap-3 space-y-0 border-b px-6 py-4 text-left">
+                  <SheetTitle className="mb-0">Navigate</SheetTitle>
+                  <PublicSiteAccountControl variant="sheet-header" onNavigate={() => setOpen(false)} />
                 </SheetHeader>
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
                   <div className="flex flex-col gap-8 text-base">
                     <nav aria-label="Site pages">
                       <PublicSiteNavSectionsCards layout="sheet" onNavigate={() => setOpen(false)} />
                     </nav>
-                    <section aria-label="Account">
-                      <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Account
-                      </p>
-                      <nav className="flex flex-col gap-1">
-                        <SignedOut>
-                          <Link href="/login" className={navLinkMobileClass} onClick={() => setOpen(false)}>
-                            Sign in
-                          </Link>
-                          <Link href="/register" className={navLinkMobileClass} onClick={() => setOpen(false)}>
-                            Create account
-                          </Link>
-                        </SignedOut>
-                        <SignedIn>
-                          <Link
-                            href="/auth/continue"
-                            className={`${navLinkMobileClass} gap-2`}
-                            onClick={() => setOpen(false)}
-                          >
-                            <LayoutDashboard className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
-                            My account
-                          </Link>
-                        </SignedIn>
-                      </nav>
-                    </section>
                     <Button asChild className="h-11 min-h-11 w-full shrink-0 touch-manipulation rounded-lg">
                       <Link href="/book" onClick={() => setOpen(false)}>
                         Book a collection <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
@@ -157,23 +153,9 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            <SignedOut>
-              <Button variant="outline" size="sm" asChild className="hidden md:inline-flex">
-                <Link href="/register">Create account</Link>
-              </Button>
-              <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
-                <Link href="/login">Sign in</Link>
-              </Button>
-            </SignedOut>
-            <SignedIn>
-              <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
-                <Link href="/auth/continue" className="gap-2">
-                  <LayoutDashboard className="h-4 w-4" aria-hidden />
-                  My account
-                </Link>
-              </Button>
-            </SignedIn>
-            <span className="ms-0.5 shrink-0 lg:ms-1">
+            <PublicSiteAccountControl variant="desktop" />
+
+            <span className="hidden shrink-0 lg:inline-flex lg:items-center">
               <ThemeToggle />
             </span>
           </div>
@@ -204,12 +186,12 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       <div
         className={cn(
           "min-w-0 flex-1 overflow-x-hidden",
-          !hideStickyBar && "pb-[4.75rem] md:pb-0",
+          !hideStickyBar && showMobileSticky && "pb-[4.75rem] md:pb-0",
         )}
       >
         {children}
       </div>
-      {!hideStickyBar ? (
+      {!hideStickyBar && showMobileSticky ? (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] backdrop-blur-md supports-[backdrop-filter]:bg-background/80 md:hidden">
           <div
             className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "grid grid-cols-2 gap-2 pt-3")}

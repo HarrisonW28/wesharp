@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 
-import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Camera, ListChecks, PoundSterling, Sparkles, UserRound } from "lucide-react";
 
@@ -19,7 +18,10 @@ export function HomeHero({ homepage }: { homepage: SiteContent["homepage"] }) {
     reduceMotion ? { duration: 0, delay: 0 } : { duration, delay };
 
   return (
-    <section className="relative overflow-hidden border-b bg-gradient-to-b from-primary/[0.07] via-background to-background">
+    <section
+      id="hero"
+      className="relative overflow-hidden border-b bg-gradient-to-b from-primary/[0.07] via-background to-background"
+    >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_-10%,rgb(59_130_246/0.12),transparent_52%)]" />
       {/* Abstract “blade edge” glint + soft blobs: `md+` only; CSS anim respects reduced motion */}
       <div
@@ -112,21 +114,6 @@ export function HomeHero({ homepage }: { homepage: SiteContent["homepage"] }) {
                 {homepage.cta_how}
               </Link>
             </nav>
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:justify-center sm:gap-4 lg:justify-start">
-              <SignedOut>
-                <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
-                  <Link href="/login">{homepage.cta_sign_in}</Link>
-                </Button>
-                <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
-                  <Link href="/register">{homepage.cta_register}</Link>
-                </Button>
-              </SignedOut>
-              <SignedIn>
-                <Button variant="ghost" size="sm" className="col-span-2 justify-center text-muted-foreground sm:col-span-1" asChild>
-                  <Link href="/auth/continue">{homepage.cta_my_account}</Link>
-                </Button>
-              </SignedIn>
-            </div>
           </div>
           <motion.div
             className="mx-auto w-full max-w-md lg:mx-0 lg:max-w-none lg:justify-self-end"

@@ -7,7 +7,7 @@ import { PublicSubscriptionPlansCatalog } from "@/components/marketing/PublicSub
 import { fetchPublicSiteData } from "@/lib/site-content/fetch-site-content";
 
 export const metadata: Metadata = {
-  title: "Pricing | WeSharp",
+  title: "Pricing",
   description:
     "Live pricing estimate and subscription programmes. Written quote before you commit.",
   openGraph: {

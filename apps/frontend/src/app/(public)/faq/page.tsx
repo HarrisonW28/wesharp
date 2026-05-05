@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { fetchPublicSiteContent } from "@/lib/site-content/fetch-site-content";
 
 export const metadata: Metadata = {
-  title: "FAQ | WeSharp",
+  title: "FAQ",
   description:
     "Answers on booking, tracking, photos, subscriptions, coverage, safety, and invoices — before you send an enquiry.",
   openGraph: {

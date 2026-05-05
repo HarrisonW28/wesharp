@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
@@ -20,9 +21,14 @@ export default async function ServiceAreasPage() {
       </Suspense>
       <div className="flex flex-wrap gap-2">
         {SERVICE_AREAS.map((area) => (
-          <span key={area.id} className="rounded-full border bg-card px-3 py-1.5 text-sm text-foreground">
-            {area.label}
-          </span>
+          <Link
+            key={area.id}
+            href={`/service-areas/${area.slug}`}
+            className="rounded-full border bg-card px-3 py-1.5 text-sm text-foreground underline-offset-4 transition-colors hover:border-primary/40 hover:bg-muted/50"
+          >
+            Knife sharpening — {area.seoCity}
+            <span className="sr-only"> ({area.label})</span>
+          </Link>
         ))}
       </div>
       <p className="pt-4">{s.footnote}</p>

@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 import { Providers } from "./providers";
+import { publicSiteOrigin } from "@/lib/public-site-url";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -18,9 +19,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(publicSiteOrigin()),
   title: {
     default: "WeSharp",
-    template: "%s · WeSharp",
+    template: "WeSharp · %s",
   },
   description: "Commercial knife sharpening operations for hospitality teams.",
 };

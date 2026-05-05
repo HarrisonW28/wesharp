@@ -14,7 +14,7 @@ import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
 import { fetchPublicSiteData } from "@/lib/site-content/fetch-site-content";
 
 export const metadata: Metadata = {
-  title: "Professional knife sharpening | WeSharp",
+  title: "Professional knife sharpening",
   description:
     "Doorstep collection and return for Greater Manchester & Liverpool. Book online, track your order, and get blades back workshop-sharp.",
   openGraph: {
@@ -136,12 +136,13 @@ export default async function HomePage() {
           </div>
           <div className="mt-8 flex flex-wrap justify-center gap-2 md:justify-start">
             {SERVICE_AREAS.map((area) => (
-              <span
+              <Link
                 key={area.id}
-                className="rounded-full border bg-background px-3 py-1.5 text-xs text-muted-foreground md:text-sm"
+                href={`/service-areas/${area.slug}`}
+                className="rounded-full border bg-background px-3 py-1.5 text-xs text-muted-foreground underline-offset-4 transition-colors hover:border-primary/40 hover:text-foreground md:text-sm"
               >
-                {area.label}
-              </span>
+                Knife sharpening in {area.seoCity}
+              </Link>
             ))}
           </div>
           <p className="mt-4 text-center text-xs text-muted-foreground md:text-left">

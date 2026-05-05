@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { fetchPublicSiteContent } from "@/lib/site-content/fetch-site-content";
 
 export const metadata: Metadata = {
-  title: "How it works | WeSharp",
+  title: "How it works",
   description:
     "Collection, workshop sharpening, quality check, and return — with logging, optional photo evidence in your portal, and clear handovers for professional kitchens.",
   openGraph: {
