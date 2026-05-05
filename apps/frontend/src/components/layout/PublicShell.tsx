@@ -120,6 +120,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" aria-hidden />
               </Link>
             </Button>
+            <PublicSiteAccountControl variant="desktop" />
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button size="icon" variant="outline" type="button" className="lg:hidden" aria-label="Open menu">
@@ -130,9 +131,11 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                 side="right"
                 className="flex h-full max-h-[100dvh] w-[min(100vw-1rem,24rem)] flex-col gap-0 overflow-hidden p-0"
               >
-                <SheetHeader className="flex shrink-0 flex-row flex-wrap items-center justify-between gap-3 space-y-0 border-b px-6 py-4 text-left">
-                  <SheetTitle className="mb-0">Navigate</SheetTitle>
-                  <PublicSiteAccountControl variant="sheet-header" onNavigate={() => setOpen(false)} />
+                <SheetHeader className="flex shrink-0 flex-row flex-wrap items-center justify-between gap-3 space-y-0 border-b py-4 pl-6 pr-14 text-left sm:pr-16">
+                  <SheetTitle className="mb-0 shrink-0">Navigate</SheetTitle>
+                  <div className="min-w-0 shrink justify-end">
+                    <PublicSiteAccountControl variant="sheet-header" onNavigate={() => setOpen(false)} />
+                  </div>
                 </SheetHeader>
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
                   <div className="flex flex-col gap-8 text-base">
@@ -152,8 +155,6 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
                 </div>
               </SheetContent>
             </Sheet>
-
-            <PublicSiteAccountControl variant="desktop" />
 
             <span className="hidden shrink-0 lg:inline-flex lg:items-center">
               <ThemeToggle />

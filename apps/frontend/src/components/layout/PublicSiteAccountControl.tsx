@@ -34,9 +34,11 @@ type SignedInMenuProps = {
   align: "end" | "start";
   onNavigate?: () => void;
   compactTrigger?: boolean;
+  /** Replaces default max-width when set (use in sheet header next to dialog close). */
+  triggerClassName?: string;
 };
 
-function SignedInMenu({ align, onNavigate, compactTrigger }: SignedInMenuProps) {
+function SignedInMenu({ align, onNavigate, compactTrigger, triggerClassName }: SignedInMenuProps) {
   const { user } = useUser();
   const label = profileLabel(user);
   const email = profileEmail(user);
@@ -50,8 +52,10 @@ function SignedInMenu({ align, onNavigate, compactTrigger }: SignedInMenuProps) 
           type="button"
           className={cn(
             "touch-manipulation gap-2 rounded-lg px-2.5 sm:px-3",
-            compactTrigger && "max-w-[min(11rem,calc(100vw-9rem))]",
-            !compactTrigger && "max-w-[min(14rem,40vw)]",
+            triggerClassName ??
+              (compactTrigger
+                ? "max-w-[min(11rem,calc(100vw-9rem))] lg:max-w-[min(14rem,40vw)]"
+                : "max-w-[min(14rem,40vw)]"),
           )}
         >
           {user?.imageUrl ? (
@@ -130,21 +134,32 @@ export function PublicSiteAccountControl({ variant, onNavigate }: PublicSiteAcco
           </div>
         </SignedOut>
         <SignedIn>
-          <SignedInMenu align="end" onNavigate={close} compactTrigger />
+          <SignedInMenu
+            align="end"
+            onNavigate={close}
+            compactTrigger
+            triggerClassName="max-w-[min(8.75rem,calc(100%-0.5rem))] sm:max-w-[10rem]"
+          />
         </SignedIn>
       </>
     );
   }
 
   return (
-    <div className="hidden md:block">
+    <>
       <SignedOut>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" type="button" className="gap-1.5 rounded-lg px-3">
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              className="touch-manipulation gap-1.5 rounded-lg px-2 sm:px-3"
+              aria-label="Account menu"
+            >
               <User className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-              Account
-              <ChevronDown className="h-4 w-4 shrink-0 opacity-60" aria-hidden />
+              <span className="hidden min-[380px]:inline">Account</span>
+              <ChevronDown className="hidden h-4 w-4 shrink-0 opacity-60 min-[380px]:inline-block" aria-hidden />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -162,8 +177,8 @@ export function PublicSiteAccountControl({ variant, onNavigate }: PublicSiteAcco
         </DropdownMenu>
       </SignedOut>
       <SignedIn>
-        <SignedInMenu align="end" onNavigate={close} />
+        <SignedInMenu align="end" onNavigate={close} compactTrigger />
       </SignedIn>
-    </div>
+    </>
   );
 }
