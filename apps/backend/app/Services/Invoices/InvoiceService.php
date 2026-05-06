@@ -21,7 +21,7 @@ final class InvoiceService
 
         $query = Invoice::query()
             ->with([
-                'company:id,name,city',
+                'company:id,name,city,deleted_at',
                 'order:id,booking_id,created_at,order_status',
                 'payments:id,invoice_id,amount_pence,payment_status,payment_method,paid_at,reference',
             ]);
@@ -35,7 +35,7 @@ final class InvoiceService
             $query->where(function ($qq) use ($v, $needle): void {
                 $qq->where('invoice_number', 'like', $needle)
                     ->orWhereKey($v)
-                    ->orWhereHas('company', fn ($c) => $c->where('name', 'like', $needle));
+                    ->orWhereHas('company', fn ($c) => $c->withTrashed()->where('name', 'like', $needle));
             });
         }
 

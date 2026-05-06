@@ -790,7 +790,18 @@ export default function AdminOrderDetailPage() {
       />
       <PageHeader
         title={orderRef}
-        description={`${o.company?.name ?? "Account"}${o.company?.city ? ` · ${o.company.city}` : ""}`}
+        description={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            <span>
+              {`${o.company?.name ?? "Account"}${o.company?.city ? ` · ${o.company.city}` : ""}`}
+            </span>
+            {o.company?.is_deleted ? (
+              <Badge variant="secondary" className="font-normal">
+                Removed from CRM
+              </Badge>
+            ) : null}
+          </span>
+        }
         titleRowEnd={<StatusBadge kind="order" status={o.status ?? ""} />}
         actions={
           canOrders ? (
@@ -1224,10 +1235,17 @@ export default function AdminOrderDetailPage() {
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-muted-foreground">Company</dt>
-              <dd className="font-semibold">
-                {o.company?.name ?? "—"}
-                {o.company?.city ? (
-                  <span className="font-normal text-muted-foreground"> · {o.company.city}</span>
+              <dd className="space-y-1 font-semibold">
+                <div>
+                  {o.company?.name ?? "—"}
+                  {o.company?.city ? (
+                    <span className="font-normal text-muted-foreground"> · {o.company.city}</span>
+                  ) : null}
+                </div>
+                {o.company?.is_deleted ? (
+                  <Badge variant="secondary" className="font-normal">
+                    Removed from CRM
+                  </Badge>
                 ) : null}
               </dd>
             </div>

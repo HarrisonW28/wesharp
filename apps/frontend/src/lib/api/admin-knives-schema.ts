@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { CompanySoftDeleteEmbedSchema } from "./admin-crm-schema";
 import { EvidencePhotoAdminRowSchema, EvidenceSettingsSchema } from "./admin-routes-schema";
 
 export const AdminDamageReportSchema = z
@@ -33,6 +34,7 @@ export const KnifeRowSchema = z
     status: z.string().nullable().optional(),
     company_id: z.string().nullable().optional(),
     company_name: z.string().nullable().optional(),
+    company: CompanySoftDeleteEmbedSchema.nullable().optional(),
     order_id: z.string().nullable().optional(),
     booking_id: z.string().nullable().optional(),
     updated_at: z.string().nullable().optional(),
@@ -82,15 +84,7 @@ export const KnifePastOrderRowSchema = z
 export const KnifeDetailSchema = z
   .object({
     id: z.string(),
-    company: z
-      .object({
-        id: z.string(),
-        name: z.string().nullable().optional(),
-        city: z.string().nullable().optional(),
-      })
-      .passthrough()
-      .nullable()
-      .optional(),
+    company: CompanySoftDeleteEmbedSchema.nullable().optional(),
     tag_id: z.string().nullable().optional(),
     knife_type: z.string().nullable().optional(),
     brand: z.string().nullable().optional(),

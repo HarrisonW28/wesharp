@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\CompanyStatus;
+use App\Enums\OrderStatus;
+use App\Models\Booking;
 use App\Models\Company;
+use App\Models\Order;
 use App\Models\User;
 use Database\Seeders\WeSharpDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -69,5 +72,51 @@ final class AdminCompaniesMutationApiTest extends TestCase
             ->assertNoContent();
 
         self::assertSoftDeleted('companies', ['id' => $company->id]);
+    }
+
+    public function test_deleted_company_excluded_from_index_search(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+        $unique = 'UniqueGhostCo '.bin2hex(random_bytes(4));
+        $company = Company::factory()->create([
+            'name' => $unique,
+            'slug' => 'ghost-'.bin2hex(random_bytes(4)),
+            'company_status' => CompanyStatus::Lead,
+        ]);
+
+        $before = $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->getJson('/api/admin/companies?q='.urlencode($unique));
+        $before->assertOk();
+        self::assertGreaterThanOrEqual(1, count($before->json('data.items')));
+
+        $company->delete();
+
+        $after = $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->getJson('/api/admin/companies?q='.urlencode($unique));
+        $after->assertOk();
+        self::assertSame([], $after->json('data.items'));
+    }
+
+    public function test_deleted_company_surfaces_on_order_detail(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+        $company = Company::factory()->create([
+            'company_status' => CompanyStatus::Lead,
+            'slug' => 'order-soft-del-'.bin2hex(random_bytes(4)),
+        ]);
+        $booking = Booking::factory()->create(['company_id' => $company->id]);
+        $order = Order::factory()->create([
+            'company_id' => $company->id,
+            'booking_id' => $booking->id,
+            'order_status' => OrderStatus::Draft,
+        ]);
+
+        $company->delete();
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->getJson('/api/admin/orders/'.$order->id)
+            ->assertOk()
+            ->assertJsonPath('data.company.is_deleted', true)
+            ->assertJsonPath('data.company.name', $company->name);
     }
 }

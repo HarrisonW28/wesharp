@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { CompanySoftDeleteEmbedSchema } from "./admin-crm-schema";
 import { AdminDamageReportSchema } from "./admin-knives-schema";
 import { EvidencePhotoAdminRowSchema, EvidenceSettingsSchema } from "./admin-routes-schema";
 
@@ -65,13 +66,7 @@ export const OrderRowSchema = z.object({
   total_pence: z.number().nullable().optional(),
   currency: z.string().nullable().optional(),
   payment_status: z.string().nullable().optional(),
-  company: z
-    .object({
-      name: z.string().nullable().optional(),
-      city: z.string().nullable().optional(),
-    })
-    .nullable()
-    .optional(),
+  company: CompanySoftDeleteEmbedSchema.nullable().optional(),
   booking: OrderBookingLinkSchema.nullable().optional(),
   scheduled_date: z.string().nullable().optional(),
   route_name: z.string().nullable().optional(),

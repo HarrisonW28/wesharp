@@ -12,6 +12,15 @@ export const CompanyStatusEnum = z.enum([
 
 export type CompanyStatus = z.infer<typeof CompanyStatusEnum>;
 
+/** Embedded on orders, invoices, knives when the CRM row may be soft-deleted. */
+export const CompanySoftDeleteEmbedSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  city: z.string().nullable().optional(),
+  is_deleted: z.boolean(),
+  deleted_at: z.string().nullable().optional(),
+});
+
 export const CompanyRowSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),

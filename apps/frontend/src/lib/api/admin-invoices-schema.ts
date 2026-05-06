@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { CompanySoftDeleteEmbedSchema } from "./admin-crm-schema";
+
 export const LinkedOrderListSchema = z.object({
   reference: z.string().optional(),
   display_reference: z.string().nullable().optional(),
@@ -32,6 +34,7 @@ export const InvoiceRowSchema = z.object({
   formatted_outstanding: z.string().optional(),
   formatted_amount: z.string().optional(),
   linked_order: LinkedOrderListSchema.nullable().optional(),
+  company: CompanySoftDeleteEmbedSchema.nullable().optional(),
   updated_at: z.string().nullable().optional(),
 });
 
@@ -80,9 +83,7 @@ export const InvoiceAuditEntrySchema = z
   })
   .passthrough();
 
-export const InvoiceCompanySchema = z.object({
-  name: z.string().nullable().optional(),
-  city: z.string().nullable().optional(),
+export const InvoiceCompanySchema = CompanySoftDeleteEmbedSchema.extend({
   billing_email: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
 });

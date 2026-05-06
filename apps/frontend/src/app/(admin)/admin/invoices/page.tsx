@@ -184,7 +184,14 @@ export default function AdminInvoicesPage() {
               >
                 {label}
               </Link>
-              <div className="text-xs text-muted-foreground">{row.original.company_name ?? "—"}</div>
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                <span>{row.original.company_name ?? "—"}</span>
+                {row.original.company?.is_deleted ? (
+                  <Badge variant="secondary" className="w-fit font-normal">
+                    Removed from CRM
+                  </Badge>
+                ) : null}
+              </div>
             </div>
           );
         },

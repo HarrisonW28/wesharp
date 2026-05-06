@@ -33,7 +33,7 @@ final class OrderService
         $perPage = min(75, max(1, (int) $request->query('per_page', 20)));
 
         $with = [
-            'company:id,name,city',
+            'company:id,name,city,deleted_at',
             'booking:id,scheduled_date,booking_status,estimated_knife_count,actual_knife_count,service_type',
         ];
         if ($withOperationalRoute) {
@@ -54,7 +54,7 @@ final class OrderService
                 $q->where('id', $v)
                     ->orWhereHas('knives', fn ($k) => $k->where('tag_id', 'like', $needle))
                     ->orWhereHas('knives', fn ($k) => $k->where('label', 'like', $needle))
-                    ->orWhereHas('company', fn ($c) => $c->where('name', 'like', $needle));
+                    ->orWhereHas('company', fn ($c) => $c->withTrashed()->where('name', 'like', $needle));
             });
         }
 

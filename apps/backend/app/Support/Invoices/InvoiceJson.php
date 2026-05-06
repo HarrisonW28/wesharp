@@ -13,6 +13,7 @@ use App\Support\Audit\AuditActionLabels;
 use App\Support\Audit\AuditLogPresenter;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
+use App\Support\Crm\CompanySoftDeletePresentation;
 use App\Support\Money\MoneyFormatting;
 use App\Support\Orders\OrderJson;
 use App\Support\Payments\PaymentJson;
@@ -157,7 +158,7 @@ final class InvoiceJson
     public static function portalDetail(Invoice $invoice): array
     {
         $invoice->loadMissing([
-            'company:id,name,city,billing_email,phone',
+            'company:id,name,city,billing_email,phone,deleted_at',
             'order:id,created_at,order_status',
             'items' => fn ($q) => $q->orderBy('created_at'),
             'payments' => fn ($q) => $q->orderByDesc('paid_at')->orderByDesc('created_at'),
@@ -166,12 +167,11 @@ final class InvoiceJson
         $row = self::portalListRow($invoice);
 
         $company = $invoice->company;
-        $row['company'] = $company !== null ? [
-            'name' => $company->name,
-            'city' => $company->city,
+        $emb = CompanySoftDeletePresentation::embed($company);
+        $row['company'] = $emb !== null && $company !== null ? array_merge($emb, [
             'billing_email' => $company->billing_email,
             'phone' => $company->phone,
-        ] : null;
+        ]) : null;
         $row['issuer'] = self::issuerPayload();
         $row['default_payment_footer'] = (string) config('invoices.default_payment_footer', '');
         $row['customer_notes'] = $invoice->customer_notes;
@@ -274,6 +274,7 @@ final class InvoiceJson
             'payment_status' => InvoiceRollup::paymentStatus($invoice),
             'overdue' => InvoiceRollup::isPastDue($invoice),
             'company_name' => $invoice->relationLoaded('company') && $invoice->company !== null ? $invoice->company->name : null,
+            'company' => CompanySoftDeletePresentation::embed($invoice->relationLoaded('company') ? $invoice->company : null),
             'linked_order' => $invoice->relationLoaded('order') && $invoice->order !== null ? [
                 'reference' => $orderAdminRef,
                 'display_reference' => $orderRef,
@@ -287,7 +288,7 @@ final class InvoiceJson
     public static function detail(Invoice $invoice): array
     {
         $invoice->loadMissing([
-            'company:id,name,city,billing_email,phone',
+            'company:id,name,city,billing_email,phone,deleted_at',
             'order' => fn ($q) => $q->with('booking:id,scheduled_date,booking_status'),
             'items' => fn ($q) => $q->orderBy('created_at'),
             'payments' => fn ($q) => $q->with('recordedBy:id,name,email')->orderByDesc('paid_at')->orderByDesc('created_at'),
@@ -320,12 +321,11 @@ final class InvoiceJson
         $row['payments'] = $invoice->payments->map(fn ($p): array => PaymentJson::summary($p))->values()->all();
 
         $company = $invoice->company;
-        $row['company'] = $company !== null ? [
-            'name' => $company->name,
-            'city' => $company->city,
+        $emb = CompanySoftDeletePresentation::embed($company);
+        $row['company'] = $emb !== null && $company !== null ? array_merge($emb, [
             'billing_email' => $company->billing_email,
             'phone' => $company->phone,
-        ] : null;
+        ]) : null;
 
         $order = $invoice->order;
         $row['order'] = $order !== null ? [

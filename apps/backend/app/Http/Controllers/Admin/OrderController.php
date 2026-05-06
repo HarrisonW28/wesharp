@@ -104,7 +104,7 @@ final class OrderController extends Controller
 
         /** @phpstan-ignore-next-line */
         $order->loadMissing([
-            'company:id,name,city',
+            'company:id,name,city,deleted_at',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
@@ -140,7 +140,7 @@ final class OrderController extends Controller
         }
 
         $order->loadMissing([
-            'company:id,name,city',
+            'company:id,name,city,deleted_at',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
@@ -169,7 +169,7 @@ final class OrderController extends Controller
         $this->transitionOrderItemServiceStatusAction->execute($orderItem, $target, $request->user(), $request, $note);
 
         $order->loadMissing([
-            'company:id,name,city',
+            'company:id,name,city,deleted_at',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
@@ -191,7 +191,7 @@ final class OrderController extends Controller
         $order = $this->orderService->update($order, $request->validated(), $request->user(), $request);
 
         $order->loadMissing([
-            'company:id,name,city',
+            'company:id,name,city,deleted_at',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name',
             'knives' => fn ($q) => $q->orderBy('position')->limit(250),
@@ -220,7 +220,7 @@ final class OrderController extends Controller
         /** @phpstan-ignore-next-line */
         $order->refresh();
         $order->loadMissing([
-            'company:id,name,city',
+            'company:id,name,city,deleted_at',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
@@ -250,7 +250,7 @@ final class OrderController extends Controller
         /** @phpstan-ignore-next-line */
         $order = $this->orderService->complete($order->fresh(['items', 'knives']), $request->user(), $request)->loadMissing([
             /** @phpstan-ignore-next-line */
-            'company:id,name,city',
+            'company:id,name,city,deleted_at',
             'knives' => fn ($q) => $q->latest()->limit(250),
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
             'booking' => fn ($q) => $q->with(['contact', 'location']),
@@ -337,7 +337,7 @@ final class OrderController extends Controller
         );
 
         $fresh->loadMissing([
-            'company:id,name,city',
+            'company:id,name,city,deleted_at',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
@@ -366,7 +366,7 @@ final class OrderController extends Controller
 
         $freshOrder->loadMissing([
             'knives' => fn ($q) => $q->latest()->limit(200),
-            'company:id,name,city',
+            'company:id,name,city,deleted_at',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name',
         ]);

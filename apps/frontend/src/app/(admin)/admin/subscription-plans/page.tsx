@@ -342,19 +342,6 @@ export default function AdminSubscriptionPlansPage() {
         description={
           <p className="text-pretty leading-relaxed">{pageDescription}</p>
         }
-        actions={
-          canViewPlans ? (
-            <Button
-              type="button"
-              className="w-full sm:w-auto"
-              onClick={() => setCreateOpen((v) => !v)}
-              disabled={actionsDisabled || !admin.origin}
-            >
-              <Plus className="mr-2 h-4 w-4" aria-hidden />
-              New plan
-            </Button>
-          ) : undefined
-        }
       />
 
       <div className="flex flex-col gap-8 md:gap-10">
@@ -382,15 +369,31 @@ export default function AdminSubscriptionPlansPage() {
             ) : null}
 
             <Card className="overflow-hidden" id="subscription-plans-catalogue">
-              <CardHeader className="space-y-1 p-4 pb-3 sm:p-6 sm:pb-4">
-                <CardTitle className="text-lg font-semibold tracking-tight">
-                  Subscription plans
-                </CardTitle>
-                <CardDescription className="text-sm leading-snug">
-                  {rows.length
-                    ? `${rows.length} total · ${activeCount} active`
-                    : "No plans yet."}
-                </CardDescription>
+              <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <CardTitle className="text-lg font-semibold tracking-tight">
+                      Subscription plans
+                    </CardTitle>
+                    <CardDescription className="text-sm leading-snug">
+                      {rows.length
+                        ? `${rows.length} total · ${activeCount} active`
+                        : "No plans yet."}
+                    </CardDescription>
+                  </div>
+                  {canManage ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-full shrink-0 rounded-lg sm:w-auto"
+                      onClick={() => setCreateOpen((v) => !v)}
+                      disabled={saving || !admin.origin}
+                    >
+                      <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+                      New plan
+                    </Button>
+                  ) : null}
+                </div>
               </CardHeader>
               <CardContent className="space-y-3 p-4 pt-0 sm:p-6 sm:pt-0">
                 {plansQuery.isLoading ? (

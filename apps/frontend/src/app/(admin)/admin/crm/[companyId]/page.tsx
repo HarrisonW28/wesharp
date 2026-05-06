@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Loader2, Mail, RefreshCw } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Loader2, Mail, RefreshCw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -36,6 +36,15 @@ import { CompanyStatusBadge } from "@/components/crm/CompanyStatusBadge";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/tables/DataTable";
 import {
@@ -93,6 +102,7 @@ const bookingFormSchema = z.object({
 
 export default function AdminCrmCompanyPage() {
   const params = useParams();
+  const router = useRouter();
   const companyId =
     typeof params.companyId === "string" ? params.companyId : Array.isArray(params.companyId)
       ? params.companyId[0]
@@ -108,6 +118,7 @@ export default function AdminCrmCompanyPage() {
   const canViewPayments = perms.has("payments.view");
   const canManageSubs = perms.has("subscriptions.manage");
   const canViewSubs = perms.has("subscriptions.view");
+  const canDeleteCompany = perms.has("companies.delete");
   const canUseRouteNoteVisibility =
     perms.has("routes.view") || perms.has("routes.manage") || perms.has("route_stops.update");
   const canUseFinanceNoteVisibility =
@@ -118,6 +129,7 @@ export default function AdminCrmCompanyPage() {
     perms.has("subscriptions.manage");
 
   const [tab, setTab] = useState<CrmTab>("overview");
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
 
   const invalidateCompany = async () => {
     await qc.invalidateQueries({ queryKey: ["admin-company", companyId] });
@@ -233,6 +245,26 @@ export default function AdminCrmCompanyPage() {
     },
     onError: (e: unknown) => {
       toast.error(e instanceof Error ? e.message : "Status update failed.");
+    },
+  });
+
+  const deleteCompanyMutation = useMutation({
+    mutationFn: async () => {
+      const res = await admin.json<unknown>(`/api/admin/companies/${companyId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error(res.message);
+      }
+    },
+    onSuccess: async () => {
+      toast.success("Account removed from the list.");
+      setDeleteAccountOpen(false);
+      await qc.invalidateQueries({ queryKey: ["admin-companies"] });
+      router.replace("/admin/crm");
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Could not remove account.");
     },
   });
 
@@ -562,11 +594,62 @@ export default function AdminCrmCompanyPage() {
           </>
         }
         actions={
-          <Button type="button" variant="outline" size="sm" asChild>
-            <Link href="/admin/crm">Back to list</Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {canDeleteCompany ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setDeleteAccountOpen(true)}
+              >
+                <Trash2 className="size-4" aria-hidden />
+                Remove from CRM
+              </Button>
+            ) : null}
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link href="/admin/crm">Back to list</Link>
+            </Button>
+          </div>
         }
       />
+
+      <AlertDialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this account from the CRM list?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  The account is archived: it no longer appears in CRM search or lists. Existing orders, invoices, payments,
+                  and bookings stay linked with the same name so finance and operations history remain intact.
+                </p>
+                <p className="text-foreground">There is no undo from this screen.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button" disabled={deleteCompanyMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteCompanyMutation.isPending}
+              onClick={() => deleteCompanyMutation.mutate()}
+            >
+              {deleteCompanyMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                  Removing…
+                </>
+              ) : (
+                "Remove from CRM"
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <nav className="flex flex-wrap gap-1 border-b border-border pb-2" aria-label="Account sections">
         {CRM_TABS.map((id) => (

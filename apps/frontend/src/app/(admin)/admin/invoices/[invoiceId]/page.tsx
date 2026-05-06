@@ -361,7 +361,18 @@ export default function AdminInvoiceDetailPage() {
         <Breadcrumbs crumbs={[{ label: "Invoices", href: "/admin/invoices" }, { label: title }]} />
         <PageHeader
           title={title}
-          description={`${inv.company?.name ?? "Account"}${inv.company?.city ? ` · ${inv.company.city}` : ""}`}
+          description={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              <span>
+                {`${inv.company?.name ?? "Account"}${inv.company?.city ? ` · ${inv.company.city}` : ""}`}
+              </span>
+              {inv.company?.is_deleted ? (
+                <Badge variant="secondary" className="font-normal">
+                  Removed from CRM
+                </Badge>
+              ) : null}
+            </span>
+          }
           actions={
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="outline" size="lg" className="gap-2">

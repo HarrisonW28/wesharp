@@ -15,7 +15,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Pricing\PricingRuleResolver;
 use App\Support\Audit\AuditLogPresenter;
-use App\Support\Evidence\EvidencePhotoJson;
+use App\Support\Crm\CompanySoftDeletePresentation;
 use App\Support\Knives\KnifeJson;
 use App\Support\Knives\KnifeStatusPresentation;
 use App\Support\Money\MoneyFormatting;
@@ -88,10 +88,7 @@ final class OrderJson
             'is_complimentary' => (bool) $order->is_complimentary,
             'estimated_knife_count' => $order->relationLoaded('booking') ? $order->booking?->estimated_knife_count : null,
             'actual_knife_count' => $order->relationLoaded('booking') ? $order->booking?->actual_knife_count : null,
-            'company' => $order->relationLoaded('company') && $order->company !== null ? [
-                'name' => $order->company->name,
-                'city' => $order->company->city,
-            ] : null,
+            'company' => CompanySoftDeletePresentation::embed($order->relationLoaded('company') ? $order->company : null),
             'scheduled_date' => $order->booking?->scheduled_date?->format('Y-m-d'),
             'booking' => $order->booking !== null ? [
                 'id' => (string) $order->booking_id,
@@ -431,10 +428,7 @@ final class OrderJson
             'formatted_amount' => MoneyFormatting::formatGbpFromPence((int) $order->total_pence),
             'currency' => $order->currency,
             'payment_status' => $order->payment_status?->value,
-            'company' => $order->relationLoaded('company') && $order->company !== null ? [
-                'name' => $order->company->name,
-                'city' => $order->company->city,
-            ] : null,
+            'company' => CompanySoftDeletePresentation::embed($order->relationLoaded('company') ? $order->company : null),
             'booking' => $order->relationLoaded('booking') && $order->booking !== null
                 ? [
                     'id' => (string) $order->booking->id,

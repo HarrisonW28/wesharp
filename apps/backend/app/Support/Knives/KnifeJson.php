@@ -13,6 +13,7 @@ use App\Models\EvidencePhoto;
 use App\Models\Knife;
 use App\Models\KnifeServiceAssignment;
 use App\Support\Audit\AuditLogPresenter;
+use App\Support\Crm\CompanySoftDeletePresentation;
 use App\Support\Evidence\EvidencePhotoJson;
 use App\Support\Orders\OrderJson;
 use App\Support\Orders\OrderStatusPresentation;
@@ -25,7 +26,7 @@ final class KnifeJson
     public static function detailEagerLoadRelations(): array
     {
         return [
-            'company:id,name,city',
+            'company:id,name,city,deleted_at',
             'booking:id,scheduled_date,booking_status',
             'order:id,order_status,knife_count,price_per_knife_pence',
             'photos' => fn ($q) => $q->orderBy('sort_order')->with([
@@ -111,6 +112,7 @@ final class KnifeJson
             'allowed_next_statuses' => self::allowedNextKnifeStatuses($knife),
             'company_id' => (string) $knife->company_id,
             'company_name' => $knife->relationLoaded('company') && $knife->company !== null ? $knife->company->name : null,
+            'company' => CompanySoftDeletePresentation::embed($knife->relationLoaded('company') ? $knife->company : null),
             'order_id' => $knife->order_id !== null ? (string) $knife->order_id : null,
             'booking_id' => $knife->booking_id !== null ? (string) $knife->booking_id : null,
             'updated_at' => $knife->updated_at?->toIso8601String(),
@@ -199,11 +201,7 @@ final class KnifeJson
             'status_label' => KnifeStatusPresentation::adminLabel($knife->knife_status),
             'allowed_next_statuses' => self::allowedNextKnifeStatuses($knife),
             'position' => $knife->position,
-            'company' => [
-                'id' => (string) $knife->company_id,
-                'name' => $knife->company?->name,
-                'city' => $knife->company?->city,
-            ],
+            'company' => CompanySoftDeletePresentation::embed($knife->company),
             'booking_id' => $knife->booking_id !== null ? (string) $knife->booking_id : null,
             'order_id' => $knife->order_id !== null ? (string) $knife->order_id : null,
             'order_summary' => $knife->order !== null ? [
