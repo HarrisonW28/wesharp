@@ -60,25 +60,30 @@ export function WorkQueueAttentionCard() {
         hasItems ? "border-primary/35 bg-primary/[0.03] shadow-sm" : null,
       )}
     >
-      <CardHeader className="space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
+      <CardHeader className="min-w-0 space-y-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <ClipboardList
             className="h-4 w-4 text-muted-foreground"
             aria-hidden
           />
-          <CardTitle className="text-base font-semibold">
+          <CardTitle className="min-w-0 max-w-full text-base font-semibold text-pretty break-words">
             Needs attention
             {hasItems ? (
-              <span className="ml-2 inline-flex items-center rounded-md bg-primary/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary">
-                {flat.length} {flat.length === 1 ? "lane" : "lanes"} ·{" "}
-                {totalTasks} tasks
+              <span className="ml-2 inline-flex max-w-full flex-wrap items-center gap-x-1 gap-y-1 rounded-md bg-primary/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                <span className="break-words">
+                  {flat.length} {flat.length === 1 ? "category" : "categories"}
+                </span>
+                <span aria-hidden>·</span>
+                <span>
+                  {totalTasks} {totalTasks === 1 ? "task" : "tasks"}
+                </span>
               </span>
             ) : null}
           </CardTitle>
         </div>
-        <CardDescription>
-          Jobs that need someone to pick them up — lists respect what your role
-          can open.
+        <CardDescription className="text-pretty leading-relaxed break-words">
+          Work waiting on the team. You&apos;ll only see items your login can
+          access.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -92,8 +97,8 @@ export function WorkQueueAttentionCard() {
             {(q.error as Error).message}
           </p>
         ) : flat.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nothing needs attention — you&apos;re caught up.
+          <p className="text-sm leading-relaxed text-muted-foreground text-pretty break-words">
+            Nothing needs attention right now — you&apos;re up to date.
           </p>
         ) : (
           <ul className="space-y-2">
@@ -118,8 +123,8 @@ export function WorkQueueAttentionCard() {
       </CardContent>
       <CardFooter className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
         {more > 0 ? (
-          <span className="text-xs text-muted-foreground">
-            +{more} more {more === 1 ? "item" : "items"} on the full queue
+          <span className="min-w-0 max-w-full text-xs text-muted-foreground break-words">
+            +{more} more on the full work queue
           </span>
         ) : (
           <span className="text-xs text-muted-foreground" />

@@ -30,55 +30,55 @@ const ACTIONS: {
   {
     href: "/admin/work-queue",
     label: "Work queue",
-    hint: "Tasks picked for your role — nothing extra to hunt through.",
+    hint: "Your task list for today.",
     icon: ListTodo,
   },
   {
     href: "/admin/bookings",
     label: "Bookings",
-    hint: "Visit slots, pickups, and what’s booked in.",
+    hint: "Visits and pickup slots.",
     icon: CalendarDays,
   },
   {
     href: "/admin/crm",
     label: "Accounts",
-    hint: "Companies you look after and how to reach them.",
+    hint: "Customers and contacts.",
     icon: Building2,
   },
   {
     href: "/admin/orders",
     label: "Orders",
-    hint: "Knives moving through sharpen and delivery.",
+    hint: "Knives in the workshop.",
     icon: ClipboardList,
   },
   {
     href: "/admin/routes/today",
     label: "Today’s routes",
-    hint: "Who’s out today and where they’re stopping.",
+    hint: "Drivers and stops today.",
     icon: MapPinned,
   },
   {
     href: "/admin/invoices",
     label: "Invoices",
-    hint: "What you’ve sent out and what’s still owed.",
+    hint: "Sent bills and balances.",
     icon: Receipt,
   },
   {
     href: "/admin/finance",
     label: "Finance",
-    hint: "Income and balances at a glance.",
+    hint: "Income snapshot.",
     icon: Landmark,
   },
   {
     href: "/admin/payments",
     label: "Payments",
-    hint: "Money received and matched to work.",
+    hint: "Cash you’ve recorded.",
     icon: Banknote,
   },
   {
     href: "/admin/subscriptions",
     label: "Subscriptions",
-    hint: "Recurring plans tied to customer accounts.",
+    hint: "Rolling plans on accounts.",
     icon: Repeat2,
   },
 ];
@@ -101,20 +101,21 @@ export function AdminQuickActionsCard() {
         >
           <span className="flex w-full min-w-0 items-center gap-2 sm:gap-3">
             <Compass className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-            <span className="min-w-0 flex-1 text-base font-semibold leading-snug tracking-tight text-balance">
+            <span className="min-w-0 flex-1 text-base font-semibold leading-snug tracking-tight text-pretty">
               Where to go next
             </span>
             <ChevronDown
               className={cn(
-                "h-5 w-5 shrink-0 self-center text-muted-foreground transition-transform duration-200",
+                "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200",
                 open && "rotate-180",
               )}
               aria-hidden
             />
           </span>
-          <span className="block pl-7 text-left text-sm leading-snug text-muted-foreground sm:pl-[calc(1.25rem+0.75rem)]">
-            Same destinations as the sidebar — open what you’re allowed to see.
-          </span>
+          <p className="w-full min-w-0 text-left text-sm leading-relaxed text-muted-foreground break-words text-pretty">
+            Shortcuts for routine tasks. Expand the list, then choose where to
+            go.
+          </p>
         </Button>
       </CardHeader>
       {open ? (
@@ -124,20 +125,20 @@ export function AdminQuickActionsCard() {
           role="region"
           aria-labelledby="admin-quick-actions-trigger"
         >
-          <ul className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-2 [grid-auto-rows:1fr] md:grid-cols-3 xl:grid-cols-4">
             {ACTIONS.map(({ href, label, hint, icon: Icon }) => (
               <li key={href} className="flex min-h-0 min-w-0">
                 <Link
                   href={href}
-                  className="flex h-full min-h-[6.75rem] w-full flex-col justify-between gap-2 rounded-lg border bg-card/80 p-3 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[7rem]"
+                  className="flex h-full min-h-0 w-full min-w-0 flex-col justify-between gap-2 rounded-lg border bg-card/80 p-2.5 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-3"
                 >
-                  <span className="flex min-h-[2.75rem] items-start gap-2">
+                  <span className="flex min-h-[2.5rem] items-start gap-2">
                     <Icon
                       className="mt-0.5 h-4 w-4 shrink-0 text-primary"
                       aria-hidden
                     />
                     <span className="flex min-w-0 flex-1 items-start justify-between gap-1.5">
-                      <span className="line-clamp-2 text-sm font-medium leading-snug text-foreground">
+                      <span className="text-sm font-medium leading-snug text-pretty text-foreground break-words">
                         {label}
                       </span>
                       <ArrowRight
@@ -146,7 +147,7 @@ export function AdminQuickActionsCard() {
                       />
                     </span>
                   </span>
-                  <span className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+                  <span className="text-xs leading-snug text-pretty text-muted-foreground break-words">
                     {hint}
                   </span>
                 </Link>

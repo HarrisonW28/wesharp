@@ -61,7 +61,9 @@ export default function AdminDashboardPage() {
       {
         queryKey: ["admin-dash-overview", qs],
         queryFn: async () => {
-          const res = await admin.json<unknown>(`/api/admin/analytics/overview${qs}`);
+          const res = await admin.json<unknown>(
+            `/api/admin/analytics/overview${qs}`,
+          );
           if (!res.ok) {
             throw Object.assign(new Error(res.message), { status: res.status });
           }
@@ -76,7 +78,9 @@ export default function AdminDashboardPage() {
       {
         queryKey: ["admin-dash-sales", qs],
         queryFn: async () => {
-          const res = await admin.json<unknown>(`/api/admin/analytics/sales${qs}`);
+          const res = await admin.json<unknown>(
+            `/api/admin/analytics/sales${qs}`,
+          );
           if (!res.ok) {
             throw Object.assign(new Error(res.message), { status: res.status });
           }
@@ -100,7 +104,12 @@ export default function AdminDashboardPage() {
   }, [salesQuery.data]);
 
   const chartIsEmpty =
-    chartData.length === 0 || chartData.every((row) => typeof row.revenueMinor === "number" && row.revenueMinor === 0);
+    chartData.length === 0 ||
+    chartData.every(
+      (row) => typeof row.revenueMinor === "number" && row.revenueMinor === 0,
+    );
+
+  const areasCount = overviewQuery.data?.distinct_cities?.length ?? 0;
 
   const pending = overviewQuery.isPending || salesQuery.isPending;
   const fault = overviewQuery.isError || salesQuery.isError;
@@ -131,16 +140,28 @@ export default function AdminDashboardPage() {
       <Breadcrumbs items={[{ label: "Dashboard" }]} />
       <PageHeader
         title="Operations dashboard"
-        description="Bookings, sharpening activity, and money — roughly the last three months, pulled from live data."
+        description="Recent bookings, sharpening totals, and revenue — usually covering about the last three months."
         actions={
           <PageActions>
-            <Button type="button" variant="outline" size="sm" asChild className="shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              asChild
+              className="shrink-0"
+            >
               <Link href="/admin/work-queue">
                 <ListTodo className="mr-1.5 h-4 w-4" aria-hidden />
                 Work queue
               </Link>
             </Button>
-            <Button type="button" variant="outline" size="sm" asChild className="shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              asChild
+              className="shrink-0"
+            >
               <Link href="/admin/analytics">Full analytics</Link>
             </Button>
           </PageActions>
@@ -155,7 +176,11 @@ export default function AdminDashboardPage() {
         <Alert variant="destructive">
           <AlertTitle>Could not load dashboard</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-3">
-            <span>{(overviewQuery.error as Error)?.message ?? (salesQuery.error as Error)?.message ?? "Request failed."}</span>
+            <span className="min-w-0 break-words text-pretty">
+              {(overviewQuery.error as Error)?.message ??
+                (salesQuery.error as Error)?.message ??
+                "Request failed."}
+            </span>
             <Button
               type="button"
               variant="outline"
@@ -177,59 +202,93 @@ export default function AdminDashboardPage() {
           {kpis ? (
             <>
               <StatCard
-                title="New bookings · this week"
+                title="New bookings (week)"
                 value={String(kpis.new_bookings_this_week)}
-                hint={`Across ${overviewQuery.data?.distinct_cities?.length ?? 0} areas in this period`}
+                hint={
+                  areasCount > 0
+                    ? `Spread across ${areasCount} areas`
+                    : "Across all areas you serve"
+                }
                 icon={CalendarDays}
               />
               <StatCard
-                title="Knives sharpened · this week"
+                title="Knives sharpened (week)"
                 value={String(kpis.knives_sharpened_this_week)}
-                trend={`${kpis.active_customers} active customer accounts`}
+                trend={`${kpis.active_customers} customers with recent orders`}
                 trendPositive
                 icon={UtensilsCrossed}
               />
               <StatCard
-                title="Revenue · this week"
+                title="Revenue (week)"
                 value={formatGBP(kpis.revenue_this_week_pence)}
-                trend={`This month · ${formatGBP(kpis.revenue_this_month_pence)}`}
-                trendPositive={kpis.revenue_this_month_pence >= kpis.revenue_this_week_pence}
+                trend={`Month so far: ${formatGBP(kpis.revenue_this_month_pence)}`}
+                trendPositive={
+                  kpis.revenue_this_month_pence >= kpis.revenue_this_week_pence
+                }
                 icon={CircleDollarSign}
               />
               <StatCard
                 title="Outstanding invoices"
                 value={String(kpis.outstanding_invoice_count)}
-                hint="Not yet paid in full"
+                hint="Unpaid or partly paid"
                 icon={Receipt}
               />
               <StatCard
                 title="Outstanding balance"
                 value={formatGBP(kpis.outstanding_invoice_amount_pence)}
-                hint="Still owed after payments you’ve recorded"
+                hint="Still due from customers"
                 icon={Landmark}
               />
               <StatCard
-                title="Avg price / blade"
+                title="Avg price per blade"
                 value={formatGBP(kpis.average_price_per_knife_pence)}
-                hint="From completed orders in this period"
+                hint="Based on finished orders in this window"
                 icon={Banknote}
               />
             </>
           ) : null}
           <div className="col-span-2 min-w-0 md:col-span-3">
-            <ChartCard title="Revenue pulse · trailing week" description="Daily takings over the past seven days (within the range above).">
+            <ChartCard
+              title="Revenue · last 7 days"
+              description="Paid figures day by day for the latest week shown below."
+            >
               {!chartIsEmpty ? (
                 <div className="w-full min-w-0">
                   <ResponsiveContainer width="100%" height={260}>
-                    <AreaChart data={chartData} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
+                    <AreaChart
+                      data={chartData}
+                      margin={{ left: 8, right: 8, top: 8, bottom: 0 }}
+                    >
                       <defs>
-                        <linearGradient id="fillRevDash" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="oklch(0.62 0.2 252)" stopOpacity={0.35} />
-                          <stop offset="95%" stopColor="oklch(0.62 0.2 252)" stopOpacity={0} />
+                        <linearGradient
+                          id="fillRevDash"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="oklch(0.62 0.2 252)"
+                            stopOpacity={0.35}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="oklch(0.62 0.2 252)"
+                            stopOpacity={0}
+                          />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="4 6" className="stroke-border/70" />
-                      <XAxis dataKey="label" tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <CartesianGrid
+                        strokeDasharray="4 6"
+                        className="stroke-border/70"
+                      />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
                       <YAxis
                         tickFormatter={(v: number) => formatGBP(Number(v))}
                         tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
@@ -240,13 +299,19 @@ export default function AdminDashboardPage() {
                         formatter={(value) => formatGBP(Number(value ?? 0))}
                         contentStyle={{ borderRadius: 12 }}
                       />
-                      <Area type="monotone" dataKey="revenueMinor" stroke="oklch(0.62 0.2 252)" strokeWidth={2} fill="url(#fillRevDash)" />
+                      <Area
+                        type="monotone"
+                        dataKey="revenueMinor"
+                        stroke="oklch(0.62 0.2 252)"
+                        strokeWidth={2}
+                        fill="url(#fillRevDash)"
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <p className="py-16 text-center text-sm text-muted-foreground">
-                  No paid revenue in this seven-day slice yet.
+                <p className="px-2 py-16 text-center text-sm leading-relaxed text-muted-foreground text-pretty break-words">
+                  No paid revenue recorded for those seven days yet.
                 </p>
               )}
             </ChartCard>

@@ -16,7 +16,15 @@ type StatCardProps = {
   className?: string;
 };
 
-export function StatCard({ title, value, hint, trend, trendPositive = true, icon: Icon, className }: StatCardProps) {
+export function StatCard({
+  title,
+  value,
+  hint,
+  trend,
+  trendPositive = true,
+  icon: Icon,
+  className,
+}: StatCardProps) {
   return (
     <motion.div
       className="h-full"
@@ -27,19 +35,37 @@ export function StatCard({ title, value, hint, trend, trendPositive = true, icon
     >
       <Card className={cn("flex h-full flex-col overflow-hidden", className)}>
         <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-          <CardTitle className="min-w-0 flex-1 pr-2 text-sm font-medium leading-snug text-muted-foreground">{title}</CardTitle>
-          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <CardTitle className="min-w-0 flex-1 text-pretty pr-2 text-sm font-medium leading-snug break-words text-muted-foreground">
+            {title}
+          </CardTitle>
+          <Icon
+            className="h-4 w-4 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
         </CardHeader>
         <CardContent className="flex flex-1 flex-col gap-2">
-          <div className="text-3xl font-semibold tracking-tight">{value}</div>
+          <div className="text-2xl font-semibold tracking-tight break-words sm:text-3xl">
+            {value}
+          </div>
           {trend || hint ? (
             <div className="mt-auto space-y-2 pt-0.5">
               {trend ? (
-                <p className={cn("text-xs", trendPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                <p
+                  className={cn(
+                    "text-pretty text-xs leading-snug break-words",
+                    trendPositive
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-rose-600 dark:text-rose-400",
+                  )}
+                >
                   {trend}
                 </p>
               ) : null}
-              {hint ? <p className="break-words text-xs text-muted-foreground">{hint}</p> : null}
+              {hint ? (
+                <p className="text-pretty text-xs leading-snug break-words text-muted-foreground">
+                  {hint}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </CardContent>
