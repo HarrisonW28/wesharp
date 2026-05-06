@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Map as MapIcon, Plus, Save, Trash2 } from "lucide-react";
+import { Inbox, Loader2, Map as MapIcon, Plus, Save, Trash2 } from "lucide-react";
 
 import {
   AdminServiceAreasIndexResponseSchema,
@@ -116,6 +116,7 @@ export default function AdminServiceAreasPage() {
   const permissions = useMemo(() => new Set(mePayload?.data?.permissions ?? []), [mePayload?.data?.permissions]);
   const canView = permissions.has("service_areas.view");
   const canManage = permissions.has("service_areas.manage");
+  const canViewWaitlist = permissions.has("companies.view");
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creatingNew, setCreatingNew] = useState(false);
@@ -271,60 +272,78 @@ export default function AdminServiceAreasPage() {
                 New area
               </Button>
             ) : null}
-            <Button type="button" variant="outline" size="sm" asChild>
-              <Link href="/admin/waitlist">Waitlist</Link>
-            </Button>
           </div>
         }
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
-        <Card className="h-fit">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <MapIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
-              Areas
-            </CardTitle>
-            <CardDescription>Select a row to edit. Prefix matching is used for coverage today.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {listQuery.isPending ? (
-              <div className="flex items-center gap-2 py-8 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-                Loading…
-              </div>
-            ) : listQuery.isError ? (
-              <p className="text-destructive">{(listQuery.error as Error).message}</p>
-            ) : rows.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No service areas yet. Create one to get started.</p>
-            ) : (
-              <ul className="space-y-1">
-                {rows.map((row) => {
-                  const selected = !creatingNew && selectedId === row.id;
-                  return (
-                    <li key={row.id}>
-                      <button
-                        type="button"
-                        onClick={() => selectRow(row)}
-                        className={`flex w-full min-w-0 flex-col items-start gap-1 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                          selected ? "border-primary bg-primary/5" : "border-border hover:bg-muted/60"
-                        }`}
-                      >
-                        <span className="truncate font-medium text-foreground">{row.name}</span>
-                        <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                          <span>{row.city}</span>
-                          <Badge variant={row.active ? "default" : "secondary"} className="text-[10px]">
-                            {row.active ? "Active" : "Inactive"}
-                          </Badge>
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-6">
+          <Card className="h-fit">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <MapIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
+                Areas
+              </CardTitle>
+              <CardDescription>Select a row to edit. Prefix matching is used for coverage today.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {listQuery.isPending ? (
+                <div className="flex items-center gap-2 py-8 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                  Loading…
+                </div>
+              ) : listQuery.isError ? (
+                <p className="text-destructive">{(listQuery.error as Error).message}</p>
+              ) : rows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No service areas yet. Create one to get started.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {rows.map((row) => {
+                    const selected = !creatingNew && selectedId === row.id;
+                    return (
+                      <li key={row.id}>
+                        <button
+                          type="button"
+                          onClick={() => selectRow(row)}
+                          className={`flex w-full min-w-0 flex-col items-start gap-1 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                            selected ? "border-primary bg-primary/5" : "border-border hover:bg-muted/60"
+                          }`}
+                        >
+                          <span className="truncate font-medium text-foreground">{row.name}</span>
+                          <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <span>{row.city}</span>
+                            <Badge variant={row.active ? "default" : "secondary"} className="text-[10px]">
+                              {row.active ? "Active" : "Inactive"}
+                            </Badge>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          {canViewWaitlist ? (
+            <Card className="h-fit">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                  <Inbox className="h-4 w-4 text-muted-foreground" aria-hidden />
+                  Waitlist
+                </CardTitle>
+                <CardDescription>
+                  Postcodes outside current coverage — open the full list to review and export leads.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button type="button" variant="outline" size="sm" className="w-full" asChild>
+                  <Link href="/admin/waitlist">Open waitlist</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
 
         <div className="space-y-6">
           {!editorOpen ? (

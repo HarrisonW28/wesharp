@@ -9,7 +9,6 @@ import {
   ClipboardList,
   CreditCard,
   Gauge,
-  Inbox,
   Landmark,
   LayoutDashboard,
   LineChart,
@@ -141,24 +140,10 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     items: [
       { title: "Companies", href: "/admin/crm", icon: Users, permission: "companies.view" },
       {
-        title: "Areas",
+        title: "Service areas",
+        href: "/admin/service-areas",
         icon: MapLucide,
-        children: [
-          {
-            title: "Service areas",
-            href: "/admin/service-areas",
-            icon: MapLucide,
-            permission: "service_areas.view",
-            description: "Coverage map and pricing corridors",
-          },
-          {
-            title: "Waitlist",
-            href: "/admin/waitlist",
-            icon: Inbox,
-            permission: "companies.view",
-            description: "Postcodes asking us to expand collection",
-          },
-        ],
+        permission: "service_areas.view",
       },
       { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
       { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
@@ -356,24 +341,10 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
     label: "Operations",
     items: [
       {
-        title: "Areas",
+        title: "Service areas",
+        href: "/admin/service-areas",
         icon: MapLucide,
-        children: [
-          {
-            title: "Service areas",
-            href: "/admin/service-areas",
-            icon: MapLucide,
-            permission: "service_areas.view",
-            description: "Coverage map and pricing corridors",
-          },
-          {
-            title: "Waitlist",
-            href: "/admin/waitlist",
-            icon: Inbox,
-            permission: "companies.view",
-            description: "Postcodes asking us to expand collection",
-          },
-        ],
+        permission: "service_areas.view",
       },
       { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
       { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
