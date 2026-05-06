@@ -47,7 +47,9 @@ export function TopBar({ title, subtitle, onMenuClick, showMenu, center, trailin
       >
         {title ? (
           typeof title === "string" ? (
-            <h1 className="truncate text-lg font-semibold leading-tight md:text-base">{title}</h1>
+            <h1 className="min-w-0 max-w-full whitespace-nowrap font-semibold leading-tight tracking-tight text-[clamp(0.625rem,4.25vw+0.28rem,1.125rem)] md:text-[clamp(0.8125rem,0.85vw+0.68rem,1rem)]">
+              {title}
+            </h1>
           ) : (
             <>
               <span className="sr-only">WeSharp</span>

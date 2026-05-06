@@ -21,7 +21,6 @@ import {
   ScrollText,
   Settings,
   ShoppingCart,
-  Tag,
   UserCog,
   Users,
   Utensils,
@@ -36,6 +35,8 @@ export type NavLeaf = {
   icon: LucideIcon;
   /** Server permission key from Laravel — optional for purely cosmetic links. */
   permission?: string;
+  /** Any listed permission grants access (use when a route accepts multiple roles). */
+  permissionAny?: string[];
   /** Optional one-line hint; shown on nested “card” links in the admin sidebar. */
   description?: string;
 };
@@ -49,6 +50,7 @@ export type NavItem = {
   icon: LucideIcon;
   href?: string;
   permission?: string;
+  permissionAny?: string[];
   description?: string;
   children?: NavLeaf[];
 };
@@ -68,6 +70,7 @@ export function navItemToLeaves(item: NavItem): NavLeaf[] {
       href: item.href,
       icon: item.icon,
       permission: item.permission,
+      permissionAny: item.permissionAny,
       description: item.description,
     });
   }
@@ -81,11 +84,24 @@ export function navSectionsToLeaves(sections: NavSection[]): NavLeaf[] {
   return sections.flatMap((s) => s.items.flatMap(navItemToLeaves));
 }
 
+function navLeafAllowed(leaf: NavLeaf, permissions: Set<string>): boolean {
+  if (leaf.permissionAny && leaf.permissionAny.length > 0) {
+    return leaf.permissionAny.some((p) => permissions.has(p));
+  }
+  return !leaf.permission || permissions.has(leaf.permission);
+}
+
+function navItemAllowed(item: NavItem, permissions: Set<string>): boolean {
+  if (item.permissionAny && item.permissionAny.length > 0) {
+    return item.permissionAny.some((p) => permissions.has(p));
+  }
+  return !item.permission || permissions.has(item.permission);
+}
+
 function filterNavItem(item: NavItem, permissions: Set<string>): NavItem | null {
   if (item.children?.length) {
-    const kids = item.children.filter((c) => !c.permission || permissions.has(c.permission));
-    const parentLinkOk =
-      Boolean(item.href) && (!item.permission || permissions.has(item.permission));
+    const kids = item.children.filter((c) => navLeafAllowed(c, permissions));
+    const parentLinkOk = Boolean(item.href) && navItemAllowed(item, permissions);
 
     if (kids.length === 0) {
       if (parentLinkOk && item.href) {
@@ -94,6 +110,7 @@ function filterNavItem(item: NavItem, permissions: Set<string>): NavItem | null 
           href: item.href,
           icon: item.icon,
           permission: item.permission,
+          permissionAny: item.permissionAny,
           description: item.description,
         };
       }
@@ -108,22 +125,22 @@ function filterNavItem(item: NavItem, permissions: Set<string>): NavItem | null 
     if (parentLinkOk && item.href) {
       result.href = item.href;
       result.permission = item.permission;
+      result.permissionAny = item.permissionAny;
       result.description = item.description;
     }
     return result;
   }
 
   if (!item.href) return null;
-  if (!item.permission || permissions.has(item.permission)) {
-    return {
-      title: item.title,
-      href: item.href,
-      icon: item.icon,
-      permission: item.permission,
-      description: item.description,
-    };
-  }
-  return null;
+  if (!navItemAllowed(item, permissions)) return null;
+  return {
+    title: item.title,
+    href: item.href,
+    icon: item.icon,
+    permission: item.permission,
+    permissionAny: item.permissionAny,
+    description: item.description,
+  };
 }
 
 export const ADMIN_NAV_SECTIONS: NavSection[] = [
@@ -180,14 +197,13 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
       {
         title: "Plans & subscriptions",
         icon: ShoppingCart,
-        permission: "subscriptions.view",
         children: [
           {
             title: "Plans & pricing",
             href: "/admin/subscription-plans",
             icon: ShoppingCart,
-            permission: "subscriptions.view",
-            description: "Catalogue, tiers, and price rules",
+            permissionAny: ["subscriptions.view", "pricing.view"],
+            description: "Subscription catalogue and pay-as-you-go blade pricing",
           },
           {
             title: "Active subscriptions",
@@ -195,13 +211,6 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
             icon: Repeat,
             permission: "subscriptions.view",
             description: "Live subscriptions across tenants",
-          },
-          {
-            title: "Pay-as-you-go rules",
-            href: "/admin/pricing-rules",
-            icon: Tag,
-            permission: "pricing.view",
-            description: "Per-knife prices, areas, and first-visit discounts",
           },
         ],
       },
@@ -357,14 +366,13 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
       {
         title: "Plans & subscriptions",
         icon: ShoppingCart,
-        permission: "subscriptions.view",
         children: [
           {
             title: "Plans & pricing",
             href: "/admin/subscription-plans",
             icon: ShoppingCart,
-            permission: "subscriptions.view",
-            description: "Catalogue, tiers, and price rules",
+            permissionAny: ["subscriptions.view", "pricing.view"],
+            description: "Subscription catalogue and pay-as-you-go blade pricing",
           },
           {
             title: "Active subscriptions",
@@ -372,13 +380,6 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
             icon: Repeat,
             permission: "subscriptions.view",
             description: "Live subscriptions across tenants",
-          },
-          {
-            title: "Pay-as-you-go rules",
-            href: "/admin/pricing-rules",
-            icon: Tag,
-            permission: "pricing.view",
-            description: "Per-knife prices, areas, and first-visit discounts",
           },
         ],
       },
@@ -445,5 +446,5 @@ export function filterNavSections(sections: NavSection[], permissions: Set<strin
 }
 
 export function filterNav(items: NavLeaf[], permissions: Set<string>): NavLeaf[] {
-  return items.filter((item) => !item.permission || permissions.has(item.permission));
+  return items.filter((item) => navLeafAllowed(item, permissions));
 }

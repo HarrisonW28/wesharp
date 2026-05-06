@@ -1,13 +1,13 @@
 "use client";
 
 import type { PropsWithChildren } from "react";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
-import { accountPermissionForPath, adminPermissionForPath } from "@/lib/route-permissions";
+import { accountPermissionForPath, adminRouteAccessAllowed } from "@/lib/route-permissions";
 
 type ShellPermissionBoundaryProps = PropsWithChildren<{
   /** Which portal’s path→permission map to use (serializable for RSC prerender). */
@@ -26,9 +26,15 @@ export function ShellPermissionBoundary({
 }: ShellPermissionBoundaryProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const resolver = scope === "account" ? accountPermissionForPath : adminPermissionForPath;
-  const required = resolver(pathname);
   const { data, status, fetchStatus, error } = useBackendMe();
+
+  const pathAllowed = useCallback(
+    (perms: ReadonlySet<string>) =>
+      scope === "admin"
+        ? adminRouteAccessAllowed(pathname, perms)
+        : perms.has(accountPermissionForPath(pathname)),
+    [pathname, scope],
+  );
 
   useEffect(() => {
     if (status !== "success" || error) {
@@ -37,10 +43,10 @@ export function ShellPermissionBoundary({
 
     const perms = new Set(data?.data?.permissions ?? []);
 
-    if (required !== "" && !perms.has(required)) {
+    if (!pathAllowed(perms)) {
       void router.replace("/forbidden");
     }
-  }, [data, error, required, router, status]);
+  }, [data, error, pathAllowed, router, status]);
 
   if (fetchStatus === "paused" || status === "pending") {
     return (
@@ -65,7 +71,7 @@ export function ShellPermissionBoundary({
     );
   }
 
-  if (!new Set(data.data.permissions).has(required)) {
+  if (!pathAllowed(new Set(data.data.permissions))) {
     return (
       <div className="flex min-h-[30vh] flex-col items-center justify-center gap-2 text-center text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin" aria-hidden />

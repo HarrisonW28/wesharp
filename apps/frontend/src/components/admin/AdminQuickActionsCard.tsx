@@ -37,22 +37,25 @@ export function AdminQuickActionsCard() {
   const [open, setOpen] = useState(false);
 
   return (
-    <Card className="border-primary/15 bg-gradient-to-br from-primary/5 via-background to-background">
-      <CardHeader className={cn("space-y-0", open ? "pb-0" : "pb-4")}>
+    <Card className="min-w-0 overflow-hidden border-primary/15 bg-gradient-to-br from-primary/5 via-background to-background">
+      <CardHeader className={cn("min-w-0 space-y-0", open ? "pb-0" : "pb-4")}>
         <Button
           type="button"
           variant="ghost"
-          className="h-auto w-full min-w-0 justify-between gap-3 rounded-lg px-0 py-1 text-left font-normal hover:bg-muted/40"
+          className="h-auto w-full min-w-0 justify-between gap-2 rounded-lg px-0 py-1 text-left font-normal hover:bg-muted/40 sm:gap-3"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls="admin-quick-actions-panel"
           id="admin-quick-actions-trigger"
         >
           <span className="min-w-0 flex-1 space-y-1.5 pr-1 text-left">
-            <span className="block text-balance text-base font-semibold leading-snug tracking-tight">
+            <span className="block text-base font-semibold leading-snug tracking-tight sm:text-balance">
               Where to go next
             </span>
-            <span className="block break-words text-sm leading-snug text-muted-foreground">
+            <span className="block text-sm leading-snug text-muted-foreground sm:hidden">
+              Shortcuts use the same permissions as the sidebar.
+            </span>
+            <span className="hidden text-sm leading-snug text-muted-foreground sm:block">
               Jump straight into day-to-day work — same permissions as the sidebar.
             </span>
           </span>

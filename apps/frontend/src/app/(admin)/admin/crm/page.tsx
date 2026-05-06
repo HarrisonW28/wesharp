@@ -218,9 +218,9 @@ export default function AdminCrmPage() {
         }
       />
 
-      <section className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:p-6">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <div className="space-y-2">
+      <section className="space-y-4 rounded-2xl border bg-card px-3 py-4 shadow-sm sm:px-5 md:p-6">
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="min-w-0 space-y-2 sm:col-span-2 lg:col-span-3 xl:col-span-1">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="q">
               Search
             </label>
@@ -241,7 +241,7 @@ export default function AdminCrmPage() {
               }
             />
           </div>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="city">
               City (exact)
             </label>
@@ -262,7 +262,7 @@ export default function AdminCrmPage() {
               }
             />
           </div>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="status">
               Status
             </label>
@@ -279,7 +279,7 @@ export default function AdminCrmPage() {
                 })
               }
             >
-              <SelectTrigger id="status">
+              <SelectTrigger id="status" className="w-full min-w-0">
                 <SelectValue placeholder="Filter status" />
               </SelectTrigger>
               <SelectContent>
@@ -291,7 +291,7 @@ export default function AdminCrmPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="subscription_status">
               Subscription
             </label>
@@ -308,7 +308,7 @@ export default function AdminCrmPage() {
                 })
               }
             >
-              <SelectTrigger id="subscription_status">
+              <SelectTrigger id="subscription_status" className="w-full min-w-0">
                 <SelectValue placeholder="Subscription" />
               </SelectTrigger>
               <SelectContent>
@@ -320,7 +320,7 @@ export default function AdminCrmPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="has_unpaid_invoices">
               Unpaid invoices
             </label>
@@ -337,7 +337,7 @@ export default function AdminCrmPage() {
                 })
               }
             >
-              <SelectTrigger id="has_unpaid_invoices">
+              <SelectTrigger id="has_unpaid_invoices" className="w-full min-w-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -349,7 +349,7 @@ export default function AdminCrmPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="has_active_bookings">
               Active bookings
             </label>
@@ -366,7 +366,7 @@ export default function AdminCrmPage() {
                 })
               }
             >
-              <SelectTrigger id="has_active_bookings">
+              <SelectTrigger id="has_active_bookings" className="w-full min-w-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -378,7 +378,7 @@ export default function AdminCrmPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="sort">
               Sort by
             </label>
@@ -391,7 +391,7 @@ export default function AdminCrmPage() {
                 })
               }
             >
-              <SelectTrigger id="sort">
+              <SelectTrigger id="sort" className="w-full min-w-0">
                 <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent>
@@ -403,7 +403,7 @@ export default function AdminCrmPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="direction">
               Direction
             </label>
@@ -416,7 +416,7 @@ export default function AdminCrmPage() {
                 })
               }
             >
-              <SelectTrigger id="direction">
+              <SelectTrigger id="direction" className="w-full min-w-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

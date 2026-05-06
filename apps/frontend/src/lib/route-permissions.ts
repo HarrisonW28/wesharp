@@ -84,6 +84,14 @@ export function adminPermissionForPath(pathname: string): string {
   return "dashboard.view";
 }
 
+/** Shell gate: some admin routes accept any of several Laravel permissions. */
+export function adminRouteAccessAllowed(pathname: string, permissions: ReadonlySet<string>): boolean {
+  if (pathname.startsWith("/admin/subscription-plans")) {
+    return permissions.has("subscriptions.view") || permissions.has("pricing.view");
+  }
+  return permissions.has(adminPermissionForPath(pathname));
+}
+
 export function accountPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/account/dashboard")) {
     return "dashboard.view";
