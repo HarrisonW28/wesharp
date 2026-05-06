@@ -140,12 +140,25 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     label: "Operations",
     items: [
       { title: "Companies", href: "/admin/crm", icon: Users, permission: "companies.view" },
-      { title: "Waitlist", href: "/admin/waitlist", icon: Inbox, permission: "companies.view" },
       {
-        title: "Service areas",
-        href: "/admin/service-areas",
+        title: "Areas",
         icon: MapLucide,
-        permission: "service_areas.view",
+        children: [
+          {
+            title: "Service areas",
+            href: "/admin/service-areas",
+            icon: MapLucide,
+            permission: "service_areas.view",
+            description: "Coverage map and pricing corridors",
+          },
+          {
+            title: "Waitlist",
+            href: "/admin/waitlist",
+            icon: Inbox,
+            permission: "companies.view",
+            description: "Postcodes asking us to expand collection",
+          },
+        ],
       },
       { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
       { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
@@ -342,12 +355,25 @@ export const ROUTE_MANAGER_NAV_SECTIONS: NavSection[] = [
   {
     label: "Operations",
     items: [
-      { title: "Waitlist", href: "/admin/waitlist", icon: Inbox, permission: "companies.view" },
       {
-        title: "Service areas",
-        href: "/admin/service-areas",
+        title: "Areas",
         icon: MapLucide,
-        permission: "service_areas.view",
+        children: [
+          {
+            title: "Service areas",
+            href: "/admin/service-areas",
+            icon: MapLucide,
+            permission: "service_areas.view",
+            description: "Coverage map and pricing corridors",
+          },
+          {
+            title: "Waitlist",
+            href: "/admin/waitlist",
+            icon: Inbox,
+            permission: "companies.view",
+            description: "Postcodes asking us to expand collection",
+          },
+        ],
       },
       { title: "Bookings", href: "/admin/bookings", icon: CalendarClock, permission: "bookings.view" },
       { title: "Orders", href: "/admin/orders", icon: ClipboardList, permission: "orders.view" },
