@@ -9,6 +9,7 @@ import {
   CalendarDays,
   ChevronDown,
   ClipboardList,
+  Compass,
   Landmark,
   ListTodo,
   MapPinned,
@@ -20,16 +21,66 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const ACTIONS: { href: string; label: string; hint: string; icon: typeof CalendarDays }[] = [
-  { href: "/admin/work-queue", label: "Work queue", hint: "Role-aware next steps", icon: ListTodo },
-  { href: "/admin/bookings", label: "Bookings", hint: "Confirm windows & routes", icon: CalendarDays },
-  { href: "/admin/crm", label: "Accounts", hint: "CRM & site details", icon: Building2 },
-  { href: "/admin/orders", label: "Orders", hint: "Workshop & fulfilment", icon: ClipboardList },
-  { href: "/admin/routes/today", label: "Today’s routes", hint: "Drivers & stops", icon: MapPinned },
-  { href: "/admin/invoices", label: "Invoices", hint: "Issue & chase payment", icon: Receipt },
-  { href: "/admin/finance", label: "Finance", hint: "Cash & receipts", icon: Landmark },
-  { href: "/admin/payments", label: "Payments", hint: "Match bank & receipts", icon: Banknote },
-  { href: "/admin/subscriptions", label: "Subscriptions", hint: "Plans on accounts", icon: Repeat2 },
+const ACTIONS: {
+  href: string;
+  label: string;
+  hint: string;
+  icon: typeof CalendarDays;
+}[] = [
+  {
+    href: "/admin/work-queue",
+    label: "Work queue",
+    hint: "Tasks picked for your role — nothing extra to hunt through.",
+    icon: ListTodo,
+  },
+  {
+    href: "/admin/bookings",
+    label: "Bookings",
+    hint: "Visit slots, pickups, and what’s booked in.",
+    icon: CalendarDays,
+  },
+  {
+    href: "/admin/crm",
+    label: "Accounts",
+    hint: "Companies you look after and how to reach them.",
+    icon: Building2,
+  },
+  {
+    href: "/admin/orders",
+    label: "Orders",
+    hint: "Knives moving through sharpen and delivery.",
+    icon: ClipboardList,
+  },
+  {
+    href: "/admin/routes/today",
+    label: "Today’s routes",
+    hint: "Who’s out today and where they’re stopping.",
+    icon: MapPinned,
+  },
+  {
+    href: "/admin/invoices",
+    label: "Invoices",
+    hint: "What you’ve sent out and what’s still owed.",
+    icon: Receipt,
+  },
+  {
+    href: "/admin/finance",
+    label: "Finance",
+    hint: "Income and balances at a glance.",
+    icon: Landmark,
+  },
+  {
+    href: "/admin/payments",
+    label: "Payments",
+    hint: "Money received and matched to work.",
+    icon: Banknote,
+  },
+  {
+    href: "/admin/subscriptions",
+    label: "Subscriptions",
+    hint: "Recurring plans tied to customer accounts.",
+    icon: Repeat2,
+  },
 ];
 
 /** Compact “next step” grid for the operations dashboard (Sprint 11.2). Collapsed by default to reduce noise. */
@@ -42,27 +93,28 @@ export function AdminQuickActionsCard() {
         <Button
           type="button"
           variant="ghost"
-          className="h-auto w-full min-w-0 justify-between gap-2 rounded-lg px-0 py-1 text-left font-normal hover:bg-muted/40 sm:gap-3"
+          className="h-auto w-full min-w-0 flex-col items-stretch gap-2 rounded-lg px-0 py-1 text-left font-normal hover:bg-muted/40"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls="admin-quick-actions-panel"
           id="admin-quick-actions-trigger"
         >
-          <span className="min-w-0 flex-1 space-y-1.5 pr-1 text-left">
-            <span className="block text-base font-semibold leading-snug tracking-tight sm:text-balance">
+          <span className="flex w-full min-w-0 items-center gap-2 sm:gap-3">
+            <Compass className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+            <span className="min-w-0 flex-1 text-base font-semibold leading-snug tracking-tight text-balance">
               Where to go next
             </span>
-            <span className="block text-sm leading-snug text-muted-foreground sm:hidden">
-              Shortcuts use the same permissions as the sidebar.
-            </span>
-            <span className="hidden text-sm leading-snug text-muted-foreground sm:block">
-              Jump straight into day-to-day work — same permissions as the sidebar.
-            </span>
+            <ChevronDown
+              className={cn(
+                "h-5 w-5 shrink-0 self-center text-muted-foreground transition-transform duration-200",
+                open && "rotate-180",
+              )}
+              aria-hidden
+            />
           </span>
-          <ChevronDown
-            className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200", open && "rotate-180")}
-            aria-hidden
-          />
+          <span className="block pl-7 text-left text-sm leading-snug text-muted-foreground sm:pl-[calc(1.25rem+0.75rem)]">
+            Same destinations as the sidebar — open what you’re allowed to see.
+          </span>
         </Button>
       </CardHeader>
       {open ? (
@@ -74,17 +126,29 @@ export function AdminQuickActionsCard() {
         >
           <ul className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
             {ACTIONS.map(({ href, label, hint, icon: Icon }) => (
-              <li key={href} className="min-w-0">
+              <li key={href} className="flex min-h-0 min-w-0">
                 <Link
                   href={href}
-                  className="flex min-h-[4.25rem] min-w-0 flex-col rounded-lg border bg-card/80 p-3 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex h-full min-h-[6.75rem] w-full flex-col justify-between gap-2 rounded-lg border bg-card/80 p-3 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[7rem]"
                 >
-                  <span className="flex items-start gap-2 text-sm font-medium text-foreground">
-                    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-                    <span className="min-w-0 flex-1 break-words leading-snug">{label}</span>
-                    <ArrowRight className="mt-0.5 ml-auto h-3.5 w-3.5 shrink-0 opacity-40" aria-hidden />
+                  <span className="flex min-h-[2.75rem] items-start gap-2">
+                    <Icon
+                      className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                      aria-hidden
+                    />
+                    <span className="flex min-w-0 flex-1 items-start justify-between gap-1.5">
+                      <span className="line-clamp-2 text-sm font-medium leading-snug text-foreground">
+                        {label}
+                      </span>
+                      <ArrowRight
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-40"
+                        aria-hidden
+                      />
+                    </span>
                   </span>
-                  <span className="mt-1 break-words text-xs leading-snug text-muted-foreground">{hint}</span>
+                  <span className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+                    {hint}
+                  </span>
                 </Link>
               </li>
             ))}

@@ -4,12 +4,23 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { ClipboardList, Loader2 } from "lucide-react";
 
-import { WorkQueueApiResponseSchema, flattenWorkQueueItems, type WorkQueueItem } from "@/lib/api/admin-work-queue-schema";
+import {
+  WorkQueueApiResponseSchema,
+  flattenWorkQueueItems,
+  type WorkQueueItem,
+} from "@/lib/api/admin-work-queue-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 function byCountDesc(a: WorkQueueItem, b: WorkQueueItem): number {
   return b.count - a.count;
@@ -33,7 +44,9 @@ export function WorkQueueAttentionCard() {
     },
   });
 
-  const flat = q.data ? flattenWorkQueueItems(q.data.sections).sort(byCountDesc) : [];
+  const flat = q.data
+    ? flattenWorkQueueItems(q.data.sections).sort(byCountDesc)
+    : [];
   const top = flat.slice(0, 5);
   const more = Math.max(0, flat.length - top.length);
 
@@ -49,18 +62,23 @@ export function WorkQueueAttentionCard() {
     >
       <CardHeader className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <ClipboardList className="h-4 w-4 text-muted-foreground" aria-hidden />
+          <ClipboardList
+            className="h-4 w-4 text-muted-foreground"
+            aria-hidden
+          />
           <CardTitle className="text-base font-semibold">
             Needs attention
             {hasItems ? (
               <span className="ml-2 inline-flex items-center rounded-md bg-primary/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary">
-                {flat.length} {flat.length === 1 ? "lane" : "lanes"} · {totalTasks} tasks
+                {flat.length} {flat.length === 1 ? "lane" : "lanes"} ·{" "}
+                {totalTasks} tasks
               </span>
             ) : null}
           </CardTitle>
         </div>
         <CardDescription>
-          Operational queue — only items that need action right now (counts respect your role).
+          Jobs that need someone to pick them up — lists respect what your role
+          can open.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -70,20 +88,29 @@ export function WorkQueueAttentionCard() {
             Loading queue…
           </div>
         ) : q.isError ? (
-          <p className="text-sm text-destructive">{(q.error as Error).message}</p>
+          <p className="text-sm text-destructive">
+            {(q.error as Error).message}
+          </p>
         ) : flat.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nothing needs attention — you&apos;re caught up.</p>
+          <p className="text-sm text-muted-foreground">
+            Nothing needs attention — you&apos;re caught up.
+          </p>
         ) : (
           <ul className="space-y-2">
             {top.map((row) => (
-              <li key={row.id} className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+              <li
+                key={row.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
+              >
                 <Link
                   href={row.href}
                   className="min-w-0 flex-1 font-medium text-primary underline-offset-4 hover:underline"
                 >
                   {row.title}
                 </Link>
-                <span className="shrink-0 tabular-nums text-muted-foreground">{row.count}</span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">
+                  {row.count}
+                </span>
               </li>
             ))}
           </ul>

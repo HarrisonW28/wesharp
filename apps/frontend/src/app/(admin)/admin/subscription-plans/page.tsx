@@ -329,7 +329,7 @@ export default function AdminSubscriptionPlansPage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 md:gap-10">
       <Breadcrumbs
         items={[
           { label: "Admin", href: "/admin/dashboard" },
@@ -339,11 +339,14 @@ export default function AdminSubscriptionPlansPage() {
 
       <PageHeader
         title="Plans & pricing"
-        description={pageDescription}
+        description={
+          <p className="text-pretty leading-relaxed">{pageDescription}</p>
+        }
         actions={
           canViewPlans ? (
             <Button
               type="button"
+              className="w-full sm:w-auto"
               onClick={() => setCreateOpen((v) => !v)}
               disabled={actionsDisabled || !admin.origin}
             >
@@ -354,293 +357,343 @@ export default function AdminSubscriptionPlansPage() {
         }
       />
 
-      {canViewPayg ? <AdminPayAsYouGoRulesSection /> : null}
+      <div className="flex flex-col gap-8 md:gap-10">
+        {canViewPayg ? <AdminPayAsYouGoRulesSection /> : null}
 
-      {canViewPayg && canViewPlans ? <Separator /> : null}
+        {canViewPayg && canViewPlans ? (
+          <Separator className="bg-border/60" />
+        ) : null}
 
-      {canViewPlans ? (
-        <>
-          {createOpen ? (
-            <PlanEditorCard
-              title="Create plan"
-              description="Snapshots are stored on company subscriptions; editing a plan will not rewrite history."
-              draft={createDraft}
-              onChange={setCreateDraft}
-              saving={createPlan.isPending}
-              onCancel={() => {
-                setCreateOpen(false);
-                setCreateDraft(defaultDraft());
-              }}
-              onSave={() => createPlan.mutate(createDraft)}
-            />
-          ) : null}
+        {canViewPlans ? (
+          <>
+            {createOpen ? (
+              <PlanEditorCard
+                title="Create plan"
+                description="Snapshots are stored on company subscriptions; editing a plan will not rewrite history."
+                draft={createDraft}
+                onChange={setCreateDraft}
+                saving={createPlan.isPending}
+                onCancel={() => {
+                  setCreateOpen(false);
+                  setCreateDraft(defaultDraft());
+                }}
+                onSave={() => createPlan.mutate(createDraft)}
+              />
+            ) : null}
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Plans</CardTitle>
-              <CardDescription className="text-sm">
-                {rows.length
-                  ? `${rows.length} total · ${activeCount} active`
-                  : "No plans yet."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {plansQuery.isLoading ? (
-                <p className="text-sm text-muted-foreground">Loading plans…</p>
-              ) : plansQuery.isError ? (
-                <p className="text-sm text-destructive">
-                  {(plansQuery.error as Error).message}
-                </p>
-              ) : rows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Create your first plan. Inactive plans cannot be assigned to
-                  new companies.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {rows.map((p) => {
-                    const isEditing = editId === p.id;
-                    const draft = isEditing ? editDraft : null;
-                    return (
-                      <div
-                        key={p.id}
-                        className="rounded-lg border bg-background"
-                      >
-                        <div className="flex flex-col gap-3 p-4 md:flex-row md:items-start md:justify-between">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <div className="truncate text-base font-semibold">
-                                {(p.public_name?.trim()
-                                  ? p.public_name
-                                  : p.name) ?? p.name}
+            <Card className="overflow-hidden" id="subscription-plans-catalogue">
+              <CardHeader className="space-y-1 p-4 pb-3 sm:p-6 sm:pb-4">
+                <CardTitle className="text-lg font-semibold tracking-tight">
+                  Subscription plans
+                </CardTitle>
+                <CardDescription className="text-sm leading-snug">
+                  {rows.length
+                    ? `${rows.length} total · ${activeCount} active`
+                    : "No plans yet."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 p-4 pt-0 sm:p-6 sm:pt-0">
+                {plansQuery.isLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Loading plans…
+                  </p>
+                ) : plansQuery.isError ? (
+                  <p className="text-sm text-destructive">
+                    {(plansQuery.error as Error).message}
+                  </p>
+                ) : rows.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Create your first plan. Inactive plans cannot be assigned to
+                    new companies.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {rows.map((p) => {
+                      const isEditing = editId === p.id;
+                      const draft = isEditing ? editDraft : null;
+                      return (
+                        <div
+                          key={p.id}
+                          className="rounded-xl border border-border/80 bg-background"
+                        >
+                          <div className="flex flex-col gap-4 p-3 sm:p-4 md:flex-row md:items-start md:justify-between md:gap-6">
+                            <div className="min-w-0 flex-1 space-y-2">
+                              <div className="flex flex-col gap-2 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:items-start min-[480px]:gap-x-2 min-[480px]:gap-y-2">
+                                <h3 className="text-pretty text-base font-semibold leading-snug text-foreground sm:text-[17px]">
+                                  {(p.public_name?.trim()
+                                    ? p.public_name
+                                    : p.name) ?? p.name}
+                                </h3>
+                                <div className="flex flex-wrap gap-1.5">
+                                  <span
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
+                                      p.is_active
+                                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+                                        : "bg-muted text-muted-foreground"
+                                    }`}
+                                  >
+                                    {p.is_active ? "Active" : "Inactive"}
+                                  </span>
+                                  {p.show_on_public_site ? (
+                                    <span
+                                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
+                                        p.is_active
+                                          ? "bg-sky-50 text-sky-800 dark:bg-sky-950/40 dark:text-sky-200"
+                                          : "bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+                                      }`}
+                                      title={
+                                        p.is_active
+                                          ? "Shown on public marketing pages"
+                                          : "Would appear on the marketing site once this plan is active"
+                                      }
+                                    >
+                                      {p.is_active
+                                        ? "Marketing site"
+                                        : "Marketing (inactive)"}
+                                    </span>
+                                  ) : null}
+                                  {p.recommended ? (
+                                    <span className="inline-flex items-center rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-800 dark:bg-violet-950/50 dark:text-violet-200">
+                                      Featured
+                                    </span>
+                                  ) : null}
+                                </div>
                               </div>
-                              <span
-                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
-                                  p.is_active
-                                    ? "bg-emerald-50 text-emerald-700"
-                                    : "bg-muted text-muted-foreground"
-                                }`}
+                              <p className="text-sm text-muted-foreground">
+                                <span className="font-medium text-foreground/90">
+                                  {INTERVALS.find(
+                                    (i) => i.value === p.billing_interval,
+                                  )?.label ?? p.billing_interval}
+                                </span>
+                                <span className="text-muted-foreground/70">
+                                  {" "}
+                                  ·{" "}
+                                </span>
+                                {p.currency === "GBP"
+                                  ? formatGBP(p.price_amount_minor ?? 0)
+                                  : `${p.price_amount_minor} ${p.currency}`}
+                              </p>
+                              {p.public_name?.trim() &&
+                              p.public_name.trim() !== (p.name ?? "") ? (
+                                <p className="text-xs text-muted-foreground">
+                                  Catalogue name: {p.name}
+                                </p>
+                              ) : null}
+                              {p.description || p.public_description ? (
+                                <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+                                  {p.public_description?.trim()
+                                    ? p.public_description
+                                    : (p.description ?? "")}
+                                </p>
+                              ) : null}
+                              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-border/50 pt-3 text-xs sm:grid-cols-4">
+                                <div>
+                                  <dt className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
+                                    Collections
+                                  </dt>
+                                  <dd className="mt-0.5 tabular-nums text-foreground">
+                                    {p.included_collections ?? "—"}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
+                                    Knife allowance
+                                  </dt>
+                                  <dd className="mt-0.5 tabular-nums text-foreground">
+                                    {p.included_knife_allowance ?? "—"}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
+                                    Overage
+                                  </dt>
+                                  <dd className="mt-0.5 tabular-nums text-foreground">
+                                    {p.overage_price_amount_minor != null
+                                      ? formatGBP(p.overage_price_amount_minor)
+                                      : "—"}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
+                                    Sort
+                                  </dt>
+                                  <dd className="mt-0.5 tabular-nums text-foreground">
+                                    {p.sort_order}
+                                  </dd>
+                                </div>
+                              </dl>
+                            </div>
+
+                            <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full min-w-0 sm:w-auto"
+                                disabled={actionsDisabled}
+                                onClick={() => {
+                                  setEditId(p.id);
+                                  setEditDraft(toDraft(p));
+                                }}
                               >
-                                {p.is_active ? "Active" : "Inactive"}
-                              </span>
-                              {p.show_on_public_site ? (
-                                <span
-                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
-                                    p.is_active
-                                      ? "bg-sky-50 text-sky-800"
-                                      : "bg-amber-50 text-amber-900"
-                                  }`}
-                                  title={
-                                    p.is_active
-                                      ? "Shown on public marketing pages"
-                                      : "Would appear on the marketing site once this plan is active"
-                                  }
-                                >
-                                  {p.is_active
-                                    ? "Marketing site"
-                                    : "Marketing (inactive)"}
-                                </span>
-                              ) : null}
-                              {p.recommended ? (
-                                <span className="inline-flex items-center rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-800 dark:bg-violet-950/50 dark:text-violet-200">
-                                  Featured on marketing cards
-                                </span>
-                              ) : null}
-                            </div>
-                            <div className="mt-1 text-sm text-muted-foreground">
-                              {INTERVALS.find(
-                                (i) => i.value === p.billing_interval,
-                              )?.label ?? p.billing_interval}{" "}
-                              ·{" "}
-                              {p.currency === "GBP"
-                                ? formatGBP(p.price_amount_minor ?? 0)
-                                : `${p.price_amount_minor} ${p.currency}`}
-                            </div>
-                            {p.public_name?.trim() &&
-                            p.public_name.trim() !== (p.name ?? "") ? (
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                Catalogue name: {p.name}
-                              </p>
-                            ) : null}
-                            {p.description || p.public_description ? (
-                              <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                                {p.public_description?.trim()
-                                  ? p.public_description
-                                  : (p.description ?? "")}
-                              </p>
-                            ) : null}
-                            <div className="mt-2 text-xs text-muted-foreground">
-                              Included collections:{" "}
-                              {p.included_collections ?? "—"} · Knife allowance:{" "}
-                              {p.included_knife_allowance ?? "—"} · Overage:{" "}
-                              {p.overage_price_amount_minor != null
-                                ? formatGBP(p.overage_price_amount_minor)
-                                : "—"}{" "}
-                              · Sort: {p.sort_order}
+                                <Pencil className="mr-2 h-4 w-4" aria-hidden />
+                                Edit
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={p.is_active ? "secondary" : "default"}
+                                className="w-full min-w-0 sm:w-auto"
+                                disabled={actionsDisabled}
+                                onClick={() =>
+                                  setToggleConfirm({
+                                    id: p.id,
+                                    name: p.name ?? "This plan",
+                                    makeActive: !p.is_active,
+                                  })
+                                }
+                              >
+                                <Power className="mr-2 h-4 w-4" aria-hidden />
+                                {p.is_active ? "Deactivate" : "Activate"}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                className="w-full min-w-0 sm:w-auto"
+                                disabled={actionsDisabled}
+                                onClick={() =>
+                                  setArchiveConfirm({
+                                    id: p.id,
+                                    name: p.name ?? "This plan",
+                                  })
+                                }
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" aria-hidden />
+                                Archive
+                              </Button>
                             </div>
                           </div>
 
-                          <div className="flex flex-wrap gap-2 md:justify-end">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={actionsDisabled}
-                              onClick={() => {
-                                setEditId(p.id);
-                                setEditDraft(toDraft(p));
-                              }}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" aria-hidden />
-                              Edit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={p.is_active ? "secondary" : "default"}
-                              disabled={actionsDisabled}
-                              onClick={() =>
-                                setToggleConfirm({
-                                  id: p.id,
-                                  name: p.name ?? "This plan",
-                                  makeActive: !p.is_active,
-                                })
-                              }
-                            >
-                              <Power className="mr-2 h-4 w-4" aria-hidden />
-                              {p.is_active ? "Deactivate" : "Activate"}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              disabled={actionsDisabled}
-                              onClick={() =>
-                                setArchiveConfirm({
-                                  id: p.id,
-                                  name: p.name ?? "This plan",
-                                })
-                              }
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" aria-hidden />
-                              Archive
-                            </Button>
-                          </div>
+                          {isEditing ? (
+                            <div className="border-t border-border/60 bg-muted/20 p-3 sm:p-4">
+                              <PlanEditor
+                                draft={draft!}
+                                onChange={setEditDraft}
+                                saving={updatePlan.isPending}
+                                onCancel={() => setEditId(null)}
+                                onSave={() =>
+                                  updatePlan.mutate({
+                                    id: p.id,
+                                    payload: draft!,
+                                  })
+                                }
+                              />
+                            </div>
+                          ) : null}
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-                        {isEditing ? (
-                          <div className="border-t p-4">
-                            <PlanEditor
-                              draft={draft!}
-                              onChange={setEditDraft}
-                              saving={updatePlan.isPending}
-                              onCancel={() => setEditId(null)}
-                              onSave={() =>
-                                updatePlan.mutate({ id: p.id, payload: draft! })
-                              }
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <AlertDialog
-            open={toggleConfirm !== null}
-            onOpenChange={(open) => {
-              if (!open) setToggleConfirm(null);
-            }}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {toggleConfirm?.makeActive
-                    ? "Activate plan?"
-                    : "Deactivate plan?"}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {toggleConfirm ? (
-                    <>
-                      <span className="font-medium text-foreground">
-                        {toggleConfirm.name}
-                      </span>
-                      {toggleConfirm.makeActive
-                        ? " will be available to assign to accounts again."
-                        : " won’t be assignable to new accounts while it’s inactive. Existing subscriptions stay as they are."}
-                    </>
-                  ) : null}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  type="button"
-                  onClick={() => {
-                    if (toggleConfirm) {
-                      toggleActive.mutate({
-                        id: toggleConfirm.id,
-                        active: toggleConfirm.makeActive,
-                      });
-                    }
-                    setToggleConfirm(null);
-                  }}
-                >
-                  {toggleConfirm?.makeActive ? "Activate" : "Deactivate"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          <AlertDialog
-            open={archiveConfirm !== null}
-            onOpenChange={(open) => {
-              if (!open) setArchiveConfirm(null);
-            }}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Archive subscription plan?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {archiveConfirm ? (
-                    <>
-                      <span className="font-medium text-foreground">
-                        {archiveConfirm.name}
-                      </span>{" "}
-                      will be removed from the active catalogue. Existing
-                      company subscriptions stay linked; this cannot be undone
-                      from this screen.
-                    </>
-                  ) : null}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
-                <AlertDialogAction asChild>
-                  <Button
+            <AlertDialog
+              open={toggleConfirm !== null}
+              onOpenChange={(open) => {
+                if (!open) setToggleConfirm(null);
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {toggleConfirm?.makeActive
+                      ? "Activate plan?"
+                      : "Deactivate plan?"}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {toggleConfirm ? (
+                      <>
+                        <span className="font-medium text-foreground">
+                          {toggleConfirm.name}
+                        </span>
+                        {toggleConfirm.makeActive
+                          ? " will be available to assign to accounts again."
+                          : " won’t be assignable to new accounts while it’s inactive. Existing subscriptions stay as they are."}
+                      </>
+                    ) : null}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+                  <AlertDialogAction
                     type="button"
-                    variant="destructive"
-                    disabled={archivePlan.isPending}
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      if (!archiveConfirm) return;
-                      try {
-                        await archivePlan.mutateAsync({
-                          id: archiveConfirm.id,
+                    onClick={() => {
+                      if (toggleConfirm) {
+                        toggleActive.mutate({
+                          id: toggleConfirm.id,
+                          active: toggleConfirm.makeActive,
                         });
-                      } catch {
-                        /* toast via mutation onError */
                       }
+                      setToggleConfirm(null);
                     }}
                   >
-                    {archivePlan.isPending ? "Archiving…" : "Archive plan"}
-                  </Button>
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      ) : null}
+                    {toggleConfirm?.makeActive ? "Activate" : "Deactivate"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+              open={archiveConfirm !== null}
+              onOpenChange={(open) => {
+                if (!open) setArchiveConfirm(null);
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Archive subscription plan?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {archiveConfirm ? (
+                      <>
+                        <span className="font-medium text-foreground">
+                          {archiveConfirm.name}
+                        </span>{" "}
+                        will be removed from the active catalogue. Existing
+                        company subscriptions stay linked; this cannot be undone
+                        from this screen.
+                      </>
+                    ) : null}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+                  <AlertDialogAction asChild>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={archivePlan.isPending}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        if (!archiveConfirm) return;
+                        try {
+                          await archivePlan.mutateAsync({
+                            id: archiveConfirm.id,
+                          });
+                        } catch {
+                          /* toast via mutation onError */
+                        }
+                      }}
+                    >
+                      {archivePlan.isPending ? "Archiving…" : "Archive plan"}
+                    </Button>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -656,13 +709,15 @@ function PlanEditorCard(props: {
 }) {
   return (
     <Card className="border-dashed">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">{props.title}</CardTitle>
-        <CardDescription className="text-sm">
+      <CardHeader className="space-y-1 p-4 sm:p-6">
+        <CardTitle className="text-lg font-semibold tracking-tight">
+          {props.title}
+        </CardTitle>
+        <CardDescription className="text-sm leading-snug">
           {props.description}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
         <PlanEditor
           draft={props.draft}
           onChange={props.onChange}
@@ -812,30 +867,30 @@ function PlanEditor(props: {
             placeholder="Optional"
           />
         </div>
-        <div className="flex flex-col gap-2 md:col-span-1">
-          <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2">
+        <div className="flex flex-col gap-2 md:min-w-0">
+          <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border px-3 py-2">
             <input
               type="checkbox"
-              className="h-4 w-4"
+              className="h-4 w-4 shrink-0"
               checked={d.is_active}
               onChange={(e) => update({ is_active: e.target.checked })}
             />
-            <span className="text-sm">
+            <span className="text-sm leading-snug">
               {d.is_active ? "Active" : "Inactive"}
             </span>
           </label>
-          <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2">
+          <label className="flex min-h-10 cursor-pointer items-start gap-2 rounded-md border px-3 py-2">
             <input
               type="checkbox"
-              className="h-4 w-4"
+              className="mt-0.5 h-4 w-4 shrink-0"
               checked={d.show_on_public_site}
               onChange={(e) =>
                 update({ show_on_public_site: e.target.checked })
               }
             />
-            <span className="text-sm">Show on marketing site</span>
+            <span className="text-sm leading-snug">Show on marketing site</span>
           </label>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs leading-relaxed text-muted-foreground">
             Public pages only list plans that are active and have this option
             on. Home, pricing, and subscriptions load the live catalogue from{" "}
             <span className="font-medium text-foreground">
@@ -930,31 +985,35 @@ function PlanEditor(props: {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={props.onCancel}
-          disabled={props.saving}
-        >
-          <X className="mr-2 h-4 w-4" aria-hidden />
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          onClick={props.onSave}
-          disabled={props.saving || d.name.trim() === ""}
-        >
-          {props.saving ? (
-            <Save className="mr-2 h-4 w-4" aria-hidden />
-          ) : (
-            <Check className="mr-2 h-4 w-4" aria-hidden />
-          )}
-          Save
-        </Button>
-        <div className="text-xs text-muted-foreground">
+      <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <p className="order-last text-xs leading-relaxed text-muted-foreground sm:order-none sm:max-w-lg sm:pt-1">
           Changing plan price affects future assignments only. Existing
           subscriptions keep price snapshots.
+        </p>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={props.onCancel}
+            disabled={props.saving}
+          >
+            <X className="mr-2 h-4 w-4" aria-hidden />
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            onClick={props.onSave}
+            disabled={props.saving || d.name.trim() === ""}
+          >
+            {props.saving ? (
+              <Save className="mr-2 h-4 w-4" aria-hidden />
+            ) : (
+              <Check className="mr-2 h-4 w-4" aria-hidden />
+            )}
+            Save
+          </Button>
         </div>
       </div>
     </div>

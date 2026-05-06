@@ -131,7 +131,7 @@ export default function AdminDashboardPage() {
       <Breadcrumbs items={[{ label: "Dashboard" }]} />
       <PageHeader
         title="Operations dashboard"
-        description="Headline volumes and cash position for roughly the last 90 days — from your live booking, order and invoice totals."
+        description="Bookings, sharpening activity, and money — roughly the last three months, pulled from live data."
         actions={
           <PageActions>
             <Button type="button" variant="outline" size="sm" asChild className="shrink-0">
@@ -141,7 +141,7 @@ export default function AdminDashboardPage() {
               </Link>
             </Button>
             <Button type="button" variant="outline" size="sm" asChild className="shrink-0">
-              <Link href="/admin/analytics">Deep-dive analytics</Link>
+              <Link href="/admin/analytics">Full analytics</Link>
             </Button>
           </PageActions>
         }
@@ -179,13 +179,13 @@ export default function AdminDashboardPage() {
               <StatCard
                 title="New bookings · this week"
                 value={String(kpis.new_bookings_this_week)}
-                hint={`${overviewQuery.data?.distinct_cities?.length ?? 0} cities in this window`}
+                hint={`Across ${overviewQuery.data?.distinct_cities?.length ?? 0} areas in this period`}
                 icon={CalendarDays}
               />
               <StatCard
                 title="Knives sharpened · this week"
                 value={String(kpis.knives_sharpened_this_week)}
-                trend={`Active customers · ${kpis.active_customers}`}
+                trend={`${kpis.active_customers} active customer accounts`}
                 trendPositive
                 icon={UtensilsCrossed}
               />
@@ -196,13 +196,28 @@ export default function AdminDashboardPage() {
                 trendPositive={kpis.revenue_this_month_pence >= kpis.revenue_this_week_pence}
                 icon={CircleDollarSign}
               />
-              <StatCard title="Outstanding invoices" value={String(kpis.outstanding_invoice_count)} hint="Issued invoices with balance" icon={Receipt} />
-              <StatCard title="Outstanding balance" value={formatGBP(kpis.outstanding_invoice_amount_pence)} hint="Totals minus receipts" icon={Landmark} />
-              <StatCard title="Avg price / blade" value={formatGBP(kpis.average_price_per_knife_pence)} hint="Completed orders · filter window" icon={Banknote} />
+              <StatCard
+                title="Outstanding invoices"
+                value={String(kpis.outstanding_invoice_count)}
+                hint="Not yet paid in full"
+                icon={Receipt}
+              />
+              <StatCard
+                title="Outstanding balance"
+                value={formatGBP(kpis.outstanding_invoice_amount_pence)}
+                hint="Still owed after payments you’ve recorded"
+                icon={Landmark}
+              />
+              <StatCard
+                title="Avg price / blade"
+                value={formatGBP(kpis.average_price_per_knife_pence)}
+                hint="From completed orders in this period"
+                icon={Banknote}
+              />
             </>
           ) : null}
           <div className="col-span-2 min-w-0 md:col-span-3">
-            <ChartCard title="Revenue pulse · trailing week" description="Daily GBP for the last seven days in range.">
+            <ChartCard title="Revenue pulse · trailing week" description="Daily takings over the past seven days (within the range above).">
               {!chartIsEmpty ? (
                 <div className="w-full min-w-0">
                   <ResponsiveContainer width="100%" height={260}>
@@ -223,7 +238,6 @@ export default function AdminDashboardPage() {
                       />
                       <Tooltip
                         formatter={(value) => formatGBP(Number(value ?? 0))}
-                        labelFormatter={(label) => `Bucket · ${label}`}
                         contentStyle={{ borderRadius: 12 }}
                       />
                       <Area type="monotone" dataKey="revenueMinor" stroke="oklch(0.62 0.2 252)" strokeWidth={2} fill="url(#fillRevDash)" />
@@ -231,7 +245,9 @@ export default function AdminDashboardPage() {
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <p className="py-16 text-center text-sm text-muted-foreground">No revenue buckets in range yet.</p>
+                <p className="py-16 text-center text-sm text-muted-foreground">
+                  No paid revenue in this seven-day slice yet.
+                </p>
               )}
             </ChartCard>
           </div>

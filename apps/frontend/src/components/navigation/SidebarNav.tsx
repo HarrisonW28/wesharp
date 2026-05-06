@@ -129,23 +129,24 @@ function NavBranch({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex w-full min-h-9 items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left transition-colors md:min-h-0",
+          "flex w-full min-h-11 items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-[15px] font-medium transition-colors md:min-h-0 md:py-2 md:text-sm",
           open || branchActive
             ? "text-foreground"
-            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-          branchActive && !open ? "bg-accent/35" : null,
+            : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+          branchActive && !open ? "bg-accent/40" : null,
         )}
         aria-expanded={open}
       >
-        <span className="flex min-w-0 items-center gap-2">
-          <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
-          <span className="min-w-0 truncate text-xs font-semibold tracking-wide">
-            {item.title}
-          </span>
+        <span className="flex min-w-0 items-center gap-3">
+          <Icon
+            className="h-5 w-5 shrink-0 opacity-90 md:h-4 md:w-4"
+            aria-hidden
+          />
+          <span className="min-w-0 truncate">{item.title}</span>
         </span>
         <ChevronRight
           className={cn(
-            "h-3.5 w-3.5 shrink-0 text-muted-foreground/80 transition-transform duration-200 ease-out",
+            "h-4 w-4 shrink-0 text-muted-foreground/80 transition-transform duration-200 ease-out md:h-3.5 md:w-3.5",
             open && "rotate-90",
           )}
           aria-hidden
@@ -153,7 +154,7 @@ function NavBranch({
       </button>
       {open ? (
         <div
-          className="ml-1 space-y-0.5 border-l border-border/50 pl-2.5"
+          className="ml-2 space-y-0.5 border-l border-border/40 pl-3 dark:border-border/50"
           role="region"
           aria-label={`${item.title} links`}
         >
@@ -221,9 +222,12 @@ function sectionHasActiveChild(section: NavSection, pathname: string): boolean {
 
 function CollapsibleNavSection({
   section,
+  sectionIndex,
   onNavigate,
 }: {
   section: NavSection;
+  /** Used for a light divider between groups — first section is flush to the chrome. */
+  sectionIndex: number;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
@@ -239,27 +243,35 @@ function CollapsibleNavSection({
   }, [hasActiveChild]);
 
   return (
-    <div className="flex flex-col gap-1 border-t border-border/60 pt-3 first:border-t-0 first:pt-0 md:pt-3.5">
+    <div
+      className={cn(
+        "flex flex-col gap-1",
+        sectionIndex > 0 &&
+          "mt-2 border-t border-border/30 pt-3 md:mt-3 md:pt-3.5",
+      )}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex w-full min-h-11 items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider transition-colors hover:bg-accent/50 md:min-h-0",
-          hasActiveChild ? "text-foreground" : "text-muted-foreground",
+          "flex w-full min-h-11 items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left text-[15px] font-medium transition-colors hover:bg-accent/60 md:min-h-0 md:py-2 md:text-sm",
+          hasActiveChild
+            ? "text-foreground"
+            : "text-muted-foreground hover:text-foreground",
         )}
         aria-expanded={open}
       >
         <span className="min-w-0 truncate">{section.label}</span>
         <ChevronRight
           className={cn(
-            "h-4 w-4 shrink-0 text-muted-foreground/80 transition-transform duration-200 ease-out",
+            "h-4 w-4 shrink-0 text-muted-foreground/80 transition-transform duration-200 ease-out md:h-3.5 md:w-3.5",
             open && "rotate-90",
           )}
           aria-hidden
         />
       </button>
       {open ? (
-        <div className="flex flex-col gap-1.5 pb-1.5">
+        <div className="flex flex-col gap-1 pb-0.5">
           {section.items.map((item) => (
             <NavEntryRow
               key={navEntryKey(item)}
@@ -281,14 +293,12 @@ export function SidebarNav({
 }: SidebarNavProps) {
   if (sections !== undefined && sections.length > 0) {
     return (
-      <nav
-        className={cn("flex flex-col gap-3 md:gap-4", className)}
-        aria-label="Primary"
-      >
-        {sections.map((section) => (
+      <nav className={cn("flex flex-col", className)} aria-label="Primary">
+        {sections.map((section, sectionIndex) => (
           <CollapsibleNavSection
             key={section.label}
             section={section}
+            sectionIndex={sectionIndex}
             onNavigate={onNavigate}
           />
         ))}
