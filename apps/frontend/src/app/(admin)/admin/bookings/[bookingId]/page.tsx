@@ -1183,7 +1183,7 @@ export default function AdminBookingDetailPage() {
                   });
                 }}
               >
-                {createAndAssignRouteMutation.isPending ? "Creating route and assigning…" : "Create route for this day and assign booking"}
+                {createAndAssignRouteMutation.isPending ? "Assigning…" : "Assign to New Route"}
               </Button>
               <Button type="submit" disabled={assignMutation.isPending || !assignForm.watch("route_id")}>
                 {assignMutation.isPending ? "Assigning…" : "Assign"}
