@@ -11,7 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { BookingDetailResponseSchema } from "@/lib/api/admin-bookings-schema";
-import { RouteListResponseSchema } from "@/lib/api/admin-routes-schema";
+import { RouteRowSchema } from "@/lib/api/admin-routes-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 import { orderStatusLabel, routeStopStatusLabel } from "@/lib/helpers/status-helpers";
@@ -403,7 +403,12 @@ export default function AdminBookingDetailPage() {
       if (!routeCreate.ok) {
         throw new Error(routeCreate.message);
       }
-      const createdRouteParsed = RouteListResponseSchema.safeParse(routeCreate.data);
+      const createdRouteParsed = z
+        .object({
+          success: z.literal(true),
+          data: RouteRowSchema,
+        })
+        .safeParse(routeCreate.data);
       if (!createdRouteParsed.success) {
         throw new Error("Unexpected route payload.");
       }
