@@ -102,6 +102,7 @@ class CompanyDetailResource extends JsonResource
                     : null,
                 'total_pence' => (int) $o->total_pence,
                 'currency' => $o->currency,
+                'company_subscription_id' => $o->company_subscription_id !== null ? (string) $o->company_subscription_id : null,
             ]),
             'knives' => $c->knives->map(static fn (Knife $k) => [
                 'id' => (string) $k->id,

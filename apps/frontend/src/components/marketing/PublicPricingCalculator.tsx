@@ -15,13 +15,16 @@ import { PublicPricingEstimateResponseSchema, type PublicPricingEstimateResponse
 import { publicBillingCadence } from "@/lib/site-content/public-subscription-plans";
 import { cn } from "@/lib/utils";
 
-function bookHrefFromCalculator(state: {
-  knifeCount: string;
-  postcode: string;
-  programmeMode: "pay_as_you_go" | "subscription";
-  visitPattern: "single" | "regular";
-  serviceType: "collection" | "onsite";
-}): string {
+function bookHrefFromCalculator(
+  state: {
+    knifeCount: string;
+    postcode: string;
+    programmeMode: "pay_as_you_go" | "subscription";
+    visitPattern: "single" | "regular";
+    serviceType: "collection" | "onsite";
+  },
+  estimate: PublicPricingEstimateResponse | null,
+): string {
   const p = new URLSearchParams();
   const kn = state.knifeCount.trim();
   if (kn !== "") p.set("knives", kn);
@@ -30,11 +33,31 @@ function bookHrefFromCalculator(state: {
   p.set("service", state.serviceType);
   if (state.programmeMode === "subscription") {
     p.set("programme", "subscription");
+    const plan = estimate?.subscription_plan;
+    if (plan?.name?.trim()) {
+      p.set("plan_name", plan.name.trim().slice(0, 120));
+    }
+    if (plan?.id?.trim()) {
+      p.set("subscription_plan_id", plan.id.trim());
+    }
   } else if (state.visitPattern === "regular") {
     p.set("programme", "unsure");
   } else {
     p.set("programme", "one_off");
   }
+
+  if (estimate?.programme_mode === "pay_as_you_go") {
+    const amt = estimate.amount_pence;
+    if (amt !== null && estimate.currency === "GBP") {
+      p.set("from_price_guide", "1");
+      p.set("estimate_pence", String(amt));
+      const rule = estimate.pricing_rule_name?.trim();
+      if (rule) {
+        p.set("pricing_rule", rule.slice(0, 120));
+      }
+    }
+  }
+
   const q = p.toString();
 
   return q !== "" ? `/book?${q}` : "/book";
@@ -103,13 +126,16 @@ export function PublicPricingCalculator({ className }: { className?: string }) {
     }
   }
 
-  const bookHref = bookHrefFromCalculator({
-    knifeCount,
-    postcode,
-    programmeMode,
-    visitPattern,
-    serviceType,
-  });
+  const bookHref = bookHrefFromCalculator(
+    {
+      knifeCount,
+      postcode,
+      programmeMode,
+      visitPattern,
+      serviceType,
+    },
+    result,
+  );
 
   return (
     <Card className={cn("border-border/80 shadow-sm", className)}>

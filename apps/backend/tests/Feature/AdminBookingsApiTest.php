@@ -319,6 +319,35 @@ final class AdminBookingsApiTest extends TestCase
         ]);
     }
 
+    public function test_confirm_creates_draft_order_and_activates_company(): void
+    {
+        $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();
+        $company = Company::query()->firstOrFail();
+        $company->update(['company_status' => \App\Enums\CompanyStatus::Lead]);
+        $location = CompanyLocation::query()->where('company_id', $company->id)->firstOrFail();
+
+        $create = $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings', [
+                'company_id' => $company->id,
+                'location_id' => $location->id,
+                'requested_date' => now()->addWeek()->toDateString(),
+                'service_type' => ServiceType::Collection->value,
+                'estimated_knife_count' => 3,
+            ]);
+        $create->assertCreated();
+        $bookingId = (string) $create->json('data.id');
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $operator->id)
+            ->postJson('/api/admin/bookings/'.$bookingId.'/confirm')
+            ->assertOk();
+
+        $order = Order::query()->where('booking_id', $bookingId)->first();
+        self::assertNotNull($order);
+        self::assertSame('draft', $order->order_status->value);
+        self::assertGreaterThanOrEqual(0, (int) $order->total_pence);
+        self::assertSame('active', $company->fresh()->company_status?->value);
+    }
+
     public function test_convert_to_order_marks_booking_converted(): void
     {
         $operator = User::query()->where('email', 'operations@demo.wesharp.test')->firstOrFail();

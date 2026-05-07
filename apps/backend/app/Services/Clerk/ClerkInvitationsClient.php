@@ -24,7 +24,7 @@ final class ClerkInvitationsClient
         }
 
         $portalBase = rtrim((string) config('wesharp.customer_portal_base_url'), '/');
-        $redirectUrl = $portalBase !== '' ? $portalBase.'/register' : null;
+        $redirectUrl = $portalBase !== '' ? $portalBase.'/auth/continue' : null;
 
         try {
             $response = Http::timeout(12)

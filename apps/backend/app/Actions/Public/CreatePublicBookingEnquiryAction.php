@@ -10,6 +10,7 @@ use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CompanyLocation;
 use App\Models\Contact;
+use App\Models\SubscriptionPlan;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Notifications\BookingEmailService;
 use App\Services\Notifications\InAppNotificationDispatcher;
@@ -64,7 +65,9 @@ final class CreatePublicBookingEnquiryAction
 Captured from anonymous public enquiry (website booking form).
 Qualify commercially and confirm pickup address/details before assigning a route or confirming SLA.
 TXT,
-                'price_estimate_pence' => null,
+                'price_estimate_pence' => isset($validated['price_guide_estimate_pence'])
+                    ? (int) $validated['price_guide_estimate_pence']
+                    : null,
             ]);
 
             $company->notes()->create([
@@ -187,6 +190,15 @@ TXT,
                 default => $interest,
             };
             $lines[] = 'Programme preference: '.$label;
+        }
+
+        $planId = isset($validated['subscription_plan_id']) ? (string) $validated['subscription_plan_id'] : '';
+        if ($planId !== '') {
+            /** @phpstan-ignore-next-line */
+            $plan = SubscriptionPlan::query()->find($planId);
+            $lines[] = $plan instanceof SubscriptionPlan
+                ? 'Subscription plan interest: '.$plan->name.' (catalogue id '.$plan->id.')'
+                : 'Subscription plan interest (catalogue id '.$planId.')';
         }
 
         $lines[] = '[Source: wesharp.app public booking form]';

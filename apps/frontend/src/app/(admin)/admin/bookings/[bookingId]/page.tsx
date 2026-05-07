@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { BookingDetailResponseSchema } from "@/lib/api/admin-bookings-schema";
+import { RouteListResponseSchema } from "@/lib/api/admin-routes-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 import { orderStatusLabel, routeStopStatusLabel } from "@/lib/helpers/status-helpers";
@@ -385,20 +386,74 @@ export default function AdminBookingDetailPage() {
     },
   });
 
-  const routePlaceholderMutation = useMutation({
-    mutationFn: async () => {
-      const res = await admin.json(`/api/admin/bookings/${bookingId}/create-route-placeholder`, { method: "POST" });
-      if (!res.ok) {
-        throw new Error(res.message);
+  const createAndAssignRouteMutation = useMutation({
+    mutationFn: async (payload: z.infer<typeof assignToRouteSchema>) => {
+      const day = collectionDateForRoute;
+      if (!day) {
+        throw new Error("Set a collection date before creating a route.");
       }
-      return res.data;
+
+      const routeCreate = await admin.json<unknown>(`/api/admin/routes`, {
+        method: "POST",
+        body: JSON.stringify({
+          name: `Route ${day}`,
+          scheduled_date: day,
+        }),
+      });
+      if (!routeCreate.ok) {
+        throw new Error(routeCreate.message);
+      }
+      const createdRouteParsed = RouteListResponseSchema.safeParse(routeCreate.data);
+      if (!createdRouteParsed.success) {
+        throw new Error("Unexpected route payload.");
+      }
+      const createdRouteId = createdRouteParsed.data.data.id;
+
+      const body: Record<string, unknown> = { route_id: createdRouteId };
+      if (payload.sequence?.trim()) {
+        const n = parseInt(payload.sequence.trim(), 10);
+        if (!Number.isNaN(n) && n > 0) {
+          body.sequence = n;
+        }
+      }
+      if (payload.confirmed_collection_date?.trim()) {
+        body.confirmed_collection_date = payload.confirmed_collection_date.trim();
+      }
+      if (payload.confirmed_time_window_start?.trim()) {
+        body.confirmed_time_window_start = payload.confirmed_time_window_start.trim().slice(0, 5);
+      }
+      if (payload.confirmed_time_window_end?.trim()) {
+        body.confirmed_time_window_end = payload.confirmed_time_window_end.trim().slice(0, 5);
+      }
+
+      const assignRes = await admin.json(`/api/admin/bookings/${bookingId}/assign-route`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (!assignRes.ok) {
+        throw new Error(assignRes.message);
+      }
+
+      return { routeId: createdRouteId };
     },
-    onSuccess: async () => {
-      toast.message("Logged — create the run from Routes for now.");
+    onSuccess: async ({ routeId }) => {
+      toast.success("Route created and assigned.");
+      setAssignOpen(false);
+      assignForm.reset({
+        route_id: "",
+        sequence: "",
+        confirmed_collection_date: "",
+        confirmed_time_window_start: "",
+        confirmed_time_window_end: "",
+      });
       await qc.invalidateQueries({ queryKey: ["admin-booking-detail", bookingId] });
+      await qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+      await qc.invalidateQueries({ queryKey: ["admin-routes-list"] });
+      await qc.invalidateQueries({ queryKey: ["admin-routes-today"] });
+      await qc.invalidateQueries({ queryKey: ["admin-route-detail", routeId] });
     },
     onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : "Request failed.");
+      toast.error(e instanceof Error ? e.message : "Create route and assign failed.");
     },
   });
 
@@ -610,15 +665,6 @@ export default function AdminBookingDetailPage() {
               onClick={() => setUnassignOpen(true)}
             >
               Remove from route
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={!assignRoute || routePlaceholderMutation.isPending}
-              onClick={() => routePlaceholderMutation.mutate()}
-            >
-              New route (placeholder)
             </Button>
             <Button
               type="button"
@@ -1110,6 +1156,14 @@ export default function AdminBookingDetailPage() {
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setAssignOpen(false)}>
                 Close
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={createAndAssignRouteMutation.isPending || !collectionDateForRoute}
+                onClick={assignForm.handleSubmit((values) => createAndAssignRouteMutation.mutate(values))}
+              >
+                {createAndAssignRouteMutation.isPending ? "Creating route…" : "New route for this day + assign"}
               </Button>
               <Button type="submit" disabled={assignMutation.isPending || !assignForm.watch("route_id")}>
                 {assignMutation.isPending ? "Assigning…" : "Assign"}

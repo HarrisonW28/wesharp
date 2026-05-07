@@ -20,6 +20,9 @@ final class PublicSiteContentController extends Controller
         return ApiResponses::success([
             'content' => $content->resolved(),
             'public_subscription_plans' => PublicSubscriptionPlanResource::collection($plans),
+            'public_booking' => [
+                'offer_subscription_checkout_in_wizard' => (bool) config('public_booking.offer_subscription_checkout_in_wizard'),
+            ],
         ]);
     }
 }

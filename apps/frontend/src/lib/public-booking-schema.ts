@@ -47,6 +47,10 @@ const publicBookingBaseSchema = z.object({
   terms_accepted: z.boolean(),
   /** Optional: captured by the guided wizard; merged into customer notes on the server. */
   programme_interest: z.enum(["one_off", "subscription", "unsure"]).optional(),
+  /** Optional; seeded from pricing calculator / programme cards for CRM context. */
+  subscription_plan_id: z.string().uuid().optional(),
+  /** Optional; indicative PAYG total from the public calculator, stored on the booking row. */
+  price_guide_estimate_pence: z.number().int().min(0).max(500000000).optional(),
 });
 
 export const PUBLIC_BOOKING_ENQUIRY_SCHEMA = publicBookingBaseSchema

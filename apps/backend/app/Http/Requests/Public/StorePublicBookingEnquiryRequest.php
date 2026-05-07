@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Public;
 
 use App\Enums\ServiceType;
+use App\Models\SubscriptionPlan;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -32,6 +33,13 @@ class StorePublicBookingEnquiryRequest extends FormRequest
             'message' => ['required', 'string', 'max:20000'],
             'terms_accepted' => ['accepted'],
             'programme_interest' => ['sometimes', 'nullable', 'string', Rule::in(['one_off', 'subscription', 'unsure'])],
+            'subscription_plan_id' => [
+                'sometimes',
+                'nullable',
+                'uuid',
+                Rule::exists(SubscriptionPlan::class, 'id')->where('is_active', true),
+            ],
+            'price_guide_estimate_pence' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:500000000'],
         ];
     }
 

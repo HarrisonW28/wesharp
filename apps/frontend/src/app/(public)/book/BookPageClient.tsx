@@ -19,9 +19,15 @@ import {
   type PublicBookingFieldErrors,
 } from "@/lib/public-booking-schema";
 import { postPublicBookingServiceAreaCheck } from "@/lib/public-booking-service-area-check";
+import type { PublicBookingFlowSettings } from "@/lib/site-content/fetch-site-content";
 import type { SiteContent } from "@/lib/site-content/site-content-defaults";
 import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
+import { formatGBP } from "@/lib/format/money";
 import { cn } from "@/lib/utils";
+
+function looksLikeUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s.trim());
+}
 
 const STEP_HEADINGS = [
   {
@@ -72,11 +78,20 @@ const initialValues: PublicBookingFormValues = {
   message: "",
   terms_accepted: false,
   programme_interest: undefined,
+  subscription_plan_id: undefined,
+  price_guide_estimate_pence: undefined,
 };
 
-export function BookPageClient({ booking }: { booking: SiteContent["booking"] }) {
+export function BookPageClient({
+  booking,
+  publicBooking,
+}: {
+  booking: SiteContent["booking"];
+  publicBooking: PublicBookingFlowSettings;
+}) {
   const searchParams = useSearchParams();
   const seededPlanMessageRef = useRef(false);
+  const seededPriceGuideMessageRef = useRef(false);
   const [values, setValues] = useState<PublicBookingFormValues>(initialValues);
   const [fieldErrors, setFieldErrors] = useState<PublicBookingFieldErrors>({});
   const [globalMessage, setGlobalMessage] = useState<string | null>(null);
@@ -95,13 +110,20 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
     const svc = searchParams.get("service");
     const planNameRaw = searchParams.get("plan_name");
     const customPlanRaw = searchParams.get("custom_plan");
+    const subscriptionPlanIdRaw = searchParams.get("subscription_plan_id");
+    const fromPriceGuide = searchParams.get("from_price_guide");
+    const estimatePenceRaw = searchParams.get("estimate_pence");
+    const pricingRuleRaw = searchParams.get("pricing_rule");
+
     if (
       kn === null &&
       pc === null &&
       prog === null &&
       svc === null &&
       planNameRaw === null &&
-      customPlanRaw === null
+      customPlanRaw === null &&
+      subscriptionPlanIdRaw === null &&
+      fromPriceGuide === null
     ) {
       return;
     }
@@ -127,6 +149,11 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
         next.programme_interest = "unsure";
       }
 
+      if (subscriptionPlanIdRaw !== null && looksLikeUuid(subscriptionPlanIdRaw)) {
+        next.subscription_plan_id = subscriptionPlanIdRaw.trim();
+        next.programme_interest = "subscription";
+      }
+
       if (!seededPlanMessageRef.current && prev.message === "") {
         const planName = planNameRaw?.trim() ?? "";
         if (planName !== "") {
@@ -139,6 +166,23 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
             "I'd like to discuss a custom / bespoke subscription or programme for our volumes and schedule. Please get in touch.";
           next.programme_interest = "subscription";
           seededPlanMessageRef.current = true;
+        }
+      }
+
+      if (!seededPriceGuideMessageRef.current && prev.message === "" && fromPriceGuide === "1") {
+        const ep = estimatePenceRaw !== null ? Number(estimatePenceRaw) : NaN;
+        if (Number.isFinite(ep) && ep >= 0 && ep <= 500_000_000) {
+          const rounded = Math.round(ep);
+          next.price_guide_estimate_pence = rounded;
+          const knifeLabel =
+            next.estimated_knife_count != null ? `~${next.estimated_knife_count} knives/items` : "my knives/items";
+          const amt = formatGBP(rounded);
+          const ruleBit =
+            pricingRuleRaw !== null && pricingRuleRaw.trim() !== ""
+              ? ` Pricing rule matched: ${pricingRuleRaw.trim().slice(0, 120)}.`
+              : "";
+          next.message = `I'm coming from the website price guide — indicative estimate was ${amt} for ${knifeLabel}.${ruleBit} Please confirm on quote after booking review.`;
+          seededPriceGuideMessageRef.current = true;
         }
       }
 
@@ -202,6 +246,12 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
     }
     if (body.programme_interest === undefined || body.programme_interest === null) {
       delete body.programme_interest;
+    }
+    if (body.subscription_plan_id === undefined || body.subscription_plan_id === null) {
+      delete body.subscription_plan_id;
+    }
+    if (body.price_guide_estimate_pence === undefined || body.price_guide_estimate_pence === null) {
+      delete body.price_guide_estimate_pence;
     }
     body.terms_accepted = true;
 
@@ -386,6 +436,25 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
               <li key={line}>{line}</li>
             ))}
           </ul>
+          {publicBooking.offer_subscription_checkout_in_wizard &&
+          values.programme_interest === "subscription" ? (
+            <Alert className="border-primary/25 bg-primary/5 text-left">
+              <AlertDescription className="text-sm leading-relaxed text-muted-foreground">
+                <span className="font-medium text-foreground">Subscribe online</span> — when your plan supports card billing,
+                you can finish subscription checkout from your WeSharp account (Stripe hosted checkout). Create an account with
+                the same email you used above, then sign in and open your subscription area once our team has linked your
+                organisation.
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button asChild variant="secondary" size="sm" className="rounded-lg">
+                    <Link href="/register">Create account</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm" className="rounded-lg">
+                    <Link href="/login">Sign in</Link>
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <div className="flex flex-wrap justify-center gap-3 md:justify-start">
             <Button asChild variant="default" className="h-12 min-h-11 touch-manipulation rounded-lg">
               <Link href="/">Back home</Link>
@@ -846,6 +915,25 @@ export function BookPageClient({ booking }: { booking: SiteContent["booking"] })
                   </div>
                 </dl>
               </div>
+
+              {publicBooking.offer_subscription_checkout_in_wizard &&
+              values.programme_interest === "subscription" ? (
+                <Alert className="border-primary/25 bg-primary/5">
+                  <AlertDescription className="text-sm leading-relaxed text-muted-foreground">
+                    <span className="font-medium text-foreground">Pay for your programme online</span> — this site can invite
+                    subscription checkout after you have a WeSharp account (hosted by Stripe). Use the same email below so we
+                    can match your enquiry quickly.
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button asChild type="button" variant="secondary" size="sm" className="rounded-lg">
+                        <Link href="/register">Create account</Link>
+                      </Button>
+                      <Button asChild type="button" variant="outline" size="sm" className="rounded-lg">
+                        <Link href="/login">Already registered</Link>
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
 
               <div className="grid gap-2">
                 <Label htmlFor="contact_name">

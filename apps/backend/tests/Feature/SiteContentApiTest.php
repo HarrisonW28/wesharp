@@ -28,7 +28,8 @@ final class SiteContentApiTest extends TestCase
         $this->getJson('/api/public/site-content')
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.content.homepage.hero_title', 'Professional knife sharpening, collected from your door.');
+            ->assertJsonPath('data.content.homepage.hero_title', 'Professional knife sharpening, collected from your door.')
+            ->assertJsonPath('data.public_booking.offer_subscription_checkout_in_wizard', false);
     }
 
     public function test_settings_manage_can_put_site_content_and_public_reads_override(): void

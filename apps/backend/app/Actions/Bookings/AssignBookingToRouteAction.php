@@ -83,6 +83,12 @@ final class AssignBookingToRouteAction
                 abort(422, 'Only confirmed or route-assigned bookings can be routed.');
             }
 
+            $booking->orders()
+                ->where(function ($q) use ($route): void {
+                    $q->where('route_id', '!=', $route->id)->orWhereNull('route_id');
+                })
+                ->update(['route_id' => $route->id]);
+
             $duplicateStops = RouteStop::query()->where('booking_id', $booking->id)->count();
             if ($duplicateStops > 1) {
                 abort(422, 'This booking has inconsistent route stops. Contact support.');

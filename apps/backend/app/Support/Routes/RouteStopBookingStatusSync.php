@@ -101,4 +101,30 @@ final class RouteStopBookingStatusSync
             'trigger' => 'route_stop.completed',
         ], $request);
     }
+
+    public static function afterStopReturned(RouteStop $stop, ?Authenticatable $actor, ?Request $request): void
+    {
+        $booking = $stop->booking;
+
+        if ($booking === null) {
+            return;
+        }
+
+        if ($booking->booking_status !== BookingStatus::QualityChecked) {
+            return;
+        }
+
+        BookingStatusTransitions::assertCanTransition($booking->booking_status, BookingStatus::Returned);
+
+        $from = $booking->booking_status;
+        $booking->booking_status = BookingStatus::Returned;
+        $booking->save();
+
+        AuditRecorder::record($actor, $booking, 'booking.synced_from_route_stop', [
+            'route_stop_id' => (string) $stop->id,
+            'from' => $from->value,
+            'to' => BookingStatus::Returned->value,
+            'trigger' => 'route_stop.returned',
+        ], $request);
+    }
 }

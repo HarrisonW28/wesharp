@@ -13,10 +13,12 @@ use App\Http\Requests\MarkRouteStopSkippedRequest;
 use App\Http\Requests\UpdateRouteStopRequest;
 use App\Models\RouteStop;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Orders\OrderService;
 use App\Support\ApiResponses;
 use App\Support\Routes\RouteFormatting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 final class RouteStopController extends Controller
 {
@@ -44,13 +46,28 @@ final class RouteStopController extends Controller
 
         $before = $stop->only(['actual_knife_count', 'damage_notes']);
 
-        $stop->fill($validated);
-        $stop->save();
+        DB::transaction(function () use ($stop, $validated, $request, $before): void {
+            $stop->fill($validated);
+            $stop->save();
 
-        AuditRecorder::record($request->user(), $stop, 'route_stop.updated', [
-            'before' => $before,
-            'after' => $stop->only(['actual_knife_count', 'damage_notes']),
-        ], $request);
+            $booking = $stop->booking;
+            if ($booking !== null && array_key_exists('actual_knife_count', $validated)) {
+                $booking->actual_knife_count = $stop->actual_knife_count;
+                $booking->save();
+
+                $order = $booking->orders()->latest('created_at')->first();
+                if ($order !== null) {
+                    $order->knife_count = max(0, (int) ($stop->actual_knife_count ?? 0));
+                    $order->save();
+                    app(OrderService::class)->rebuildMonetaryTotals($order->fresh(['knives', 'items', 'booking']));
+                }
+            }
+
+            AuditRecorder::record($request->user(), $stop, 'route_stop.updated', [
+                'before' => $before,
+                'after' => $stop->only(['actual_knife_count', 'damage_notes']),
+            ], $request);
+        });
 
         return ApiResponses::success(RouteFormatting::stopDetail($stop->fresh()));
     }

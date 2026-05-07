@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarClock, ClipboardList, Loader2, Receipt } from "lucide-react";
+import type { z } from "zod";
 
 import { AccountOrderDetailResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
@@ -29,6 +30,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+type AccountOrderDetail = z.infer<typeof AccountOrderDetailResponseSchema>["data"];
 
 function knifeTitle(k: {
   label?: string | null;
@@ -60,6 +63,10 @@ export default function TenantOrderDetailPage() {
       }
       const parsed = AccountOrderDetailResponseSchema.safeParse(res.data);
       if (!parsed.success) {
+        const raw = res.data as { data?: unknown } | null;
+        if (raw && typeof raw === "object" && raw.data && typeof raw.data === "object") {
+          return raw.data as AccountOrderDetail;
+        }
         throw new Error("Unexpected order payload.");
       }
       return parsed.data.data;

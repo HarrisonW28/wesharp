@@ -5,6 +5,7 @@ namespace App\Actions\Routes;
 use App\Enums\RouteStopStatus;
 use App\Models\RouteStop;
 use App\Support\Evidence\EvidencePhotoRequirements;
+use App\Support\Routes\RouteStopBookingStatusSync;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 
@@ -24,6 +25,9 @@ final class MarkRouteStopReturnedAction
             $request,
             [],
             ['return_completed_at' => now()],
+            static function (RouteStop $fresh) use ($actor, $request): void {
+                RouteStopBookingStatusSync::afterStopReturned($fresh, $actor, $request);
+            },
         );
     }
 }

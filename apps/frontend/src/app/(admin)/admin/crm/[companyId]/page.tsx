@@ -432,7 +432,14 @@ export default function AdminCrmCompanyPage() {
       {
         accessorKey: "total_pence",
         header: "Total",
-        cell: ({ row }) => formatGBP(row.original.total_pence),
+        cell: ({ row }) =>
+          row.original.company_subscription_id ? (
+            <Link className="font-medium text-primary hover:underline" href={`/admin/crm/${companyId}?tab=subscription`}>
+              Subscription
+            </Link>
+          ) : (
+            formatGBP(row.original.total_pence)
+          ),
       },
       { accessorKey: "currency", header: "CCY" },
     ],

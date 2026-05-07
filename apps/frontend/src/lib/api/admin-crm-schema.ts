@@ -116,6 +116,7 @@ export const OrderPreviewSchema = z.object({
   order_status_label: z.string().nullable().optional(),
   total_pence: z.number(),
   currency: z.string().nullable().optional(),
+  company_subscription_id: z.string().nullable().optional(),
 });
 
 export const KnifePreviewSchema = z.object({
