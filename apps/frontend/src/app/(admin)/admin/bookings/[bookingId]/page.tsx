@@ -387,7 +387,12 @@ export default function AdminBookingDetailPage() {
   });
 
   const createAndAssignRouteMutation = useMutation({
-    mutationFn: async (payload: z.infer<typeof assignToRouteSchema>) => {
+    mutationFn: async (payload: {
+      sequence?: string;
+      confirmed_collection_date?: string;
+      confirmed_time_window_start?: string;
+      confirmed_time_window_end?: string;
+    }) => {
       const day = collectionDateForRoute;
       if (!day) {
         throw new Error("Set a collection date before creating a route.");
@@ -1166,9 +1171,19 @@ export default function AdminBookingDetailPage() {
                 type="button"
                 variant="outline"
                 disabled={createAndAssignRouteMutation.isPending || !collectionDateForRoute}
-                onClick={assignForm.handleSubmit((values) => createAndAssignRouteMutation.mutate(values))}
+                onClick={() => {
+                  // This action creates a fresh route first, so route_id is intentionally not required.
+                  assignForm.clearErrors("route_id");
+                  const values = assignForm.getValues();
+                  createAndAssignRouteMutation.mutate({
+                    sequence: values.sequence,
+                    confirmed_collection_date: values.confirmed_collection_date,
+                    confirmed_time_window_start: values.confirmed_time_window_start,
+                    confirmed_time_window_end: values.confirmed_time_window_end,
+                  });
+                }}
               >
-                {createAndAssignRouteMutation.isPending ? "Creating route…" : "New route for this day + assign"}
+                {createAndAssignRouteMutation.isPending ? "Creating route and assigning…" : "Create route for this day and assign booking"}
               </Button>
               <Button type="submit" disabled={assignMutation.isPending || !assignForm.watch("route_id")}>
                 {assignMutation.isPending ? "Assigning…" : "Assign"}
