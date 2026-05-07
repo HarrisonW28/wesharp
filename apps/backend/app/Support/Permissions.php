@@ -326,6 +326,7 @@ final class Permissions
                 self::ACCOUNT_SETTINGS_VIEW,
                 self::ACCOUNT_SETTINGS_UPDATE,
                 self::ACCOUNT_PROFILE_UPDATE,
+                self::ACCOUNT_LOCATIONS_MANAGE,
             ],
         ];
     }
