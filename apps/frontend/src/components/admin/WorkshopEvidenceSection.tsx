@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
-import { ImageIcon, Loader2, Trash2 } from "lucide-react";
+import { Camera, ImageIcon, Loader2, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -111,6 +111,8 @@ export function WorkshopEvidenceSection({
   className?: string;
 }) {
   const idPrefix = useId();
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
   const admin = useAdminApi();
   const queryClient = useQueryClient();
 
@@ -224,20 +226,58 @@ export function WorkshopEvidenceSection({
       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
 
       <div className="mt-4 space-y-3 rounded-lg border bg-muted/20 p-4">
-        <div>
+        <div className="space-y-2">
           <Label>New photo</Label>
-          <Input
-            id={`${idPrefix}-camera`}
+          <input
+            ref={cameraInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
             capture="environment"
-            className="mt-2 cursor-pointer"
+            className="sr-only"
+            disabled={uploadMutation.isPending}
             onChange={(e) => {
               const f = e.target.files?.[0] ?? null;
               setDraftFile(f);
               e.target.value = "";
             }}
           />
+          <input
+            ref={libraryInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            className="sr-only"
+            disabled={uploadMutation.isPending}
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              setDraftFile(f);
+              e.target.value = "";
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-10 touch-manipulation"
+              disabled={uploadMutation.isPending}
+              onClick={() => cameraInputRef.current?.click()}
+            >
+              <Camera className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+              Take photo
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-10 touch-manipulation"
+              disabled={uploadMutation.isPending}
+              onClick={() => libraryInputRef.current?.click()}
+            >
+              <ImageIcon className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+              Library / files
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            On mobile, open the camera for a new shot, or choose library/files for an existing image.
+          </p>
         </div>
 
         {previewUrl ? (

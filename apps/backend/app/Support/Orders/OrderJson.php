@@ -16,6 +16,7 @@ use App\Models\OrderItem;
 use App\Services\Pricing\PricingRuleResolver;
 use App\Support\Audit\AuditLogPresenter;
 use App\Support\Crm\CompanySoftDeletePresentation;
+use App\Support\Evidence\EvidencePhotoJson;
 use App\Support\Knives\KnifeJson;
 use App\Support\Knives\KnifeStatusPresentation;
 use App\Support\Money\MoneyFormatting;

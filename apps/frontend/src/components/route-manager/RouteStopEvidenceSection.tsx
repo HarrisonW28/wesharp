@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
-import { ImageIcon, Loader2, Trash2 } from "lucide-react";
+import { Camera, ImageIcon, Loader2, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -126,6 +126,8 @@ export function RouteStopEvidenceSection({
   orderKnives?: { id: string; label: string }[];
 }) {
   const idPrefix = useId();
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
   const admin = useAdminApi();
   const queryClient = useQueryClient();
 
@@ -223,25 +225,63 @@ export function RouteStopEvidenceSection({
         Photos & evidence
       </div>
       <p className="mt-2 text-base text-slate-300 md:text-muted-foreground">
-        Photos are optional unless ops settings require them for a step. Pick a file and upload with defaults, or open fine-tune
-        below. Customer-visible only when you choose that visibility.
+        Photos are optional unless ops settings require them for a step. Use camera or library below, then upload with defaults or
+        fine-tune. Customer-visible only when you choose that visibility.
       </p>
 
       <div className="mt-4 space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 md:border-border md:bg-muted/20">
-        <div>
+        <div className="space-y-2">
           <Label className="text-base">New photo</Label>
-          <Input
-            id={`${idPrefix}-camera`}
+          <input
+            ref={cameraInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
             capture="environment"
-            className="mt-2 h-12 cursor-pointer text-base"
+            className="sr-only"
+            disabled={uploadMutation.isPending}
             onChange={(e) => {
               const f = e.target.files?.[0] ?? null;
               setDraftFile(f);
               e.target.value = "";
             }}
           />
+          <input
+            ref={libraryInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            className="sr-only"
+            disabled={uploadMutation.isPending}
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              setDraftFile(f);
+              e.target.value = "";
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-11 touch-manipulation rounded-xl text-base"
+              disabled={uploadMutation.isPending}
+              onClick={() => cameraInputRef.current?.click()}
+            >
+              <Camera className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+              Take photo
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 touch-manipulation rounded-xl text-base"
+              disabled={uploadMutation.isPending}
+              onClick={() => libraryInputRef.current?.click()}
+            >
+              <ImageIcon className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+              Library / files
+            </Button>
+          </div>
+          <p className="text-xs text-slate-400 md:text-muted-foreground">
+            On a phone, use camera for a new shot, or library/files for an existing photo.
+          </p>
         </div>
 
         {previewUrl ? (

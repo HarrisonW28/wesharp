@@ -314,10 +314,14 @@ final class CompanyController extends Controller
     {
         $this->authorize('update', $company);
 
-        $location = CompanyLocation::query()->create(array_merge(
-            ['company_id' => $company->id],
-            $request->validated()
-        ));
+        /** @var array<string, mixed> $data */
+        $data = array_merge(['company_id' => $company->id], $request->validated());
+        $country = $data['country'] ?? null;
+        $data['country'] = is_string($country) && trim($country) !== ''
+            ? $country
+            : 'GB';
+
+        $location = CompanyLocation::query()->create($data);
 
         AuditRecorder::record($request->user(), $company, 'company.location_added', [
             'location_id' => $location->id,
