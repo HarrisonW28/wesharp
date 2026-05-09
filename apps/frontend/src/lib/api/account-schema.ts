@@ -168,8 +168,9 @@ export const PaginatedBookingsResponseSchema = z.object({
 export const AccountFulfilmentTimelineStepSchema = z.object({
   step_key: z.string(),
   label: z.string(),
-  description: z.string().optional(),
-  at: z.string().optional(),
+  description: z.string().nullable().optional(),
+  /** Backend may send null when a timestamp is unknown (e.g. invoice row before `created_at` is set). */
+  at: z.string().nullable().optional(),
   state: z.string(),
 });
 
@@ -189,7 +190,7 @@ export const AccountFulfilmentSchema = z.object({
 });
 
 export const AccountCustomerMessageSchema = z.object({
-  body: z.string(),
+  body: z.union([z.string(), z.null()]).transform((v) => (v == null ? "" : v)),
   posted_at: z.string().nullable().optional(),
   posted_at_label: z.string().nullable().optional(),
 });
@@ -341,10 +342,10 @@ export const AccountPortalOrderKnifeSchema = z.object({
 });
 
 export const AccountPortalOrderItemSchema = z.object({
-  description: z.string(),
-  quantity: z.number(),
-  unit_amount_pence: z.number(),
-  line_total_pence: z.number(),
+  description: z.union([z.string(), z.null()]).transform((v) => (v == null ? "" : v)),
+  quantity: z.coerce.number(),
+  unit_amount_pence: z.coerce.number(),
+  line_total_pence: z.coerce.number(),
   formatted_unit_amount: z.string(),
   formatted_line_total: z.string(),
   status: z.string().nullable().optional(),
@@ -359,9 +360,9 @@ export const AccountPortalOrderInvoiceSchema = z.object({
   status: z.string().nullable().optional(),
   customer_status_label: z.string().nullable().optional(),
   customer_status_hint: z.string().nullable().optional(),
-  subtotal_pence: z.number(),
-  tax_pence: z.number(),
-  total_pence: z.number(),
+  subtotal_pence: z.coerce.number(),
+  tax_pence: z.coerce.number(),
+  total_pence: z.coerce.number(),
   formatted_subtotal: z.string(),
   formatted_tax: z.string(),
   formatted_total: z.string(),
@@ -417,6 +418,21 @@ export const AccountOrderDetailResponseSchema = z.object({
   success: z.literal(true),
   data: AccountOrderDetailDataSchema,
 });
+
+/** Unwrap `GET /api/account/orders/:id` JSON when Zod is slightly behind the API. */
+export function unwrapTenantOrderDetailPayload(body: unknown): z.infer<typeof AccountOrderDetailDataSchema> | null {
+  if (body === null || body === undefined || typeof body !== "object" || Array.isArray(body)) {
+    return null;
+  }
+  const b = body as Record<string, unknown>;
+  if ("data" in b && b.data !== null && b.data !== undefined && typeof b.data === "object" && !Array.isArray(b.data)) {
+    return b.data as z.infer<typeof AccountOrderDetailDataSchema>;
+  }
+  if (typeof b.id === "string" && ("status" in b || "display_reference" in b)) {
+    return b as z.infer<typeof AccountOrderDetailDataSchema>;
+  }
+  return null;
+}
 
 export const KnifeRowTenantSchema = z
   .object({

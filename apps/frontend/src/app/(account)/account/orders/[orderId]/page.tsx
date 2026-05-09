@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarClock, ClipboardList, Loader2, Receipt } from "lucide-react";
 import type { z } from "zod";
 
-import { AccountOrderDetailResponseSchema } from "@/lib/api/account-schema";
+import { AccountOrderDetailResponseSchema, unwrapTenantOrderDetailPayload } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 import { customerBookingStatusLabel } from "@/lib/helpers/status-helpers";
 import { buildCustomerOrderTimeline, customerOrderNextSteps } from "@/lib/orders/customer-order-ui";
@@ -62,14 +62,14 @@ export default function TenantOrderDetailPage() {
         throw new Error(res.message);
       }
       const parsed = AccountOrderDetailResponseSchema.safeParse(res.data);
-      if (!parsed.success) {
-        const raw = res.data as { data?: unknown } | null;
-        if (raw && typeof raw === "object" && raw.data && typeof raw.data === "object") {
-          return raw.data as AccountOrderDetail;
-        }
-        throw new Error("Unexpected order payload.");
+      if (parsed.success) {
+        return parsed.data.data;
       }
-      return parsed.data.data;
+      const fallback = unwrapTenantOrderDetailPayload(res.data);
+      if (fallback) {
+        return fallback;
+      }
+      throw new Error("Unexpected order payload.");
     },
   });
 
