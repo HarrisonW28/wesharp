@@ -10,8 +10,8 @@ import { toast } from "sonner";
 
 import {
   BulkWorkshopSummarySchema,
-  OrderDetailResponseSchema,
   OrderInvoiceDraftResponseSchema,
+  parseAdminOrderDetailEnvelope,
 } from "@/lib/api/admin-orders-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { coerceGbpInputToMinorUnits, formatGBP, parseGbpInputToMinorUnits } from "@/lib/format/money";
@@ -182,11 +182,7 @@ export default function AdminOrderDetailPage() {
       if (!res.ok) {
         throw new Error(res.message);
       }
-      const parsed = OrderDetailResponseSchema.safeParse(res.data);
-      if (!parsed.success) {
-        throw new Error("Unexpected order payload.");
-      }
-      return parsed.data.data;
+      return parseAdminOrderDetailEnvelope(res.data);
     },
   });
 
@@ -207,11 +203,7 @@ export default function AdminOrderDetailPage() {
       if (!res.ok) {
         throw new Error(res.message);
       }
-      const parsed = OrderDetailResponseSchema.safeParse(res.data);
-      if (!parsed.success) {
-        throw new Error("Unexpected order response.");
-      }
-      return parsed.data.data;
+      return parseAdminOrderDetailEnvelope(res.data, "Unexpected order response.");
     },
     onSuccess: (_, vars) => {
       if (vars.target_status === "cancelled") {
@@ -257,14 +249,7 @@ export default function AdminOrderDetailPage() {
       if (!res.ok) {
         throw new Error(res.message);
       }
-      const parsed = OrderDetailResponseSchema.safeParse(res.data);
-      if (!parsed.success) {
-        throw new Error("Unexpected order response.");
-      }
-      return parsed.data.data;
-    },
-    onSuccess: () => {
-      toast.success("Line status updated.");
+      return parseAdminOrderDetailEnvelope(res.data, "Unexpected order response.");
       void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -298,11 +283,7 @@ export default function AdminOrderDetailPage() {
       if (!res.ok) {
         throw new Error(res.message);
       }
-      const parsed = OrderDetailResponseSchema.safeParse(res.data);
-      if (!parsed.success) {
-        throw new Error("Unexpected bulk workshop response.");
-      }
-      return parsed.data.data;
+      return parseAdminOrderDetailEnvelope(res.data, "Unexpected bulk workshop response.");
     },
     onSuccess: (data) => {
       const raw = data.bulk_workshop_summary;
@@ -397,14 +378,7 @@ export default function AdminOrderDetailPage() {
       if (!res.ok) {
         throw new Error(res.message);
       }
-      const parsed = OrderDetailResponseSchema.safeParse(res.data);
-      if (!parsed.success) {
-        throw new Error("Unexpected order response.");
-      }
-      return parsed.data.data;
-    },
-    onSuccess: () => {
-      toast.success("Order updated.");
+      return parseAdminOrderDetailEnvelope(res.data, "Unexpected order response.");
       setEditOpen(false);
       void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
@@ -421,11 +395,7 @@ export default function AdminOrderDetailPage() {
       if (!res.ok) {
         throw new Error(res.message);
       }
-      const parsed = OrderDetailResponseSchema.safeParse(res.data);
-      if (!parsed.success) {
-        throw new Error("Bad response.");
-      }
-      return parsed.data.data;
+      return parseAdminOrderDetailEnvelope(res.data, "Bad response.");
     },
     onSuccess: () => {
       toast.success("Order completed.");
@@ -570,14 +540,7 @@ export default function AdminOrderDetailPage() {
       if (!res.ok) {
         throw new Error(res.message);
       }
-      const parsed = OrderDetailResponseSchema.safeParse(res.data);
-      if (!parsed.success) {
-        throw new Error("Unexpected order response.");
-      }
-      return parsed.data.data;
-    },
-    onSuccess: () => {
-      toast.success("Order lines added.");
+      return parseAdminOrderDetailEnvelope(res.data, "Unexpected order response.");
       setBulkLinesOpen(false);
       setBulkLinesThresholdOpen(false);
       pendingBulkLinesRef.current = null;

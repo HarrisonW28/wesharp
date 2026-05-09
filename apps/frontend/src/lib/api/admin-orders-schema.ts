@@ -4,6 +4,29 @@ import { CompanySoftDeleteEmbedSchema } from "./admin-crm-schema";
 import { AdminDamageReportSchema } from "./admin-knives-schema";
 import { EvidencePhotoAdminRowSchema, EvidenceSettingsSchema } from "./admin-routes-schema";
 
+/** MySQL / JSON may ship integers as strings; empty/null → null. */
+function looseOptionalInt() {
+  return z.preprocess((v: unknown) => {
+    if (v === null || v === undefined || v === "") {
+      return null;
+    }
+    const n = typeof v === "number" ? v : Number(v);
+    return Number.isFinite(n) ? n : null;
+  }, z.number().nullable().optional());
+}
+
+function looseInt(defaultZero = false) {
+  return z.preprocess((v: unknown) => {
+    if ((v === null || v === undefined || v === "") && defaultZero) {
+      return 0;
+    }
+    const n = typeof v === "number" ? v : Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }, z.number());
+}
+
+const looseBool = z.union([z.boolean(), z.literal(0), z.literal(1)]).transform((v) => v === true || v === 1);
+
 export const OrderBookingLinkSchema = z.object({
   id: z.string(),
   reference: z.string(),
@@ -12,10 +35,10 @@ export const OrderBookingLinkSchema = z.object({
 });
 
 export const OrderInvoiceLineSchema = z.object({
-  description: z.string(),
-  quantity: z.number(),
-  unit_amount_pence: z.number(),
-  line_total_pence: z.number(),
+  description: z.union([z.string(), z.null()]).transform((v) => (v == null ? "" : v)),
+  quantity: looseInt(true),
+  unit_amount_pence: looseInt(true),
+  line_total_pence: looseInt(true),
   formatted_unit_amount: z.string().optional(),
   formatted_line_total: z.string().optional(),
 });
@@ -24,9 +47,9 @@ export const OrderInvoiceSummarySchema = z.object({
   id: z.string(),
   invoice_number: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
-  subtotal_pence: z.number(),
-  tax_pence: z.number(),
-  total_pence: z.number(),
+  subtotal_pence: looseInt(true),
+  tax_pence: looseInt(true),
+  total_pence: looseInt(true),
   formatted_amount: z.string().optional(),
   formatted_subtotal: z.string().optional(),
   formatted_tax: z.string().optional(),
@@ -45,25 +68,25 @@ export const OrderInvoiceDraftResponseSchema = z.object({
 export const OrderAllowedNextStatusSchema = z.object({
   value: z.string(),
   label: z.string(),
-  risky: z.boolean(),
+  risky: looseBool,
 });
 
 export const OrderRowSchema = z.object({
   id: z.string(),
   reference: z.string().optional(),
   company_id: z.string(),
-  booking_id: z.string(),
+  booking_id: z.union([z.string(), z.null()]).transform((v) => (v == null ? "" : v)),
   route_id: z.string().nullable().optional(),
   status: z.string().nullable(),
   status_label: z.string().optional(),
-  knife_count: z.number().nullable().optional(),
-  billable_lines_count: z.number().nullable().optional(),
-  knives_registered_count: z.number().nullable().optional(),
-  price_per_knife_pence: z.number().nullable().optional(),
-  discount_pence: z.number().nullable().optional(),
-  subtotal_pence: z.number().nullable().optional(),
-  tax_pence: z.number().nullable().optional(),
-  total_pence: z.number().nullable().optional(),
+  knife_count: looseOptionalInt(),
+  billable_lines_count: looseOptionalInt(),
+  knives_registered_count: looseOptionalInt(),
+  price_per_knife_pence: looseOptionalInt(),
+  discount_pence: looseOptionalInt(),
+  subtotal_pence: looseOptionalInt(),
+  tax_pence: looseOptionalInt(),
+  total_pence: looseOptionalInt(),
   currency: z.string().nullable().optional(),
   payment_status: z.string().nullable().optional(),
   company: CompanySoftDeleteEmbedSchema.nullable().optional(),
@@ -86,25 +109,25 @@ export const KnifeSummarySchema = z
 export const KnifeAllowedNextSchema = z.object({
   value: z.string(),
   label: z.string(),
-  risky: z.boolean(),
+  risky: looseBool,
 });
 
 export const WorkshopProgressSchema = z.object({
-  knife_count: z.number(),
-  line_only_units: z.number(),
-  work_units: z.number(),
-  by_status: z.record(z.string(), z.number()).optional(),
-  knives_returned_or_cancelled: z.number(),
-  all_knives_complete: z.boolean(),
+  knife_count: looseInt(true),
+  line_only_units: looseInt(true),
+  work_units: looseInt(true),
+  by_status: z.record(z.string(), looseInt(true)).optional(),
+  knives_returned_or_cancelled: looseInt(true),
+  all_knives_complete: looseBool,
 });
 
 export const OrderItemRowSchema = z.object({
   id: z.string(),
   knife_id: z.string().nullable().optional(),
-  description: z.string(),
-  quantity: z.number(),
-  unit_amount_pence: z.number(),
-  line_total_pence: z.number().optional(),
+  description: z.union([z.string(), z.null()]).transform((v) => (v == null ? "" : v)),
+  quantity: looseInt(true),
+  unit_amount_pence: looseInt(true),
+  line_total_pence: looseInt(true).optional(),
   formatted_unit_amount: z.string().optional(),
   formatted_line_total: z.string().optional(),
   service_status: z.string().nullable().optional(),
@@ -134,7 +157,7 @@ export const OrderBookingDetailSchema = z.object({
   status: z.string().nullable().optional(),
   contact: z
     .object({
-      name: z.string(),
+      name: z.union([z.string(), z.null()]).transform((v) => (v == null ? "" : v)),
       email: z.string().nullable().optional(),
       phone: z.string().nullable().optional(),
     })
@@ -213,9 +236,36 @@ export const OrderDetailSchema = OrderRowSchema.extend({
   evidence_settings: EvidenceSettingsSchema.optional(),
   bulk_workshop_summary: BulkWorkshopSummarySchema.optional(),
   staff_next_actions: z.array(z.string()).optional(),
-});
+}).passthrough();
 
 export const OrderDetailResponseSchema = z.object({
   success: z.literal(true),
   data: OrderDetailSchema,
 });
+
+/** When validation lags the API, still unwrap a successful envelope. */
+export function unwrapAdminOrderDetailPayload(body: unknown): z.infer<typeof OrderDetailSchema> | null {
+  if (body === null || body === undefined || typeof body !== "object" || Array.isArray(body)) {
+    return null;
+  }
+  const b = body as Record<string, unknown>;
+  if (b.success === true && b.data !== null && b.data !== undefined && typeof b.data === "object" && !Array.isArray(b.data)) {
+    return b.data as z.infer<typeof OrderDetailSchema>;
+  }
+  return null;
+}
+
+export function parseAdminOrderDetailEnvelope(
+  body: unknown,
+  errorMessage = "Unexpected order payload.",
+): z.infer<typeof OrderDetailSchema> {
+  const parsed = OrderDetailResponseSchema.safeParse(body);
+  if (parsed.success) {
+    return parsed.data.data;
+  }
+  const fallback = unwrapAdminOrderDetailPayload(body);
+  if (fallback !== null) {
+    return fallback;
+  }
+  throw new Error(errorMessage);
+}

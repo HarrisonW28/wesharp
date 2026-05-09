@@ -15,9 +15,10 @@ export type CompanyStatus = z.infer<typeof CompanyStatusEnum>;
 /** Embedded on orders, invoices, knives when the CRM row may be soft-deleted. */
 export const CompanySoftDeleteEmbedSchema = z.object({
   id: z.string(),
-  name: z.string(),
+  /** DB/API may send null before backfill; UI still needs a label string. */
+  name: z.union([z.string(), z.null()]).transform((v) => (v == null || String(v).trim() === "" ? "Company" : v)),
   city: z.string().nullable().optional(),
-  is_deleted: z.boolean(),
+  is_deleted: z.union([z.boolean(), z.literal(0), z.literal(1)]).transform((v) => v === true || v === 1),
   deleted_at: z.string().nullable().optional(),
 });
 

@@ -11,9 +11,9 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import {
-  OrderDetailResponseSchema,
   OrderRowSchema,
   PaginatedOrdersResponseSchema,
+  unwrapAdminOrderDetailPayload,
 } from "@/lib/api/admin-orders-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { paginationRangeCaption } from "@/lib/format/pagination-caption";
@@ -209,9 +209,9 @@ export default function AdminOrdersPage() {
         throw new Error(res.message);
       }
 
-      const detail = OrderDetailResponseSchema.safeParse(res.data);
+      const detail = unwrapAdminOrderDetailPayload(res.data);
 
-      return detail.success ? detail.data.data : null;
+      return detail;
     },
     onSuccess: (order) => {
       toast.success("Order created.");
