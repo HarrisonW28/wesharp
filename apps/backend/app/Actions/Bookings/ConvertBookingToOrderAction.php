@@ -29,7 +29,10 @@ final class ConvertBookingToOrderAction
                 abort(422, 'Cancelled or no-show bookings cannot be converted to an order.');
             }
 
-            if ($booking->orders()->exists()) {
+            /** @var Order|null $existingOrder */
+            $existingOrder = $booking->orders()->orderBy('created_at')->first();
+
+            if ($existingOrder !== null && $existingOrder->order_status !== OrderStatus::Draft) {
                 abort(422, 'An order already exists for this booking.');
             }
 
@@ -41,20 +44,34 @@ final class ConvertBookingToOrderAction
                 abort(422, 'Booking must be confirmed, assigned to a route, or collected before conversion.');
             }
 
-            $order = Order::query()->create([
-                'company_id' => $booking->company_id,
-                'booking_id' => $booking->id,
-                'route_id' => $booking->assigned_route_id,
-                'order_status' => OrderStatus::Draft,
-                'knife_count' => 0,
-                'price_per_knife_pence' => null,
-                'discount_pence' => 0,
-                'payment_status' => OrderPaymentStatus::Unpaid,
-                'subtotal_pence' => 0,
-                'tax_pence' => 0,
-                'total_pence' => 0,
-                'currency' => 'GBP',
-            ]);
+            if ($existingOrder !== null) {
+                /** @var Order $order */
+                $order = $existingOrder->fresh();
+                if ($order->route_id === null && $booking->assigned_route_id !== null) {
+                    $order->route_id = $booking->assigned_route_id;
+                    $order->save();
+                }
+            } else {
+                /** @var Order $order */
+                $order = Order::query()->create([
+                    'company_id' => $booking->company_id,
+                    'booking_id' => $booking->id,
+                    'route_id' => $booking->assigned_route_id,
+                    'order_status' => OrderStatus::Draft,
+                    'knife_count' => 0,
+                    'price_per_knife_pence' => null,
+                    'discount_pence' => 0,
+                    'payment_status' => OrderPaymentStatus::Unpaid,
+                    'subtotal_pence' => 0,
+                    'tax_pence' => 0,
+                    'total_pence' => 0,
+                    'currency' => 'GBP',
+                ]);
+
+                AuditRecorder::record($actor, $order, 'order.created_from_booking', [
+                    'booking_id' => (string) $booking->id,
+                ], $request);
+            }
 
             $fromStatus = $booking->booking_status;
             BookingStatusTransitions::assertCanTransition($fromStatus, BookingStatus::ConvertedToOrder);
@@ -67,18 +84,14 @@ final class ConvertBookingToOrderAction
                 'to_status' => BookingStatus::ConvertedToOrder->value,
             ], $request);
 
-            AuditRecorder::record($actor, $order, 'order.created_from_booking', [
-                'booking_id' => (string) $booking->id,
-            ], $request);
-
             $order->loadMissing(['booking', 'company', 'company.locations']);
             $pence = app(PricingRuleResolver::class)->defaultUnitAmountPenceForOrder($order);
-            if ($pence !== null) {
+            if ($pence !== null && $order->price_per_knife_pence === null) {
                 $order->price_per_knife_pence = $pence;
                 $order->save();
             }
 
-            return app(OrderService::class)->rebuildMonetaryTotals($order->fresh(['knives', 'items']));
+            return app(OrderService::class)->rebuildMonetaryTotals($order->fresh(['knives', 'items', 'booking']));
         });
 
         $this->orderEmails->sendOrderCreated($order->fresh(['company', 'booking.contact']));

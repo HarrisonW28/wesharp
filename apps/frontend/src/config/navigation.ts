@@ -271,7 +271,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     label: "Settings",
     items: [
       { title: "Users", href: "/admin/users", icon: UserCog, permission: "users.view" },
-      { title: "Site content", href: "/admin/content-settings", icon: Newspaper, permission: "settings.manage" },
+      { title: "Site settings", href: "/admin/site-settings", icon: Newspaper, permission: "settings.manage" },
       { title: "Notifications", href: "/admin/notifications", icon: Bell, permission: "notifications.deliveries.view" },
       {
         title: "System",

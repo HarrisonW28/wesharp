@@ -22,7 +22,8 @@ final class TransitionKnifeStatusAction
         ?Request $request,
         ?string $note = null,
     ): Knife {
-        $patches = $this->patchesForTarget($target, $actor);
+        $from = $knife->knife_status ?? KnifeStatus::Logged;
+        $patches = $this->patchesForTarget($target, $actor, $from);
         $extra = [];
         if ($note !== null && trim($note) !== '') {
             $extra['note'] = trim($note);
@@ -32,7 +33,7 @@ final class TransitionKnifeStatusAction
     }
 
     /** @return array<string, mixed> */
-    private function patchesForTarget(KnifeStatus $target, ?Authenticatable $actor): array
+    private function patchesForTarget(KnifeStatus $target, ?Authenticatable $actor, KnifeStatus $from): array
     {
         $userId = $actor instanceof User ? $actor->getKey() : null;
         if ($userId === null) {
@@ -41,7 +42,10 @@ final class TransitionKnifeStatusAction
 
         return match ($target) {
             KnifeStatus::Sharpened => ['sharpened_by_user_id' => $userId],
-            KnifeStatus::QualityChecked => ['quality_checked_by_user_id' => $userId],
+            KnifeStatus::QualityChecked => [
+                'quality_checked_by_user_id' => $userId,
+                ...($from === KnifeStatus::Sharpening ? ['sharpened_by_user_id' => $userId] : []),
+            ],
             KnifeStatus::Returned => ['returned_by_user_id' => $userId],
             default => [],
         };

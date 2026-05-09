@@ -90,7 +90,6 @@ const BULK_CONFIRM_THRESHOLD = 25;
 const BULK_WORKSHOP_STATUS_OPTIONS = [
   { value: "inspected", label: "Mark inspected" },
   { value: "sharpening", label: "Mark sharpening" },
-  { value: "sharpened", label: "Mark sharpened" },
   { value: "quality_checked", label: "Mark quality checked" },
   { value: "returned", label: "Mark returned" },
 ] as const;

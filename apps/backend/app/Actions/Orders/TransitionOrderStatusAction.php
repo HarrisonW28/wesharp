@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\Audit\AuditRecorder;
 use App\Services\Notifications\OrderEmailService;
+use App\Support\Orders\OrderKnifeStatusCoordinator;
 use App\Support\Orders\OrderStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ final class TransitionOrderStatusAction
 {
     public function __construct(
         private readonly OrderEmailService $orderEmails,
+        private readonly OrderKnifeStatusCoordinator $orderKnifeStatusCoordinator,
     ) {}
 
     public function execute(
@@ -48,6 +50,13 @@ final class TransitionOrderStatusAction
                 'from' => $from->value,
                 'to' => $target->value,
             ], $request);
+
+            $this->orderKnifeStatusCoordinator->syncKnivesForOrderStatus(
+                $order->fresh(['knives']),
+                $target,
+                $actor,
+                $request,
+            );
 
             return ['order' => $order->fresh(), 'changed' => true];
         });

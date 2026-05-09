@@ -331,6 +331,7 @@ export const AccountPortalKnifeDamageSchema = z.object({
 });
 
 export const AccountPortalOrderKnifeSchema = z.object({
+  id: z.string().optional(),
   tag_id: z.string().nullable().optional(),
   label: z.string().nullable().optional(),
   knife_type: z.string().nullable().optional(),
@@ -339,6 +340,15 @@ export const AccountPortalOrderKnifeSchema = z.object({
   status_label: z.string().nullable().optional(),
   inspection: AccountPortalKnifeInspectionSchema.optional(),
   damage_reports: z.array(AccountPortalKnifeDamageSchema).optional(),
+  photos: z
+    .array(
+      z.object({
+        id: z.string(),
+        caption: z.string().nullable().optional(),
+        photo_kind: z.string().nullable().optional(),
+      }),
+    )
+    .optional(),
 });
 
 export const AccountPortalOrderItemSchema = z.object({

@@ -225,8 +225,14 @@ export function RouteStopEvidenceSection({
         Photos & evidence
       </div>
       <p className="mt-2 text-base text-slate-300 md:text-muted-foreground">
-        Photos are optional unless ops settings require them for a step. Use camera or library below, then upload with defaults or
-        fine-tune. Customer-visible only when you choose that visibility.
+        <span className="md:hidden">
+          Photos are optional unless ops settings require them. Use camera or files below, then upload — fine-tune in the panel.
+          Customer-visible only when you choose that visibility.
+        </span>
+        <span className="hidden md:inline">
+          Photos are optional unless ops settings require them for this step. Choose a file below, then upload; expand fine-tune for
+          category and visibility.
+        </span>
       </p>
 
       <div className="mt-4 space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 md:border-border md:bg-muted/20">
@@ -261,7 +267,7 @@ export function RouteStopEvidenceSection({
             <Button
               type="button"
               variant="secondary"
-              className="min-h-11 touch-manipulation rounded-xl text-base"
+              className="min-h-11 touch-manipulation rounded-xl text-base md:hidden"
               disabled={uploadMutation.isPending}
               onClick={() => cameraInputRef.current?.click()}
             >
@@ -271,16 +277,18 @@ export function RouteStopEvidenceSection({
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 touch-manipulation rounded-xl text-base"
+              className="min-h-11 touch-manipulation rounded-xl text-base md:min-h-10"
               disabled={uploadMutation.isPending}
               onClick={() => libraryInputRef.current?.click()}
             >
               <ImageIcon className="mr-2 h-4 w-4 shrink-0" aria-hidden />
-              Library / files
+              <span className="md:hidden">Library / files</span>
+              <span className="hidden md:inline">Choose image</span>
             </Button>
           </div>
-          <p className="text-xs text-slate-400 md:text-muted-foreground">
-            On a phone, use camera for a new shot, or library/files for an existing photo.
+          <p className="text-xs text-slate-400 md:text-muted-foreground md:max-w-xl">
+            <span className="md:hidden">Camera for a new shot, or files for an existing image.</span>
+            <span className="hidden md:inline">JPEG, PNG, WebP or HEIC from your computer.</span>
           </p>
         </div>
 

@@ -149,7 +149,7 @@ final class MvpOperationalPipelineApiTest extends TestCase
             $this->withHeaders($opsH())
                 ->postJson('/api/admin/knives/'.$knifeId.'/transition', ['target_status' => 'sharpening'])
                 ->assertOk();
-            foreach (['mark-sharpened', 'mark-quality-checked', 'mark-returned'] as $path) {
+            foreach (['mark-quality-checked', 'mark-returned'] as $path) {
                 $this->withHeaders($opsH())
                     ->postJson('/api/admin/knives/'.$knifeId.'/'.$path, [])
                     ->assertOk();

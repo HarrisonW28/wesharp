@@ -50,6 +50,13 @@ final class AdminKnifeServiceWorkflowApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', KnifeStatus::Sharpening->value);
 
+        $this->withHeaders($h())
+            ->postJson('/api/admin/knives/'.$knife->id.'/transition', [
+                'target_status' => KnifeStatus::QualityChecked->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', KnifeStatus::QualityChecked->value);
+
         self::assertTrue(
             AuditLog::query()
                 ->where('auditable_type', Knife::class)

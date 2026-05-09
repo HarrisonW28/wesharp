@@ -732,6 +732,7 @@ export default function AdminKnifeDetailPage() {
               <Button
                 type="button"
                 variant="secondary"
+                className="md:hidden"
                 disabled={photoMutation.isPending}
                 onClick={() => cameraInputRef.current?.click()}
               >
@@ -744,7 +745,8 @@ export default function AdminKnifeDetailPage() {
                 disabled={photoMutation.isPending}
                 onClick={() => galleryInputRef.current?.click()}
               >
-                Choose file
+                <span className="md:hidden">Choose file</span>
+                <span className="hidden md:inline">Choose image</span>
               </Button>
             </div>
             {photoUploadError !== null ? (

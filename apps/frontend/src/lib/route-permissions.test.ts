@@ -11,6 +11,7 @@ describe("adminPermissionForPath", () => {
     expect(adminPermissionForPath("/admin/service-areas")).toBe("service_areas.view");
     expect(adminPermissionForPath("/admin/subscription-plans")).toBe("subscriptions.view");
     expect(adminPermissionForPath("/admin/subscriptions")).toBe("subscriptions.view");
+    expect(adminPermissionForPath("/admin/site-settings/booking")).toBe("settings.manage");
     expect(adminPermissionForPath("/admin/content-settings/booking")).toBe("settings.manage");
   });
 });

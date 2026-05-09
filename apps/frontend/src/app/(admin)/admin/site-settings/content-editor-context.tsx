@@ -134,8 +134,8 @@ export function ContentSettingsGate({ children }: { children: ReactNode }) {
   if (!canManage) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site content" }]} />
-        <PageHeader title="Site content" description="Your role cannot edit marketing copy." />
+        <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site settings" }]} />
+        <PageHeader title="Site settings" description="Your role cannot edit marketing copy." />
       </>
     );
   }
@@ -143,8 +143,8 @@ export function ContentSettingsGate({ children }: { children: ReactNode }) {
   if (isLoadPending || !draft) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site content" }]} />
-        <PageHeader title="Site content" description="Loading…" />
+        <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site settings" }]} />
+        <PageHeader title="Site settings" description="Loading…" />
         <div className="flex min-h-[30vh] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         </div>
@@ -155,8 +155,8 @@ export function ContentSettingsGate({ children }: { children: ReactNode }) {
   if (isLoadError) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site content" }]} />
-        <PageHeader title="Site content" description="Could not load settings." />
+        <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site settings" }]} />
+        <PageHeader title="Site settings" description="Could not load settings." />
         <p className="break-words text-sm text-destructive">{loadError?.message ?? "Error"}</p>
       </>
     );

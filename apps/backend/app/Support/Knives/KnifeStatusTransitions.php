@@ -28,7 +28,7 @@ final readonly class KnifeStatusTransitions
             KnifeStatus::Cancelled->value,
         ],
         KnifeStatus::Sharpening->value => [
-            KnifeStatus::Sharpened->value,
+            KnifeStatus::QualityChecked->value,
             KnifeStatus::IssueReported->value,
             KnifeStatus::Cancelled->value,
         ],
@@ -49,6 +49,7 @@ final readonly class KnifeStatusTransitions
             KnifeStatus::Inspected->value,
             KnifeStatus::Sharpening->value,
             KnifeStatus::Sharpened->value,
+            KnifeStatus::QualityChecked->value,
         ],
     ];
 

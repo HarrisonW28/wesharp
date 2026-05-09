@@ -10,6 +10,7 @@ use App\Services\Audit\AuditRecorder;
 use App\Support\Bookings\BookingStatusTransitions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 
 /**
  * Keeps booking status aligned with route-stop milestones where the domain graph allows it.
@@ -40,6 +41,8 @@ final class RouteStopBookingStatusSync
             'to' => BookingStatus::Collected->value,
             'trigger' => 'route_stop.collected',
         ], $request);
+
+        App::make(RouteStopOrderKnifeBootstrap::class)->afterBookingCollected($booking->fresh(['orders']), $actor, $request);
     }
 
     public static function afterStopFailed(RouteStop $stop, ?Authenticatable $actor, ?Request $request): void
@@ -126,5 +129,7 @@ final class RouteStopBookingStatusSync
             'to' => BookingStatus::Returned->value,
             'trigger' => 'route_stop.returned',
         ], $request);
+
+        App::make(RouteStopOrderKnifeBootstrap::class)->afterBookingReturned($booking->fresh(['orders']), $actor, $request);
     }
 }

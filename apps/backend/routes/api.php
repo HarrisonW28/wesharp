@@ -47,6 +47,7 @@ use App\Http\Controllers\Api\Account\AccountKnifeController;
 use App\Http\Controllers\Api\Account\AccountLocationController;
 use App\Http\Controllers\Api\Account\AccountOrderController;
 use App\Http\Controllers\Api\Account\AccountOrderEvidencePhotoController;
+use App\Http\Controllers\Api\Account\AccountOrderKnifePhotoController;
 use App\Http\Controllers\Api\Account\AccountOrderFeedbackController;
 use App\Http\Controllers\Api\Account\AccountSettingsController;
 use App\Http\Controllers\Api\Account\AccountSubscriptionController;
@@ -98,6 +99,8 @@ Route::middleware(['clerk.auth', 'tenant'])->prefix('account')->group(function (
     Route::middleware('permission:orders.view')->get('orders/{order}/feedback', [AccountOrderFeedbackController::class, 'show'])->whereUuid('order')->name('api.account.orders.feedback.show');
     Route::middleware('permission:orders.view')->post('orders/{order}/feedback', [AccountOrderFeedbackController::class, 'store'])->whereUuid('order')->name('api.account.orders.feedback.store');
     Route::middleware('permission:orders.view')->get('orders/{order}/evidence-photos/{photo}/file', [AccountOrderEvidencePhotoController::class, 'showFile'])->whereUuid(['order', 'photo'])->name('api.account.orders.evidence_photos.file');
+    Route::middleware('permission:orders.view')->post('orders/{order}/knives/{knife}/photos', [AccountOrderKnifePhotoController::class, 'store'])->whereUuid(['order', 'knife'])->name('api.account.orders.knives.photos.store');
+    Route::middleware('permission:orders.view')->get('orders/{order}/knife-photos/{photo}/file', [AccountOrderKnifePhotoController::class, 'showFile'])->whereUuid(['order', 'photo'])->name('api.account.orders.knife_photos.file');
 
     Route::middleware('permission:knives.view')->get('knives', [AccountKnifeController::class, 'index'])->name('api.account.knives.index');
     Route::middleware('permission:knives.view')->get('knives/{knife}', [AccountKnifeController::class, 'show'])->whereUuid('knife')->name('api.account.knives.show');

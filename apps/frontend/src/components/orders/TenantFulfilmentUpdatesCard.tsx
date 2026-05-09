@@ -120,7 +120,7 @@ export function TenantFulfilmentUpdatesCard({
           shown here.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-8">
+      <CardContent className="space-y-6 md:space-y-8">
         {isEmpty ? (
           <p className="text-sm text-muted-foreground">
             No updates yet — we’ll post progress here as your booking moves through collection and sharpening.

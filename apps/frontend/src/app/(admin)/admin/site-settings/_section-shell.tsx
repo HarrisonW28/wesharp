@@ -30,7 +30,7 @@ export function ContentSettingsSectionShell({
       <Breadcrumbs
         crumbs={[
           { label: "Settings", href: "/admin/dashboard" },
-          { label: "Site content", href: "/admin/content-settings" },
+          { label: "Site settings", href: "/admin/site-settings" },
           { label: title },
         ]}
       />

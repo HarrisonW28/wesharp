@@ -58,9 +58,11 @@ final class KnifeJson
             'damageReports' => fn ($q) => $q->notArchived()
                 ->where('customer_visible', true)
                 ->orderByDesc('created_at'),
+            'photos' => fn ($q) => $q->orderBy('sort_order')->limit(40),
         ]);
 
         $out = [
+            'id' => (string) $knife->getKey(),
             'tag_id' => $knife->tag_id,
             'label' => $knife->label,
             'knife_type' => $knife->knife_type,
@@ -91,6 +93,15 @@ final class KnifeJson
                     : 'Being reviewed',
                 'resolved_at' => $d->resolved_at?->toIso8601String(),
                 'photo_placeholder' => null,
+            ])
+            ->values()
+            ->all();
+
+        $out['photos'] = $knife->photos
+            ->map(static fn ($p): array => [
+                'id' => (string) $p->id,
+                'caption' => $p->caption,
+                'photo_kind' => $p->photo_kind,
             ])
             ->values()
             ->all();

@@ -75,7 +75,7 @@ export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/subscriptions")) {
     return "subscriptions.view";
   }
-  if (pathname.startsWith("/admin/content-settings")) {
+  if (pathname.startsWith("/admin/site-settings") || pathname.startsWith("/admin/content-settings")) {
     return "settings.manage";
   }
   if (pathname.startsWith("/admin/routes")) {

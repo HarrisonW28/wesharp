@@ -3,8 +3,10 @@
 namespace App\Services\Orders;
 
 use App\Actions\Orders\CompleteOrderAction;
+use App\Actions\Knives\TransitionKnifeStatusAction;
 use App\Enums\InvoiceStatus;
 use App\Enums\KnifeServiceKind;
+use App\Enums\KnifeStatus;
 use App\Enums\OrderStatus;
 use App\Enums\SubscriptionOrderItemBillingKind;
 use App\Models\Knife;
@@ -516,6 +518,61 @@ final class OrderService
                 'qualityCheckedBy:id,name',
                 'returnedBy:id,name',
             ]);
+        });
+    }
+
+    /**
+     * After a route collection stop completes: promote logged blades to received and create placeholder knives
+     * when the manifest has none yet but counts exist on the booking/order.
+     */
+    public function ensureKnivesAfterRouteCollection(Order $order, Authenticatable $actor, Request $request): void
+    {
+        DB::transaction(function () use ($order, $actor, $request): void {
+            $order->refresh();
+            $order->loadMissing(['booking', 'knives']);
+
+            $transition = app(TransitionKnifeStatusAction::class);
+
+            foreach ($order->knives as $knife) {
+                if (($knife->knife_status ?? null) === KnifeStatus::Logged) {
+                    $transition->execute($knife->fresh(), KnifeStatus::Received, $actor, $request, null);
+                }
+            }
+
+            $order->refresh();
+            $order->loadMissing(['booking']);
+
+            $booking = $order->booking;
+            $existing = $order->knives()->count();
+            $desired = max(
+                $existing,
+                (int) ($order->knife_count ?? 0),
+                (int) ($booking?->actual_knife_count ?? 0),
+                (int) ($booking?->estimated_knife_count ?? 0),
+            );
+
+            if ($desired < 1) {
+                $this->rebuildMonetaryTotals($order->fresh(['knives', 'items']));
+
+                return;
+            }
+
+            $toAdd = max(0, $desired - $order->knives()->count());
+            $running = $order->knives()->count();
+
+            foreach (range(1, $toAdd) as $_) {
+                $running++;
+                $label = $toAdd > 1 ? "Knife ({$running}/{$desired})" : 'Knife';
+                $this->addKnife($order->fresh(['booking', 'knives', 'items']), [
+                    'knife_status' => KnifeStatus::Received,
+                    'label' => $label,
+                    'description' => 'Registered automatically when the collection stop was completed.',
+                    'position' => $running,
+                ], $actor, $request);
+                $order->refresh();
+            }
+
+            $this->rebuildMonetaryTotals($order->fresh(['knives', 'items']));
         });
     }
 

@@ -15,8 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { CompanySwitcher } from "@/components/auth/CompanySwitcher";
-
 import { useBackendMe } from "@/hooks/use-backend-me";
 
 type UserMenuProps = {
@@ -36,7 +34,7 @@ export function UserMenu({ variant }: UserMenuProps) {
 
   return (
     <div className="flex items-center gap-2">
-      {variant === "internal" ? <CompanySwitcher /> : null}
+      {/* CompanySwitcher temporarily disabled */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="max-w-[min(18rem,85vw)] gap-2 px-3 md:max-w-[14rem]">

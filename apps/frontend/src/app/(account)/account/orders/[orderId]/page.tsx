@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, ClipboardList, Loader2, Receipt } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CalendarClock, ClipboardList, ImagePlus, Loader2, Receipt } from "lucide-react";
 import type { z } from "zod";
 
 import { AccountOrderDetailResponseSchema, unwrapTenantOrderDetailPayload } from "@/lib/api/account-schema";
@@ -12,6 +13,7 @@ import { customerBookingStatusLabel } from "@/lib/helpers/status-helpers";
 import { buildCustomerOrderTimeline, customerOrderNextSteps } from "@/lib/orders/customer-order-ui";
 import { formatGBP } from "@/lib/format/money";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 import { CustomerOrderStatusBadge } from "@/components/orders/CustomerOrderStatusBadge";
 import { TenantFulfilmentUpdatesCard } from "@/components/orders/TenantFulfilmentUpdatesCard";
@@ -49,6 +51,128 @@ function knifeTitle(k: {
   return "Knife";
 }
 
+function TenantKnifePhotoThumb({
+  orderId,
+  photoId,
+  caption,
+}: {
+  orderId: string;
+  photoId: string;
+  caption?: string | null;
+}) {
+  const api = useAccountApi();
+  const fetchBlobRef = useRef(api.fetchBlob);
+  fetchBlobRef.current = api.fetchBlob;
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let blobUrl: string | null = null;
+    let cancelled = false;
+    void fetchBlobRef
+      .current(`/api/account/orders/${orderId}/knife-photos/${photoId}/file`)
+      .then((blob) => {
+        if (cancelled) return;
+        blobUrl = URL.createObjectURL(blob);
+        setSrc(blobUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setSrc(null);
+      });
+    return () => {
+      cancelled = true;
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [orderId, photoId]);
+
+  if (!src) {
+    return (
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border bg-muted/40">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-hidden />
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- private blob URL from Laravel
+    <img
+      src={src}
+      alt={caption?.trim() ? caption : "Knife photo"}
+      title={caption ?? undefined}
+      className="h-16 w-16 shrink-0 rounded-md border object-cover"
+    />
+  );
+}
+
+function TenantKnifePhotosSection({
+  orderId,
+  knifeId,
+  photos,
+}: {
+  orderId: string;
+  knifeId: string;
+  photos: { id: string; caption?: string | null; photo_kind?: string | null }[];
+}) {
+  const api = useAccountApi();
+  const qc = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const upload = async (file: File) => {
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("photo", file);
+      const res = await api.json<unknown>(`/api/account/orders/${orderId}/knives/${knifeId}/photos`, {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) throw new Error(res.message);
+      toast.success("Photo uploaded.");
+      await qc.invalidateQueries({ queryKey: ["account-order", orderId] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-border/60 pt-3">
+      {photos.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {photos.map((p) => (
+            <TenantKnifePhotoThumb key={p.id} orderId={orderId} photoId={p.id} caption={p.caption} />
+          ))}
+        </div>
+      ) : null}
+      <div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="sr-only"
+          onChange={(ev) => {
+            const f = ev.target.files?.[0];
+            ev.target.value = "";
+            if (f) void upload(f);
+          }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          disabled={busy}
+          onClick={() => inputRef.current?.click()}
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ImagePlus className="h-4 w-4" aria-hidden />}
+          Add photo
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function TenantOrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const api = useAccountApi();
@@ -83,7 +207,7 @@ export default function TenantOrderDetailPage() {
   const nextSteps = o ? customerOrderNextSteps(o.status) : [];
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto w-full max-w-5xl space-y-6 md:space-y-8">
       <Breadcrumbs
         homeHref="/account/dashboard"
         items={[{ label: "My orders", href: "/account/orders" }, { label: "Order details" }]}
@@ -111,13 +235,13 @@ export default function TenantOrderDetailPage() {
           <p className="text-destructive">{(orderQuery.error as Error).message}</p>
         </div>
       ) : o ? (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 md:gap-6 lg:grid-cols-3 lg:gap-8">
           <Card className="rounded-xl lg:col-span-2">
-            <CardHeader>
+            <CardHeader className="space-y-1 pb-3">
               <CardTitle className="text-base">Status</CardTitle>
               <CardDescription>Where this order is in our fulfilment flow.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pb-6">
               {useServerFulfilment ? (
                 <p className="text-sm text-muted-foreground">
                   Live collection and workshop milestones are in the <strong>Updates</strong> section below.
@@ -126,7 +250,7 @@ export default function TenantOrderDetailPage() {
               {timeline ? (
                 <ol className="space-y-0">
                   {timeline.steps.map((step) => (
-                    <li key={step.id} className="relative border-l border-border pb-8 pl-6 last:border-l-0 last:pb-0">
+                    <li key={step.id} className="relative border-l border-border pb-6 pl-6 last:border-l-0 last:pb-0 md:pb-8">
                       <span
                         className={cn(
                           "absolute left-0 top-1.5 h-2.5 w-2.5 -translate-x-1/2 rounded-full border-2 border-background",
@@ -156,7 +280,7 @@ export default function TenantOrderDetailPage() {
           </Card>
 
           <Card className="rounded-xl">
-            <CardHeader>
+            <CardHeader className="space-y-1 pb-3">
               <CardTitle className="text-base">Totals</CardTitle>
               <CardDescription>Amounts in GBP (including VAT where shown).</CardDescription>
             </CardHeader>
@@ -181,8 +305,8 @@ export default function TenantOrderDetailPage() {
 
           {o.booking?.id ? (
             <Card className="rounded-xl lg:col-span-3">
-              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
+              <CardHeader className="flex flex-col gap-2 space-y-0 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
                   <CardTitle className="text-base flex items-center gap-2">
                     <CalendarClock className="h-4 w-4 text-muted-foreground" aria-hidden />
                     Related booking
@@ -216,8 +340,8 @@ export default function TenantOrderDetailPage() {
 
           {o.invoice ? (
             <Card className="rounded-xl lg:col-span-3">
-              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
+              <CardHeader className="flex flex-col gap-3 space-y-0 pb-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 space-y-1">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Receipt className="h-4 w-4 text-muted-foreground" aria-hidden />
                     Invoice
@@ -271,10 +395,11 @@ export default function TenantOrderDetailPage() {
             title="What we’ve recorded"
             emptyHint="Updates to this order — workshop progress, invoicing, and payments — show here in plain language."
             items={o.activity_timeline ?? []}
+            className="lg:col-span-3"
           />
 
           <Card className="rounded-xl lg:col-span-3">
-            <CardHeader>
+            <CardHeader className="space-y-1 pb-3">
               <CardTitle className="text-base">Line items</CardTitle>
               <CardDescription>What you’re being charged for on this order.</CardDescription>
             </CardHeader>
@@ -340,7 +465,7 @@ export default function TenantOrderDetailPage() {
           </Card>
 
           <Card className="rounded-xl lg:col-span-3">
-            <CardHeader>
+            <CardHeader className="space-y-1 pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <ClipboardList className="h-4 w-4 text-muted-foreground" aria-hidden />
                 Knives on this order
@@ -353,7 +478,7 @@ export default function TenantOrderDetailPage() {
               ) : (
                 <ul className="divide-y rounded-lg border">
                   {o.knives.map((k, idx) => (
-                    <li key={`${idx}-${k.tag_id ?? k.label ?? "k"}`} className="flex flex-col gap-3 px-3 py-3">
+                    <li key={k.id ?? `${idx}-${k.tag_id ?? k.label ?? "k"}`} className="flex flex-col gap-3 px-3 py-3">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
                           <div className="font-medium leading-tight">{knifeTitle(k)}</div>
@@ -400,6 +525,9 @@ export default function TenantOrderDetailPage() {
                             </li>
                           ))}
                         </ul>
+                      ) : null}
+                      {k.id ? (
+                        <TenantKnifePhotosSection orderId={String(orderId)} knifeId={k.id} photos={k.photos ?? []} />
                       ) : null}
                     </li>
                   ))}

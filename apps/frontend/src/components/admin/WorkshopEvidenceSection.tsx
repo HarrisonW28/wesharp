@@ -257,7 +257,7 @@ export function WorkshopEvidenceSection({
             <Button
               type="button"
               variant="secondary"
-              className="min-h-10 touch-manipulation"
+              className="min-h-10 touch-manipulation md:hidden"
               disabled={uploadMutation.isPending}
               onClick={() => cameraInputRef.current?.click()}
             >
@@ -267,16 +267,18 @@ export function WorkshopEvidenceSection({
             <Button
               type="button"
               variant="outline"
-              className="min-h-10 touch-manipulation"
+              className="min-h-10 touch-manipulation md:min-h-9"
               disabled={uploadMutation.isPending}
               onClick={() => libraryInputRef.current?.click()}
             >
               <ImageIcon className="mr-2 h-4 w-4 shrink-0" aria-hidden />
-              Library / files
+              <span className="md:hidden">Library / files</span>
+              <span className="hidden md:inline">Choose image</span>
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            On mobile, open the camera for a new shot, or choose library/files for an existing image.
+          <p className="text-xs text-muted-foreground md:max-w-lg">
+            <span className="md:hidden">Use the camera for a new shot, or library/files for an existing image.</span>
+            <span className="hidden md:inline">JPEG, PNG, WebP or HEIC from your computer.</span>
           </p>
         </div>
 

@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Home, Mail, MessageSquareText, HelpCircle, Layers, BookOpen, Shield } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { ContentSettingsGate, ResetSiteContentButton, SaveSiteContentButton } from "./content-editor-context";
+import { SITE_SETTINGS_SECTIONS } from "./site-settings-sections";
 
-function SiteContentHeaderActions() {
+function SiteSettingsHeaderActions() {
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
       <ResetSiteContentButton />
@@ -18,63 +19,18 @@ function SiteContentHeaderActions() {
   );
 }
 
-const SECTIONS = [
-  {
-    href: "/admin/content-settings/homepage",
-    title: "Homepage",
-    description: "Hero, trust row, how-it-works grid, audience, benefits, areas, pricing strip, and footer CTA.",
-    icon: Home,
-  },
-  {
-    href: "/admin/content-settings/services-pricing",
-    title: "Services & pricing pages",
-    description: "Services landing copy and the standalone pricing page intro.",
-    icon: Layers,
-  },
-  {
-    href: "/admin/content-settings/how-it-works",
-    title: "How it works",
-    description: "Standalone how-it-works page — steps, subscriptions prompt, and sign-in hints.",
-    icon: BookOpen,
-  },
-  {
-    href: "/admin/content-settings/faq",
-    title: "FAQ",
-    description: "FAQ page title, lead, and question list.",
-    icon: HelpCircle,
-  },
-  {
-    href: "/admin/content-settings/safety",
-    title: "Safety & trust",
-    description: "Public safety page — lead and trust bullets.",
-    icon: Shield,
-  },
-  {
-    href: "/admin/content-settings/contact",
-    title: "Contact & service areas",
-    description: "Contact page, support details, and service areas copy.",
-    icon: Mail,
-  },
-  {
-    href: "/admin/content-settings/booking",
-    title: "Booking & notifications",
-    description: "Public booking wizard copy, success screen, business hours, and email footer.",
-    icon: MessageSquareText,
-  },
-];
-
-export default function AdminContentSettingsHubPage() {
+export default function AdminSiteSettingsHubPage() {
   return (
     <ContentSettingsGate>
-      <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site content" }]} />
+      <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site settings" }]} />
       <PageHeader
-        title="Site content"
+        title="Site settings"
         description="Edit public marketing copy in sections. Changes apply to the marketing site and booking flow when you save."
-        actions={<SiteContentHeaderActions />}
+        actions={<SiteSettingsHeaderActions />}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 pb-16">
-        {SECTIONS.map((s) => {
+      <div className="grid gap-3 pb-16 sm:grid-cols-2 xl:grid-cols-3">
+        {SITE_SETTINGS_SECTIONS.map((s) => {
           const Icon = s.icon;
           return (
             <Link
