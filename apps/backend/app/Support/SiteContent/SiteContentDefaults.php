@@ -128,10 +128,13 @@ final class SiteContentDefaults
                 ['q' => 'Do you work with restaurants only?', 'a' => 'We work with professional kitchens of all sizes — restaurants, hotels, butchers, caterers — and with serious home cooks who want the same service.'],
                 ['q' => 'What if a knife is damaged in your care?', 'a' => 'We log condition at handover and again in the workshop. If anything doesn’t look right, we pause and contact you before sharpening. Specific terms can be agreed when you’re on-boarded as a regular customer — use Contact if you need paperwork in advance.'],
                 ['q' => 'Can you follow our RAMS or site rules?', 'a' => 'Yes. Share access rules, inductions, or RAMS when you book or via Contact — we’ll work with your estates or H&S contact so collections fit your site policy.'],
+                ['q' => 'What does the business portal dashboard show?', 'a' => 'After sign-in you get an overview of your next collection, orders still in progress, and invoices that need attention — plus full lists for bookings, orders, knives, and invoices. On subscription programmes, allowance summaries appear on Your plan. Internal WeSharp analytics are separate; customer views are scoped to your organisation.'],
+                ['q' => 'Who gets logins on a trade account?', 'a' => 'During onboarding we agree billing contacts and site operators, then you invite users into the same tenant portal so everyone sees consistent status. Tell us if roles change and we can adjust access.'],
+                ['q' => 'Can groups get consolidated invoicing?', 'a' => 'Yes for typical trade setups — we align invoice recipients and references with your finance team. Mention multi-site on Contact or when you book so we quote and onboard correctly.'],
             ],
             'faq_page' => [
                 'title' => 'FAQ',
-                'lead' => 'Straight answers before you book. If something’s not here, use Contact and we’ll reply in working hours.',
+                'lead' => 'Straight answers before you book — including trade portal and billing. If something’s not here, use Contact and we’ll reply in working hours.',
             ],
             'safety_page' => [
                 'title' => 'Safety & trust',

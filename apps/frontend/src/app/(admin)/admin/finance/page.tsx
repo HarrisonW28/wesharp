@@ -18,11 +18,20 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -293,6 +302,97 @@ export default function AdminFinanceDashboardPage() {
               hint="Real payments on subscription-flagged invoices (not MRR model)"
             />
           </div>
+
+          <Card className="border-muted shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Internal recurring cost commitments</CardTitle>
+              <CardDescription className="text-base">
+                Cost catalogue rows with recurring cadence (imports and manual). Weekly lines use a 4.33× factor for monthly equivalents.
+                Active vs pending follows API status buckets.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <KpiCard
+                  title="Monthly equivalent (active)"
+                  value={data.cost_commitments.formatted_monthly_equivalent_active}
+                  hint={`${data.cost_commitments.active_recurring_count} recurring rows`}
+                />
+                <KpiCard
+                  title="Annual equivalent (active)"
+                  value={data.cost_commitments.formatted_annual_equivalent_active}
+                  hint="Statuses: active, purchased, reserve"
+                />
+                <KpiCard
+                  title="Monthly equivalent (pending)"
+                  value={data.cost_commitments.formatted_monthly_equivalent_pending}
+                  hint={`${data.cost_commitments.pending_recurring_count} rows`}
+                />
+                <KpiCard
+                  title="Annual equivalent (pending)"
+                  value={data.cost_commitments.formatted_annual_equivalent_pending}
+                  hint="To arrange, quotes, deferred, etc."
+                />
+              </div>
+              {data.cost_commitments.upcoming_due.length > 0 ? (
+                <div className="overflow-hidden rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Next due</TableHead>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Monthly eq.</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.cost_commitments.upcoming_due.map((row) => (
+                        <TableRow key={String(row.id)}>
+                          <TableCell className="tabular-nums font-medium">{String(row.next_due_on ?? "—")}</TableCell>
+                          <TableCell>{String(row.name ?? "")}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {String(row.status ?? "")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {typeof row.formatted_monthly_equivalent === "string"
+                              ? row.formatted_monthly_equivalent
+                              : "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No upcoming due dates on recurring cost rows.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-muted shadow-sm">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-xl">Consumables inventory</CardTitle>
+                <CardDescription className="text-base">
+                  Workshop spares with stock thresholds — Sprint 23.4. Low-stock lines contribute to projected restock.
+                </CardDescription>
+              </div>
+              <Button asChild variant="outline" className="shrink-0">
+                <Link href="/admin/finance/consumables">Open inventory</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              <KpiCard title="Active SKUs" value={String(data.consumables_inventory.active_skus)} hint="Inventory-tracked consumables" />
+              <KpiCard title="Low stock lines" value={String(data.consumables_inventory.low_stock_count)} hint="At or below reorder threshold" />
+              <KpiCard
+                title="Projected restock"
+                value={data.consumables_inventory.formatted_projected_restock}
+                hint="To refill shortfalls to thresholds"
+              />
+            </CardContent>
+          </Card>
 
           {rr ? (
             <Card className="border-primary/15 shadow-sm">

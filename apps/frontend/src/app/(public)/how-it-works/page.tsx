@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Building2, HelpCircle, MapPin, Shield } from "lucide-react";
+import { BarChart3, Building2, HelpCircle, MapPin, Shield } from "lucide-react";
 
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,16 @@ export default async function HowItWorksPage() {
           <div>
             <p className="font-semibold text-foreground">Business &amp; multi-site</p>
             <p className="mt-1 text-sm text-muted-foreground">Trade accounts for consistent invoicing across venues.</p>
+          </div>
+        </Link>
+        <Link
+          href="/trade-accounts/reporting"
+          className="flex gap-3 rounded-xl border bg-background p-4 shadow-sm outline-offset-2 transition-colors hover:bg-muted/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <BarChart3 className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+          <div>
+            <p className="font-semibold text-foreground">Portal dashboards</p>
+            <p className="mt-1 text-sm text-muted-foreground">Overview, orders, allowances, and invoices in one signed-in place.</p>
           </div>
         </Link>
         <Link

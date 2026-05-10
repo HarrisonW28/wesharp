@@ -36,6 +36,7 @@ import { CompanyStatusBadge } from "@/components/crm/CompanyStatusBadge";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -127,6 +128,7 @@ export default function AdminCrmCompanyPage() {
     perms.has("payments.view") ||
     perms.has("subscriptions.view") ||
     perms.has("subscriptions.manage");
+  const canViewCosts = perms.has("costs.view");
 
   const [tab, setTab] = useState<CrmTab>("overview");
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
@@ -731,6 +733,72 @@ export default function AdminCrmCompanyPage() {
                     </CardContent>
                   </Card>
                 ) : null}
+              </section>
+            ) : null}
+
+            {canViewCosts && c.finance_intelligence ? (
+              <section className="space-y-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Finance intelligence</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Estimated cost to serve and cash-margin heuristic using invoicing, payments, manual allocations, and consumable
+                    usage linked to this account&apos;s orders. Sprint 23.5 — internal admin only.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {c.finance_intelligence.profitability_labels.length > 0
+                    ? c.finance_intelligence.profitability_labels.map((label) => (
+                        <Badge key={label} variant="secondary">
+                          {label}
+                        </Badge>
+                      ))
+                    : null}
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Total invoiced</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-xl font-semibold tabular-nums">{c.finance_intelligence.formatted_total_invoiced}</CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Total paid</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-xl font-semibold tabular-nums">{c.finance_intelligence.formatted_total_paid}</CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Est. cost to serve</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-xl font-semibold tabular-nums">
+                      {c.finance_intelligence.formatted_estimated_cost_to_serve}
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Gross margin (estimate)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1">
+                      <div className="text-xl font-semibold tabular-nums">
+                        {c.finance_intelligence.formatted_gross_margin_estimate}
+                      </div>
+                      {c.finance_intelligence.gross_margin_percent != null ? (
+                        <p className="text-xs text-muted-foreground tabular-nums">
+                          {c.finance_intelligence.gross_margin_percent}% of paid cash (approx.)
+                        </p>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/admin/finance/cost-ledger?company_id=${companyId}`}>Cost ledger (filtered)</Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/admin/reports/billing?company_id=${companyId}`}>Billing report</Link>
+                  </Button>
+                </div>
               </section>
             ) : null}
 

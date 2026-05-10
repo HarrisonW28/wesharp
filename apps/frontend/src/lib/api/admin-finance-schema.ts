@@ -91,6 +91,30 @@ export const FinanceCompanyOutstandingSchema = z.object({
   formatted_outstanding: z.string(),
 });
 
+export const CostCommitmentsBlockSchema = z.object({
+  definitions: z.record(z.string(), z.string()),
+  active_recurring_count: z.number(),
+  pending_recurring_count: z.number(),
+  monthly_equivalent_active_pence: z.number(),
+  annual_equivalent_active_pence: z.number(),
+  formatted_monthly_equivalent_active: z.string(),
+  formatted_annual_equivalent_active: z.string(),
+  monthly_equivalent_pending_pence: z.number(),
+  annual_equivalent_pending_pence: z.number(),
+  formatted_monthly_equivalent_pending: z.string(),
+  formatted_annual_equivalent_pending: z.string(),
+  upcoming_due: z.array(z.record(z.string(), z.unknown())),
+});
+
+export const ConsumablesInventorySummarySchema = z.object({
+  definitions: z.record(z.string(), z.string()),
+  active_skus: z.number(),
+  low_stock_count: z.number(),
+  projected_restock_pence: z.number(),
+  formatted_projected_restock: z.string(),
+  admin_href: z.string(),
+});
+
 export const FinanceDashboardDataSchema = z.object({
   period: z.object({
     date_from: z.string(),
@@ -107,6 +131,8 @@ export const FinanceDashboardDataSchema = z.object({
     upcoming_renewals: z.array(FinanceRenewalSchema),
     has_subscription_rows: z.boolean().optional(),
   }),
+  cost_commitments: CostCommitmentsBlockSchema,
+  consumables_inventory: ConsumablesInventorySummarySchema,
   recurring_revenue: RecurringRevenueBlockSchema,
   integrations: z
     .object({

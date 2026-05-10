@@ -9,6 +9,11 @@ use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\CompanyLocationController;
 use App\Http\Controllers\Admin\CompanyPortalInviteController;
 use App\Http\Controllers\Admin\CompanySubscriptionController;
+use App\Http\Controllers\Admin\ConsumableController;
+use App\Http\Controllers\Admin\CostAllocationController;
+use App\Http\Controllers\Admin\CostCategoryController;
+use App\Http\Controllers\Admin\CostImportController;
+use App\Http\Controllers\Admin\CostItemController;
 use App\Http\Controllers\Admin\CustomerPortalUpdateController;
 use App\Http\Controllers\Admin\DamageReportController;
 use App\Http\Controllers\Admin\DashboardSearchController;
@@ -47,8 +52,8 @@ use App\Http\Controllers\Api\Account\AccountKnifeController;
 use App\Http\Controllers\Api\Account\AccountLocationController;
 use App\Http\Controllers\Api\Account\AccountOrderController;
 use App\Http\Controllers\Api\Account\AccountOrderEvidencePhotoController;
-use App\Http\Controllers\Api\Account\AccountOrderKnifePhotoController;
 use App\Http\Controllers\Api\Account\AccountOrderFeedbackController;
+use App\Http\Controllers\Api\Account\AccountOrderKnifePhotoController;
 use App\Http\Controllers\Api\Account\AccountSettingsController;
 use App\Http\Controllers\Api\Account\AccountSubscriptionController;
 use App\Http\Controllers\Api\V1\BootstrapTenantOrganisationController;
@@ -365,6 +370,24 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:payments.manage')->post('invoices/{invoice}/stripe-checkout-session', [InvoiceController::class, 'stripeCheckoutSession'])->whereUuid('invoice')->name('api.admin.invoices.stripe_checkout_session');
 
     Route::middleware(['permission:invoices.view', 'permission:payments.view'])->get('finance/dashboard', FinanceDashboardController::class)->name('api.admin.finance.dashboard');
+
+    Route::middleware('permission:costs.view')->get('cost-categories', [CostCategoryController::class, 'index'])->name('api.admin.cost_categories.index');
+    Route::middleware('permission:costs.view')->get('cost-items', [CostItemController::class, 'index'])->name('api.admin.cost_items.index');
+    Route::middleware('permission:costs.manage')->post('cost-items', [CostItemController::class, 'store'])->name('api.admin.cost_items.store');
+    Route::middleware('permission:costs.manage')->put('cost-items/{costItem}', [CostItemController::class, 'update'])->whereUuid('costItem')->name('api.admin.cost_items.update');
+    Route::middleware('permission:costs.manage')->post('cost-items/{costItem}/archive', [CostItemController::class, 'archive'])->whereUuid('costItem')->name('api.admin.cost_items.archive');
+
+    Route::middleware('permission:costs.view')->get('cost-imports', [CostImportController::class, 'index'])->name('api.admin.cost_imports.index');
+    Route::middleware('permission:costs.view')->get('cost-imports/{costImportBatch}', [CostImportController::class, 'show'])->whereUuid('costImportBatch')->name('api.admin.cost_imports.show');
+    Route::middleware('permission:costs.manage')->post('cost-imports', [CostImportController::class, 'store'])->name('api.admin.cost_imports.store');
+    Route::middleware('permission:costs.manage')->post('cost-imports/{costImportBatch}/commit', [CostImportController::class, 'commit'])->whereUuid('costImportBatch')->name('api.admin.cost_imports.commit');
+
+    Route::middleware('permission:costs.view')->get('consumables', [ConsumableController::class, 'index'])->name('api.admin.consumables.index');
+    Route::middleware('permission:costs.manage')->patch('consumables/{consumable}', [ConsumableController::class, 'update'])->whereUuid('consumable')->name('api.admin.consumables.update');
+    Route::middleware('permission:costs.manage')->post('consumables/{consumable}/usages', [ConsumableController::class, 'storeUsage'])->whereUuid('consumable')->name('api.admin.consumables.usages.store');
+
+    Route::middleware('permission:costs.view')->get('cost-allocations', [CostAllocationController::class, 'index'])->name('api.admin.cost_allocations.index');
+    Route::middleware('permission:costs.manage')->post('cost-allocations', [CostAllocationController::class, 'store'])->name('api.admin.cost_allocations.store');
 
     Route::middleware('permission:reports.finance')->prefix('reports')->group(function (): void {
         Route::get('sales', [ReportingController::class, 'sales'])->name('api.admin.reports.sales');

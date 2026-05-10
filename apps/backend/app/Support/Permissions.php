@@ -66,6 +66,12 @@ final class Permissions
     /** Financial reporting (sales, invoices, subscriptions) — admin API `/api/admin/reports/…`. */
     public const REPORTS_FINANCE = 'reports.finance';
 
+    /** Internal cost catalogue (Sprint 23.1) — view seeded workbook-aligned rows. */
+    public const COSTS_VIEW = 'costs.view';
+
+    /** Create, edit, archive manual catalogue rows (finance/admin operators). */
+    public const COSTS_MANAGE = 'costs.manage';
+
     /** Create/view workshop & visit pricing rules (admin). */
     public const PRICING_VIEW = 'pricing.view';
 
@@ -167,6 +173,8 @@ final class Permissions
         self::SYSTEM_INTEGRATIONS_MANAGE,
         self::NOTIFICATIONS_DELIVERIES_VIEW,
         self::REPORTS_FINANCE,
+        self::COSTS_VIEW,
+        self::COSTS_MANAGE,
         self::REPORTS_OPERATIONS,
         self::PRICING_VIEW,
         self::PRICING_MANAGE,
@@ -199,6 +207,7 @@ final class Permissions
             UserRole::Developer->value => [
                 self::DASHBOARD_VIEW,
                 self::ANALYTICS_VIEW,
+                self::COSTS_VIEW,
                 self::USERS_VIEW,
                 self::AUDIT_LOGS_VIEW,
                 self::SYSTEM_TOOLS_VIEW,
@@ -271,6 +280,8 @@ final class Permissions
 
             UserRole::Finance->value => [
                 self::DASHBOARD_VIEW,
+                self::COSTS_VIEW,
+                self::COSTS_MANAGE,
                 self::COMPANIES_VIEW,
                 self::BOOKINGS_VIEW,
                 self::BOOKINGS_CANCEL,

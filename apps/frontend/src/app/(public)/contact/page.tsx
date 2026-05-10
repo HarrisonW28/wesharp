@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
+import { ContactTopicNotice } from "@/components/marketing/ContactTopicNotice";
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { Button } from "@/components/ui/button";
 import { fetchPublicSiteContent } from "@/lib/site-content/fetch-site-content";
@@ -14,6 +16,9 @@ export default async function ContactPage() {
 
   return (
     <MarketingArticle showFooterCtas={false} title={c.title} lead={c.lead}>
+      <Suspense fallback={null}>
+        <ContactTopicNotice />
+      </Suspense>
       <p>
         Email:&nbsp;
         <a href={`mailto:${email}`} className="font-medium text-foreground underline underline-offset-4">

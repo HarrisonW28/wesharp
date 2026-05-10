@@ -63,7 +63,11 @@ export default async function SubscriptionsPage() {
           <Link href="/trade-accounts" className="font-medium text-foreground underline underline-offset-4">
             Trade accounts
           </Link>{" "}
-          cover multi-site and consolidated billing.
+          cover multi-site and consolidated billing. See{" "}
+          <Link href="/trade-accounts/reporting" className="font-medium text-foreground underline underline-offset-4">
+            reporting &amp; dashboards
+          </Link>{" "}
+          for how teams use the portal day to day.
         </p>
       </section>
       <p>

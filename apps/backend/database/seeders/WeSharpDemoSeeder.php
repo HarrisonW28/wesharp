@@ -395,6 +395,9 @@ final class WeSharpDemoSeeder extends Seeder
                 }
             }
         }
+
+        $this->call(CostCatalogSeeder::class);
+        $this->call(ConsumableCatalogSeeder::class);
     }
 
     /**

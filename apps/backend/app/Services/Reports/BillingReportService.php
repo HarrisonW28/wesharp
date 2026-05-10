@@ -9,6 +9,7 @@ use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Support\Analytics\AnalyticsSql;
+use App\Support\Costs\CostAttributionRollup;
 use App\Support\Reports\BillingReportSql;
 use App\Support\Reports\ReportEnvelope;
 use Carbon\Carbon;
@@ -102,6 +103,9 @@ final class BillingReportService
 
         $averageDaysToPay = $this->averageDaysToPay($f);
 
+        $costPeriod = CostAttributionRollup::periodTotals($f);
+        $estimatedDirectCostPeriodPence = $costPeriod['manual_pence'] + $costPeriod['consumable_pence'];
+
         $unpaidPage = $f->unpaidPage ?? $f->page;
         $overduePage = $f->overduePage ?? $f->page;
 
@@ -151,6 +155,9 @@ final class BillingReportService
                 'total_paid_pence' => $totalPaidPence,
                 'payments_received_count' => $paymentsReceivedCount,
                 'average_days_to_pay' => $averageDaysToPay,
+                'cost_allocations_period_pence' => $costPeriod['manual_pence'],
+                'consumable_usage_cost_period_pence' => $costPeriod['consumable_pence'],
+                'estimated_direct_cost_period_pence' => $estimatedDirectCostPeriodPence,
             ],
             [
                 'ageing' => $ageing,
@@ -158,6 +165,11 @@ final class BillingReportService
                 'payments_by_day' => $paymentsByDay,
                 'outstanding_by_customer' => $outstandingByCustomer,
                 'invoice_line_revenue_by_type' => $lineRevenueBreakdown,
+                'cost_attribution' => [
+                    'manual_allocations_period_pence' => $costPeriod['manual_pence'],
+                    'consumable_usage_cost_period_pence' => $costPeriod['consumable_pence'],
+                    'estimated_direct_cost_period_pence' => $estimatedDirectCostPeriodPence,
+                ],
             ],
             [
                 'columns' => [
@@ -185,8 +197,12 @@ final class BillingReportService
                 'total_paid_pence' => 'Sum of payment amounts with paid_at in range (invoice-linked payments, filters apply).',
                 'payments_received_count' => 'Payment rows in that paid_at window.',
                 'average_days_to_pay' => 'Mean days from issued_on to last payment paid_at for invoices marked paid with issued_on in range; null if none.',
+                'cost_allocations_period_pence' => 'Manual cost allocations created in the period (created_at). Filtered by company_id when that query param is present.',
+                'consumable_usage_cost_period_pence' => 'Estimated consumable cost from logged usages whose usage_date falls in range and whose linked order matches company_id when filtered.',
+                'estimated_direct_cost_period_pence' => 'Manual allocations period total plus consumable usage cost period total.',
                 'ageing' => 'Outstanding residuals bucketed by days past COALESCE(due_on, issued_on) vs date_to.',
                 'invoice_line_revenue_by_type' => 'Sum of invoice line totals in the period by line_item_type (one_off_service, subscription, overage, adjustment); issued invoices only, draft/void excluded.',
+                'cost_attribution' => 'Internal cost signals alongside billing filters — manual allocations (created_at window) plus consumable usage costs (usage_date window).',
             ],
         );
 
@@ -256,8 +272,8 @@ final class BillingReportService
     }
 
     /**
-     * @param  \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder  $paidAsOfSub
-     * @return \Illuminate\Database\Eloquent\Builder<Invoice>
+     * @param  \Illuminate\Database\Query\Builder|Builder  $paidAsOfSub
+     * @return Builder<Invoice>
      */
     private function invoiceIssuedInPeriod(AdminReportFilters $f): Builder
     {
@@ -270,8 +286,8 @@ final class BillingReportService
     }
 
     /**
-     * @param  \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder  $paidAsOfSub
-     * @return \Illuminate\Database\Eloquent\Builder<Invoice>
+     * @param  \Illuminate\Database\Query\Builder|Builder  $paidAsOfSub
+     * @return Builder<Invoice>
      */
     private function arBaseQuery(AdminReportFilters $f, $paidAsOfSub, string $asOfDateStr): Builder
     {
@@ -291,7 +307,7 @@ final class BillingReportService
     /**
      * One row per invoice with residual as of date_to.
      *
-     * @param  \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder  $paidAsOfSub
+     * @param  \Illuminate\Database\Query\Builder|Builder  $paidAsOfSub
      */
     private function arResidualSubquery(AdminReportFilters $f, $paidAsOfSub, string $asOfDateStr): \Illuminate\Database\Query\Builder
     {
@@ -310,7 +326,7 @@ final class BillingReportService
     }
 
     /**
-     * @param  \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder  $paidAsOfSub
+     * @param  \Illuminate\Database\Query\Builder|Builder  $paidAsOfSub
      * @return Builder<Invoice>
      */
     private function arListQuery(AdminReportFilters $f, $paidAsOfSub, string $asOfDateStr, bool $overdueOnly): Builder
@@ -418,7 +434,7 @@ final class BillingReportService
     }
 
     /**
-     * @param  \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder  $paidAsOfSub
+     * @param  \Illuminate\Database\Query\Builder|Builder  $paidAsOfSub
      * @return list<array{bucket: string, invoice_count: int, outstanding_pence: int}>
      */
     private function computeAgeingBuckets(AdminReportFilters $f, $paidAsOfSub, string $asOfDateStr, CarbonInterface $asOfStart): array
@@ -481,7 +497,7 @@ final class BillingReportService
     }
 
     /**
-     * @param  \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder  $paidAsOfSub
+     * @param  \Illuminate\Database\Query\Builder|Builder  $paidAsOfSub
      * @return list<array{company_id: string, company_name: string, outstanding_pence: int}>
      */
     private function outstandingByCustomer(AdminReportFilters $f, $paidAsOfSub, string $asOfDateStr): array

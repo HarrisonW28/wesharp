@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
+use App\Enums\ConsumableInventoryStatus;
+use App\Enums\CostStatus;
 use App\Enums\InvoiceStatus;
 use App\Http\Requests\Admin\FinanceDashboardRequest;
 use App\Models\Company;
+use App\Models\Consumable;
+use App\Models\CostItem;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Support\Costs\ConsumableMetrics;
 use App\Support\Invoices\InvoiceJson;
 use App\Support\Invoices\InvoiceRollup;
 use App\Support\Money\MoneyFormatting;
@@ -132,6 +137,10 @@ final class FinanceDashboardService
 
         $recurring = $this->recurringRevenueMetrics->build($periodStart, $periodEnd, $companyId);
 
+        $costCommitments = $this->costCommitmentsSnapshot();
+
+        $consumablesInventory = $this->consumablesInventorySnapshot();
+
         return [
             'period' => [
                 'date_from' => $periodStart->toDateString(),
@@ -160,6 +169,8 @@ final class FinanceDashboardService
                 'upcoming_renewals' => $recurring['upcoming_renewals'],
                 'has_subscription_rows' => (bool) ($recurring['has_subscription_rows'] ?? false),
             ],
+            'cost_commitments' => $costCommitments,
+            'consumables_inventory' => $consumablesInventory,
             'recurring_revenue' => $recurring,
             'integrations' => [
                 'xero' => [
@@ -176,6 +187,117 @@ final class FinanceDashboardService
             'draft_invoices' => $draftInvoices->map(fn (Invoice $i): array => $this->invoiceRow($i))->values()->all(),
             'recent_payments' => $recentPayments->map(fn (Payment $p): array => PaymentJson::detail($p))->values()->all(),
             'top_outstanding_companies' => $topOutstanding,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function costCommitmentsSnapshot(): array
+    {
+        $items = CostItem::query()
+            ->with('category:id,name,slug')
+            ->where('is_recurring', true)
+            ->whereNotIn('status', [
+                CostStatus::Cancelled,
+                CostStatus::Archived,
+            ])
+            ->get();
+
+        $activeMonthly = 0;
+        $activeAnnual = 0;
+        $pendingMonthly = 0;
+        $pendingAnnual = 0;
+        $activeCount = 0;
+        $pendingCount = 0;
+
+        foreach ($items as $item) {
+            $st = $item->status;
+            $mp = (int) ($item->monthly_equivalent_pence ?? 0);
+            $ap = (int) ($item->annual_equivalent_pence ?? 0);
+            if ($st->isActiveRecurringCommitmentBucket()) {
+                $activeMonthly += $mp;
+                $activeAnnual += $ap;
+                $activeCount++;
+            } elseif ($st->isPendingRecurringCommitmentBucket()) {
+                $pendingMonthly += $mp;
+                $pendingAnnual += $ap;
+                $pendingCount++;
+            }
+        }
+
+        $upcoming = CostItem::query()
+            ->with('category:id,name,slug')
+            ->where('is_recurring', true)
+            ->whereNotNull('next_due_on')
+            ->whereDate('next_due_on', '>=', now()->toDateString())
+            ->whereNotIn('status', [CostStatus::Cancelled, CostStatus::Archived])
+            ->orderBy('next_due_on')
+            ->limit(15)
+            ->get();
+
+        return [
+            'definitions' => [
+                'active_bucket' => 'Counts rows with status active, purchased, or reserve.',
+                'pending_bucket' => 'Counts rows with status to_order, pending_quote, to_arrange, to_research, or deferred.',
+                'weekly_monthly_factor' => '4.33 average weeks per month (internal workbook convention).',
+            ],
+            'active_recurring_count' => $activeCount,
+            'pending_recurring_count' => $pendingCount,
+            'monthly_equivalent_active_pence' => $activeMonthly,
+            'annual_equivalent_active_pence' => $activeAnnual,
+            'formatted_monthly_equivalent_active' => MoneyFormatting::formatGbpFromPence($activeMonthly),
+            'formatted_annual_equivalent_active' => MoneyFormatting::formatGbpFromPence($activeAnnual),
+            'monthly_equivalent_pending_pence' => $pendingMonthly,
+            'annual_equivalent_pending_pence' => $pendingAnnual,
+            'formatted_monthly_equivalent_pending' => MoneyFormatting::formatGbpFromPence($pendingMonthly),
+            'formatted_annual_equivalent_pending' => MoneyFormatting::formatGbpFromPence($pendingAnnual),
+            'upcoming_due' => $upcoming->map(function (CostItem $i): array {
+                return [
+                    'id' => (string) $i->id,
+                    'name' => $i->name,
+                    'category_slug' => $i->category?->slug,
+                    'supplier_name' => $i->supplier_name,
+                    'frequency' => $i->frequency->value,
+                    'status' => $i->status->value,
+                    'next_due_on' => $i->next_due_on?->toDateString(),
+                    'renews_on' => $i->renews_on?->toDateString(),
+                    'monthly_equivalent_pence' => $i->monthly_equivalent_pence,
+                    'formatted_monthly_equivalent' => $i->monthly_equivalent_pence !== null
+                        ? MoneyFormatting::formatGbpFromPence((int) $i->monthly_equivalent_pence)
+                        : null,
+                    'amount_pence' => (int) $i->amount_pence,
+                    'formatted_amount' => MoneyFormatting::formatGbpFromPence((int) $i->amount_pence),
+                ];
+            })->values()->all(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function consumablesInventorySnapshot(): array
+    {
+        $rows = Consumable::query()
+            ->with('costItem')
+            ->where('status', ConsumableInventoryStatus::Active)
+            ->get();
+
+        $lowStock = 0;
+        $restockPence = 0;
+        foreach ($rows as $row) {
+            if (ConsumableMetrics::isLowStock($row)) {
+                $lowStock++;
+            }
+            $restockPence += ConsumableMetrics::projectedReorderCostPence($row);
+        }
+
+        return [
+            'definitions' => [
+                'low_stock' => 'Stock quantity is at or below reorder_threshold when a threshold is set.',
+                'projected_restock' => 'Shortfall to threshold × last recorded unit cost from the linked cost item.',
+            ],
+            'active_skus' => $rows->count(),
+            'low_stock_count' => $lowStock,
+            'projected_restock_pence' => $restockPence,
+            'formatted_projected_restock' => MoneyFormatting::formatGbpFromPence($restockPence),
+            'admin_href' => '/admin/finance/consumables',
         ];
     }
 

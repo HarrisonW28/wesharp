@@ -15,6 +15,9 @@ export const BillingReportKpisSchema = z.object({
   total_paid_pence: z.number(),
   payments_received_count: z.number(),
   average_days_to_pay: z.number().nullable(),
+  cost_allocations_period_pence: z.number(),
+  consumable_usage_cost_period_pence: z.number(),
+  estimated_direct_cost_period_pence: z.number(),
 });
 
 export const BillingReportPayloadSchema = z.object({
@@ -50,6 +53,17 @@ export const BillingReportPayloadSchema = z.object({
         outstanding_pence: z.number(),
       }),
     ),
+    invoice_line_revenue_by_type: z.array(
+      z.object({
+        line_item_type: z.string(),
+        line_total_pence: z.number(),
+      }),
+    ),
+    cost_attribution: z.object({
+      manual_allocations_period_pence: z.number(),
+      consumable_usage_cost_period_pence: z.number(),
+      estimated_direct_cost_period_pence: z.number(),
+    }),
   }),
   table: TableBlockSchema.nullable(),
   definitions: z.record(z.string()),

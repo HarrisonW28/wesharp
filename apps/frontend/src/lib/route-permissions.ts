@@ -57,6 +57,15 @@ export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/pricing-rules")) {
     return "pricing.view";
   }
+  if (pathname.startsWith("/admin/finance/costs")) {
+    return "costs.view";
+  }
+  if (pathname.startsWith("/admin/finance/consumables")) {
+    return "costs.view";
+  }
+  if (pathname.startsWith("/admin/finance/cost-ledger")) {
+    return "costs.view";
+  }
   if (pathname.startsWith("/admin/finance")) {
     return "payments.view";
   }
@@ -81,6 +90,9 @@ export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/routes")) {
     return "routes.view";
   }
+  if (pathname.startsWith("/admin/reporting")) {
+    return "analytics.view";
+  }
   return "dashboard.view";
 }
 
@@ -88,6 +100,15 @@ export function adminPermissionForPath(pathname: string): string {
 export function adminRouteAccessAllowed(pathname: string, permissions: ReadonlySet<string>): boolean {
   if (pathname.startsWith("/admin/subscription-plans")) {
     return permissions.has("subscriptions.view") || permissions.has("pricing.view");
+  }
+  if (pathname.startsWith("/admin/reporting")) {
+    return (
+      permissions.has("analytics.view") ||
+      permissions.has("reports.finance") ||
+      permissions.has("reports.operations") ||
+      permissions.has("payments.view") ||
+      permissions.has("invoices.view")
+    );
   }
   return permissions.has(adminPermissionForPath(pathname));
 }

@@ -80,6 +80,9 @@ const BILLING_KPI_HINTS = {
   total_paid: "Cash in from invoice payments in period.",
   payments_rows: "Payment rows with paid date in range.",
   avg_days_to_pay: "Average days from issue date to last payment.",
+  cost_allocations: "Manual allocations with created_at in the date range (and company filter when set).",
+  consumable_usage_cost: "Estimated consumable £ from logged usages in usage_date range linked to orders.",
+  estimated_direct_cost: "Allocations period total plus consumable usage cost — Sprint 23.5 ops finance signal.",
 } as const;
 
 function KpiCard(props: { title: string; value: string; hint?: string }) {
@@ -518,6 +521,24 @@ export default function AdminBillingReportPage() {
               title="Avg days to pay"
               value={d.kpis.average_days_to_pay != null ? `${d.kpis.average_days_to_pay}` : "—"}
               hint={BILLING_KPI_HINTS.avg_days_to_pay}
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <KpiCard
+              title="Cost allocations (period)"
+              value={formatGBP(d.kpis.cost_allocations_period_pence)}
+              hint={BILLING_KPI_HINTS.cost_allocations}
+            />
+            <KpiCard
+              title="Consumable usage cost (period)"
+              value={formatGBP(d.kpis.consumable_usage_cost_period_pence)}
+              hint={BILLING_KPI_HINTS.consumable_usage_cost}
+            />
+            <KpiCard
+              title="Estimated direct cost (period)"
+              value={formatGBP(d.kpis.estimated_direct_cost_period_pence)}
+              hint={BILLING_KPI_HINTS.estimated_direct_cost}
             />
           </div>
 

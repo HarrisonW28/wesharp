@@ -52,6 +52,15 @@ final class AdminFinanceDashboardApiTest extends TestCase
                         'formatted_subscription_tagged_payments_in_period',
                     ],
                     'subscription',
+                    'cost_commitments',
+                    'consumables_inventory' => [
+                        'definitions',
+                        'active_skus',
+                        'low_stock_count',
+                        'projected_restock_pence',
+                        'formatted_projected_restock',
+                        'admin_href',
+                    ],
                     'recurring_revenue',
                     'integrations',
                     'overdue_invoices',
@@ -75,6 +84,9 @@ final class AdminFinanceDashboardApiTest extends TestCase
         $res->assertOk()
             ->assertJsonPath('data.kpis.unpaid_invoice_count', 0)
             ->assertJsonPath('data.kpis.outstanding_pence', 0)
-            ->assertJsonPath('data.kpis.paid_in_period_pence', 0);
+            ->assertJsonPath('data.kpis.paid_in_period_pence', 0)
+            ->assertJsonPath('data.consumables_inventory.active_skus', 0)
+            ->assertJsonPath('data.consumables_inventory.low_stock_count', 0)
+            ->assertJsonPath('data.consumables_inventory.projected_restock_pence', 0);
     }
 }

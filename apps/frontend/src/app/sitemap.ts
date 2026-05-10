@@ -18,6 +18,7 @@ const STATIC_PATHS: { path: string; changeFrequency: ChangeFreq; priority: numbe
   { path: "/contact", changeFrequency: "monthly", priority: 0.7 },
   { path: "/book", changeFrequency: "weekly", priority: 0.85 },
   { path: "/trade-accounts", changeFrequency: "monthly", priority: 0.6 },
+  { path: "/trade-accounts/reporting", changeFrequency: "monthly", priority: 0.55 },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

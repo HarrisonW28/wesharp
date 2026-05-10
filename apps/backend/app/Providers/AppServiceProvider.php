@@ -7,6 +7,10 @@ use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CompanySubscription;
+use App\Models\Consumable;
+use App\Models\CostAllocation;
+use App\Models\CostImportBatch;
+use App\Models\CostItem;
 use App\Models\CustomerPortalUpdate;
 use App\Models\DamageReport;
 use App\Models\EvidencePhoto;
@@ -28,6 +32,10 @@ use App\Policies\AuditLogPolicy;
 use App\Policies\BookingPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\CompanySubscriptionPolicy;
+use App\Policies\ConsumablePolicy;
+use App\Policies\CostAllocationPolicy;
+use App\Policies\CostImportBatchPolicy;
+use App\Policies\CostItemPolicy;
 use App\Policies\CustomerPortalUpdatePolicy;
 use App\Policies\DamageReportPolicy;
 use App\Policies\EvidencePhotoPolicy;
@@ -133,5 +141,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(SubscriptionPlan::class, SubscriptionPlanPolicy::class);
         Gate::policy(CompanySubscription::class, CompanySubscriptionPolicy::class);
+        Gate::policy(Consumable::class, ConsumablePolicy::class);
+        Gate::policy(CostAllocation::class, CostAllocationPolicy::class);
+        Gate::policy(CostCategory::class, CostCategoryPolicy::class);
+        Gate::policy(CostImportBatch::class, CostImportBatchPolicy::class);
+        Gate::policy(CostItem::class, CostItemPolicy::class);
     }
 }

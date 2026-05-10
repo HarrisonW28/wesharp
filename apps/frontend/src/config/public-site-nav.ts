@@ -48,6 +48,16 @@ export const PUBLIC_SITE_NAV_SECTIONS: PublicSiteNavSection[] = [
         label: "For business",
         description: "Multi-site, routes, and consolidated billing.",
       },
+      {
+        href: "/trade-accounts/reporting",
+        label: "Reporting & dashboards",
+        description: "Portal overview, orders, knives, invoices, and subscription usage.",
+      },
+      {
+        href: "/contact?topic=trade",
+        label: "Multi-site enquiries",
+        description: "Coverage, consolidated billing, and onboarding.",
+      },
     ],
   },
   {

@@ -1132,15 +1132,15 @@ export default function AdminOrderDetailPage() {
       </Dialog>
 
       {showWorkshopFulfilmentCard ? (
-        <Card className="p-4">
-          <div className="text-xs font-semibold uppercase text-muted-foreground">Workshop &amp; fulfilment</div>
+        <Card className="px-4 pt-3 pb-5">
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Workshop &amp; fulfilment</div>
 
-          <div className="mt-4 grid gap-6 lg:grid-cols-3 lg:items-start lg:gap-8">
+          <div className="mt-2 grid gap-4 lg:grid-cols-3 lg:items-start lg:gap-6">
             <div>
               {showWorkshopProgress && o.workshop_progress ? (
                 <>
                   <div className="text-xs font-medium text-muted-foreground">Blades &amp; lines</div>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
                     <span className="font-medium text-foreground">{o.workshop_progress.knife_count}</span> blade(s) on this order
                     {o.workshop_progress.line_only_units > 0 ? (
                       <>
@@ -1154,38 +1154,39 @@ export default function AdminOrderDetailPage() {
                     ) : null}
                   </p>
                   {o.workshop_progress.by_status && Object.keys(o.workshop_progress.by_status).length > 0 ? (
-                    <ul className="mt-3 flex flex-wrap gap-2">
+                    <ul className="mt-2 flex flex-wrap gap-1.5">
                       {Object.entries(o.workshop_progress.by_status).map(([st, n]) => (
-                        <li key={st} className="flex items-center gap-1.5 rounded-md border border-border/80 bg-muted/20 px-2 py-1">
+                        <li key={st} className="flex items-center gap-1 rounded-md border border-border/80 bg-muted/20 px-1.5 py-0.5">
                           <StatusBadge kind="knife" status={st} className="shrink-0 text-[10px]" />
-                          <span className="text-xs tabular-nums text-muted-foreground">×{n}</span>
+                          <span className="text-[11px] tabular-nums text-muted-foreground">×{n}</span>
                         </li>
                       ))}
                     </ul>
                   ) : null}
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs leading-snug text-muted-foreground">
                   Blade tallies and workshop counts appear once knives are registered on this order.
                 </p>
               )}
             </div>
 
             {showWorkflowControls ? (
-              <div className="space-y-4 lg:border-l lg:border-border lg:pl-6">
-                <p className="text-sm text-muted-foreground">
+              <div className="space-y-2 lg:border-l lg:border-border lg:pl-5">
+                <p className="text-xs leading-snug text-muted-foreground">
                   Order status moves forward when every blade reaches the next milestone (and when the collection stop completes).
                   You can still use the buttons below for manual steps; risky moves ask for confirmation. Completing the order records
                   fulfilment timing — generating an invoice draft is a separate step.
                 </p>
                 {canOrders && linearWorkflow.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {linearWorkflow.map((step) => (
                       <Button
                         key={step.value}
                         type="button"
-                        size="lg"
+                        size="sm"
                         variant={step.risky ? "secondary" : "default"}
+                        className="h-9"
                         disabled={transitionMutation.isPending}
                         onClick={() => {
                           if (step.risky) {
@@ -1203,19 +1204,19 @@ export default function AdminOrderDetailPage() {
                 ) : null}
               </div>
             ) : (
-              <div className="hidden lg:block lg:border-l lg:border-border lg:pl-6" aria-hidden />
+              <div className="hidden lg:block lg:border-l lg:border-border lg:pl-5" aria-hidden />
             )}
 
-            <div className="lg:border-l lg:border-border lg:pl-6">
+            <div className="lg:border-l lg:border-border lg:pl-5">
               {canOrders && mayComplete ? (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-stretch lg:justify-start">
-                  <div className="text-sm font-semibold">Ready to close out?</div>
-                  <Button type="button" size="lg" className="w-full shrink-0 sm:w-auto lg:w-full" onClick={() => setCompleteDialogOpen(true)}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-stretch lg:justify-start">
+                  <div className="text-xs font-semibold leading-tight">Ready to close out?</div>
+                  <Button type="button" size="sm" className="h-9 w-full shrink-0 sm:w-auto lg:w-full" onClick={() => setCompleteDialogOpen(true)}>
                     Complete order
                   </Button>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs leading-snug text-muted-foreground">
                   {canOrders
                     ? "Complete appears when every blade has a billable line or workshop row and the order allows completion."
                     : "Completion controls require order permissions."}

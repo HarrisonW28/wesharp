@@ -51,6 +51,7 @@ final class AdminCompaniesApiTest extends TestCase
                 'data' => [
                     'id',
                     'overview',
+                    'finance_intelligence',
                     'subscription',
                     'users',
                     'contacts',
@@ -62,5 +63,16 @@ final class AdminCompaniesApiTest extends TestCase
                     'notes',
                 ],
             ]);
+    }
+
+    public function test_route_manager_company_detail_has_null_finance_intelligence(): void
+    {
+        $driver = User::query()->where('email', 'driver@demo.wesharp.test')->firstOrFail();
+        $company = Company::query()->firstOrFail();
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $driver->id)
+            ->getJson('/api/admin/companies/'.$company->id)
+            ->assertOk()
+            ->assertJsonPath('data.finance_intelligence', null);
     }
 }

@@ -381,6 +381,9 @@ final class AdminReportingApiTest extends TestCase
             ->assertJsonPath('data.report', 'billing')
             ->assertJsonPath('data.kpis.invoices_sent_count', 0)
             ->assertJsonPath('data.kpis.total_outstanding_pence', 0)
+            ->assertJsonPath('data.kpis.cost_allocations_period_pence', 0)
+            ->assertJsonPath('data.kpis.consumable_usage_cost_period_pence', 0)
+            ->assertJsonPath('data.kpis.estimated_direct_cost_period_pence', 0)
             ->assertJsonPath('data.series.ageing', fn ($v) => is_array($v) && count($v) === 5);
     }
 

@@ -13,6 +13,7 @@ use App\Models\Note;
 use App\Models\Order;
 use App\Models\User;
 use App\Support\Crm\CompanyCrmOverview;
+use App\Support\Crm\CompanyFinanceIntelligence;
 use App\Support\Crm\CompanySubscriptionCrmPayload;
 use App\Support\Knives\KnifeStatusPresentation;
 use App\Support\Orders\OrderStatusPresentation;
@@ -43,6 +44,7 @@ class CompanyDetailResource extends JsonResource
             'billing_email' => $c->billing_email,
             'city' => $c->city,
             'overview' => CompanyCrmOverview::toArray($c, $viewer),
+            'finance_intelligence' => CompanyFinanceIntelligence::forCompany($c, $viewer),
             'subscription' => CompanySubscriptionCrmPayload::build($c, $viewer),
             'users' => $c->relationLoaded('users')
                 ? $c->users->map(static fn (User $u) => self::userRow($u))->values()->all()

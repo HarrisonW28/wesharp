@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
+  BarChart3,
   Building2,
   CircleHelp,
   LayoutList,
@@ -25,11 +26,17 @@ const NAV_CARD_ICONS: Record<string, LucideIcon> = {
   "/subscriptions": Repeat,
   "/how-it-works": LayoutList,
   "/trade-accounts": Building2,
+  "/trade-accounts/reporting": BarChart3,
   "/service-areas": MapPin,
   "/faq": CircleHelp,
   "/contact": Mail,
   "/safety": Shield,
 };
+
+function iconForPublicNavHref(href: string): LucideIcon {
+  const path = href.split("?")[0] ?? href;
+  return NAV_CARD_ICONS[path] ?? Sparkles;
+}
 
 function NavCard({
   link,
@@ -41,7 +48,7 @@ function NavCard({
   /** Desktop mega-menu: equal-width tiles on one row. */
   menuRow?: boolean;
 }) {
-  const Icon = NAV_CARD_ICONS[link.href] ?? Sparkles;
+  const Icon = iconForPublicNavHref(link.href);
   return (
     <Link
       href={link.href}

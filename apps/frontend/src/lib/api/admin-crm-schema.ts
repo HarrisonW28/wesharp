@@ -356,6 +356,27 @@ export const CompanySubscriptionCrmSchema = z.discriminatedUnion("state", [
 
 export type CompanySubscriptionCrm = z.infer<typeof CompanySubscriptionCrmSchema>;
 
+export const CompanyFinanceIntelligenceSchema = z.object({
+  definitions: z.record(z.string(), z.string()),
+  total_invoiced_pence: z.number(),
+  formatted_total_invoiced: z.string(),
+  total_paid_pence: z.number(),
+  formatted_total_paid: z.string(),
+  outstanding_balance_pence: z.number(),
+  formatted_outstanding_balance: z.string(),
+  manual_allocation_pence: z.number(),
+  formatted_manual_allocation: z.string(),
+  consumable_usage_cost_pence: z.number(),
+  formatted_consumable_usage_cost: z.string(),
+  estimated_cost_to_serve_pence: z.number(),
+  formatted_estimated_cost_to_serve: z.string(),
+  gross_margin_estimate_pence: z.number(),
+  formatted_gross_margin_estimate: z.string(),
+  gross_margin_percent: z.number().nullable(),
+  has_active_subscription: z.boolean(),
+  profitability_labels: z.array(z.string()),
+});
+
 export const CompanyDetailResponseSchema = z.object({
   success: z.literal(true),
   data: z.object({
@@ -367,6 +388,7 @@ export const CompanyDetailResponseSchema = z.object({
     billing_email: z.string().nullable(),
     city: z.string().nullable(),
     overview: CompanyOverviewSnapshotSchema,
+    finance_intelligence: CompanyFinanceIntelligenceSchema.nullable(),
     subscription: CompanySubscriptionCrmSchema,
     users: z.array(CompanyUserSchema),
     portal_invites: z.array(CustomerPortalInviteRowSchema),
