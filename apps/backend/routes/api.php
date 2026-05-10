@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\CustomerPortalUpdateController;
 use App\Http\Controllers\Admin\DamageReportController;
 use App\Http\Controllers\Admin\DashboardSearchController;
 use App\Http\Controllers\Admin\EvidencePhotoController;
+use App\Http\Controllers\Admin\ExecutiveFinanceDashboardController;
 use App\Http\Controllers\Admin\FinanceDashboardController;
 use App\Http\Controllers\Admin\ForecastScenarioController;
 use App\Http\Controllers\Admin\InAppNotificationController;
@@ -380,6 +381,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission_any:reports.operations,reports.finance,costs.view')->get('reports/route-profitability', RouteProfitabilityReportController::class)->name('api.admin.reports.route_profitability');
 
     Route::middleware('permission:reports.sales_performance')->get('reports/sales-performance', SalesPosPerformanceReportController::class)->name('api.admin.reports.sales_performance');
+
+    Route::middleware('permission:reports.executive_dashboard')->get('reports/executive-dashboard', ExecutiveFinanceDashboardController::class)->name('api.admin.reports.executive_dashboard');
 
     Route::middleware('permission_any:reports.finance,costs.view')->group(function (): void {
         Route::get('reports/cash-position', [CashPositionReportController::class, 'show'])->name('api.admin.reports.cash_position');

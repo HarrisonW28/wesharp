@@ -89,6 +89,9 @@ final class Permissions
     /** Sales/POS/checkout abandonment performance — admin API `/api/admin/reports/sales-performance` (Sprint 24.5). */
     public const REPORTS_SALES_PERFORMANCE = 'reports.sales_performance';
 
+    /** Executive finance owner dashboard — `/api/admin/reports/executive-dashboard` (Sprint 24.6). */
+    public const REPORTS_EXECUTIVE_DASHBOARD = 'reports.executive_dashboard';
+
     /** Read subscription plans and company subscription rows (admin). */
     public const SUBSCRIPTIONS_VIEW = 'subscriptions.view';
 
@@ -180,6 +183,7 @@ final class Permissions
         self::COSTS_MANAGE,
         self::REPORTS_OPERATIONS,
         self::REPORTS_SALES_PERFORMANCE,
+        self::REPORTS_EXECUTIVE_DASHBOARD,
         self::PRICING_VIEW,
         self::PRICING_MANAGE,
         self::SERVICE_AREAS_VIEW,
@@ -227,6 +231,7 @@ final class Permissions
                 self::BOOKINGS_VIEW,
                 self::BOOKINGS_DELETE,
                 self::REPORTS_SALES_PERFORMANCE,
+                self::REPORTS_EXECUTIVE_DASHBOARD,
             ],
 
             UserRole::RouteManager->value => [
@@ -302,6 +307,7 @@ final class Permissions
                 self::ANALYTICS_VIEW,
                 self::REPORTS_FINANCE,
                 self::REPORTS_SALES_PERFORMANCE,
+                self::REPORTS_EXECUTIVE_DASHBOARD,
                 self::PRICING_VIEW,
                 self::PRICING_MANAGE,
                 self::SERVICE_AREAS_VIEW,

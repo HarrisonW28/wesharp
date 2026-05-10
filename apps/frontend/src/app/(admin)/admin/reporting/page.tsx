@@ -11,6 +11,7 @@ import {
   Coins,
   Gauge,
   Landmark,
+  LayoutGrid,
   LineChart,
   Percent,
   PiggyBank,
@@ -148,6 +149,15 @@ export default function AdminReportingHubPage() {
         description:
           "Sprint 24.5 — Stripe checkout funnel, staff-recorded POS payments, discounts, estimates, allocated costs, and sales attribution.",
         icon: ShoppingCart,
+      });
+    }
+    if (permissions.has("reports.executive_dashboard") || permissions.has("reports.finance")) {
+      financeCards.push({
+        href: "/admin/reports/executive-dashboard",
+        title: "Executive dashboard",
+        description:
+          "Sprint 24.6 — profit, cash, runway, MRR, operational pulse, alerts and links into forecasts and detail reports.",
+        icon: LayoutGrid,
       });
     }
     if (permissions.has("reports.finance")) {

@@ -24,6 +24,8 @@ final class AdminStripeCheckoutPlaceholderApiTest extends TestCase
 
     public function test_placeholder_returns_metadata_without_checkout_url(): void
     {
+        Config::set('stripe.hosted_checkout_enabled', false);
+
         $finance = User::query()->where('email', 'finance@demo.wesharp.test')->firstOrFail();
         $invoice = Invoice::query()->firstOrFail();
 

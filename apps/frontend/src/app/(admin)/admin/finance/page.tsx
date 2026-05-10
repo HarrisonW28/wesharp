@@ -6,7 +6,19 @@ import { useCallback, useEffect, useMemo } from "react";
 
 import { AlertCircle, Info, Loader2, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { toast } from "sonner";
 
 import { FinanceDashboardResponseSchema } from "@/lib/api/admin-finance-schema";
@@ -41,6 +53,18 @@ import {
 } from "@/components/ui/select";
 
 type CompanyOpt = { id: string; name: string; city?: string | null };
+
+function formatPenceTick(value: unknown): string {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return formatGBP(n);
+}
+
+function truncateChartLabel(s: string, max = 26): string {
+  const t = s.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
+}
 
 function buildQs(params: Record<string, string>): string {
   const u = new URLSearchParams();
@@ -148,6 +172,71 @@ export default function AdminFinanceDashboardPage() {
         ];
 
   const SPLIT_COLORS = ["hsl(var(--primary))", "hsl(142 76% 36%)"];
+  const BAR_SERIES_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
+
+  const invoicePipelineData = useMemo(() => {
+    if (!data) return [];
+    return [
+      { label: "Draft", count: data.kpis.draft_invoice_count },
+      { label: "Unpaid", count: data.kpis.unpaid_invoice_count },
+      { label: "Overdue", count: data.kpis.overdue_invoice_count },
+      { label: "Voids (period)", count: data.kpis.void_invoice_count_period },
+    ];
+  }, [data]);
+
+  const invoicePipelineTotal = useMemo(() => invoicePipelineData.reduce((s, r) => s + r.count, 0), [invoicePipelineData]);
+
+  const arVsPaidData = useMemo(() => {
+    if (!data) return [];
+    return [
+      { label: "Outstanding", pence: data.kpis.outstanding_pence },
+      { label: "Paid (period)", pence: data.kpis.paid_in_period_pence },
+    ];
+  }, [data]);
+
+  const costRunRateData = useMemo(() => {
+    if (!data) return [];
+    return [
+      { label: "Active", pence: data.cost_commitments.monthly_equivalent_active_pence },
+      { label: "Pending", pence: data.cost_commitments.monthly_equivalent_pending_pence },
+    ];
+  }, [data]);
+
+  const consumablesStockData = useMemo(() => {
+    if (!data || data.consumables_inventory.active_skus <= 0) return [];
+    const low = data.consumables_inventory.low_stock_count;
+    const active = data.consumables_inventory.active_skus;
+    return [
+      { name: "Low stock SKUs", count: low },
+      { name: "Above threshold", count: Math.max(0, active - low) },
+    ];
+  }, [data]);
+
+  const subscriptionVolumeData = useMemo(() => {
+    if (!rr) return [];
+    return [
+      { label: "Active", count: rr.subscription_counts.active },
+      { label: "Cancelled (snap.)", count: rr.subscription_counts.cancelled_snapshot },
+      { label: "New (period)", count: rr.subscription_counts.new_in_period },
+      { label: "Cancelled (period)", count: rr.subscription_counts.cancelled_in_period },
+    ];
+  }, [rr]);
+
+  const topOutstandingChartData = useMemo(() => {
+    if (!data) return [];
+    return data.top_outstanding_companies.slice(0, 12).map((row) => ({
+      label: truncateChartLabel(row.company_name ?? row.company_id),
+      pence: row.outstanding_pence,
+    }));
+  }, [data]);
+
+  const topSubscriptionCustomersChartData = useMemo(() => {
+    if (!rr) return [];
+    return rr.top_subscription_customers.slice(0, 10).map((row) => ({
+      label: truncateChartLabel(row.company_name ?? row.company_id),
+      pence: row.subscription_invoiced_pence,
+    }));
+  }, [rr]);
 
   return (
     <div className="space-y-8">
@@ -303,6 +392,65 @@ export default function AdminFinanceDashboardPage() {
             />
           </div>
 
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card className="overflow-hidden shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Invoice pipeline</CardTitle>
+                <CardDescription className="text-xs">
+                  Counts from KPI snapshot — voids are limited to activity in the selected period.
+                </CardDescription>
+              </CardHeader>
+              <Separator />
+              <CardContent className="h-[280px] w-full pt-4 pb-2 sm:h-[300px]">
+                {invoicePipelineTotal === 0 ? (
+                  <p className="text-sm text-muted-foreground">No draft, unpaid, overdue, or period void rows for this filter.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={invoicePipelineData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} angle={-14} height={52} textAnchor="end" />
+                      <YAxis tick={{ fontSize: 11 }} allowDecimals={false} width={36} />
+                      <RechartsTooltip formatter={(val) => [`${val} invoices`, "Count"]} />
+                      <Bar dataKey="count" name="Invoices" radius={[4, 4, 0, 0]}>
+                        {invoicePipelineData.map((_, i) => (
+                          <Cell key={i} fill={BAR_SERIES_COLORS[i % BAR_SERIES_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Open AR vs cash in period</CardTitle>
+                <CardDescription className="text-xs">
+                  Outstanding is a filtered snapshot; paid total sums payments with paid_at in the date range.
+                </CardDescription>
+              </CardHeader>
+              <Separator />
+              <CardContent className="h-[280px] w-full pt-4 pb-2 sm:h-[300px]">
+                {!data.kpis.outstanding_pence && !data.kpis.paid_in_period_pence ? (
+                  <p className="text-sm text-muted-foreground">Nothing to compare for this filter.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={arVsPaidData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={formatPenceTick} width={72} />
+                      <RechartsTooltip formatter={(val) => formatPenceTick(val)} />
+                      <Bar dataKey="pence" name="Amount" radius={[4, 4, 0, 0]}>
+                        <Cell fill="var(--chart-1)" />
+                        <Cell fill="var(--chart-2)" />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
           <Card className="border-muted shadow-sm">
             <CardHeader>
               <CardTitle className="text-xl">Internal recurring cost commitments</CardTitle>
@@ -334,6 +482,31 @@ export default function AdminFinanceDashboardPage() {
                   hint="To arrange, quotes, deferred, etc."
                 />
               </div>
+              <Card className="overflow-hidden border bg-muted/15 shadow-none">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Recurring cost run-rate (monthly equivalent)</CardTitle>
+                  <CardDescription className="text-xs">Active vs pending catalogue rows — same basis as KPI cards above.</CardDescription>
+                </CardHeader>
+                <Separator />
+                <CardContent className="h-[240px] w-full pt-4 pb-2">
+                  {!costRunRateData.some((r) => r.pence > 0) ? (
+                    <p className="text-sm text-muted-foreground">No recurring monthly equivalents for this tenant.</p>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={costRunRateData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 11 }} tickFormatter={formatPenceTick} width={72} />
+                        <RechartsTooltip formatter={(val) => formatPenceTick(val)} />
+                        <Bar dataKey="pence" radius={[4, 4, 0, 0]}>
+                          <Cell fill="hsl(var(--primary))" />
+                          <Cell fill="hsl(142 76% 36%)" />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
               {data.cost_commitments.upcoming_due.length > 0 ? (
                 <div className="overflow-hidden rounded-lg border">
                   <Table>
@@ -383,14 +556,46 @@ export default function AdminFinanceDashboardPage() {
                 <Link href="/admin/finance/consumables">Open inventory</Link>
               </Button>
             </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
-              <KpiCard title="Active SKUs" value={String(data.consumables_inventory.active_skus)} hint="Inventory-tracked consumables" />
-              <KpiCard title="Low stock lines" value={String(data.consumables_inventory.low_stock_count)} hint="At or below reorder threshold" />
-              <KpiCard
-                title="Projected restock"
-                value={data.consumables_inventory.formatted_projected_restock}
-                hint="To refill shortfalls to thresholds"
-              />
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <KpiCard title="Active SKUs" value={String(data.consumables_inventory.active_skus)} hint="Inventory-tracked consumables" />
+                <KpiCard title="Low stock lines" value={String(data.consumables_inventory.low_stock_count)} hint="At or below reorder threshold" />
+                <KpiCard
+                  title="Projected restock"
+                  value={data.consumables_inventory.formatted_projected_restock}
+                  hint="To refill shortfalls to thresholds"
+                />
+              </div>
+              {consumablesStockData.length > 0 &&
+              consumablesStockData.some((s) => s.count > 0) ? (
+                <div className="rounded-lg border bg-muted/10 p-4">
+                  <h3 className="text-sm font-semibold text-foreground">SKU stock posture</h3>
+                  <p className="text-xs text-muted-foreground">Low-stock SKUs vs lines above reorder threshold.</p>
+                  <div className="mx-auto mt-2 h-[220px] max-w-md">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={consumablesStockData}
+                          dataKey="count"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={52}
+                          outerRadius={88}
+                          paddingAngle={2}
+                          label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                        >
+                          {consumablesStockData.map((_, i) => (
+                            <Cell key={i} fill={SPLIT_COLORS[i % SPLIT_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(v) => [`${v} SKUs`, ""]} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -453,6 +658,59 @@ export default function AdminFinanceDashboardPage() {
                     value={String(rr.overdue_subscription_invoices_count)}
                     hint={`Past due vs ${rr.meta.period_end_date_for_overdue ?? "period end"}; open balance`}
                   />
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Card className="overflow-hidden shadow-none">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Subscription volumes</CardTitle>
+                      <CardDescription className="text-xs">Seat counts from subscription rows — period fields use created / cancellation dates.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[260px] pt-2 pb-2">
+                      {!subscriptionVolumeData.some((r) => r.count > 0) ? (
+                        <p className="text-sm text-muted-foreground">No subscription rows with non-zero counts.</p>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={subscriptionVolumeData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-12} height={56} textAnchor="end" />
+                            <YAxis tick={{ fontSize: 11 }} allowDecimals={false} width={36} />
+                            <RechartsTooltip formatter={(val) => [`${val}`, "Subscriptions"]} />
+                            <Bar dataKey="count" name="Count" radius={[4, 4, 0, 0]}>
+                              {subscriptionVolumeData.map((_, i) => (
+                                <Cell key={i} fill={BAR_SERIES_COLORS[i % BAR_SERIES_COLORS.length]} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card className="overflow-hidden shadow-none">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Top subscription invoicing (period)</CardTitle>
+                      <CardDescription className="text-xs">Subscription-tagged revenue issued in the selected period.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[260px] pt-2 pb-2">
+                      {!topSubscriptionCustomersChartData.some((r) => r.pence > 0) ? (
+                        <p className="text-sm text-muted-foreground">None in this period.</p>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={[...topSubscriptionCustomersChartData].reverse()}
+                            layout="vertical"
+                            margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis type="number" tickFormatter={formatPenceTick} />
+                            <YAxis type="category" dataKey="label" width={108} tick={{ fontSize: 10 }} />
+                            <RechartsTooltip formatter={(val) => formatPenceTick(val)} />
+                            <Bar dataKey="pence" name="Invoiced" fill="var(--chart-3)" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-2">
@@ -630,6 +888,30 @@ export default function AdminFinanceDashboardPage() {
 
           <section className="space-y-3">
             <h2 className="text-xl font-semibold tracking-tight">Customers — highest outstanding</h2>
+            {topOutstandingChartData.length > 0 && topOutstandingChartData.some((r) => r.pence > 0) ? (
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Outstanding balance by customer (top {topOutstandingChartData.length})</CardTitle>
+                  <CardDescription className="text-xs">Same ranking as the table below — filtered open AR.</CardDescription>
+                </CardHeader>
+                <Separator />
+                <CardContent className="h-[min(420px,70vh)] min-h-[240px] w-full pt-4 pb-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[...topOutstandingChartData].reverse()}
+                      layout="vertical"
+                      margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis type="number" tickFormatter={formatPenceTick} />
+                      <YAxis type="category" dataKey="label" width={120} tick={{ fontSize: 11 }} />
+                      <RechartsTooltip formatter={(val) => formatPenceTick(val)} />
+                      <Bar dataKey="pence" name="Outstanding" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            ) : null}
             {data.top_outstanding_companies.length === 0 ? (
               <p className="text-base text-muted-foreground">No outstanding balances for this filter.</p>
             ) : (
