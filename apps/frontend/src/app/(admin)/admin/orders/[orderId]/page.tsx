@@ -21,6 +21,7 @@ import { useBackendMe } from "@/hooks/use-backend-me";
 
 import type { z } from "zod";
 
+import { AdminKnifeQuickPhotosDialog } from "@/components/admin/AdminKnifeQuickPhotosDialog";
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { WorkshopEvidenceSection } from "@/components/admin/WorkshopEvidenceSection";
 import { KnifePhotoTile } from "@/components/admin/KnifePhotoTile";
@@ -2323,7 +2324,7 @@ export default function AdminOrderDetailPage() {
         {(o.knives ?? []).map((k) => {
           const kn = k as typeof k & {
             allowed_next_statuses?: { value: string; label: string; risky: boolean }[];
-            photos?: { id: string; caption?: string | null }[];
+            photos?: { id: string; caption?: string | null; photo_kind?: string | null }[];
           };
           const photos = kn.photos ?? [];
           const firstPhoto = photos[0];
@@ -2363,7 +2364,19 @@ export default function AdminOrderDetailPage() {
                     </div>
                   </div>
                 </div>
-                <StatusBadge kind="knife" status={k.status ?? ""} />
+                <div className="flex shrink-0 items-start gap-2">
+                  <AdminKnifeQuickPhotosDialog
+                    knifeId={k.id}
+                    orderId={orderId}
+                    photos={photos.map((p) => ({
+                      id: p.id,
+                      caption: p.caption,
+                      photo_kind: p.photo_kind ?? undefined,
+                    }))}
+                    canManage={canUpdateBladeStatuses}
+                  />
+                  <StatusBadge kind="knife" status={k.status ?? ""} />
+                </div>
               </div>
               {canUpdateBladeStatuses && nextSteps.length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-1.5">

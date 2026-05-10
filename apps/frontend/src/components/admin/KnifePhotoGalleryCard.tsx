@@ -26,10 +26,13 @@ export function KnifePhotoGalleryCard({
   photo,
   knifeId,
   admin,
+  allowDelete = true,
 }: {
   photo: KnifePhotoGalleryItem;
   knifeId: string;
   admin: AdminApi;
+  /** When false, hide remove (e.g. order card viewers without `knives.update`). */
+  allowDelete?: boolean;
 }) {
   const queryClient = useQueryClient();
   const path = photo.content_api_path ?? `/api/admin/knife-photos/${photo.id}/file`;
@@ -74,17 +77,19 @@ export function KnifePhotoGalleryCard({
         {photo.file?.byte_size != null ? (
           <div className="text-muted-foreground">{Math.max(1, Math.round(photo.file.byte_size / 1024))} KB</div>
         ) : null}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="mt-1 w-full gap-1 text-destructive hover:text-destructive"
-          disabled={deleteMutation.isPending}
-          onClick={() => deleteMutation.mutate()}
-        >
-          {deleteMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : <Trash2 className="h-3 w-3" aria-hidden />}
-          Remove
-        </Button>
+        {allowDelete ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-1 w-full gap-1 text-destructive hover:text-destructive"
+            disabled={deleteMutation.isPending}
+            onClick={() => deleteMutation.mutate()}
+          >
+            {deleteMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : <Trash2 className="h-3 w-3" aria-hidden />}
+            Remove
+          </Button>
+        ) : null}
       </div>
     </li>
   );
