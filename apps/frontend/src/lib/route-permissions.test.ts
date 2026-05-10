@@ -18,6 +18,7 @@ describe("adminPermissionForPath", () => {
     expect(adminPermissionForPath("/admin/finance/consumables")).toBe("costs.view");
     expect(adminPermissionForPath("/admin/finance/cost-ledger")).toBe("costs.view");
     expect(adminPermissionForPath("/admin/reports/route-profitability")).toBe("reports.operations");
+    expect(adminPermissionForPath("/admin/reports/finance")).toBe("reports.finance");
     expect(adminPermissionForPath("/admin/reports/forecast-scenarios")).toBe("reports.finance");
     expect(adminPermissionForPath("/admin/reports/cash-position")).toBe("reports.finance");
     expect(adminPermissionForPath("/admin/reports/subscription-profitability")).toBe("reports.finance");
@@ -32,6 +33,15 @@ describe("adminRouteAccessAllowed", () => {
     expect(adminRouteAccessAllowed("/admin/subscription-plans", new Set(["subscriptions.view"]))).toBe(true);
     expect(adminRouteAccessAllowed("/admin/subscription-plans", new Set(["pricing.view"]))).toBe(true);
     expect(adminRouteAccessAllowed("/admin/subscription-plans", new Set())).toBe(false);
+  });
+
+  it("allows /admin/reports/finance when any finance-report permission is present", () => {
+    expect(adminRouteAccessAllowed("/admin/reports/finance", new Set(["reports.finance"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/finance", new Set(["costs.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/finance", new Set(["reports.sales_performance"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/finance", new Set(["reports.executive_dashboard"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/finance", new Set(["reports.operations"]))).toBe(false);
+    expect(adminRouteAccessAllowed("/admin/reports/finance", new Set())).toBe(false);
   });
 
   it("allows /admin/reporting when any reporting-related permission is present", () => {
@@ -87,15 +97,5 @@ describe("adminRouteAccessAllowed", () => {
   it("falls back to adminPermissionForPath for other routes", () => {
     expect(adminRouteAccessAllowed("/admin/subscriptions", new Set(["subscriptions.view"]))).toBe(true);
     expect(adminRouteAccessAllowed("/admin/subscriptions", new Set())).toBe(false);
-  });
-
-  it("allows /admin/finance when user has billing, costs, subscriptions, pricing, or single billing slice", () => {
-    expect(adminRouteAccessAllowed("/admin/finance", new Set(["payments.view", "invoices.view"]))).toBe(true);
-    expect(adminRouteAccessAllowed("/admin/finance", new Set(["costs.view"]))).toBe(true);
-    expect(adminRouteAccessAllowed("/admin/finance", new Set(["subscriptions.view"]))).toBe(true);
-    expect(adminRouteAccessAllowed("/admin/finance", new Set(["pricing.view"]))).toBe(true);
-    expect(adminRouteAccessAllowed("/admin/finance", new Set(["payments.view"]))).toBe(true);
-    expect(adminRouteAccessAllowed("/admin/finance", new Set(["invoices.view"]))).toBe(true);
-    expect(adminRouteAccessAllowed("/admin/finance", new Set(["dashboard.view"]))).toBe(false);
   });
 });

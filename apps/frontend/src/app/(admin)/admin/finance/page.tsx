@@ -25,8 +25,6 @@ import { FinanceDashboardResponseSchema } from "@/lib/api/admin-finance-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
-import { useBackendMe } from "@/hooks/use-backend-me";
-
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
@@ -127,38 +125,8 @@ export default function AdminFinanceDashboardPage() {
 
   const subscriptionsExportQs = useMemo(() => buildQs({ company_id: companyId }), [companyId]);
 
-  const { data: meData, isSuccess: meReady } = useBackendMe();
-  const permSet = useMemo(() => new Set(meData?.data?.permissions ?? []), [meData?.data?.permissions]);
-  const billingOverview = permSet.has("payments.view") && permSet.has("invoices.view");
-
-  useEffect(() => {
-    if (!meReady) return;
-    if (billingOverview) return;
-    if (permSet.has("costs.view")) {
-      router.replace("/admin/finance/costs");
-      return;
-    }
-    if (permSet.has("subscriptions.view")) {
-      router.replace("/admin/subscriptions");
-      return;
-    }
-    if (permSet.has("pricing.view")) {
-      router.replace("/admin/subscription-plans");
-      return;
-    }
-    if (permSet.has("payments.view")) {
-      router.replace("/admin/payments");
-      return;
-    }
-    if (permSet.has("invoices.view")) {
-      router.replace("/admin/invoices");
-      return;
-    }
-  }, [billingOverview, meReady, permSet, router]);
-
   const dashboardQuery = useQuery({
     queryKey: ["admin-finance-dashboard", dashboardQs],
-    enabled: meReady && billingOverview,
     queryFn: async () => {
       const res = await admin.json<unknown>(`/api/admin/finance/dashboard${dashboardQs}`);
       if (!res.ok) throw new Error(res.message);
@@ -170,7 +138,6 @@ export default function AdminFinanceDashboardPage() {
 
   const companiesQuery = useQuery({
     queryKey: ["admin-lookups-companies-finance"],
-    enabled: meReady && billingOverview,
     queryFn: async () => {
       const res = await admin.json<unknown>("/api/admin/lookups/companies");
       if (!res.ok) throw new Error(res.message);
@@ -271,24 +238,6 @@ export default function AdminFinanceDashboardPage() {
     }));
   }, [rr]);
 
-  if (!meReady) {
-    return (
-      <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-xl border bg-card text-muted-foreground">
-        <Loader2 className="h-10 w-10 animate-spin" aria-hidden />
-        <p className="text-base">Loading finance…</p>
-      </div>
-    );
-  }
-
-  if (!billingOverview) {
-    return (
-      <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-xl border bg-card text-muted-foreground">
-        <Loader2 className="h-10 w-10 animate-spin" aria-hidden />
-        <p className="text-base">Opening your workspace…</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
       <Breadcrumbs
@@ -299,13 +248,13 @@ export default function AdminFinanceDashboardPage() {
       />
       <PageHeader
         title="Finance dashboard"
-        description="Outstanding balances, collections in the selected period, internal costs, and subscription signals — amounts in GBP."
+        description="Billing KPIs, overdue AR, and recent cash — amounts in GBP from the server."
         actions={
           <div className="flex flex-wrap gap-2">
             <ReportCsvExportButton
               admin={admin}
               exportPath={`/api/admin/reports/exports/subscriptions.csv${subscriptionsExportQs}`}
-              label="Export subscriptions"
+              label="Export subscriptions (CSV)"
               variant="secondary"
             />
             <Button asChild variant="outline" className="text-base">
@@ -600,7 +549,7 @@ export default function AdminFinanceDashboardPage() {
               <div>
                 <CardTitle className="text-xl">Consumables inventory</CardTitle>
                 <CardDescription className="text-base">
-                  Workshop spare parts tracked against thresholds — low-stock lines feed restock estimates on this dashboard.
+                  Workshop spares with stock thresholds — Sprint 23.4. Low-stock lines contribute to projected restock.
                 </CardDescription>
               </div>
               <Button asChild variant="outline" className="shrink-0">
@@ -655,7 +604,9 @@ export default function AdminFinanceDashboardPage() {
               <CardHeader>
                 <CardTitle className="text-xl">Recurring revenue &amp; subscriptions</CardTitle>
                 <CardDescription className="text-base">
-                  Uses live subscriptions and invoices flagged as subscription billing. MRR and ARR appear once plans and billing flags are populated end-to-end.
+                  Figures use <span className="font-medium">company_subscriptions</span> and{" "}
+                  <span className="font-medium">is_subscription_billing</span> on invoices — no estimated MRR/ARR until Sprint 9
+                  pricing fields exist.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">

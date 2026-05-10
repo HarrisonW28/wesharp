@@ -7,20 +7,13 @@ import {
   Activity,
   Banknote,
   BarChart3,
-  CircleDollarSign,
   Coins,
   Gauge,
   Landmark,
-  LayoutGrid,
   LineChart,
-  Percent,
-  PiggyBank,
   Receipt,
-  Repeat,
-  ShoppingCart,
   Truck,
   Utensils,
-  Calculator,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -85,14 +78,14 @@ export default function AdminReportingHubPage() {
     if (permissions.has("payments.view")) {
       financeCards.push({
         href: "/admin/finance",
-        title: "Finance workspace",
-        description: "Balances, collections, costs snapshot, and subscription context.",
+        title: "Finance overview",
+        description: "Dashboard filters and invoice-age context.",
         icon: Landmark,
       });
       financeCards.push({
         href: "/admin/payments",
         title: "Payments",
-        description: "Recorded payments and reconciliation.",
+        description: "Ledger entries and payment reconciliation.",
         icon: Banknote,
       });
     }
@@ -100,7 +93,7 @@ export default function AdminReportingHubPage() {
       financeCards.push({
         href: "/admin/finance/cost-ledger",
         title: "Cost ledger",
-        description: "Manual allocations into jobs, routes, and customer accounts.",
+        description: "Manual cost allocations to orders, routes and accounts.",
         icon: Coins,
       });
     }
@@ -115,71 +108,23 @@ export default function AdminReportingHubPage() {
     const routeProfitabilityCard = {
       href: "/admin/reports/route-profitability",
       title: "Route profitability",
-      description: "Billable revenue per route with fuel, consumables, and allocation breakdown.",
+      description: "Revenue and estimated costs per route where allocations exist.",
       icon: Truck,
     };
 
-    if (permissions.has("reports.finance") || permissions.has("costs.view")) {
-      financeCards.push(
-        {
-          href: "/admin/reports/forecast-scenarios",
-          title: "Forecast scenarios",
-          description: "Model routes, volumes, and subscriptions with payback-style hints.",
-          icon: Percent,
-        },
-        {
-          href: "/admin/reports/cash-position",
-          title: "Cash position",
-          description: "Capital, spend so far, monthly burn, runway, and period profitability context.",
-          icon: PiggyBank,
-        },
-        {
-          href: "/admin/reports/subscription-profitability",
-          title: "Subscription profitability",
-          description: "Subscription vs overage revenue, usage, attributed costs, and margin signals.",
-          icon: Calculator,
-        },
-        routeProfitabilityCard,
-      );
-    }
-    if (permissions.has("reports.sales_performance") || permissions.has("reports.finance")) {
+    const canSeeFinanceReportsHub =
+      permissions.has("reports.finance") ||
+      permissions.has("costs.view") ||
+      permissions.has("reports.sales_performance") ||
+      permissions.has("reports.executive_dashboard");
+
+    if (canSeeFinanceReportsHub) {
       financeCards.push({
-        href: "/admin/reports/sales-performance",
-        title: "Sales & POS performance",
-        description:
-          "Online checkout funnel plus staff-recorded payments, discounts, estimates, and sales attribution.",
-        icon: ShoppingCart,
+        href: "/admin/reports/finance",
+        title: "Finance reports",
+        description: "Cash, forecasts, subscriptions, sales performance and billing — organised by topic.",
+        icon: LineChart,
       });
-    }
-    if (permissions.has("reports.executive_dashboard") || permissions.has("reports.finance")) {
-      financeCards.push({
-        href: "/admin/reports/executive-dashboard",
-        title: "Executive dashboard",
-        description: "Profit, cash, runway, recurring revenue, alerts, and links into detailed reports.",
-        icon: LayoutGrid,
-      });
-    }
-    if (permissions.has("reports.finance")) {
-      financeCards.push(
-        {
-          href: "/admin/reports/sales",
-          title: "Sales report",
-          description: "Revenue and sales trends.",
-          icon: LineChart,
-        },
-        {
-          href: "/admin/reports/billing",
-          title: "Billing report",
-          description: "Invoicing and cash collection.",
-          icon: CircleDollarSign,
-        },
-        {
-          href: "/admin/reports/recurring-revenue",
-          title: "Recurring revenue",
-          description: "MRR and subscription momentum.",
-          icon: Repeat,
-        },
-      );
     }
     if (permissions.has("reports.operations")) {
       operationsCards.push(

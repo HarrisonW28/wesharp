@@ -156,7 +156,7 @@ export default function AdminFinanceCostLedgerPage() {
       />
       <PageHeader
         title="Cost ledger"
-        description="Record how internal costs are attributed to customers, jobs, routes, and subscriptions. Totals feed CRM profitability views and the billing report."
+        description="Manual cost allocations (Sprint 23.5). Targets tie seeded/import cost rows into CRM margin snapshots and billing report totals."
       />
 
       <Card>
