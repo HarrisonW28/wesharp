@@ -50,8 +50,11 @@ function variantOrder(status: string): Variant {
     case "invoiced":
       return "warning";
     case "inspection":
-    case "in_progress":
+      return "warning";
     case "quality_check":
+      return "warning";
+    case "in_progress":
+      return "default";
     case "active":
     default:
       return "default";
@@ -85,6 +88,7 @@ function variantKnife(status: string): Variant {
       return "success";
     case "logged":
     case "received":
+    case "inspected":
       return "secondary";
     case "sharpening":
       return "warning";
@@ -111,12 +115,16 @@ function variantRouteStop(status: string): Variant {
   switch (status.trim()) {
     case "completed":
     case "returned":
+    case "collected":
       return "success";
     case "skipped":
       return "warning";
     case "not_started":
     case "travelling":
+    case "arrived":
       return "secondary";
+    case "in_sharpening":
+      return "warning";
     default:
       return "default";
   }

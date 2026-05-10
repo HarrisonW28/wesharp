@@ -89,6 +89,14 @@ type BulkLineRow = {
   unitPounds: string;
 };
 
+/** Matches order workshop pricing when `price_per_knife_pence` is set; otherwise legacy placeholder. */
+function defaultBulkUnitPoundsFromOrder(pricePerKnifePence: number | null | undefined): string {
+  if (pricePerKnifePence != null && Number.isFinite(pricePerKnifePence) && pricePerKnifePence >= 0) {
+    return (pricePerKnifePence / 100).toFixed(2);
+  }
+  return "5.00";
+}
+
 function makeEmptyBulkRow(): BulkLineRow {
   return {
     key: crypto.randomUUID(),
@@ -565,10 +573,14 @@ export default function AdminOrderDetailPage() {
         throw new Error(res.message);
       }
       return parseAdminOrderDetailEnvelope(res.data, "Unexpected order response.");
+    },
+    onSuccess: (data) => {
+      toast.success("Billable lines added.");
       setBulkLinesOpen(false);
       setBulkLinesThresholdOpen(false);
       pendingBulkLinesRef.current = null;
-      setBulkLines([makeEmptyBulkRow()]);
+      const ppp = data.price_per_knife_pence ?? undefined;
+      setBulkLines([{ ...makeEmptyBulkRow(), unitPounds: defaultBulkUnitPoundsFromOrder(ppp ?? null) }]);
       void queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
@@ -1123,75 +1135,94 @@ export default function AdminOrderDetailPage() {
         <Card className="p-4">
           <div className="text-xs font-semibold uppercase text-muted-foreground">Workshop &amp; fulfilment</div>
 
-          {showWorkshopProgress && o.workshop_progress ? (
-            <div className="mt-3">
-              <div className="text-xs font-medium text-muted-foreground">Blades &amp; lines</div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{o.workshop_progress.knife_count}</span> blade(s) on this order
-                {o.workshop_progress.line_only_units > 0 ? (
-                  <>
-                    {" "}
-                    · <span className="font-medium text-foreground">{o.workshop_progress.line_only_units}</span> unit(s) on lines
-                    without a blade record
-                  </>
-                ) : null}
-                {o.workshop_progress.all_knives_complete ? (
-                  <span className="text-foreground"> — all blades returned or cancelled.</span>
-                ) : null}
-              </p>
-              {o.workshop_progress.by_status && Object.keys(o.workshop_progress.by_status).length > 0 ? (
-                <ul className="mt-3 flex flex-wrap gap-2 text-xs">
-                  {Object.entries(o.workshop_progress.by_status).map(([st, n]) => (
-                    <li key={st} className="rounded-md border bg-muted/30 px-2 py-1 capitalize text-muted-foreground">
-                      <span className="font-medium text-foreground">{st.replace(/_/g, " ")}</span> · {n}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+          <div className="mt-4 grid gap-6 lg:grid-cols-3 lg:items-start lg:gap-8">
+            <div>
+              {showWorkshopProgress && o.workshop_progress ? (
+                <>
+                  <div className="text-xs font-medium text-muted-foreground">Blades &amp; lines</div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">{o.workshop_progress.knife_count}</span> blade(s) on this order
+                    {o.workshop_progress.line_only_units > 0 ? (
+                      <>
+                        {" "}
+                        · <span className="font-medium text-foreground">{o.workshop_progress.line_only_units}</span> unit(s) on lines
+                        without a blade record
+                      </>
+                    ) : null}
+                    {o.workshop_progress.all_knives_complete ? (
+                      <span className="text-foreground"> — all blades returned or cancelled.</span>
+                    ) : null}
+                  </p>
+                  {o.workshop_progress.by_status && Object.keys(o.workshop_progress.by_status).length > 0 ? (
+                    <ul className="mt-3 flex flex-wrap gap-2">
+                      {Object.entries(o.workshop_progress.by_status).map(([st, n]) => (
+                        <li key={st} className="flex items-center gap-1.5 rounded-md border border-border/80 bg-muted/20 px-2 py-1">
+                          <StatusBadge kind="knife" status={st} className="shrink-0 text-[10px]" />
+                          <span className="text-xs tabular-nums text-muted-foreground">×{n}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Blade tallies and workshop counts appear once knives are registered on this order.
+                </p>
+              )}
             </div>
-          ) : null}
 
-          {showWorkflowControls ? (
-            <>
-              <p className={`text-sm text-muted-foreground ${showWorkshopProgress ? "mt-4 border-t border-border pt-4" : "mt-2"}`}>
-                Advance order status one step at a time; risky moves ask for confirmation. Completing the order records fulfilment
-                timing — generating an invoice draft is a separate step.
-              </p>
+            {showWorkflowControls ? (
+              <div className="space-y-4 lg:border-l lg:border-border lg:pl-6">
+                <p className="text-sm text-muted-foreground">
+                  Order status moves forward when every blade reaches the next milestone (and when the collection stop completes).
+                  You can still use the buttons below for manual steps; risky moves ask for confirmation. Completing the order records
+                  fulfilment timing — generating an invoice draft is a separate step.
+                </p>
+                {canOrders && linearWorkflow.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {linearWorkflow.map((step) => (
+                      <Button
+                        key={step.value}
+                        type="button"
+                        size="lg"
+                        variant={step.risky ? "secondary" : "default"}
+                        disabled={transitionMutation.isPending}
+                        onClick={() => {
+                          if (step.risky) {
+                            setPendingStatusStep({ value: step.value, label: step.label });
+                            setStatusStepConfirmOpen(true);
+                          } else {
+                            transitionMutation.mutate({ target_status: step.value });
+                          }
+                        }}
+                      >
+                        {step.label}
+                      </Button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="hidden lg:block lg:border-l lg:border-border lg:pl-6" aria-hidden />
+            )}
 
-              {canOrders && linearWorkflow.length > 0 ? (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {linearWorkflow.map((step) => (
-                    <Button
-                      key={step.value}
-                      type="button"
-                      size="lg"
-                      variant={step.risky ? "secondary" : "default"}
-                      disabled={transitionMutation.isPending}
-                      onClick={() => {
-                        if (step.risky) {
-                          setPendingStatusStep({ value: step.value, label: step.label });
-                          setStatusStepConfirmOpen(true);
-                        } else {
-                          transitionMutation.mutate({ target_status: step.value });
-                        }
-                      }}
-                    >
-                      {step.label}
-                    </Button>
-                  ))}
-                </div>
-              ) : null}
-
+            <div className="lg:border-l lg:border-border lg:pl-6">
               {canOrders && mayComplete ? (
-                <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-stretch lg:justify-start">
                   <div className="text-sm font-semibold">Ready to close out?</div>
-                  <Button type="button" size="lg" className="w-full sm:w-auto shrink-0" onClick={() => setCompleteDialogOpen(true)}>
+                  <Button type="button" size="lg" className="w-full shrink-0 sm:w-auto lg:w-full" onClick={() => setCompleteDialogOpen(true)}>
                     Complete order
                   </Button>
                 </div>
-              ) : null}
-            </>
-          ) : null}
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {canOrders
+                    ? "Complete appears when every blade has a billable line or workshop row and the order allows completion."
+                    : "Completion controls require order permissions."}
+                </p>
+              )}
+            </div>
+          </div>
         </Card>
       ) : null}
 
@@ -1553,7 +1584,8 @@ export default function AdminOrderDetailPage() {
                 onOpenChange={(open) => {
                   setBulkLinesOpen(open);
                   if (open) {
-                    setBulkLines([makeEmptyBulkRow()]);
+                    const ppp = orderQuery.data?.price_per_knife_pence ?? null;
+                    setBulkLines([{ ...makeEmptyBulkRow(), unitPounds: defaultBulkUnitPoundsFromOrder(ppp) }]);
                   }
                 }}
               >
@@ -1569,8 +1601,9 @@ export default function AdminOrderDetailPage() {
                   </DialogHeader>
                   <p className="text-sm text-muted-foreground">
                     Each row is one workshop line: pick an existing blade for <strong>resharpening</strong> (quantity locked to 1) or
-                    register new blades (quantity duplicates the row). Unit price is ex-VAT (GBP). Service history stays on the blade
-                    when you attach inventory.
+                    register new blades (quantity duplicates the row). Unit price is ex-VAT (GBP) and defaults to this order’s per-knife
+                    rate when the order has one — adjust any row if needed. Service history stays on the blade when you attach
+                    inventory.
                   </p>
                   <div className="space-y-4">
                     {bulkLines.map((row, idx) => (
@@ -1699,7 +1732,12 @@ export default function AdminOrderDetailPage() {
                     variant="outline"
                     size="lg"
                     className="w-full"
-                    onClick={() => setBulkLines((r) => [...r, makeEmptyBulkRow()])}
+                    onClick={() =>
+                      setBulkLines((r) => [
+                        ...r,
+                        { ...makeEmptyBulkRow(), unitPounds: defaultBulkUnitPoundsFromOrder(o.price_per_knife_pence ?? null) },
+                      ])
+                    }
                   >
                     + Add another row
                   </Button>
@@ -2365,6 +2403,7 @@ export default function AdminOrderDetailPage() {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-start gap-2">
+                  <StatusBadge kind="knife" status={k.status ?? ""} />
                   <AdminKnifeQuickPhotosDialog
                     knifeId={k.id}
                     orderId={orderId}
@@ -2375,7 +2414,6 @@ export default function AdminOrderDetailPage() {
                     }))}
                     canManage={canUpdateBladeStatuses}
                   />
-                  <StatusBadge kind="knife" status={k.status ?? ""} />
                 </div>
               </div>
               {canUpdateBladeStatuses && nextSteps.length > 0 ? (

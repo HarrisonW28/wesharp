@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Actions\Knives;
 
+use App\Actions\Orders\MaybeAdvanceOrderStatusFromKnivesAction;
 use App\Enums\KnifeStatus;
 use App\Models\Knife;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -29,7 +31,16 @@ final class TransitionKnifeStatusAction
             $extra['note'] = trim($note);
         }
 
-        return $this->transitionKnife($knife, $target, $actor, $request, $patches, $extra);
+        $fresh = $this->transitionKnife($knife, $target, $actor, $request, $patches, $extra);
+
+        if ($fresh->order_id !== null && $actor !== null && $request !== null) {
+            $order = Order::query()->find($fresh->order_id);
+            if ($order !== null) {
+                app(MaybeAdvanceOrderStatusFromKnivesAction::class)->execute($order, $actor, $request);
+            }
+        }
+
+        return $fresh;
     }
 
     /** @return array<string, mixed> */
