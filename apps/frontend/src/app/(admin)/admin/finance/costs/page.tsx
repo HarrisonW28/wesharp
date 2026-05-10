@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -398,11 +398,14 @@ export default function AdminCostCataloguePage() {
       />
       <PageHeader
         title="Cost catalogue"
-        description="Internal workbook-aligned costs — GBP amounts from Laravel. Customer roles cannot access this data."
+        description="Your internal cost plan — amounts are stored in GBP on the server."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" className="rounded-lg" asChild>
-              <Link href="/admin/finance/costs/import">Import workbook</Link>
+            <Button type="button" size="sm" variant="secondary" className="rounded-lg" asChild>
+              <Link href="/admin/finance/costs/import">
+                <Upload className="mr-1.5 h-4 w-4" aria-hidden />
+                Import spreadsheet
+              </Link>
             </Button>
             {canManage ? (
               <Button type="button" size="sm" className="rounded-lg" onClick={openCreate}>

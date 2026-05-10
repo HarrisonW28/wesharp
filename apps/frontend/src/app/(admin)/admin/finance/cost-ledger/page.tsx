@@ -156,7 +156,7 @@ export default function AdminFinanceCostLedgerPage() {
       />
       <PageHeader
         title="Cost ledger"
-        description="Manual cost allocations (Sprint 23.5). Targets tie seeded/import cost rows into CRM margin snapshots and billing report totals."
+        description="Record how internal costs are attributed to customers, orders, routes and invoices — used in margin and billing views."
       />
 
       <Card>
@@ -169,6 +169,9 @@ export default function AdminFinanceCostLedgerPage() {
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin/finance/costs">Cost catalogue</Link>
+            </Button>
             <Button asChild variant="outline" size="sm">
               <Link href="/admin/reports/billing">Open billing report</Link>
             </Button>

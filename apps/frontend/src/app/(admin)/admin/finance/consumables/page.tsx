@@ -168,7 +168,19 @@ export default function AdminFinanceConsumablesPage() {
 
       <PageHeader
         title="Consumables inventory"
-        description="Workshop consumables from the cost catalogue with stock levels, usage logging, and projected restock."
+        description="Stock tied to workshop SKUs from your cost catalogue — adjust levels here and log usage."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin/finance/costs">Cost catalogue</Link>
+            </Button>
+            {canManage ? (
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/admin/finance/costs/import">Import spreadsheet</Link>
+              </Button>
+            ) : null}
+          </div>
+        }
       />
 
       <Card>
@@ -176,8 +188,7 @@ export default function AdminFinanceConsumablesPage() {
           <div>
             <CardTitle className="text-lg">Catalogue</CardTitle>
             <CardDescription>
-              Rows link to cost items (unit cost drives projected restock). Usage logs decrement{" "}
-              <span className="font-medium">stock_quantity</span>.
+              Each row is linked to a cost item for unit pricing. Logging usage reduces on-hand stock.
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -186,9 +197,6 @@ export default function AdminFinanceConsumablesPage() {
             </Button>
             <Button variant={lowStockOnly ? "default" : "outline"} size="sm" onClick={() => setLowStockOnly(true)}>
               Low stock only
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/admin/finance/costs">Cost catalogue</Link>
             </Button>
           </div>
         </CardHeader>
