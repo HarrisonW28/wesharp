@@ -17,6 +17,10 @@ describe("adminPermissionForPath", () => {
     expect(adminPermissionForPath("/admin/finance/costs")).toBe("costs.view");
     expect(adminPermissionForPath("/admin/finance/consumables")).toBe("costs.view");
     expect(adminPermissionForPath("/admin/finance/cost-ledger")).toBe("costs.view");
+    expect(adminPermissionForPath("/admin/reports/route-profitability")).toBe("reports.operations");
+    expect(adminPermissionForPath("/admin/reports/forecast-scenarios")).toBe("reports.finance");
+    expect(adminPermissionForPath("/admin/reports/cash-position")).toBe("reports.finance");
+    expect(adminPermissionForPath("/admin/reports/subscription-profitability")).toBe("reports.finance");
     expect(adminPermissionForPath("/admin/finance")).toBe("payments.view");
   });
 });
@@ -34,8 +38,34 @@ describe("adminRouteAccessAllowed", () => {
     expect(adminRouteAccessAllowed("/admin/reporting", new Set(["reports.finance"]))).toBe(true);
     expect(adminRouteAccessAllowed("/admin/reporting", new Set(["payments.view"]))).toBe(true);
     expect(adminRouteAccessAllowed("/admin/reporting", new Set(["invoices.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reporting", new Set(["costs.view"]))).toBe(true);
     expect(adminRouteAccessAllowed("/admin/reporting", new Set(["dashboard.view"]))).toBe(false);
     expect(adminRouteAccessAllowed("/admin/reporting", new Set())).toBe(false);
+  });
+
+  it("allows /admin/reports/forecast-scenarios when costs.view or reports.finance is present", () => {
+    expect(adminRouteAccessAllowed("/admin/reports/forecast-scenarios", new Set(["costs.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/forecast-scenarios", new Set(["reports.finance"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/forecast-scenarios", new Set())).toBe(false);
+  });
+
+  it("allows /admin/reports/cash-position when costs.view or reports.finance is present", () => {
+    expect(adminRouteAccessAllowed("/admin/reports/cash-position", new Set(["costs.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/cash-position", new Set(["reports.finance"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/cash-position", new Set())).toBe(false);
+  });
+
+  it("allows /admin/reports/subscription-profitability when costs.view or reports.finance is present", () => {
+    expect(adminRouteAccessAllowed("/admin/reports/subscription-profitability", new Set(["costs.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/subscription-profitability", new Set(["reports.finance"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/subscription-profitability", new Set())).toBe(false);
+  });
+
+  it("allows /admin/reports/route-profitability when operations, finance, or costs.view is present", () => {
+    expect(adminRouteAccessAllowed("/admin/reports/route-profitability", new Set(["reports.operations"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/route-profitability", new Set(["reports.finance"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/route-profitability", new Set(["costs.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/reports/route-profitability", new Set())).toBe(false);
   });
 
   it("falls back to adminPermissionForPath for other routes", () => {

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuthenticateClerkJwt;
+use App\Http\Middleware\EnsureAnyPermission;
 use App\Http\Middleware\EnsureCorrelationId;
 use App\Http\Middleware\EnsureInternalStaff;
 use App\Http\Middleware\EnsurePermission;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => EnsureInternalStaff::class,
             'tenant' => EnsureTenantCustomer::class,
             'permission' => EnsurePermission::class,
+            'permission_any' => EnsureAnyPermission::class,
         ]);
 
         $middleware->api(prepend: [

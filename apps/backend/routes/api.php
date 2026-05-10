@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminSubscriptionDashboardController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\CashPositionReportController;
 use App\Http\Controllers\Admin\CompanyContactController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\CompanyLocationController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Admin\DamageReportController;
 use App\Http\Controllers\Admin\DashboardSearchController;
 use App\Http\Controllers\Admin\EvidencePhotoController;
 use App\Http\Controllers\Admin\FinanceDashboardController;
+use App\Http\Controllers\Admin\ForecastScenarioController;
 use App\Http\Controllers\Admin\InAppNotificationController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\KnifeController;
@@ -34,6 +36,7 @@ use App\Http\Controllers\Admin\PricingRuleController;
 use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\ReportingController;
 use App\Http\Controllers\Admin\RouteController;
+use App\Http\Controllers\Admin\RouteProfitabilityReportController;
 use App\Http\Controllers\Admin\RouteStopController;
 use App\Http\Controllers\Admin\ServiceAreaController;
 use App\Http\Controllers\Admin\ServiceAreaWaitlistController;
@@ -41,6 +44,7 @@ use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\Admin\StripeSettingsController;
 use App\Http\Controllers\Admin\StripeWebhookEventsController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
+use App\Http\Controllers\Admin\SubscriptionProfitabilityReportController;
 use App\Http\Controllers\Admin\UserDirectoryController;
 use App\Http\Controllers\Admin\WebhookInboxController;
 use App\Http\Controllers\Admin\WorkQueueController;
@@ -370,6 +374,27 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:payments.manage')->post('invoices/{invoice}/stripe-checkout-session', [InvoiceController::class, 'stripeCheckoutSession'])->whereUuid('invoice')->name('api.admin.invoices.stripe_checkout_session');
 
     Route::middleware(['permission:invoices.view', 'permission:payments.view'])->get('finance/dashboard', FinanceDashboardController::class)->name('api.admin.finance.dashboard');
+
+    Route::middleware('permission_any:reports.operations,reports.finance,costs.view')->get('reports/route-profitability', RouteProfitabilityReportController::class)->name('api.admin.reports.route_profitability');
+
+    Route::middleware('permission_any:reports.finance,costs.view')->group(function (): void {
+        Route::get('reports/cash-position', [CashPositionReportController::class, 'show'])->name('api.admin.reports.cash_position');
+        Route::get('reports/subscription-profitability', SubscriptionProfitabilityReportController::class)->name('api.admin.reports.subscription_profitability');
+        Route::get('reports/forecast-scenarios', [ForecastScenarioController::class, 'index'])->name('api.admin.reports.forecast_scenarios.index');
+        Route::get('reports/forecast-scenarios/{scenario}', [ForecastScenarioController::class, 'show'])
+            ->whereUuid('scenario')
+            ->name('api.admin.reports.forecast_scenarios.show');
+    });
+    Route::middleware('permission:costs.manage')->group(function (): void {
+        Route::post('reports/forecast-scenarios', [ForecastScenarioController::class, 'store'])->name('api.admin.reports.forecast_scenarios.store');
+        Route::put('reports/forecast-scenarios/{scenario}', [ForecastScenarioController::class, 'update'])
+            ->whereUuid('scenario')
+            ->name('api.admin.reports.forecast_scenarios.update');
+        Route::delete('reports/forecast-scenarios/{scenario}', [ForecastScenarioController::class, 'destroy'])
+            ->whereUuid('scenario')
+            ->name('api.admin.reports.forecast_scenarios.destroy');
+    });
+    Route::middleware('permission:costs.manage')->patch('reports/cash-position/assumptions', [CashPositionReportController::class, 'updateAssumptions'])->name('api.admin.reports.cash_position.assumptions');
 
     Route::middleware('permission:costs.view')->get('cost-categories', [CostCategoryController::class, 'index'])->name('api.admin.cost_categories.index');
     Route::middleware('permission:costs.view')->get('cost-items', [CostItemController::class, 'index'])->name('api.admin.cost_items.index');

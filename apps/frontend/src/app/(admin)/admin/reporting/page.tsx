@@ -12,9 +12,13 @@ import {
   Gauge,
   Landmark,
   LineChart,
+  Percent,
+  PiggyBank,
   Receipt,
   Repeat,
+  Truck,
   Utensils,
+  Calculator,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -106,6 +110,36 @@ export default function AdminReportingHubPage() {
         icon: Receipt,
       });
     }
+    const routeProfitabilityCard = {
+      href: "/admin/reports/route-profitability",
+      title: "Route profitability",
+      description: "Sprint 24.4 — billable order revenue, fuel/consumable allocations, margins, drivers, stops and photos.",
+      icon: Truck,
+    };
+
+    if (permissions.has("reports.finance") || permissions.has("costs.view")) {
+      financeCards.push(
+        {
+          href: "/admin/reports/forecast-scenarios",
+          title: "Forecast scenarios",
+          description: "Sprint 24.2 route & subscription modelling with ROI / payback buckets from the cost ledger.",
+          icon: Percent,
+        },
+        {
+          href: "/admin/reports/cash-position",
+          title: "Cash position",
+          description: "Starting capital, purchased spend, buffer, burn, runway, and profitability context.",
+          icon: PiggyBank,
+        },
+        {
+          href: "/admin/reports/subscription-profitability",
+          title: "Subscription profitability",
+          description: "Subscription vs overage revenue, covered usage, cost allocations, and customer flags.",
+          icon: Calculator,
+        },
+        routeProfitabilityCard,
+      );
+    }
     if (permissions.has("reports.finance")) {
       financeCards.push(
         {
@@ -149,6 +183,13 @@ export default function AdminReportingHubPage() {
           icon: Utensils,
         },
       );
+    }
+    if (
+      permissions.has("reports.operations") &&
+      !permissions.has("reports.finance") &&
+      !permissions.has("costs.view")
+    ) {
+      operationsCards.push(routeProfitabilityCard);
     }
 
     return { analytics: analyticsCards, finance: financeCards, operations: operationsCards };
