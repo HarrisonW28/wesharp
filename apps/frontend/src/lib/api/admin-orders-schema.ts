@@ -103,6 +103,15 @@ export const KnifeSummarySchema = z
     label: z.string().nullable().optional(),
     knife_type: z.string().nullable().optional(),
     status: z.string().nullable().optional(),
+    photos: z
+      .array(
+        z.object({
+          id: z.string(),
+          caption: z.string().nullable().optional(),
+          photo_kind: z.string().nullable().optional(),
+        }),
+      )
+      .optional(),
   })
   .passthrough();
 

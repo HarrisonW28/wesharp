@@ -23,6 +23,7 @@ import type { z } from "zod";
 
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { WorkshopEvidenceSection } from "@/components/admin/WorkshopEvidenceSection";
+import { KnifePhotoTile } from "@/components/admin/KnifePhotoTile";
 import { KnifeLookup } from "@/components/admin/lookups/AsyncEntityLookup";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -52,6 +53,29 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+
+function AdminOrderKnifePhotoThumb({
+  photoId,
+  caption,
+}: {
+  photoId: string;
+  caption?: string | null;
+}) {
+  const admin = useAdminApi();
+  const fetchBlobRef = useRef(admin.fetchBlob);
+  fetchBlobRef.current = admin.fetchBlob;
+  const load = useCallback(() => fetchBlobRef.current(`/api/admin/knife-photos/${photoId}/file`), [photoId]);
+
+  return (
+    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border bg-muted">
+      <KnifePhotoTile
+        load={load}
+        alt={caption?.trim() ? caption : "Knife photo"}
+        loadingClassName="flex h-12 w-12 items-center justify-center bg-muted"
+      />
+    </div>
+  );
+}
 
 type BulkLineRow = {
   key: string;
@@ -2288,7 +2312,11 @@ export default function AdminOrderDetailPage() {
         {(o.knives ?? []).map((k) => {
           const kn = k as typeof k & {
             allowed_next_statuses?: { value: string; label: string; risky: boolean }[];
+            photos?: { id: string; caption?: string | null }[];
           };
+          const photos = kn.photos ?? [];
+          const firstPhoto = photos[0];
+          const extraPhotos = photos.length > 1 ? photos.length - 1 : 0;
           const nextSteps = kn.allowed_next_statuses ?? [];
           const busyKnife = knifeTransitionMutation.isPending;
 
@@ -2306,6 +2334,16 @@ export default function AdminOrderDetailPage() {
                         aria-label={`Select blade ${k.tag_id ?? k.id}`}
                       />
                     </label>
+                  ) : null}
+                  {firstPhoto ? (
+                    <div className="relative shrink-0">
+                      <AdminOrderKnifePhotoThumb photoId={firstPhoto.id} caption={firstPhoto.caption} />
+                      {extraPhotos > 0 ? (
+                        <span className="absolute bottom-0 right-0 rounded-tl bg-black/55 px-1 text-[10px] leading-none text-white">
+                          +{extraPhotos}
+                        </span>
+                      ) : null}
+                    </div>
                   ) : null}
                   <div className="min-w-0">
                     <div className="font-mono text-xs text-muted-foreground">{k.tag_id}</div>

@@ -108,7 +108,7 @@ final class OrderController extends Controller
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
-            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500)->with(self::knifePhotosEagerLoad()),
             'invoices' => fn ($q) => $q
                 ->where('invoice_status', '!=', InvoiceStatus::Void->value)
                 ->orderByDesc('created_at')
@@ -144,7 +144,7 @@ final class OrderController extends Controller
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
-            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500)->with(self::knifePhotosEagerLoad()),
             'invoices' => fn ($q) => $q
                 ->where('invoice_status', '!=', InvoiceStatus::Void->value)
                 ->orderByDesc('created_at')
@@ -173,7 +173,7 @@ final class OrderController extends Controller
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
-            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500)->with(self::knifePhotosEagerLoad()),
             'invoices' => fn ($q) => $q
                 ->where('invoice_status', '!=', InvoiceStatus::Void->value)
                 ->orderByDesc('created_at')
@@ -194,7 +194,7 @@ final class OrderController extends Controller
             'company:id,name,city,deleted_at',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name',
-            'knives' => fn ($q) => $q->orderBy('position')->limit(250),
+            'knives' => fn ($q) => $q->orderBy('position')->limit(250)->with(self::knifePhotosEagerLoad()),
             'invoices' => fn ($q) => $q
                 ->where('invoice_status', '!=', InvoiceStatus::Void->value)
                 ->orderByDesc('created_at')
@@ -224,7 +224,7 @@ final class OrderController extends Controller
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
-            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500)->with(self::knifePhotosEagerLoad()),
             'invoices' => fn ($q) => $q
                 ->where('invoice_status', '!=', InvoiceStatus::Void->value)
                 ->orderByDesc('created_at')
@@ -251,7 +251,7 @@ final class OrderController extends Controller
         $order = $this->orderService->complete($order->fresh(['items', 'knives']), $request->user(), $request)->loadMissing([
             /** @phpstan-ignore-next-line */
             'company:id,name,city,deleted_at',
-            'knives' => fn ($q) => $q->latest()->limit(250),
+            'knives' => fn ($q) => $q->latest()->limit(250)->with(self::knifePhotosEagerLoad()),
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
@@ -341,7 +341,7 @@ final class OrderController extends Controller
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name,route_status,scheduled_date',
             'items' => fn ($q) => $q->orderBy('created_at')->with(['knife:id,knife_status,label,tag_id']),
-            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500),
+            'knives' => fn ($q) => $q->orderBy('position')->orderBy('created_at')->limit(500)->with(self::knifePhotosEagerLoad()),
             'invoices' => fn ($q) => $q
                 ->where('invoice_status', '!=', InvoiceStatus::Void->value)
                 ->orderByDesc('created_at')
@@ -365,7 +365,7 @@ final class OrderController extends Controller
         $knifeIds = $result['knife_ids'];
 
         $freshOrder->loadMissing([
-            'knives' => fn ($q) => $q->latest()->limit(200),
+            'knives' => fn ($q) => $q->latest()->limit(200)->with(self::knifePhotosEagerLoad()),
             'company:id,name,city,deleted_at',
             'booking' => fn ($q) => $q->with(['contact', 'location']),
             'operationalRoute:id,name',
@@ -375,5 +375,15 @@ final class OrderController extends Controller
             'order' => OrderJson::detail($freshOrder),
             'knife_ids' => $knifeIds,
         ]);
+    }
+
+    /**
+     * @return array<string, \Closure(\Illuminate\Database\Eloquent\Builder): mixed>
+     */
+    private static function knifePhotosEagerLoad(): array
+    {
+        return [
+            'photos' => fn ($pq) => $pq->orderBy('sort_order')->limit(12),
+        ];
     }
 }

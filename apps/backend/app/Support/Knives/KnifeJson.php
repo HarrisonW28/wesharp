@@ -112,7 +112,7 @@ final class KnifeJson
     /** @return array<string, mixed> */
     public static function summary(Knife $knife): array
     {
-        return [
+        $out = [
             'id' => (string) $knife->id,
             'tag_id' => $knife->tag_id,
             'label' => $knife->label,
@@ -128,6 +128,19 @@ final class KnifeJson
             'booking_id' => $knife->booking_id !== null ? (string) $knife->booking_id : null,
             'updated_at' => $knife->updated_at?->toIso8601String(),
         ];
+
+        if ($knife->relationLoaded('photos')) {
+            $out['photos'] = $knife->photos
+                ->map(static fn ($p): array => [
+                    'id' => (string) $p->id,
+                    'caption' => $p->caption,
+                    'photo_kind' => $p->photo_kind,
+                ])
+                ->values()
+                ->all();
+        }
+
+        return $out;
     }
 
     /**
