@@ -32,8 +32,11 @@ final class ConvertBookingToOrderAction
             /** @var Order|null $existingOrder */
             $existingOrder = $booking->orders()->orderBy('created_at')->first();
 
-            if ($existingOrder !== null && $existingOrder->order_status !== OrderStatus::Draft) {
-                abort(422, 'An order already exists for this booking.');
+            if ($existingOrder !== null) {
+                $existingStatus = $existingOrder->order_status;
+                if (! in_array($existingStatus, [OrderStatus::Draft, OrderStatus::Received], true)) {
+                    abort(422, 'An order already exists for this booking.');
+                }
             }
 
             if (! in_array($booking->booking_status, [

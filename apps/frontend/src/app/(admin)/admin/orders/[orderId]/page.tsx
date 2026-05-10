@@ -652,6 +652,9 @@ export default function AdminOrderDetailPage() {
   const mayCancel = allowedNext.some((x) => x.value === "cancelled");
   const mayComplete = allowedNext.some((x) => x.value === "completed") && hasWorkForComplete;
   const linearWorkflow = allowedNext.filter((x) => x.value !== "completed" && x.value !== "cancelled");
+  const showWorkflowControls = canOrders && (linearWorkflow.length > 0 || mayComplete);
+  const showWorkshopProgress = Boolean(o.workshop_progress);
+  const showWorkshopFulfilmentCard = showWorkshopProgress || showWorkflowControls;
   const isCancelled = o.status === "cancelled";
   const isReturned = o.status === "returned";
   const lockOrderManifest = isCancelled || isReturned || o.status === "completed" || o.status === "invoiced";
@@ -1115,70 +1118,78 @@ export default function AdminOrderDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {canOrders && mayComplete ? (
-        <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-sm font-semibold">Ready to close out?</div>
-            <p className="text-sm text-muted-foreground">Completing records fulfilment time; invoice draft is a separate step.</p>
-          </div>
-          <Button type="button" size="lg" className="w-full sm:w-auto" onClick={() => setCompleteDialogOpen(true)}>
-            Complete order
-          </Button>
-        </Card>
-      ) : null}
-
-      {canOrders && linearWorkflow.length > 0 ? (
-        <Card className="flex flex-col gap-3 p-4">
-          <div className="text-xs font-semibold uppercase text-muted-foreground">Workflow</div>
-          <p className="text-sm text-muted-foreground">Advance the order one step at a time. Risky steps need confirmation.</p>
-          <div className="flex flex-wrap gap-2">
-            {linearWorkflow.map((step) => (
-              <Button
-                key={step.value}
-                type="button"
-                size="lg"
-                variant={step.risky ? "secondary" : "default"}
-                disabled={transitionMutation.isPending}
-                onClick={() => {
-                  if (step.risky) {
-                    setPendingStatusStep({ value: step.value, label: step.label });
-                    setStatusStepConfirmOpen(true);
-                  } else {
-                    transitionMutation.mutate({ target_status: step.value });
-                  }
-                }}
-              >
-                {step.label}
-              </Button>
-            ))}
-          </div>
-        </Card>
-      ) : null}
-
-      {o.workshop_progress ? (
+      {showWorkshopFulfilmentCard ? (
         <Card className="p-4">
-          <div className="text-xs font-semibold uppercase text-muted-foreground">Blade &amp; line progress</div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{o.workshop_progress.knife_count}</span> blade(s) on this order
-            {o.workshop_progress.line_only_units > 0 ? (
-              <>
-                {" "}
-                · <span className="font-medium text-foreground">{o.workshop_progress.line_only_units}</span> unit(s) on lines
-                without a blade record
-              </>
-            ) : null}
-            {o.workshop_progress.all_knives_complete ? (
-              <span className="text-foreground"> — all blades returned or cancelled.</span>
-            ) : null}
-          </p>
-          {o.workshop_progress.by_status && Object.keys(o.workshop_progress.by_status).length > 0 ? (
-            <ul className="mt-3 flex flex-wrap gap-2 text-xs">
-              {Object.entries(o.workshop_progress.by_status).map(([st, n]) => (
-                <li key={st} className="rounded-md border bg-muted/30 px-2 py-1 capitalize text-muted-foreground">
-                  <span className="font-medium text-foreground">{st.replace(/_/g, " ")}</span> · {n}
-                </li>
-              ))}
-            </ul>
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Workshop &amp; fulfilment</div>
+
+          {showWorkshopProgress && o.workshop_progress ? (
+            <div className="mt-3">
+              <div className="text-xs font-medium text-muted-foreground">Blades &amp; lines</div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{o.workshop_progress.knife_count}</span> blade(s) on this order
+                {o.workshop_progress.line_only_units > 0 ? (
+                  <>
+                    {" "}
+                    · <span className="font-medium text-foreground">{o.workshop_progress.line_only_units}</span> unit(s) on lines
+                    without a blade record
+                  </>
+                ) : null}
+                {o.workshop_progress.all_knives_complete ? (
+                  <span className="text-foreground"> — all blades returned or cancelled.</span>
+                ) : null}
+              </p>
+              {o.workshop_progress.by_status && Object.keys(o.workshop_progress.by_status).length > 0 ? (
+                <ul className="mt-3 flex flex-wrap gap-2 text-xs">
+                  {Object.entries(o.workshop_progress.by_status).map(([st, n]) => (
+                    <li key={st} className="rounded-md border bg-muted/30 px-2 py-1 capitalize text-muted-foreground">
+                      <span className="font-medium text-foreground">{st.replace(/_/g, " ")}</span> · {n}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+
+          {showWorkflowControls ? (
+            <>
+              <p className={`text-sm text-muted-foreground ${showWorkshopProgress ? "mt-4 border-t border-border pt-4" : "mt-2"}`}>
+                Advance order status one step at a time; risky moves ask for confirmation. Completing the order records fulfilment
+                timing — generating an invoice draft is a separate step.
+              </p>
+
+              {canOrders && linearWorkflow.length > 0 ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {linearWorkflow.map((step) => (
+                    <Button
+                      key={step.value}
+                      type="button"
+                      size="lg"
+                      variant={step.risky ? "secondary" : "default"}
+                      disabled={transitionMutation.isPending}
+                      onClick={() => {
+                        if (step.risky) {
+                          setPendingStatusStep({ value: step.value, label: step.label });
+                          setStatusStepConfirmOpen(true);
+                        } else {
+                          transitionMutation.mutate({ target_status: step.value });
+                        }
+                      }}
+                    >
+                      {step.label}
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
+
+              {canOrders && mayComplete ? (
+                <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-sm font-semibold">Ready to close out?</div>
+                  <Button type="button" size="lg" className="w-full sm:w-auto shrink-0" onClick={() => setCompleteDialogOpen(true)}>
+                    Complete order
+                  </Button>
+                </div>
+              ) : null}
+            </>
           ) : null}
         </Card>
       ) : null}

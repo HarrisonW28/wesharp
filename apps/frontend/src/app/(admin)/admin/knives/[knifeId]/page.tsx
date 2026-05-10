@@ -95,6 +95,8 @@ export default function AdminKnifeDetailPage() {
     void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
     void queryClient.invalidateQueries({ queryKey: ["admin-knife", knifeId] });
     void queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+    /** Order detail uses `["admin-order", id]` — distinct from list key `admin-orders`. */
+    void queryClient.invalidateQueries({ queryKey: ["admin-order"] });
   };
 
   const parseKnifeDetail = async (body: unknown) => {

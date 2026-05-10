@@ -137,6 +137,106 @@ final class AdminRouteStopWorkflowApiTest extends TestCase
         );
     }
 
+    public function test_mark_collected_promotes_draft_order_to_received(): void
+    {
+        config()->set('wesharp_evidence.require_collection_photo', false);
+
+        $driver = User::factory()->create([
+            'role' => UserRole::RouteManager,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+        ]);
+
+        $route = OperationalRoute::factory()->create([
+            'driver_user_id' => $driver->id,
+        ]);
+
+        $booking = Booking::factory()->create([
+            'booking_status' => BookingStatus::AssignedToRoute,
+            'assigned_route_id' => $route->id,
+        ]);
+
+        $order = Order::factory()->create([
+            'company_id' => $booking->company_id,
+            'booking_id' => $booking->id,
+            'route_id' => $route->id,
+            'order_status' => OrderStatus::Draft,
+            'knife_count' => 1,
+            'price_per_knife_pence' => 1000,
+            'subtotal_pence' => 0,
+            'tax_pence' => 0,
+            'total_pence' => 0,
+        ]);
+
+        $stop = RouteStop::factory()->create([
+            'route_id' => $route->id,
+            'booking_id' => $booking->id,
+            'route_stop_status' => RouteStopStatus::Arrived,
+            'sequence' => 1,
+        ]);
+
+        $this->withHeaders($this->driverHeaders($driver))
+            ->postJson('/api/admin/route-stops/'.$stop->id.'/mark-collected', [])
+            ->assertOk();
+
+        $order->refresh();
+        self::assertSame(OrderStatus::Received, $order->order_status);
+        self::assertTrue(
+            AuditLog::query()
+                /** @phpstan-ignore-next-line */
+                ->where('auditable_id', (string) $order->id)
+                ->where('action', 'order.status_changed')
+                ->whereJsonContains('payload->from', OrderStatus::Draft->value)
+                ->whereJsonContains('payload->to', OrderStatus::Received->value)
+                ->exists()
+        );
+    }
+
+    public function test_mark_collected_does_not_downgrade_or_change_non_draft_order(): void
+    {
+        config()->set('wesharp_evidence.require_collection_photo', false);
+
+        $driver = User::factory()->create([
+            'role' => UserRole::RouteManager,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+        ]);
+
+        $route = OperationalRoute::factory()->create([
+            'driver_user_id' => $driver->id,
+        ]);
+
+        $booking = Booking::factory()->create([
+            'booking_status' => BookingStatus::AssignedToRoute,
+            'assigned_route_id' => $route->id,
+        ]);
+
+        $order = Order::factory()->create([
+            'company_id' => $booking->company_id,
+            'booking_id' => $booking->id,
+            'route_id' => $route->id,
+            'order_status' => OrderStatus::Inspection,
+            'knife_count' => 1,
+            'price_per_knife_pence' => 1000,
+            'subtotal_pence' => 0,
+            'tax_pence' => 0,
+            'total_pence' => 0,
+        ]);
+
+        $stop = RouteStop::factory()->create([
+            'route_id' => $route->id,
+            'booking_id' => $booking->id,
+            'route_stop_status' => RouteStopStatus::Arrived,
+            'sequence' => 1,
+        ]);
+
+        $this->withHeaders($this->driverHeaders($driver))
+            ->postJson('/api/admin/route-stops/'.$stop->id.'/mark-collected', [])
+            ->assertOk();
+
+        self::assertSame(OrderStatus::Inspection, $order->fresh()->order_status);
+    }
+
     public function test_invalid_transition_returns_422(): void
     {
         $driver = User::factory()->create([

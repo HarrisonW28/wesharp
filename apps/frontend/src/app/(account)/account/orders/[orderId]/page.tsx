@@ -122,13 +122,45 @@ function TenantKnifePhotosSection({
     try {
       const fd = new FormData();
       fd.append("photo", file);
-      const res = await api.json<unknown>(`/api/account/orders/${orderId}/knives/${knifeId}/photos`, {
+      const res = await api.json<{
+        success?: boolean;
+        data?: { id: string; knife_id: string; caption?: string | null; photo_kind?: string | null };
+      }>(`/api/account/orders/${orderId}/knives/${knifeId}/photos`, {
         method: "POST",
         body: fd,
       });
       if (!res.ok) throw new Error(res.message);
       toast.success("Photo uploaded.");
-      await qc.invalidateQueries({ queryKey: ["account-order", orderId] });
+
+      const row = res.data?.data;
+      if (row?.id && row?.knife_id) {
+        qc.setQueryData<AccountOrderDetail | undefined>(["account-order", orderId], (prev) => {
+          if (!prev?.knives?.length) {
+            return prev;
+          }
+          return {
+            ...prev,
+            knives: prev.knives.map((k) => {
+              if (k.id !== row.knife_id) {
+                return k;
+              }
+              const existing = k.photos ?? [];
+              if (existing.some((p) => p.id === row.id)) {
+                return k;
+              }
+              return {
+                ...k,
+                photos: [
+                  ...existing,
+                  { id: row.id, caption: row.caption ?? null, photo_kind: row.photo_kind ?? null },
+                ],
+              };
+            }),
+          };
+        });
+      }
+
+      await qc.refetchQueries({ queryKey: ["account-order", orderId] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {

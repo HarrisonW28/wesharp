@@ -53,6 +53,7 @@ export function KnifePhotoGalleryCard({
       toast.success("Photo removed.");
       queryClient.setQueryData(["admin-knife", knifeId], data);
       void queryClient.invalidateQueries({ queryKey: ["admin-knives"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-order"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
