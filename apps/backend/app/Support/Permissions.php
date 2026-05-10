@@ -86,6 +86,9 @@ final class Permissions
     /** Operational reporting (bookings, orders, routes, knives) — admin API `/api/admin/reports/…`. */
     public const REPORTS_OPERATIONS = 'reports.operations';
 
+    /** Sales/POS/checkout abandonment performance — admin API `/api/admin/reports/sales-performance` (Sprint 24.5). */
+    public const REPORTS_SALES_PERFORMANCE = 'reports.sales_performance';
+
     /** Read subscription plans and company subscription rows (admin). */
     public const SUBSCRIPTIONS_VIEW = 'subscriptions.view';
 
@@ -176,6 +179,7 @@ final class Permissions
         self::COSTS_VIEW,
         self::COSTS_MANAGE,
         self::REPORTS_OPERATIONS,
+        self::REPORTS_SALES_PERFORMANCE,
         self::PRICING_VIEW,
         self::PRICING_MANAGE,
         self::SERVICE_AREAS_VIEW,
@@ -222,6 +226,7 @@ final class Permissions
                 self::COMPANIES_DELETE,
                 self::BOOKINGS_VIEW,
                 self::BOOKINGS_DELETE,
+                self::REPORTS_SALES_PERFORMANCE,
             ],
 
             UserRole::RouteManager->value => [
@@ -276,6 +281,7 @@ final class Permissions
                 self::SERVICE_AREAS_VIEW,
                 self::ANALYTICS_VIEW,
                 self::SETTINGS_VIEW,
+                self::REPORTS_SALES_PERFORMANCE,
             ],
 
             UserRole::Finance->value => [
@@ -295,6 +301,7 @@ final class Permissions
                 self::PAYMENTS_MANAGE,
                 self::ANALYTICS_VIEW,
                 self::REPORTS_FINANCE,
+                self::REPORTS_SALES_PERFORMANCE,
                 self::PRICING_VIEW,
                 self::PRICING_MANAGE,
                 self::SERVICE_AREAS_VIEW,

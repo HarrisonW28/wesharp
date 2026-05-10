@@ -16,6 +16,7 @@ import {
   PiggyBank,
   Receipt,
   Repeat,
+  ShoppingCart,
   Truck,
   Utensils,
   Calculator,
@@ -139,6 +140,15 @@ export default function AdminReportingHubPage() {
         },
         routeProfitabilityCard,
       );
+    }
+    if (permissions.has("reports.sales_performance") || permissions.has("reports.finance")) {
+      financeCards.push({
+        href: "/admin/reports/sales-performance",
+        title: "Sales & POS performance",
+        description:
+          "Sprint 24.5 — Stripe checkout funnel, staff-recorded POS payments, discounts, estimates, allocated costs, and sales attribution.",
+        icon: ShoppingCart,
+      });
     }
     if (permissions.has("reports.finance")) {
       financeCards.push(

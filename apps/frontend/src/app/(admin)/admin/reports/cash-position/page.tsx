@@ -104,41 +104,41 @@ export default function AdminCashPositionReportPage() {
   const cp = reportQuery.data?.cash_position as Record<string, unknown> | undefined;
   const assumptionsRemote = reportQuery.data?.assumptions as Record<string, unknown> | undefined;
 
-  const [startingCapital£, setStartingCapital£] = useState("");
-  const [routeRegular£, setRouteRegular£] = useState("");
-  const [trial£, setTrial£] = useState("");
+  const [startingCapitalGbp, setStartingCapitalGbp] = useState("");
+  const [routeRegularGbp, setRouteRegularGbp] = useState("");
+  const [trialGbp, setTrialGbp] = useState("");
   const [routeDaysPerWeek, setRouteDaysPerWeek] = useState("");
-  const [bufferThreshold£, setBufferThreshold£] = useState("");
-  const [conversionTarget£, setConversionTarget£] = useState("");
-  const [secondMachine£, setSecondMachine£] = useState("");
-  const [vanAssessment£, setVanAssessment£] = useState("");
+  const [bufferThresholdGbp, setBufferThresholdGbp] = useState("");
+  const [conversionTargetGbp, setConversionTargetGbp] = useState("");
+  const [secondMachineGbp, setSecondMachineGbp] = useState("");
+  const [vanAssessmentGbp, setVanAssessmentGbp] = useState("");
 
   useEffect(() => {
     if (!assumptionsRemote) return;
-    setStartingCapital£(poundsFromPence(assumptionsRemote.starting_capital_pence));
-    setRouteRegular£(poundsFromPence(assumptionsRemote.regular_route_price_per_knife_pence));
-    setTrial£(poundsFromPence(assumptionsRemote.trial_price_per_knife_pence));
+    setStartingCapitalGbp(poundsFromPence(assumptionsRemote.starting_capital_pence));
+    setRouteRegularGbp(poundsFromPence(assumptionsRemote.regular_route_price_per_knife_pence));
+    setTrialGbp(poundsFromPence(assumptionsRemote.trial_price_per_knife_pence));
     setRouteDaysPerWeek(
       assumptionsRemote.route_days_per_week != null && String(assumptionsRemote.route_days_per_week).trim() !== ""
         ? String(assumptionsRemote.route_days_per_week)
         : "",
     );
-    setBufferThreshold£(poundsFromPence(assumptionsRemote.buffer_warning_threshold_pence));
-    setConversionTarget£(poundsFromPence(assumptionsRemote.conversion_target_price_pence));
-    setSecondMachine£(poundsFromPence(assumptionsRemote.second_machine_trigger_pence));
-    setVanAssessment£(poundsFromPence(assumptionsRemote.van_assessment_trigger_pence));
+    setBufferThresholdGbp(poundsFromPence(assumptionsRemote.buffer_warning_threshold_pence));
+    setConversionTargetGbp(poundsFromPence(assumptionsRemote.conversion_target_price_pence));
+    setSecondMachineGbp(poundsFromPence(assumptionsRemote.second_machine_trigger_pence));
+    setVanAssessmentGbp(poundsFromPence(assumptionsRemote.van_assessment_trigger_pence));
   }, [assumptionsRemote]);
 
   const saveAssumptions = useMutation({
     mutationFn: async () => {
       const body: Record<string, number | string | null> = {};
-      const sc = penceFromPoundsInput(startingCapital£);
-      const rr = penceFromPoundsInput(routeRegular£);
-      const tr = penceFromPoundsInput(trial£);
-      const bt = penceFromPoundsInput(bufferThreshold£);
-      const ct = penceFromPoundsInput(conversionTarget£);
-      const sm = penceFromPoundsInput(secondMachine£);
-      const va = penceFromPoundsInput(vanAssessment£);
+      const sc = penceFromPoundsInput(startingCapitalGbp);
+      const rr = penceFromPoundsInput(routeRegularGbp);
+      const tr = penceFromPoundsInput(trialGbp);
+      const bt = penceFromPoundsInput(bufferThresholdGbp);
+      const ct = penceFromPoundsInput(conversionTargetGbp);
+      const sm = penceFromPoundsInput(secondMachineGbp);
+      const va = penceFromPoundsInput(vanAssessmentGbp);
 
       body.starting_capital_pence = sc;
       body.regular_route_price_per_knife_pence = rr;
@@ -355,19 +355,19 @@ export default function AdminCashPositionReportPage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="grid gap-1.5">
                       <Label htmlFor="starting_capital">Starting capital (£)</Label>
-                      <Input id="starting_capital" inputMode="decimal" value={startingCapital£} onChange={(e) => setStartingCapital£(e.target.value)} placeholder="e.g. 1050.00" />
+                      <Input id="starting_capital" inputMode="decimal" value={startingCapitalGbp} onChange={(e) => setStartingCapitalGbp(e.target.value)} placeholder="e.g. 1050.00" />
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="buffer_threshold">Buffer warning threshold (£)</Label>
-                      <Input id="buffer_threshold" inputMode="decimal" value={bufferThreshold£} onChange={(e) => setBufferThreshold£(e.target.value)} />
+                      <Input id="buffer_threshold" inputMode="decimal" value={bufferThresholdGbp} onChange={(e) => setBufferThresholdGbp(e.target.value)} />
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="route_regular">Regular route price / knife (£)</Label>
-                      <Input id="route_regular" inputMode="decimal" value={routeRegular£} onChange={(e) => setRouteRegular£(e.target.value)} />
+                      <Input id="route_regular" inputMode="decimal" value={routeRegularGbp} onChange={(e) => setRouteRegularGbp(e.target.value)} />
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="trial_price">First-visit trial price / knife (£)</Label>
-                      <Input id="trial_price" inputMode="decimal" value={trial£} onChange={(e) => setTrial£(e.target.value)} />
+                      <Input id="trial_price" inputMode="decimal" value={trialGbp} onChange={(e) => setTrialGbp(e.target.value)} />
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="route_days">Route days per week</Label>
@@ -375,15 +375,15 @@ export default function AdminCashPositionReportPage() {
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="conversion_target">Conversion target price (£)</Label>
-                      <Input id="conversion_target" inputMode="decimal" value={conversionTarget£} onChange={(e) => setConversionTarget£(e.target.value)} />
+                      <Input id="conversion_target" inputMode="decimal" value={conversionTargetGbp} onChange={(e) => setConversionTargetGbp(e.target.value)} />
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="second_machine">Second machine trigger (£)</Label>
-                      <Input id="second_machine" inputMode="decimal" value={secondMachine£} onChange={(e) => setSecondMachine£(e.target.value)} />
+                      <Input id="second_machine" inputMode="decimal" value={secondMachineGbp} onChange={(e) => setSecondMachineGbp(e.target.value)} />
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="van_trigger">Van assessment trigger (£)</Label>
-                      <Input id="van_trigger" inputMode="decimal" value={vanAssessment£} onChange={(e) => setVanAssessment£(e.target.value)} />
+                      <Input id="van_trigger" inputMode="decimal" value={vanAssessmentGbp} onChange={(e) => setVanAssessmentGbp(e.target.value)} />
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">

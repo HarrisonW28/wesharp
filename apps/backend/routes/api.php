@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\ReportingController;
 use App\Http\Controllers\Admin\RouteController;
 use App\Http\Controllers\Admin\RouteProfitabilityReportController;
 use App\Http\Controllers\Admin\RouteStopController;
+use App\Http\Controllers\Admin\SalesPosPerformanceReportController;
 use App\Http\Controllers\Admin\ServiceAreaController;
 use App\Http\Controllers\Admin\ServiceAreaWaitlistController;
 use App\Http\Controllers\Admin\SiteContentController;
@@ -229,6 +230,7 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware('permission:knives.view')->get('lookups/knives', [LookupController::class, 'knives'])->name('api.admin.lookups.knives');
     Route::middleware('permission:companies.view')->get('lookups/locations', [LookupController::class, 'locations'])->name('api.admin.lookups.locations');
     Route::middleware('permission:companies.view')->get('lookups/contacts', [LookupController::class, 'contacts'])->name('api.admin.lookups.contacts');
+    Route::middleware('permission:reports.sales_performance')->get('lookups/sales-staff', [LookupController::class, 'salesStaffForReporting'])->name('api.admin.lookups.sales_staff');
 
     Route::middleware('permission:companies.view')->get('companies', [CompanyController::class, 'index'])->name('api.admin.companies.index');
     Route::middleware('permission:companies.view')->get('service-area-waitlist', [ServiceAreaWaitlistController::class, 'index'])->name('api.admin.service_area_waitlist.index');
@@ -376,6 +378,8 @@ Route::prefix('admin')->middleware(['clerk.auth', 'staff'])->group(function (): 
     Route::middleware(['permission:invoices.view', 'permission:payments.view'])->get('finance/dashboard', FinanceDashboardController::class)->name('api.admin.finance.dashboard');
 
     Route::middleware('permission_any:reports.operations,reports.finance,costs.view')->get('reports/route-profitability', RouteProfitabilityReportController::class)->name('api.admin.reports.route_profitability');
+
+    Route::middleware('permission:reports.sales_performance')->get('reports/sales-performance', SalesPosPerformanceReportController::class)->name('api.admin.reports.sales_performance');
 
     Route::middleware('permission_any:reports.finance,costs.view')->group(function (): void {
         Route::get('reports/cash-position', [CashPositionReportController::class, 'show'])->name('api.admin.reports.cash_position');

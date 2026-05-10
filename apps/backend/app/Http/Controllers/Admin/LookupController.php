@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
@@ -11,7 +12,6 @@ use App\Models\Booking;
 use App\Models\Company;
 use App\Models\CompanyLocation;
 use App\Models\Contact;
-use App\Enums\OrderStatus;
 use App\Models\Knife;
 use App\Models\OperationalRoute;
 use App\Models\Order;
@@ -635,6 +635,36 @@ final class LookupController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->resolvedRole()->value,
+        ])->values()->all();
+
+        return ApiResponses::success(['items' => $items]);
+    }
+
+    /** Sales-role staff for Sales/POS performance report filters (no users.view lookup gate). */
+    public function salesStaffForReporting(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        $query = User::query()
+            ->where('status', UserStatus::Active)
+            ->where('role', UserRole::Sales)
+            ->orderBy('name');
+
+        if ($q !== '') {
+            $needle = '%'.$this->escapeLike($q).'%';
+            $query->where(function ($sub) use ($needle, $q): void {
+                $sub->where('name', 'like', $needle)
+                    ->orWhere('email', 'like', $needle);
+                if (ctype_digit($q)) {
+                    $sub->orWhere('id', (int) $q);
+                }
+            });
+        }
+
+        $items = $query->limit(60)->get()->map(static fn (User $user): array => [
+            'id' => (string) $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
         ])->values()->all();
 
         return ApiResponses::success(['items' => $items]);

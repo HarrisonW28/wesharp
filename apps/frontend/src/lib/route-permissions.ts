@@ -48,6 +48,9 @@ export function adminPermissionForPath(pathname: string): string {
   if (pathname.startsWith("/admin/reports/subscription-profitability")) {
     return "reports.finance";
   }
+  if (pathname.startsWith("/admin/reports/sales-performance")) {
+    return "reports.sales_performance";
+  }
   if (pathname.startsWith("/admin/reports/billing")) {
     return "reports.finance";
   }
@@ -125,11 +128,15 @@ export function adminRouteAccessAllowed(pathname: string, permissions: ReadonlyS
   if (pathname.startsWith("/admin/reports/subscription-profitability")) {
     return permissions.has("reports.finance") || permissions.has("costs.view");
   }
+  if (pathname.startsWith("/admin/reports/sales-performance")) {
+    return permissions.has("reports.sales_performance") || permissions.has("reports.finance");
+  }
   if (pathname.startsWith("/admin/reporting")) {
     return (
       permissions.has("analytics.view") ||
       permissions.has("reports.finance") ||
       permissions.has("reports.operations") ||
+      permissions.has("reports.sales_performance") ||
       permissions.has("payments.view") ||
       permissions.has("invoices.view") ||
       permissions.has("costs.view")
