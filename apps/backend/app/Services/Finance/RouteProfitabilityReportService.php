@@ -6,6 +6,7 @@ namespace App\Services\Finance;
 
 use App\Data\Reports\AdminReportFilters;
 use App\Enums\CostAllocationTargetType;
+use App\Enums\CostStatus;
 use App\Enums\OrderStatus;
 use App\Enums\RouteStopStatus;
 use App\Models\CostAllocation;
@@ -230,7 +231,7 @@ final class RouteProfitabilityReportService
         }
 
         $rows = CostAllocation::query()
-            ->with(['costItem.category'])
+            ->with(['costItem.category', 'consumableUsage.consumable.costItem'])
             ->where('target_type', CostAllocationTargetType::Route)
             ->whereBetween('created_at', [$f->from, $f->to])
             ->whereIn('target_id', $routeIds)
@@ -239,6 +240,9 @@ final class RouteProfitabilityReportService
         $map = [];
 
         foreach ($rows as $row) {
+            if ($this->allocationTouchesArchivedCatalogue($row)) {
+                continue;
+            }
             $rid = (string) $row->target_id;
             if (! isset($map[$rid])) {
                 $map[$rid] = [
@@ -535,6 +539,21 @@ final class RouteProfitabilityReportService
         }
 
         return $map;
+    }
+
+    private function allocationTouchesArchivedCatalogue(CostAllocation $row): bool
+    {
+        $direct = $row->costItem;
+        if ($direct !== null && $direct->status === CostStatus::Archived) {
+            return true;
+        }
+
+        $usageCatalogue = $row->consumableUsage?->consumable?->costItem;
+        if ($usageCatalogue !== null && $usageCatalogue->status === CostStatus::Archived) {
+            return true;
+        }
+
+        return false;
     }
 
     private function notesExcerpt(?string $notes): ?string

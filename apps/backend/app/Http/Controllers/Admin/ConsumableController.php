@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CostStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreConsumableUsageRequest;
 use App\Http\Requests\UpdateConsumableRequest;
@@ -24,8 +25,8 @@ final class ConsumableController extends Controller
 
         $query = Consumable::query()
             ->with(['costItem.category'])
-            ->whereHas('costItem')
             ->join('cost_items', 'cost_items.id', '=', 'consumables.cost_item_id')
+            ->where('cost_items.status', '!=', CostStatus::Archived->value)
             ->orderBy('cost_items.name')
             ->select('consumables.*');
 

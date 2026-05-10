@@ -6,6 +6,7 @@ namespace App\Support\Costs;
 
 use App\Data\Reports\AdminReportFilters;
 use App\Enums\CostAllocationTargetType;
+use App\Enums\CostStatus;
 use App\Models\Booking;
 use App\Models\CompanySubscription;
 use App\Models\ConsumableUsage;
@@ -55,6 +56,17 @@ final class CostAttributionRollup
     {
         return (int) CostAllocation::query()
             ->tap(fn (Builder $q) => self::scopeAllocationsForCompany($q, $companyId))
+            ->where(function (Builder $outer): void {
+                $outer
+                    ->where(function (Builder $q): void {
+                        $q->whereNull('cost_item_id')
+                            ->orWhereHas('costItem', fn ($ci) => $ci->where('status', '!=', CostStatus::Archived));
+                    })
+                    ->where(function (Builder $q): void {
+                        $q->whereNull('consumable_usage_id')
+                            ->orWhereHas('consumableUsage.consumable.costItem', fn ($ci) => $ci->where('status', '!=', CostStatus::Archived));
+                    });
+            })
             ->sum('amount_pence');
     }
 
@@ -63,6 +75,7 @@ final class CostAttributionRollup
     {
         $usages = ConsumableUsage::query()
             ->whereHas('order', fn ($oq) => $oq->where('company_id', $companyId))
+            ->whereHas('consumable.costItem', fn ($ci) => $ci->where('status', '!=', CostStatus::Archived))
             ->with(['consumable.costItem'])
             ->get();
 
@@ -92,7 +105,19 @@ final class CostAttributionRollup
         $from = $f->from->copy()->utc()->startOfDay();
         $to = $f->to->copy()->utc()->endOfDay();
 
-        $manualQuery = CostAllocation::query()->whereBetween('created_at', [$from, $to]);
+        $manualQuery = CostAllocation::query()
+            ->whereBetween('created_at', [$from, $to])
+            ->where(function (Builder $outer): void {
+                $outer
+                    ->where(function (Builder $q): void {
+                        $q->whereNull('cost_item_id')
+                            ->orWhereHas('costItem', fn ($ci) => $ci->where('status', '!=', CostStatus::Archived));
+                    })
+                    ->where(function (Builder $q): void {
+                        $q->whereNull('consumable_usage_id')
+                            ->orWhereHas('consumableUsage.consumable.costItem', fn ($ci) => $ci->where('status', '!=', CostStatus::Archived));
+                    });
+            });
         if ($f->companyId !== null && $f->companyId !== '') {
             self::scopeAllocationsForCompany($manualQuery, $f->companyId);
         }
@@ -103,7 +128,8 @@ final class CostAttributionRollup
             ->whereBetween('usage_date', [
                 $f->from->toDateString(),
                 $f->to->toDateString(),
-            ]);
+            ])
+            ->whereHas('consumable.costItem', fn ($ci) => $ci->where('status', '!=', CostStatus::Archived));
         if ($f->companyId !== null && $f->companyId !== '') {
             $usageQuery->whereHas('order', fn ($oq) => $oq->where('company_id', $f->companyId));
         }

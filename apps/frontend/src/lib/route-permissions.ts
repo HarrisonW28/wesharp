@@ -137,6 +137,16 @@ export function adminRouteAccessAllowed(pathname: string, permissions: ReadonlyS
   if (pathname.startsWith("/admin/reports/executive-dashboard")) {
     return permissions.has("reports.executive_dashboard") || permissions.has("reports.finance");
   }
+  if (pathname === "/admin/finance") {
+    return (
+      (permissions.has("payments.view") && permissions.has("invoices.view")) ||
+      permissions.has("costs.view") ||
+      permissions.has("subscriptions.view") ||
+      permissions.has("pricing.view") ||
+      permissions.has("payments.view") ||
+      permissions.has("invoices.view")
+    );
+  }
   if (pathname.startsWith("/admin/reporting")) {
     return (
       permissions.has("analytics.view") ||

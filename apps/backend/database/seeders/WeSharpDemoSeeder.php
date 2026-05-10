@@ -26,6 +26,7 @@ use App\Models\CompanyLocation;
 use App\Models\CompanySubscription;
 use App\Models\Contact;
 use App\Models\DamageReport;
+use App\Models\FinanceCashPositionSetting;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Knife;
@@ -36,7 +37,6 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\PricingRule;
-use App\Models\Refund;
 use App\Models\RouteStop;
 use App\Models\ServiceArea;
 use App\Models\SubscriptionPlan;
@@ -159,6 +159,17 @@ final class WeSharpDemoSeeder extends Seeder
             'active' => true,
         ]);
 
+        PricingRule::query()->create([
+            'service_area_id' => $manchesterArea->id,
+            'name' => 'On-site bench visit (flat)',
+            'service_type' => ServiceType::Onsite,
+            'rule_kind' => 'flat_visit',
+            'priority' => 8,
+            'amount_pence' => 8999,
+            'constraints' => [],
+            'active' => true,
+        ]);
+
         $profiles = [];
 
         foreach ($this->manchesterVenues() as $row) {
@@ -263,13 +274,21 @@ final class WeSharpDemoSeeder extends Seeder
 
         foreach ($profiles as $entry) {
             $companyModel = $entry['company'];
+            $onsiteFlatVisitPence = $entry['catalogue'] === 'MAN' ? 8999 : 9350;
 
             foreach ($entry['bookings']->take(2) as $scenario => $booking) {
                 $bladeCount = (($scenario === 0) ? 9 : 6);
-                $subtotal = $bladeCount * 850;
-                $tax = (int) round($subtotal * 0.2);
-
                 $booking->update(['booking_status' => BookingStatus::InSharpening]);
+
+                if ($booking->service_type === ServiceType::Collection) {
+                    $subtotal = $bladeCount * 850;
+                    $pricePerKnifePence = 850;
+                } else {
+                    $subtotal = $onsiteFlatVisitPence;
+                    $pricePerKnifePence = (int) max(1, (int) round($subtotal / max(1, $bladeCount)));
+                }
+
+                $tax = (int) round($subtotal * 0.2);
 
                 $order = Order::query()->create([
                     'company_id' => $companyModel->id,
@@ -277,7 +296,7 @@ final class WeSharpDemoSeeder extends Seeder
                     'route_id' => $booking->assigned_route_id,
                     'order_status' => ($scenario === 0 ? OrderStatus::InProgress : OrderStatus::Completed),
                     'knife_count' => $bladeCount,
-                    'price_per_knife_pence' => 850,
+                    'price_per_knife_pence' => $pricePerKnifePence,
                     'discount_pence' => 0,
                     'payment_status' => $scenario === 0 ? OrderPaymentStatus::PartialPaid : OrderPaymentStatus::Paid,
                     'subtotal_pence' => $subtotal,
@@ -372,7 +391,7 @@ final class WeSharpDemoSeeder extends Seeder
                     ? (int) floor($invoiceRow->total_pence * 2 / 3)
                     : (int) $invoiceRow->total_pence;
 
-                $paymentRow = Payment::query()->create([
+                Payment::query()->create([
                     'company_id' => $companyModel->id,
                     'invoice_id' => $invoiceRow->id,
                     'order_id' => $order->id,
@@ -384,21 +403,31 @@ final class WeSharpDemoSeeder extends Seeder
                     'due_at' => (($paymentStatusFlag === PaymentStatus::PartPaid) ? now()->addDays(4) : null),
                     'reference' => (($scenario === 0) ? 'STRIPE-'.Str::upper(Str::random(7)) : 'FPS-'.Str::upper(Str::random(14))),
                 ]);
-
-                if ($paymentStatusFlag === PaymentStatus::PartPaid) {
-                    Refund::query()->create([
-                        'payment_id' => $paymentRow->id,
-                        'amount_pence' => min(6200, (int) ceil($plannedAmount / 8)),
-                        'reason' => 'Goodwill credit memo for sharpening queue overrun.',
-                        'processed_at' => now()->subHours(2),
-                    ]);
-                }
             }
         }
 
         $this->call(CostCatalogSeeder::class);
         $this->call(FinanceForecastScenarioSeeder::class);
         $this->call(ConsumableCatalogSeeder::class);
+
+        /*
+         * Sprint 24.1 QA: starting capital £1,050 with catalogue purchased spend from CostCatalogSeeder
+         * one-time rows in status "purchased" (currently £816.84) yields cash buffer £233.16 before pipeline spend.
+         */
+        FinanceCashPositionSetting::query()->updateOrCreate(
+            ['id' => 1],
+            [
+                'starting_capital_pence' => 105_000,
+                'regular_route_price_per_knife_pence' => 850,
+                'trial_price_per_knife_pence' => 638,
+                'route_days_per_week' => 4,
+                'buffer_warning_threshold_pence' => 50_000,
+                'conversion_target_price_pence' => 750,
+                'second_machine_trigger_pence' => 450_000,
+                'van_assessment_trigger_pence' => 320_000,
+                'updated_by_user_id' => null,
+            ],
+        );
     }
 
     /**

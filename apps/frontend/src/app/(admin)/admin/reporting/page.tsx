@@ -85,14 +85,14 @@ export default function AdminReportingHubPage() {
     if (permissions.has("payments.view")) {
       financeCards.push({
         href: "/admin/finance",
-        title: "Finance overview",
-        description: "Dashboard filters and invoice-age context.",
+        title: "Finance workspace",
+        description: "Balances, collections, costs snapshot, and subscription context.",
         icon: Landmark,
       });
       financeCards.push({
         href: "/admin/payments",
         title: "Payments",
-        description: "Ledger entries and payment reconciliation.",
+        description: "Recorded payments and reconciliation.",
         icon: Banknote,
       });
     }
@@ -100,7 +100,7 @@ export default function AdminReportingHubPage() {
       financeCards.push({
         href: "/admin/finance/cost-ledger",
         title: "Cost ledger",
-        description: "Sprint 23.5 allocations and seeded/import cost attribution trails.",
+        description: "Manual allocations into jobs, routes, and customer accounts.",
         icon: Coins,
       });
     }
@@ -115,7 +115,7 @@ export default function AdminReportingHubPage() {
     const routeProfitabilityCard = {
       href: "/admin/reports/route-profitability",
       title: "Route profitability",
-      description: "Sprint 24.4 — billable order revenue, fuel/consumable allocations, margins, drivers, stops and photos.",
+      description: "Billable revenue per route with fuel, consumables, and allocation breakdown.",
       icon: Truck,
     };
 
@@ -124,19 +124,19 @@ export default function AdminReportingHubPage() {
         {
           href: "/admin/reports/forecast-scenarios",
           title: "Forecast scenarios",
-          description: "Sprint 24.2 route & subscription modelling with ROI / payback buckets from the cost ledger.",
+          description: "Model routes, volumes, and subscriptions with payback-style hints.",
           icon: Percent,
         },
         {
           href: "/admin/reports/cash-position",
           title: "Cash position",
-          description: "Starting capital, purchased spend, buffer, burn, runway, and profitability context.",
+          description: "Capital, spend so far, monthly burn, runway, and period profitability context.",
           icon: PiggyBank,
         },
         {
           href: "/admin/reports/subscription-profitability",
           title: "Subscription profitability",
-          description: "Subscription vs overage revenue, covered usage, cost allocations, and customer flags.",
+          description: "Subscription vs overage revenue, usage, attributed costs, and margin signals.",
           icon: Calculator,
         },
         routeProfitabilityCard,
@@ -147,7 +147,7 @@ export default function AdminReportingHubPage() {
         href: "/admin/reports/sales-performance",
         title: "Sales & POS performance",
         description:
-          "Sprint 24.5 — Stripe checkout funnel, staff-recorded POS payments, discounts, estimates, allocated costs, and sales attribution.",
+          "Online checkout funnel plus staff-recorded payments, discounts, estimates, and sales attribution.",
         icon: ShoppingCart,
       });
     }
@@ -155,8 +155,7 @@ export default function AdminReportingHubPage() {
       financeCards.push({
         href: "/admin/reports/executive-dashboard",
         title: "Executive dashboard",
-        description:
-          "Sprint 24.6 — profit, cash, runway, MRR, operational pulse, alerts and links into forecasts and detail reports.",
+        description: "Profit, cash, runway, recurring revenue, alerts, and links into detailed reports.",
         icon: LayoutGrid,
       });
     }

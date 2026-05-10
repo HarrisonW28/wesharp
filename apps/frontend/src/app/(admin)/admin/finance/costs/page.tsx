@@ -398,11 +398,11 @@ export default function AdminCostCataloguePage() {
       />
       <PageHeader
         title="Cost catalogue"
-        description="Internal workbook-aligned costs — GBP amounts from Laravel. Customer roles cannot access this data."
+        description="Fixed, recurring, and one-off supplier commitments — amounts in GBP. Not visible to customer portal users."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button type="button" size="sm" variant="outline" className="rounded-lg" asChild>
-              <Link href="/admin/finance/costs/import">Import workbook</Link>
+              <Link href="/admin/finance/costs/import">Import costs</Link>
             </Button>
             {canManage ? (
               <Button type="button" size="sm" className="rounded-lg" onClick={openCreate}>

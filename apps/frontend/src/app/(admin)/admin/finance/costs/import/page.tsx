@@ -185,8 +185,8 @@ export default function AdminCostImportPage() {
         ]}
       />
       <PageHeader
-        title="Cost workbook import"
-        description="Upload a Cost Plan / consumables workbook (CSV or Excel). Rows are validated before anything is written — commit only when the preview looks correct."
+        title="Import costs"
+        description="Upload a cost plan or consumables spreadsheet (CSV or Excel). Review validation errors, then commit when the preview matches what you expect."
         actions={
           <Button type="button" variant="outline" size="sm" className="rounded-lg" asChild>
             <Link href="/admin/finance/costs">

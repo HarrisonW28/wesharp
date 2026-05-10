@@ -88,4 +88,17 @@ final class CashPositionReportApiTest extends TestCase
             ->getJson('/api/admin/reports/cash-position')
             ->assertForbidden();
     }
+
+    public function test_demo_bundle_matches_catalogue_purchased_spend_and_seeded_starting_capital(): void
+    {
+        $this->seed(WeSharpDemoSeeder::class);
+        $finance = User::query()->where('email', 'finance@demo.wesharp.test')->firstOrFail();
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $finance->id)
+            ->getJson('/api/admin/reports/cash-position')
+            ->assertOk()
+            ->assertJsonPath('data.cash_position.starting_capital_pence', 105_000)
+            ->assertJsonPath('data.cash_position.purchased_spend_pence', 81_684)
+            ->assertJsonPath('data.cash_position.cash_buffer_pence', 105_000 - 81_684);
+    }
 }

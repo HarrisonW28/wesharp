@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\CostStatus;
 use App\Enums\UserRole;
 use App\Models\Consumable;
 use App\Models\User;
@@ -41,6 +42,28 @@ final class ConsumableInventoryApiTest extends TestCase
         self::assertIsArray($first);
         self::assertArrayHasKey('is_low_stock', $first);
         self::assertArrayHasKey('formatted_projected_reorder_cost', $first);
+    }
+
+    public function test_consumables_api_hides_rows_whose_catalogue_cost_item_is_archived(): void
+    {
+        $this->seed(CostCatalogSeeder::class);
+        $this->seed(ConsumableCatalogSeeder::class);
+
+        $consumable = Consumable::query()->with('costItem')->firstOrFail();
+        $item = $consumable->costItem;
+        self::assertNotNull($item);
+        $item->status = CostStatus::Archived;
+        $item->save();
+
+        $finance = User::factory()->create(['role' => UserRole::Finance]);
+
+        $items = $this->withHeader('X-WeSharp-Test-User-Id', (string) $finance->id)
+            ->getJson('/api/admin/consumables')
+            ->assertOk()
+            ->json('data.items');
+
+        self::assertCount(9, $items);
+        self::assertNull(collect($items)->firstWhere('name', $consumable->name));
     }
 
     public function test_low_stock_filter_returns_subset(): void

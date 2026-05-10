@@ -12,6 +12,8 @@ use Illuminate\Database\Seeder;
 
 /**
  * Baseline rows aligned with WeSharp costs workbook “Cost Plan” (Sprint 23.1).
+ *
+ * Purchased one-time rows sum to £816.84 — paired with demo starting capital £1,050 in {@see WeSharpDemoSeeder}.
  */
 final class CostCatalogSeeder extends Seeder
 {

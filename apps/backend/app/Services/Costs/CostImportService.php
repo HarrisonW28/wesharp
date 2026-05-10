@@ -775,7 +775,7 @@ final class CostImportService
             ->where('source_row', $excelRow)
             ->first();
 
-        if ($byPriorImport !== null) {
+        if ($byPriorImport !== null && $byPriorImport->status !== CostStatus::Archived) {
             return $byPriorImport;
         }
 
@@ -784,6 +784,7 @@ final class CostImportService
 
         return CostItem::query()
             ->where('frequency', $frequency)
+            ->whereNotIn('status', [CostStatus::Archived, CostStatus::Cancelled])
             ->get()
             ->first(function (CostItem $c) use ($nn, $tn): bool {
                 return $this->normLabel($c->name) === $nn

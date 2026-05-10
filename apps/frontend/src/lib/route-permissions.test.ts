@@ -88,4 +88,14 @@ describe("adminRouteAccessAllowed", () => {
     expect(adminRouteAccessAllowed("/admin/subscriptions", new Set(["subscriptions.view"]))).toBe(true);
     expect(adminRouteAccessAllowed("/admin/subscriptions", new Set())).toBe(false);
   });
+
+  it("allows /admin/finance when user has billing, costs, subscriptions, pricing, or single billing slice", () => {
+    expect(adminRouteAccessAllowed("/admin/finance", new Set(["payments.view", "invoices.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/finance", new Set(["costs.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/finance", new Set(["subscriptions.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/finance", new Set(["pricing.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/finance", new Set(["payments.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/finance", new Set(["invoices.view"]))).toBe(true);
+    expect(adminRouteAccessAllowed("/admin/finance", new Set(["dashboard.view"]))).toBe(false);
+  });
 });

@@ -277,6 +277,7 @@ final class FinanceDashboardService
         $rows = Consumable::query()
             ->with('costItem')
             ->where('status', ConsumableInventoryStatus::Active)
+            ->whereHas('costItem', fn ($q) => $q->where('status', '!=', CostStatus::Archived))
             ->get();
 
         $lowStock = 0;
@@ -292,6 +293,7 @@ final class FinanceDashboardService
             'definitions' => [
                 'low_stock' => 'Stock quantity is at or below reorder_threshold when a threshold is set.',
                 'projected_restock' => 'Shortfall to threshold × last recorded unit cost from the linked cost item.',
+                'archive_scope' => 'Consumables whose linked cost catalogue row is archived are excluded from SKU totals and restock projections.',
             ],
             'active_skus' => $rows->count(),
             'low_stock_count' => $lowStock,
