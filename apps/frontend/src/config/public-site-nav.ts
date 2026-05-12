@@ -61,6 +61,31 @@ export const PUBLIC_SITE_NAV_SECTIONS: PublicSiteNavSection[] = [
     ],
   },
   {
+    label: "Portal features",
+    links: [
+      {
+        href: "/trade-accounts/order-tracking",
+        label: "Order tracking",
+        description: "Live workshop status, photos at each stage, and inspections.",
+      },
+      {
+        href: "/trade-accounts/knife-register",
+        label: "Knife register",
+        description: "Tagged blades, per-knife history, and multi-site audits.",
+      },
+      {
+        href: "/trade-accounts/collections",
+        label: "Bookings & collections",
+        description: "Recurring slots, time windows, and self-service amendments.",
+      },
+      {
+        href: "/trade-accounts/invoicing",
+        label: "Invoicing & finance",
+        description: "Consolidated billing, statuses, and VAT-ready exports.",
+      },
+    ],
+  },
+  {
     label: "Coverage & help",
     links: [
       {

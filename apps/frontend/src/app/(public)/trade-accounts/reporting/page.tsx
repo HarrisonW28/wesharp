@@ -100,6 +100,40 @@ export default function TradeReportingPage() {
             the same dashboards.
           </p>
         </section>
+
+        <section className="space-y-3">
+          <h2 className="text-base font-semibold text-foreground">Go deeper on any one feature</h2>
+          <p>
+            Each of these covers one area of the portal in detail, with an illustrative preview of what your team would
+            see:
+          </p>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>
+              <Link href="/trade-accounts/order-tracking" className="font-medium text-foreground underline underline-offset-4">
+                Order tracking &amp; workshop visibility
+              </Link>{" "}
+              — live status, photo evidence per stage, inspections, and damage reports.
+            </li>
+            <li>
+              <Link href="/trade-accounts/knife-register" className="font-medium text-foreground underline underline-offset-4">
+                Knife register &amp; blade history
+              </Link>{" "}
+              — tagged blades, per-knife history, and multi-site audits.
+            </li>
+            <li>
+              <Link href="/trade-accounts/collections" className="font-medium text-foreground underline underline-offset-4">
+                Bookings &amp; collections
+              </Link>{" "}
+              — recurring routes, time windows, and self-service amendments.
+            </li>
+            <li>
+              <Link href="/trade-accounts/invoicing" className="font-medium text-foreground underline underline-offset-4">
+                Invoicing &amp; finance
+              </Link>{" "}
+              — consolidated billing, statuses, and VAT-ready exports.
+            </li>
+          </ul>
+        </section>
       </div>
     </MarketingArticle>
   );
