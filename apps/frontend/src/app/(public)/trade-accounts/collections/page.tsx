@@ -5,6 +5,7 @@ import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import {
   PortalCollectionsMarketingPreview,
 } from "@/components/marketing/MarketingPortalPreviews";
+import { PortalFeaturesBand } from "@/components/marketing/PortalFeaturesBand";
 
 export const metadata: Metadata = {
   title: "Bookings & collections",
@@ -22,9 +23,11 @@ export default function TradeCollectionsPage() {
   return (
     <MarketingArticle
       eyebrow="Portal features"
-      title="Bookings &amp; collections"
-      lead="Predictable route slots, named site contacts, and a self-service view of every upcoming visit — so brigades know when we&apos;re on the way and admin can amend without phoning the office."
+      title="Bookings & collections"
+      lead="Predictable route slots, named site contacts, and a self-service view of every upcoming visit — so brigades know when we're on the way and admin can amend without phoning the office."
     >
+      <PortalFeaturesBand variant="compact" currentKey="collections" />
+
       <div className="space-y-10">
         <section className="space-y-4">
           <h2 className="text-base font-semibold text-foreground">All your collections in one view</h2>
@@ -98,21 +101,15 @@ export default function TradeCollectionsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-foreground">Connected to everything else</h2>
+          <h2 className="text-base font-semibold text-foreground">Linked to every other portal record</h2>
           <p>
-            Each booking links straight to its{" "}
-            <Link href="/trade-accounts/order-tracking" className="font-medium text-foreground underline underline-offset-4">
-              order &amp; workshop status
-            </Link>
-            , its{" "}
-            <Link href="/trade-accounts/invoicing" className="font-medium text-foreground underline underline-offset-4">
-              invoice
-            </Link>
-            , and the{" "}
-            <Link href="/trade-accounts/knife-register" className="font-medium text-foreground underline underline-offset-4">
-              blades
+            Inside the portal, each booking links straight to its order &amp; workshop status, its invoice, and the
+            blades that travelled with it — so a single collection can be reviewed end-to-end without flipping tools.
+            Jump to those areas using the{" "}
+            <Link href="#portal-features" className="font-medium text-foreground underline underline-offset-4">
+              feature cards
             </Link>{" "}
-            that travelled with it — so a single collection can be reviewed end-to-end without flipping tools.
+            at the top of the page.
           </p>
         </section>
       </div>

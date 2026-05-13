@@ -5,6 +5,7 @@ import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import {
   PortalInvoicingMarketingPreview,
 } from "@/components/marketing/MarketingPortalPreviews";
+import { PortalFeaturesBand } from "@/components/marketing/PortalFeaturesBand";
 
 export const metadata: Metadata = {
   title: "Invoicing & finance",
@@ -22,9 +23,11 @@ export default function TradeInvoicingPage() {
   return (
     <MarketingArticle
       eyebrow="Portal features"
-      title="Invoicing &amp; finance"
+      title="Invoicing & finance"
       lead="Consolidated invoices, clear payment statuses, and downloadable VAT receipts — set up to match how your finance team already works."
     >
+      <PortalFeaturesBand variant="compact" currentKey="invoicing" />
+
       <div className="space-y-10">
         <section className="space-y-4">
           <h2 className="text-base font-semibold text-foreground">Everything finance needs, in one tab</h2>
@@ -103,31 +106,15 @@ export default function TradeInvoicingPage() {
           <h2 className="text-base font-semibold text-foreground">What this replaces</h2>
           <p>
             For most kitchens we onboard, invoices were a monthly PDF buried in an inbox attachment — sometimes addressed
-            to a chef who has since moved on. The portal puts every invoice next to its{" "}
-            <Link href="/trade-accounts/order-tracking" className="font-medium text-foreground underline underline-offset-4">
-              order
-            </Link>
-            ,{" "}
-            <Link href="/trade-accounts/collections" className="font-medium text-foreground underline underline-offset-4">
-              collection
-            </Link>
-            , and{" "}
-            <Link href="/trade-accounts/knife-register" className="font-medium text-foreground underline underline-offset-4">
-              blade list
-            </Link>{" "}
-            — so any line item can be traced back to what was actually done, in seconds.
+            to a chef who has since moved on. The portal puts every invoice next to the order, collection, and blade
+            list it relates to — so any line item can be traced back to what was actually done, in seconds.
           </p>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-base font-semibold text-foreground">Reporting context for finance</h2>
-          <p>
-            The portal pairs invoices with subscription usage and order activity, so finance is not picking between
-            three sources of truth. More detail on what teams see at a glance:{" "}
-            <Link href="/trade-accounts/reporting" className="font-medium text-foreground underline underline-offset-4">
-              reporting &amp; dashboards
-            </Link>
-            .
+          <p className="text-sm text-muted-foreground">
+            Jump to those linked areas using the{" "}
+            <Link href="#portal-features" className="font-medium text-foreground underline underline-offset-4">
+              feature cards
+            </Link>{" "}
+            at the top of the page.
           </p>
         </section>
       </div>

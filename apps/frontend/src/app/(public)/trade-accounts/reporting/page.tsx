@@ -6,11 +6,12 @@ import {
   PortalOverviewMarketingPreview,
   PortalSubscriptionMarketingPreview,
 } from "@/components/marketing/MarketingPortalPreviews";
+import { PortalFeaturesBand } from "@/components/marketing/PortalFeaturesBand";
 
 export const metadata: Metadata = {
   title: "Reporting & dashboards",
   description:
-    "How trade and multi-site kitchens see collections, orders, knives, invoices, and subscription usage in the WeSharp customer portal.",
+    "Cross-site dashboards, subscription allowance reporting, and finance-friendly invoice lists — all in one signed-in WeSharp customer portal.",
   openGraph: {
     title: "WeSharp — Reporting & dashboards for business accounts",
     description:
@@ -22,117 +23,88 @@ export const metadata: Metadata = {
 export default function TradeReportingPage() {
   return (
     <MarketingArticle
-      eyebrow="Trade & hospitality accounts"
-      title="Reporting & dashboards in your portal"
-      lead="Your team signs in to one place — no chasing spreadsheets or inbox threads to know what is happening across sites."
+      eyebrow="Portal features"
+      title="Reporting & dashboards"
+      lead="One signed-in dashboard rolls up every site — next collection, live orders, knives in the workshop, and invoices waiting on finance — so ops, head office, and finance read the same picture."
     >
+      <PortalFeaturesBand variant="compact" currentKey="reporting" />
+
       <div className="space-y-10">
         <section className="space-y-4">
-          <h2 className="text-base font-semibold text-foreground">Overview dashboard</h2>
+          <h2 className="text-base font-semibold text-foreground">The overview dashboard</h2>
           <p>
             The signed-in{" "}
             <Link href="/register" className="font-medium text-foreground underline underline-offset-4">
               customer portal
             </Link>{" "}
             opens with a snapshot built for busy kitchens: your next scheduled collection, orders still in progress, and
-            invoices that need attention. Quick links take you straight into bookings, orders, knives, or invoices when
-            you need the full list.
+            invoices that need attention. Quick links jump straight into the full lists.
           </p>
           <PortalOverviewMarketingPreview />
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-foreground">Operational visibility</h2>
+          <h2 className="text-base font-semibold text-foreground">Cross-site operational visibility</h2>
+          <p>
+            Where the deep-dive pages above show one feature at a time, the dashboard is where it all comes together —
+            useful for head office, area managers, and rotation chefs who need a quick state-of-the-group.
+          </p>
           <ul className="list-disc space-y-2 pl-5">
             <li>
-              <span className="text-foreground">Bookings</span> — dates, time windows, and status so sites know when
-              we&apos;re expected.
+              <span className="text-foreground">Bookings rollup</span> — every confirmed visit across sites with dates
+              and time windows, so a single screen shows who is being collected next.
             </li>
             <li>
-              <span className="text-foreground">Orders</span> — live status from collection through workshop and return,
-              so front-of-house and finance share the same picture.
+              <span className="text-foreground">Live orders</span> — workshop status across the group, instead of
+              chasing one site at a time.
             </li>
             <li>
-              <span className="text-foreground">Knives</span> — register-level detail for blades you track with us,
-              helpful when auditing kit across venues.
+              <span className="text-foreground">Knives at a glance</span> — totals tracked vs in the workshop right now,
+              filterable by site.
             </li>
           </ul>
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-base font-semibold text-foreground">Plans &amp; allowances</h2>
+          <h2 className="text-base font-semibold text-foreground">Subscription &amp; allowance reporting</h2>
           <p>
             On a rolling programme,{" "}
             <Link href="/account/subscription" className="font-medium text-foreground underline underline-offset-4">
               your plan
             </Link>{" "}
-            summarises included visits and knife allowance for the current period — so ops and finance see the same usage
-            story. Pay-as-you-go kitchens get the same portal for bookings and invoices; allowance tiles only appear when
-            they apply.
+            tile summarises included visits and knife allowance for the current billing period — so ops and finance see
+            the same usage story before overage is invoiced. Pay-as-you-go kitchens get the same portal for bookings and
+            invoices; allowance tiles only appear when they apply.
           </p>
           <PortalSubscriptionMarketingPreview />
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-foreground">Finance-friendly exports</h2>
+          <h2 className="text-base font-semibold text-foreground">Finance-friendly lists</h2>
           <p>
-            Invoices list with statuses makes it simple to match payments and chase anything outstanding. Together with
-            subscription usage on{" "}
+            Invoice rows with clear statuses make it simple to match payments and chase anything outstanding. Combined
+            with subscription usage on{" "}
             <Link href="/account/subscription" className="font-medium text-foreground underline underline-offset-4">
               your plan
-            </Link>{" "}
-            (once you&apos;re logged in), finance gets allowance and overage context without a separate reporting tool.
+            </Link>
+            , finance gets allowance and overage context without a separate reporting tool.
           </p>
           <p className="text-sm text-muted-foreground">
-            Administrative analytics inside our internal ops console are separate from this portal; what you see here is
-            scoped to your organisation and the users you invite.
+            Administrative analytics inside our internal ops console are separate from this portal; what your team sees
+            is scoped to your organisation and the users you invite.
           </p>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-foreground">Multi-site accounts</h2>
+          <h2 className="text-base font-semibold text-foreground">Multi-site &amp; consolidated billing</h2>
           <p>
             Named locations and consolidated billing are part of how we set up{" "}
             <Link href="/trade-accounts" className="font-medium text-foreground underline underline-offset-4">
               trade accounts
             </Link>
-            . During onboarding we agree who gets portal access and how invoices are addressed — then everyone works from
-            the same dashboards.
+            . During onboarding we agree who gets portal access and how invoices are addressed — then everyone works
+            from the same dashboards.
           </p>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-base font-semibold text-foreground">Go deeper on any one feature</h2>
-          <p>
-            Each of these covers one area of the portal in detail, with an illustrative preview of what your team would
-            see:
-          </p>
-          <ul className="list-disc space-y-2 pl-5">
-            <li>
-              <Link href="/trade-accounts/order-tracking" className="font-medium text-foreground underline underline-offset-4">
-                Order tracking &amp; workshop visibility
-              </Link>{" "}
-              — live status, photo evidence per stage, inspections, and damage reports.
-            </li>
-            <li>
-              <Link href="/trade-accounts/knife-register" className="font-medium text-foreground underline underline-offset-4">
-                Knife register &amp; blade history
-              </Link>{" "}
-              — tagged blades, per-knife history, and multi-site audits.
-            </li>
-            <li>
-              <Link href="/trade-accounts/collections" className="font-medium text-foreground underline underline-offset-4">
-                Bookings &amp; collections
-              </Link>{" "}
-              — recurring routes, time windows, and self-service amendments.
-            </li>
-            <li>
-              <Link href="/trade-accounts/invoicing" className="font-medium text-foreground underline underline-offset-4">
-                Invoicing &amp; finance
-              </Link>{" "}
-              — consolidated billing, statuses, and VAT-ready exports.
-            </li>
-          </ul>
         </section>
       </div>
     </MarketingArticle>

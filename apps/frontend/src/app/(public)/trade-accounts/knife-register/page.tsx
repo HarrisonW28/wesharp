@@ -5,6 +5,7 @@ import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import {
   PortalKnifeRegisterMarketingPreview,
 } from "@/components/marketing/MarketingPortalPreviews";
+import { PortalFeaturesBand } from "@/components/marketing/PortalFeaturesBand";
 
 export const metadata: Metadata = {
   title: "Knife register & blade history",
@@ -22,9 +23,11 @@ export default function TradeKnifeRegisterPage() {
   return (
     <MarketingArticle
       eyebrow="Portal features"
-      title="Knife register &amp; blade history"
+      title="Knife register & blade history"
       lead="A living inventory of every blade we look after — tagged, photographed, and tied to its own history across orders, inspections, and sites."
     >
+      <PortalFeaturesBand variant="compact" currentKey="knife-register" />
+
       <div className="space-y-10">
         <section className="space-y-4">
           <h2 className="text-base font-semibold text-foreground">One register, every blade</h2>
@@ -94,21 +97,14 @@ export default function TradeKnifeRegisterPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-foreground">Connected to the rest of the portal</h2>
+          <h2 className="text-base font-semibold text-foreground">Linked to every other portal record</h2>
           <p>
-            Each register entry links straight to the relevant{" "}
-            <Link href="/trade-accounts/order-tracking" className="font-medium text-foreground underline underline-offset-4">
-              order
-            </Link>
-            ,{" "}
-            <Link href="/trade-accounts/collections" className="font-medium text-foreground underline underline-offset-4">
-              collection
-            </Link>
-            , or{" "}
-            <Link href="/trade-accounts/invoicing" className="font-medium text-foreground underline underline-offset-4">
-              invoice
+            Inside the portal, each register entry links straight to the relevant order, collection, and invoice — so
+            the &ldquo;why&rdquo; behind every change of state is one click away. See those areas in the{" "}
+            <Link href="#portal-features" className="font-medium text-foreground underline underline-offset-4">
+              feature cards
             </Link>{" "}
-            — so the why behind every change of state is one click away.
+            at the top of the page.
           </p>
         </section>
       </div>

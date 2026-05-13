@@ -6,6 +6,7 @@ import {
   PortalOrderTrackingMarketingPreview,
   PortalQualityHighlightsStrip,
 } from "@/components/marketing/MarketingPortalPreviews";
+import { PortalFeaturesBand } from "@/components/marketing/PortalFeaturesBand";
 
 export const metadata: Metadata = {
   title: "Order tracking & workshop visibility",
@@ -26,6 +27,8 @@ export default function TradeOrderTrackingPage() {
       title="Order tracking & workshop visibility"
       lead="See exactly where every batch of knives is — from pickup at the kitchen door to the workshop bench and back — without phoning the shop or chasing email threads."
     >
+      <PortalFeaturesBand variant="compact" currentKey="order-tracking" />
+
       <div className="space-y-10">
         <section className="space-y-4">
           <h2 className="text-base font-semibold text-foreground">A live status that your team actually trusts</h2>
@@ -102,28 +105,6 @@ export default function TradeOrderTrackingPage() {
           <PortalQualityHighlightsStrip />
         </section>
 
-        <section className="space-y-3">
-          <h2 className="text-base font-semibold text-foreground">See the rest of the portal</h2>
-          <p>
-            Order tracking sits alongside the{" "}
-            <Link href="/trade-accounts/knife-register" className="font-medium text-foreground underline underline-offset-4">
-              knife register
-            </Link>
-            ,{" "}
-            <Link href="/trade-accounts/collections" className="font-medium text-foreground underline underline-offset-4">
-              collections &amp; bookings
-            </Link>
-            ,{" "}
-            <Link href="/trade-accounts/invoicing" className="font-medium text-foreground underline underline-offset-4">
-              invoicing &amp; finance
-            </Link>
-            , and{" "}
-            <Link href="/trade-accounts/reporting" className="font-medium text-foreground underline underline-offset-4">
-              reporting &amp; dashboards
-            </Link>
-            . Each link goes deeper on one part of the same signed-in workspace.
-          </p>
-        </section>
       </div>
     </MarketingArticle>
   );
