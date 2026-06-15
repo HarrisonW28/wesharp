@@ -20,7 +20,7 @@ export const SERVICE_AREAS: ServiceArea[] = [
     region: "England",
     seoCity: "Manchester",
     metaDescription:
-      "Book professional knife sharpening in Greater Manchester. Doorstep collection, workshop sharpening and tracked return — covering Manchester, Salford, Stockport and surrounding postcodes.",
+      "Professional knife sharpening Manchester with doorstep collection. Chef & Japanese knives sharpened in our workshop and returned to your door. Book online.",
     lead:
       "WeSharp collects blunt knives from homes and hospitality kitchens across Greater Manchester, sharpens them in our workshop, and brings them back ready for service.",
     paragraphs: [
@@ -36,7 +36,7 @@ export const SERVICE_AREAS: ServiceArea[] = [
     region: "England",
     seoCity: "Liverpool",
     metaDescription:
-      "Book professional knife sharpening in Liverpool and the wider city region. Home and business collections, workshop edges, and tracked return across Merseyside postcodes we serve.",
+      "Professional knife sharpening Liverpool with doorstep collection. Chef & Japanese knives sharpened in our workshop and returned to your door. Book online.",
     lead:
       "From Liverpool itself to Wirral, Knowsley, Sefton and St Helens, we offer the same doorstep collection and return service that WeSharp runs across the North West.",
     paragraphs: [
