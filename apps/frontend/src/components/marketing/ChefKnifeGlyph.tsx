@@ -10,12 +10,12 @@ type ChefKnifeGlyphProps = {
   style?: CSSProperties;
 };
 
-/** Minimal knife silhouettes for decorative backgrounds — `currentColor` + opacity from parent. */
+/** Side-profile knife silhouettes — spine left, belly right; `currentColor` + opacity from parent. */
 export function ChefKnifeGlyph({ variant = "chef", className, style }: ChefKnifeGlyphProps) {
   if (variant === "paring") {
     return (
       <svg
-        viewBox="0 0 48 160"
+        viewBox="0 0 56 168"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className={cn("h-auto w-full", className)}
@@ -23,11 +23,11 @@ export function ChefKnifeGlyph({ variant = "chef", className, style }: ChefKnife
         aria-hidden
       >
         <path
-          d="M24 6c8 42 10 78 10 108 0 8-4 14-10 16-6-2-10-8-10-16 0-30 2-66 10-108Z"
+          d="M30 6 22 14v58c0 28 4 48 10 58l8 2c6-10 10-30 10-58V14L30 6Z"
           fill="currentColor"
         />
-        <rect x="18" y="128" width="12" height="6" rx="1.5" fill="currentColor" opacity="0.9" />
-        <rect x="19" y="134" width="10" height="22" rx="3" fill="currentColor" opacity="0.75" />
+        <path d="M20 132h20v6H20v-6Z" fill="currentColor" opacity="0.9" />
+        <path d="M22 138h16v24H22V138Z" fill="currentColor" opacity="0.78" />
       </svg>
     );
   }
@@ -35,7 +35,7 @@ export function ChefKnifeGlyph({ variant = "chef", className, style }: ChefKnife
   if (variant === "santoku") {
     return (
       <svg
-        viewBox="0 0 56 200"
+        viewBox="0 0 88 220"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className={cn("h-auto w-full", className)}
@@ -43,20 +43,24 @@ export function ChefKnifeGlyph({ variant = "chef", className, style }: ChefKnife
         aria-hidden
       >
         <path
-          d="M28 8c6 18 8 52 8 88 0 6-1 12-2 18l14-2c2-8 2-18 2-28 0-36-4-68-10-92-4 4-8 10-12 16Z"
+          d="M46 6 30 16v72c0 8 2 16 4 22l22-4c2-10 2-22 2-34V16L46 6Z"
           fill="currentColor"
           opacity="0.95"
         />
-        <path d="M16 114c8 24 10 48 10 62 0 6-2 10-6 12-4-2-6-6-6-12 0-14 2-38 10-62Z" fill="currentColor" />
-        <rect x="20" y="186" width="16" height="6" rx="1.5" fill="currentColor" opacity="0.9" />
-        <rect x="21" y="192" width="14" height="8" rx="2" fill="currentColor" opacity="0.75" />
+        <path
+          d="M28 114c0 34 6 58 14 68l6 2c8-10 14-34 14-68 0-8-2-16-4-22l-20 4c-2 6-4 14-4 22Z"
+          fill="currentColor"
+        />
+        <path d="M24 186h40v6H24v-6Z" fill="currentColor" opacity="0.9" />
+        <path d="M26 192h36v22H26V192Z" fill="currentColor" opacity="0.78" />
       </svg>
     );
   }
 
+  /* Chef's knife / gyuto — asymmetric side profile: flat spine left, belly curves right */
   return (
     <svg
-      viewBox="0 0 64 240"
+      viewBox="0 0 80 260"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={cn("h-auto w-full", className)}
@@ -64,13 +68,24 @@ export function ChefKnifeGlyph({ variant = "chef", className, style }: ChefKnife
       aria-hidden
     >
       <path
-        d="M32 4c10 58 12 108 12 152 0 10-5 18-12 20-7-2-12-10-12-20 0-44 2-94 12-152Z"
+        d="M38 5c10 6 16 38 14 72-1 28-7 52-16 68l-12 4V18L38 5Z"
+        fill="currentColor"
+        opacity="0.16"
+      />
+      <path
+        d="M38 5c12 8 18 42 16 78-2 32-10 58-20 74l-10 2V18L38 5Z"
         fill="currentColor"
       />
-      <rect x="22" y="174" width="20" height="8" rx="2" fill="currentColor" opacity="0.92" />
-      <rect x="24" y="182" width="16" height="52" rx="5" fill="currentColor" opacity="0.78" />
-      <circle cx="32" cy="210" r="2.5" fill="currentColor" opacity="0.5" />
-      <circle cx="32" cy="222" r="2.5" fill="currentColor" opacity="0.5" />
+      <path
+        d="M38 5c14 10 20 48 18 86-2 34-10 62-22 78-2 1-4 2-6 2v-153l10-13Z"
+        fill="currentColor"
+        opacity="0.28"
+      />
+      <path d="M20 155h40c3 0 6 2 7 5l2 8H18l2-8c1-3 4-5 7-5Z" fill="currentColor" opacity="0.92" />
+      <path d="M22 168h36v72H22V168Z" fill="currentColor" opacity="0.82" />
+      <circle cx="30" cy="192" r="2.5" fill="currentColor" opacity="0.45" />
+      <circle cx="30" cy="210" r="2.5" fill="currentColor" opacity="0.45" />
+      <circle cx="30" cy="228" r="2.5" fill="currentColor" opacity="0.45" />
     </svg>
   );
 }
