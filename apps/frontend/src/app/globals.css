@@ -165,9 +165,25 @@
 @media (prefers-reduced-motion: reduce) {
   .wesharp-hero-blob-a,
   .wesharp-hero-blob-b,
-  .wesharp-hero-edge-glint {
+  .wesharp-hero-edge-glint,
+  .wesharp-floating-knife {
     animation: none !important;
   }
+}
+
+/** Public site — gentle idle drift on decorative knife glyphs (scroll parallax is in JS). */
+@keyframes wesharp-floating-knife-idle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.wesharp-floating-knife {
+  animation: wesharp-floating-knife-idle 10s ease-in-out infinite;
 }
 
 /* Print: hide app chrome (sidebars, top bars); keep invoice documents readable */

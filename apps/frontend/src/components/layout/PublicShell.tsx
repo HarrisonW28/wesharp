@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, MapPin, Menu } from "lucide-react";
 
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
+import { FloatingKnivesScrollDecor } from "@/components/marketing/FloatingKnivesScrollDecor";
 import { PublicSiteAccountControl } from "@/components/layout/PublicSiteAccountControl";
 import { PublicSiteNavSectionCards, PublicSiteNavSectionsCards } from "@/components/layout/PublicSiteNavCards";
 import { PublicSiteNavMenu } from "@/components/layout/PublicSiteNavMenu";
@@ -87,7 +88,8 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="relative flex min-h-screen flex-col bg-background">
+      <FloatingKnivesScrollDecor />
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
         <div className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "relative")}>
           <div className="flex h-14 flex-nowrap items-center justify-between gap-2 md:h-16 md:gap-3">
@@ -186,7 +188,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       </header>
       <div
         className={cn(
-          "min-w-0 flex-1 overflow-x-hidden",
+          "relative z-10 min-w-0 flex-1 overflow-x-hidden",
           !hideStickyBar && showMobileSticky && "pb-[4.75rem] md:pb-0",
         )}
       >
@@ -213,7 +215,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       ) : null}
-      <footer className="border-t py-10 text-center text-xs text-muted-foreground">
+      <footer className="relative z-10 border-t py-10 text-center text-xs text-muted-foreground">
         <div className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "flex flex-col flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:flex-row")}>
           <span>© {new Date().getFullYear()} WeSharp</span>
           <Link href="/how-it-works" className="hover:text-foreground">
