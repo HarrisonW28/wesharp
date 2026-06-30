@@ -1,10 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import {
+  MapPin,
+  Truck,
+  Wrench,
+  CheckCircle2,
+  Package,
+  Clock,
+  Shield,
+  Star,
+  Home,
+  Building2,
+} from "lucide-react";
 
 import { JsonLd } from "@/components/marketing/JsonLd";
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { ServiceAreaCheckerSection } from "@/components/marketing/ServiceAreaCheckerSection";
+import { ProcessStepsGrid } from "@/components/marketing/ProcessStepCard";
+import { IconFeatureGrid } from "@/components/marketing/IconFeatureCard";
 import { Button } from "@/components/ui/button";
 import {
   LIVERPOOL_FAQS,
@@ -40,28 +54,56 @@ export default function LiverpoolServiceAreaPage() {
       <JsonLd data={liverpoolLocalBusinessSchema()} />
 
       <MarketingArticle title={LIVERPOOL_H1} lead={LIVERPOOL_LEAD} showFooterCtas={false}>
-        <p>
-          If you have been searching for <strong className="font-medium text-foreground">knife sharpening near me Liverpool</strong>,
-          you do not need to carry blades on the ferry or queue on the high street. WeSharp collects from your address on a
-          scheduled round, sharpens every knife in our workshop, and returns them with a clear edge you can feel on the board.
-          That is the same flow whether you cook at home in Aigburth or run a pass in the Baltic Triangle.
-        </p>
-        <p>
-          Professional sharpening does more than make cutting easier. A properly maintained bevel removes less steel over time than
-          repeated passes on a blunt edge with a steel or pull-through sharpener. Knives stay thinner, truer, and in service for
-          longer — which matters when you have invested in good steel or Japanese profiles. Our{" "}
-          <Link href="/services" className="font-medium text-foreground underline underline-offset-4">
-            knife sharpening service Liverpool
-          </Link>{" "}
-          customers book online, get a written quote before work starts, and track progress in their account where their programme
-          includes it.
-        </p>
-        <p>
-          Merseyside kitchens — domestic and professional — work their edges hard. Fish prep, veg on the board, and constant
-          service on the pass all take a toll. Honing with a rod straightens the edge for a while, but it does not replace
-          sharpening once the bevel has rounded or chipped. Sending knives to a workshop on a regular rhythm keeps them
-          predictable: safer to use, faster on the pass, and less likely to need premature replacement.
-        </p>
+        <div className="space-y-4 rounded-2xl border bg-muted/20 p-5 md:p-6">
+          <p>
+            If you have been searching for <strong className="font-medium text-foreground">knife sharpening near me Liverpool</strong>,
+            you do not need to carry blades on the ferry or queue on the high street. WeSharp collects from your address on a
+            scheduled round, sharpens every knife in our workshop, and returns them with a clear edge you can feel on the board.
+            That is the same flow whether you cook at home in Aigburth or run a pass in the Baltic Triangle.
+          </p>
+          <p>
+            Professional sharpening does more than make cutting easier. A properly maintained bevel removes less steel over time than
+            repeated passes on a blunt edge with a steel or pull-through sharpener. Knives stay thinner, truer, and in service for
+            longer — which matters when you have invested in good steel or Japanese profiles. Our{" "}
+            <Link href="/services" className="font-medium text-foreground underline underline-offset-4">
+              knife sharpening service Liverpool
+            </Link>{" "}
+            customers book online, get a written quote before work starts, and track progress in their account where their programme
+            includes it.
+          </p>
+          <p className="mb-0">
+            Merseyside kitchens — domestic and professional — work their edges hard. Fish prep, veg on the board, and constant
+            service on the pass all take a toll. Honing with a rod straightens the edge for a while, but it does not replace
+            sharpening once the bevel has rounded or chipped. Sending knives to a workshop on a regular rhythm keeps them
+            predictable: safer to use, faster on the pass, and less likely to need premature replacement.
+          </p>
+        </div>
+
+        <IconFeatureGrid
+          columns={4}
+          features={[
+            {
+              icon: Truck,
+              title: "Collection & Return",
+              description: "We pick up from your door and deliver sharpened knives back — no shop visits needed.",
+            },
+            {
+              icon: Wrench,
+              title: "Workshop Quality",
+              description: "Professional equipment and consistent technique on every blade, every time.",
+            },
+            {
+              icon: Shield,
+              title: "Logged Custody",
+              description: "Each knife tracked from collection to return with full transparency.",
+            },
+            {
+              icon: Clock,
+              title: "Fast Turnaround",
+              description: "Most Liverpool collections returned within a few working days.",
+            },
+          ]}
+        />
 
         <section className="space-y-4">
           <h2 className={sectionHeadingClass}>Professional Knife Sharpening Across Liverpool</h2>
@@ -155,65 +197,80 @@ export default function LiverpoolServiceAreaPage() {
           </p>
         </section>
 
-        <section className="space-y-4">
-          <h2 className={sectionHeadingClass}>Knife Sharpening for Home Cooks</h2>
-          <p>
-            You do not need a restaurant-sized set to book. Many Liverpool households send six to twelve knives once or twice a
-            year — a chef&apos;s knife, a paring knife, a serrated loaf knife, and whatever else has gone dull in the block. We
-            collect from your door, so you are not juggling blades on the bus or losing an afternoon in town.
-          </p>
-          <p>
-            Before we sharpen, you see guide pricing on our{" "}
-            <Link href="/pricing" className="font-medium text-foreground underline underline-offset-4">
-              pricing page
-            </Link>{" "}
-            and receive a written quote when we confirm the booking. That keeps{" "}
-            <strong className="font-medium text-foreground">professional knife sharpening Liverpool</strong> straightforward:
-            book a window, hand over a bag, and get knives back that slice tomatoes without pressure. If you sharpen often, a{" "}
-            <Link href="/subscriptions" className="font-medium text-foreground underline underline-offset-4">
-              regular programme
-            </Link>{" "}
-            can bundle visits and allowances so you are not rebooking from scratch each time.
-          </p>
-          <p>
-            Many home cooks keep one good chef&apos;s knife and let the rest of the block go dull. That is workable until prep
-            starts to feel like work. A single collection can reset the knives you actually reach for — often for less than the
-            cost of replacing one mid-range blade. If you are not sure how many knives to send, count what you use in a normal
-            week and add your serrated and paring knives; we quote on the actual count at confirmation.
-          </p>
+        <section className="space-y-5">
+          <h2 className={sectionHeadingClass}>Who We Serve</h2>
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Home className="h-5 w-5" aria-hidden />
+                </span>
+                <h3 className={sectionHeadingClass}>Knife Sharpening for Home Cooks</h3>
+              </div>
+              <p className="text-sm leading-relaxed">
+                You do not need a restaurant-sized set to book. Many Liverpool households send six to twelve knives once or twice a
+                year — a chef&apos;s knife, a paring knife, a serrated loaf knife, and whatever else has gone dull in the block. We
+                collect from your door, so you are not juggling blades on the bus or losing an afternoon in town.
+              </p>
+              <p className="text-sm leading-relaxed">
+                Before we sharpen, you see guide pricing on our{" "}
+                <Link href="/pricing" className="font-medium text-foreground underline underline-offset-4">
+                  pricing page
+                </Link>{" "}
+                and receive a written quote when we confirm the booking. That keeps{" "}
+                <strong className="font-medium text-foreground">professional knife sharpening Liverpool</strong> straightforward:
+                book a window, hand over a bag, and get knives back that slice tomatoes without pressure. If you sharpen often, a{" "}
+                <Link href="/subscriptions" className="font-medium text-foreground underline underline-offset-4">
+                  regular programme
+                </Link>{" "}
+                can bundle visits and allowances so you are not rebooking from scratch each time.
+              </p>
+              <p className="mb-0 text-sm leading-relaxed">
+                Many home cooks keep one good chef&apos;s knife and let the rest of the block go dull. That is workable until prep
+                starts to feel like work. A single collection can reset the knives you actually reach for — often for less than the
+                cost of replacing one mid-range blade. If you are not sure how many knives to send, count what you use in a normal
+                week and add your serrated and paring knives; we quote on the actual count at confirmation.
+              </p>
+            </div>
+
+            <div className="space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Building2 className="h-5 w-5" aria-hidden />
+                </span>
+                <h3 className={sectionHeadingClass}>Knife Sharpening for Restaurants and Hospitality Businesses</h3>
+              </div>
+              <p className="text-sm leading-relaxed">
+                <strong className="font-medium text-foreground">Restaurant knife sharpening Liverpool</strong> is built around
+                reliability: agreed collection windows, logged custody, and edges that hold through a busy service. We work with
+                independent restaurants, hotel kitchens, catering companies, and professional chefs who cannot afford mystery gaps on
+                the knife rack.
+              </p>
+              <p className="text-sm leading-relaxed">
+                Hotels with multiple outlets can align routes so finance sees predictable invoicing while each site tracks its own
+                blades. Catering companies sending kit between events benefit from the same workshop quality without staff losing
+                time to drop-offs. For groups and multi-site operators,{" "}
+                <Link href="/trade-accounts" className="font-medium text-foreground underline underline-offset-4">
+                  trade accounts
+                </Link>{" "}
+                bring consolidated billing and portal visibility across venues.
+              </p>
+              <p className="text-sm leading-relaxed">
+                Every blade is logged on collection and matched to your order on return. Where your programme includes customer-visible
+                evidence, timestamped photos can appear in your account — useful for HACCP-minded teams and site managers who want
+                proof of work without chasing updates.
+              </p>
+              <p className="mb-0 text-sm leading-relaxed">
+                Head chefs and sous chefs rarely have time to chase a sharpening shop during service. A fixed collection window — early
+                morning or between lunch and dinner — means knives leave and return without the pass going short. For high-volume sites
+                around the docks, Baltic Triangle, and suburban restaurant rows, rolling programmes spread cost across the month and
+                keep edges on a cadence the brigade can plan around.
+              </p>
+            </div>
+          </div>
         </section>
 
-        <section className="space-y-4">
-          <h2 className={sectionHeadingClass}>Knife Sharpening for Restaurants and Hospitality Businesses</h2>
-          <p>
-            <strong className="font-medium text-foreground">Restaurant knife sharpening Liverpool</strong> is built around
-            reliability: agreed collection windows, logged custody, and edges that hold through a busy service. We work with
-            independent restaurants, hotel kitchens, catering companies, and professional chefs who cannot afford mystery gaps on
-            the knife rack.
-          </p>
-          <p>
-            Hotels with multiple outlets can align routes so finance sees predictable invoicing while each site tracks its own
-            blades. Catering companies sending kit between events benefit from the same workshop quality without staff losing
-            time to drop-offs. For groups and multi-site operators,{" "}
-            <Link href="/trade-accounts" className="font-medium text-foreground underline underline-offset-4">
-              trade accounts
-            </Link>{" "}
-            bring consolidated billing and portal visibility across venues.
-          </p>
-          <p>
-            Every blade is logged on collection and matched to your order on return. Where your programme includes customer-visible
-            evidence, timestamped photos can appear in your account — useful for HACCP-minded teams and site managers who want
-            proof of work without chasing updates.
-          </p>
-          <p>
-            Head chefs and sous chefs rarely have time to chase a sharpening shop during service. A fixed collection window — early
-            morning or between lunch and dinner — means knives leave and return without the pass going short. For high-volume sites
-            around the docks, Baltic Triangle, and suburban restaurant rows, rolling programmes spread cost across the month and
-            keep edges on a cadence the brigade can plan around.
-          </p>
-        </section>
-
-        <section className="space-y-4">
+        <section className="space-y-5">
           <h2 className={sectionHeadingClass}>Our Sharpening Process</h2>
           <p>
             From first booking to blades back on the rack, the flow is the same for homes and hospitality. More detail lives on our{" "}
@@ -222,55 +279,83 @@ export default function LiverpoolServiceAreaPage() {
             </Link>{" "}
             page; here is what happens on a typical Liverpool collection.
           </p>
-          <ol className="list-decimal space-y-3 pl-5">
-            <li>
-              <strong className="font-medium text-foreground">Collection</strong> — you book a date and window. Our driver
-              arrives, logs each knife, and takes them to the workshop in secure custody.
-            </li>
-            <li>
-              <strong className="font-medium text-foreground">Inspection</strong> — we assess steel type, existing bevel, chips,
-              and handle condition. Anything unusual is flagged before sharpening begins.
-            </li>
-            <li>
-              <strong className="font-medium text-foreground">Sharpening</strong> — edges are restored on professional equipment,
-              matching the angle already on the blade unless you have asked for a specific profile.
-            </li>
-            <li>
-              <strong className="font-medium text-foreground">Polishing</strong> — burrs are removed and the edge is refined so
-              it feels clean on the board, not toothy or rolled.
-            </li>
-            <li>
-              <strong className="font-medium text-foreground">Quality check</strong> — each knife is inspected before it is
-              packed for return. Nothing leaves without passing our workshop standard.
-            </li>
-            <li>
-              <strong className="font-medium text-foreground">Return delivery</strong> — sharpened knives come back on a follow-up
-              run, ready for service, with status visible in your account where tracking is enabled.
-            </li>
-          </ol>
+          <ProcessStepsGrid
+            columns={3}
+            steps={[
+              {
+                step: 1,
+                title: "Collection",
+                description:
+                  "You book a date and window. Our driver arrives, logs each knife, and takes them to the workshop in secure custody.",
+              },
+              {
+                step: 2,
+                title: "Inspection",
+                description:
+                  "We assess steel type, existing bevel, chips, and handle condition. Anything unusual is flagged before sharpening begins.",
+              },
+              {
+                step: 3,
+                title: "Sharpening",
+                description:
+                  "Edges are restored on professional equipment, matching the angle already on the blade unless you have asked for a specific profile.",
+              },
+              {
+                step: 4,
+                title: "Polishing",
+                description:
+                  "Burrs are removed and the edge is refined so it feels clean on the board, not toothy or rolled.",
+              },
+              {
+                step: 5,
+                title: "Quality Check",
+                description:
+                  "Each knife is inspected before it is packed for return. Nothing leaves without passing our workshop standard.",
+              },
+              {
+                step: 6,
+                title: "Return Delivery",
+                description:
+                  "Sharpened knives come back on a follow-up run, ready for service, with status visible in your account where tracking is enabled.",
+              },
+            ]}
+          />
         </section>
 
-        <section className="space-y-4">
+        <section className="space-y-5">
           <h2 className={sectionHeadingClass}>Why Liverpool Customers Choose WeSharp</h2>
-          <ul className="list-disc space-y-2 pl-5">
-            <li>
-              <strong className="font-medium text-foreground">Convenience</strong> — true{" "}
-              <strong className="font-medium text-foreground">mobile knife sharpening Liverpool</strong>: collection and return
-              at your address, not a shop queue or parcel faff.
-            </li>
-            <li>
-              <strong className="font-medium text-foreground">Consistent results</strong> — workshop sharpening on every job, not
-              a different result depending on who is on the counter.
-            </li>
-            <li>
-              <strong className="font-medium text-foreground">Professional equipment</strong> — proper stones, guides, and
-              inspection discipline for Western and Japanese profiles alike.
-            </li>
-            <li>
-              <strong className="font-medium text-foreground">Collection and return service</strong> — logged handovers, clear
-              quotes in GBP, and tracked orders from door to door.
-            </li>
-          </ul>
+          <IconFeatureGrid
+            columns={2}
+            features={[
+              {
+                icon: MapPin,
+                title: "True Mobile Service",
+                description: (
+                  <>
+                    <strong className="font-medium text-foreground">Mobile knife sharpening Liverpool</strong>: collection and
+                    return at your address, not a shop queue or parcel faff.
+                  </>
+                ),
+              },
+              {
+                icon: Star,
+                title: "Consistent Results",
+                description:
+                  "Workshop sharpening on every job, not a different result depending on who is on the counter.",
+              },
+              {
+                icon: Wrench,
+                title: "Professional Equipment",
+                description:
+                  "Proper stones, guides, and inspection discipline for Western and Japanese profiles alike.",
+              },
+              {
+                icon: Package,
+                title: "Tracked Collection & Return",
+                description: "Logged handovers, clear quotes in GBP, and tracked orders from door to door.",
+              },
+            ]}
+          />
           <p>
             Whether you need a one-off reset or a route your brigade can rely on, the aim is the same: sharp knives back in your
             kitchen without disrupting service.
