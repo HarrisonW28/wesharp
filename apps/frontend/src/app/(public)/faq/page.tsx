@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { FaqAccordion } from "@/components/marketing/FaqAccordion";
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { Button } from "@/components/ui/button";
 import { fetchPublicSiteContent } from "@/lib/site-content/fetch-site-content";
@@ -25,14 +26,7 @@ export default async function FaqPage() {
 
   return (
     <MarketingArticle showFooterCtas={false} title={fp.title} lead={fp.lead}>
-      <dl className="space-y-4">
-        {items.map(({ q, a }, i) => (
-          <div key={`${i}-${q.slice(0, 24)}`} className="rounded-xl border bg-card px-5 py-4">
-            <dt className="text-base font-medium text-foreground">{q}</dt>
-            <dd className="mt-2 text-sm leading-relaxed text-muted-foreground">{a}</dd>
-          </div>
-        ))}
-      </dl>
+      <FaqAccordion items={items} />
       <section className="rounded-2xl border bg-muted/20 p-5 md:flex md:items-center md:justify-between md:gap-6 md:p-6">
         <div>
           <h2 className="text-base font-semibold text-foreground">Still unsure?</h2>

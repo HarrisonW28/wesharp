@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { JsonLd } from "@/components/marketing/JsonLd";
+import { FaqAccordion } from "@/components/marketing/FaqAccordion";
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { ServiceAreaCheckerSection } from "@/components/marketing/ServiceAreaCheckerSection";
 import { ProcessStepsGrid } from "@/components/marketing/ProcessStepCard";
@@ -378,14 +379,7 @@ export default function ManchesterServiceAreaPage() {
 
         <section className="space-y-4">
           <h2 className={sectionHeadingClass}>Frequently Asked Questions</h2>
-          <dl className="space-y-4">
-            {MANCHESTER_FAQS.map(({ q, a }) => (
-              <div key={q} className="rounded-xl border bg-card px-5 py-4">
-                <dt className="text-base font-medium text-foreground">{q}</dt>
-                <dd className="mt-2 text-sm leading-relaxed text-muted-foreground md:text-base">{a}</dd>
-              </div>
-            ))}
-          </dl>
+          <FaqAccordion items={MANCHESTER_FAQS} />
           <p className="text-sm">
             More general answers live on our{" "}
             <Link href="/faq" className="font-medium text-foreground underline underline-offset-4">
