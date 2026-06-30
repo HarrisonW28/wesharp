@@ -4,6 +4,8 @@ Minimal guidance for standing up **frontend** + **API** environments. Tune for y
 
 **Environments, GitLab workflow, checklists and CI:** see **`docs/operations/gitlab-environments-and-deployment.md`** (Sprint 11.6).
 
+**Staging branch, Plesk auto-deploy, GitHub Actions:** **`docs/operations/staging-plesk-deployment.md`**.
+
 **Production deploy, backup, rollback, smoke tests, monitoring, launch gate:** **`docs/operations/production-deployment-readiness.md`** (Sprint 12.7).
 
 ---

@@ -11,9 +11,42 @@ workflow:
 
 stages:
   - test
+  - deploy
 
 variables:
   COMPOSER_ALLOW_SUPERUSER: "1"
+
+# ---------------------------------------------------------------------------
+# Deploy — staging only (requires GitLab CI/CD variables; see docs)
+# ---------------------------------------------------------------------------
+.deploy-staging-ssh:
+  stage: deploy
+  image: alpine:3.21
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging"
+  before_script:
+    - apk add --no-cache openssh-client bash curl
+    - mkdir -p ~/.ssh
+    - echo "$STAGING_SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keyscan -H "$STAGING_SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+  script:
+    - |
+      ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new \
+        "${STAGING_SSH_USER}@${STAGING_SSH_HOST}" \
+        "export WESHARP_APP_ROOT='${STAGING_APP_ROOT}'; \
+         export WESHARP_DEPLOY_ENV_FILE='${STAGING_DEPLOY_ENV_FILE:-/etc/wesharp/staging-deploy.env}'; \
+         bash \"\${WESHARP_APP_ROOT}/scripts/deploy/plesk-staging.sh\""
+    - curl -fsS "${STAGING_API_URL:-https://api-staging.wesharp.co.uk}/api/health" | grep -q ok
+
+deploy:staging:
+  extends: .deploy-staging-ssh
+  needs:
+    - backend:test
+    - frontend:quality
+  environment:
+    name: staging
+    url: https://staging.wesharp.co.uk
 
 .test-backend:
   image: php:8.3-cli-bookworm

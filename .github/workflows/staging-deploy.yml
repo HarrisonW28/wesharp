@@ -1,0 +1,87 @@
+name: Staging deploy (Plesk)
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  backend-test:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: zip, pdo_sqlite
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: php artisan test
+
+  frontend-quality:
+    name: Frontend quality
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+
+  deploy:
+    name: Deploy to Plesk staging
+    needs: [backend-test, frontend-quality]
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_SSH_HOST }}
+          username: ${{ secrets.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.STAGING_SSH_PORT }}
+          script_stop: true
+          command_timeout: 30m
+          script: |
+            set -euo pipefail
+            export WESHARP_APP_ROOT="${{ secrets.STAGING_APP_ROOT }}"
+            export WESHARP_DEPLOY_ENV_FILE="${{ secrets.STAGING_DEPLOY_ENV_FILE || '/etc/wesharp/staging-deploy.env' }}"
+            bash "${WESHARP_APP_ROOT}/scripts/deploy/plesk-staging.sh"
+
+  smoke:
+    name: Post-deploy smoke (external)
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: API health
+        run: |
+          curl -fsS "${{ vars.STAGING_API_URL || 'https://api-staging.wesharp.co.uk' }}/api/health" | tee /tmp/health.json
+          grep -q '"success"' /tmp/health.json
+          grep -q 'ok' /tmp/health.json
+
+      - name: Frontend homepage
+        run: |
+          code=$(curl -fsS -o /dev/null -w '%{http_code}' "${{ vars.STAGING_FRONTEND_URL || 'https://staging.wesharp.co.uk' }}/")
+          test "$code" = "200"
+
+      - name: Manchester area page
+        run: |
+          code=$(curl -fsS -o /dev/null -w '%{http_code}' "${{ vars.STAGING_FRONTEND_URL || 'https://staging.wesharp.co.uk' }}/service-areas/manchester")
+          test "$code" = "200"
