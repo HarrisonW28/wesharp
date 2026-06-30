@@ -6,7 +6,6 @@ import { useMemo } from "react";
 import {
   Calculator,
   CircleDollarSign,
-  Gauge,
   LayoutGrid,
   LineChart,
   Percent,

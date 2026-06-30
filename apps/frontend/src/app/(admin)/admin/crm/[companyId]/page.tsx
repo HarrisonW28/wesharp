@@ -445,7 +445,7 @@ export default function AdminCrmCompanyPage() {
       },
       { accessorKey: "currency", header: "CCY" },
     ],
-    [],
+    [companyId],
   );
 
   const knifeCols: ColumnDef<KnifeRow>[] = useMemo(

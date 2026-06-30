@@ -4,7 +4,6 @@ import {
   Boxes,
   Calculator,
   Coins,
-  Landmark,
   LayoutDashboard,
   Receipt,
   Repeat,
