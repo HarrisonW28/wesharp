@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
 
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Camera, ListChecks, PoundSterling, Sparkles, UserRound } from "lucide-react";
 
-import { HomeHeroChopKnife } from "@/components/marketing/HomeHeroChopKnife";
 import type { SiteContent } from "@/lib/site-content/site-content-defaults";
 import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
 
@@ -14,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function HomeHero({ homepage }: { homepage: SiteContent["homepage"] }) {
-  const heroRef = useRef<HTMLElement>(null);
   const trustBadges = homepage.trust_badges ?? [];
   const reduceMotion = useReducedMotion();
   const fade = (duration: number, delay = 0) =>
@@ -22,20 +19,10 @@ export function HomeHero({ homepage }: { homepage: SiteContent["homepage"] }) {
 
   return (
     <section
-      ref={heroRef}
       id="hero"
       className="relative overflow-hidden border-b bg-gradient-to-b from-primary/[0.07] via-background to-background"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_-10%,rgb(59_130_246/0.12),transparent_52%)]" />
-      <HomeHeroChopKnife containerRef={heroRef} />
-      <div
-        className="wesharp-hero-blob-a pointer-events-none absolute -left-24 top-1/4 hidden h-72 w-72 rounded-full bg-primary/25 blur-3xl md:block dark:bg-primary/20"
-        aria-hidden
-      />
-      <div
-        className="wesharp-hero-blob-b pointer-events-none absolute -right-16 bottom-[15%] hidden h-64 w-64 rounded-full bg-primary/20 blur-3xl md:block dark:bg-primary/15"
-        aria-hidden
-      />
       <div className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "relative py-14 md:py-20 lg:py-24")}>
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
           <div className={cn("mx-auto max-w-xl lg:mx-0 lg:max-w-none", "text-center lg:text-left")}>

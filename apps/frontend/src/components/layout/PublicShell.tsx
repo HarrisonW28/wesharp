@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { ArrowRight, MapPin, Menu } from "lucide-react";
 
 import { WeSharpLogo } from "@/components/brand/WeSharpLogo";
-import { FloatingKnivesScrollDecor } from "@/components/marketing/FloatingKnivesScrollDecor";
 import { PublicSiteAccountControl } from "@/components/layout/PublicSiteAccountControl";
 import { PublicSiteNavSectionCards, PublicSiteNavSectionsCards } from "@/components/layout/PublicSiteNavCards";
 import { PublicSiteNavMenu } from "@/components/layout/PublicSiteNavMenu";
@@ -89,7 +88,6 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
-      <FloatingKnivesScrollDecor />
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
         <div className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "relative")}>
           <div className="flex h-14 flex-nowrap items-center justify-between gap-2 md:h-16 md:gap-3">
