@@ -8,6 +8,8 @@ Minimal guidance for standing up **frontend** + **API** environments. Tune for y
 
 **Production deploy, backup, rollback, smoke tests, monitoring, launch gate:** **`docs/operations/production-deployment-readiness.md`** (Sprint 12.7).
 
+**“Failed to fetch” / sign-in cannot reach Laravel:** **`docs/operations/production-api-troubleshooting.md`** — TLS cert on `api.*`, CORS, Vercel env.
+
 ---
 
 ## Environment variables
