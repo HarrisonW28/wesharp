@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRef } from "react";
 
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Camera, ListChecks, PoundSterling, Sparkles, UserRound } from "lucide-react";
 
+import { HomeHeroChopKnife } from "@/components/marketing/HomeHeroChopKnife";
 import type { SiteContent } from "@/lib/site-content/site-content-defaults";
 import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
 
@@ -12,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function HomeHero({ homepage }: { homepage: SiteContent["homepage"] }) {
+  const heroRef = useRef<HTMLElement>(null);
   const trustBadges = homepage.trust_badges ?? [];
   const reduceMotion = useReducedMotion();
   const fade = (duration: number, delay = 0) =>
@@ -19,20 +22,12 @@ export function HomeHero({ homepage }: { homepage: SiteContent["homepage"] }) {
 
   return (
     <section
+      ref={heroRef}
       id="hero"
       className="relative overflow-hidden border-b bg-gradient-to-b from-primary/[0.07] via-background to-background"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_-10%,rgb(59_130_246/0.12),transparent_52%)]" />
-      {/* Abstract “blade edge” glint + soft blobs: `md+` only; CSS anim respects reduced motion */}
-      <div
-        className="pointer-events-none absolute -right-4 top-[8%] hidden h-[min(58vh,28rem)] w-40 overflow-hidden opacity-90 lg:block"
-        aria-hidden
-      >
-        <div className="relative h-full w-full">
-          <div className="absolute inset-y-[12%] left-1/2 w-px -translate-x-1/2 rounded-full bg-gradient-to-b from-transparent via-primary/35 to-transparent" />
-          <div className="wesharp-hero-edge-glint absolute inset-0 bg-[linear-gradient(102deg,transparent_38%,oklch(0.72_0.14_252_/_0.2)_50%,transparent_62%)] dark:bg-[linear-gradient(102deg,transparent_38%,oklch(0.78_0.16_252_/_0.28)_50%,transparent_62%)]" />
-        </div>
-      </div>
+      <HomeHeroChopKnife containerRef={heroRef} />
       <div
         className="wesharp-hero-blob-a pointer-events-none absolute -left-24 top-1/4 hidden h-72 w-72 rounded-full bg-primary/25 blur-3xl md:block dark:bg-primary/20"
         aria-hidden
