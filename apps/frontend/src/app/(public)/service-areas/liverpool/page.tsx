@@ -5,7 +5,6 @@ import {
   MapPin,
   Truck,
   Wrench,
-  CheckCircle2,
   Package,
   Clock,
   Shield,
