@@ -10,6 +10,7 @@ use App\Models\ServiceArea;
 use App\Models\ServiceAreaWaitlistSignup;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -177,6 +178,8 @@ final class ServiceAreaPublicApiTest extends TestCase
 
     public function test_check_returns_next_collection_date_when_route_scheduled(): void
     {
+        $scheduled = Carbon::now('UTC')->addDays(14)->toDateString();
+
         ServiceArea::factory()->create([
             'postcode_prefix' => 'M',
             'active' => true,
@@ -186,7 +189,7 @@ final class ServiceAreaPublicApiTest extends TestCase
         ]);
 
         OperationalRoute::factory()->create([
-            'scheduled_date' => '2026-06-10',
+            'scheduled_date' => $scheduled,
             'route_status' => OperationalRouteStatus::Scheduled,
         ]);
 
@@ -195,7 +198,7 @@ final class ServiceAreaPublicApiTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.next_collection_date', '2026-06-10');
+            ->assertJsonPath('data.next_collection_date', $scheduled);
     }
 
     public function test_waitlist_creates_signup_and_audit_when_not_covered(): void
