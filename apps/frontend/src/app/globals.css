@@ -108,7 +108,7 @@
 
 /**
  * Public marketing hero — GPU-light transforms only; disabled under `prefers-reduced-motion`.
- * Decorative layers are hidden below `md` in markup so mobile avoids extra compositing.
+ * Decorative layers use responsive sizing in markup where noted.
  */
 @keyframes wesharp-hero-blob-a {
   0%,

@@ -29,9 +29,9 @@ const FLOATING_KNIVES: FloatingKnifeConfig[] = [
     baseRotate: -38,
     scale: 1,
     depth: 0.14,
-    sizeClass: "h-28 w-7 lg:h-36 lg:w-9",
-    opacityClass: "text-primary/12 dark:text-primary/18",
-    horizontalClass: "-left-6 sm:left-2 lg:left-8 xl:left-14",
+    sizeClass: "h-[4.5rem] w-[1.15rem] sm:h-28 sm:w-7 lg:h-36 lg:w-9",
+    opacityClass: "text-primary/9 sm:text-primary/12 dark:text-primary/14 sm:dark:text-primary/18",
+    horizontalClass: "-left-9 sm:-left-6 sm:left-2 lg:left-8 xl:left-14",
     idleDelay: "0s",
   },
   {
@@ -42,9 +42,9 @@ const FLOATING_KNIVES: FloatingKnifeConfig[] = [
     baseRotate: 34,
     scale: 0.92,
     depth: 0.2,
-    sizeClass: "h-24 w-7 lg:h-32 lg:w-8",
-    opacityClass: "text-primary/10 dark:text-primary/16",
-    horizontalClass: "-right-4 sm:right-0 lg:right-6 xl:right-12",
+    sizeClass: "h-[3.75rem] w-[1.1rem] sm:h-24 sm:w-7 lg:h-32 lg:w-8",
+    opacityClass: "text-primary/8 sm:text-primary/10 dark:text-primary/12 sm:dark:text-primary/16",
+    horizontalClass: "-right-7 sm:-right-4 sm:right-0 lg:right-6 xl:right-12",
     idleDelay: "-3s",
   },
   {
@@ -55,9 +55,9 @@ const FLOATING_KNIVES: FloatingKnifeConfig[] = [
     baseRotate: -24,
     scale: 0.78,
     depth: 0.1,
-    sizeClass: "h-20 w-5 lg:h-24 lg:w-6",
-    opacityClass: "text-primary/8 dark:text-primary/12",
-    horizontalClass: "left-0 sm:left-6 lg:left-16 xl:left-24",
+    sizeClass: "h-[3rem] w-3 sm:h-20 sm:w-5 lg:h-24 lg:w-6",
+    opacityClass: "text-primary/7 sm:text-primary/8 dark:text-primary/10 sm:dark:text-primary/12",
+    horizontalClass: "-left-6 sm:left-6 lg:left-16 xl:left-24",
     idleDelay: "-5s",
   },
   {
@@ -68,9 +68,9 @@ const FLOATING_KNIVES: FloatingKnifeConfig[] = [
     baseRotate: 42,
     scale: 1.05,
     depth: 0.16,
-    sizeClass: "h-32 w-8 lg:h-40 lg:w-10",
-    opacityClass: "text-primary/11 dark:text-primary/17",
-    horizontalClass: "-right-8 sm:-right-2 lg:right-4 xl:right-10",
+    sizeClass: "h-[5rem] w-[1.25rem] sm:h-32 sm:w-8 lg:h-40 lg:w-10",
+    opacityClass: "text-primary/8 sm:text-primary/11 dark:text-primary/13 sm:dark:text-primary/17",
+    horizontalClass: "-right-10 sm:-right-8 sm:-right-2 lg:right-4 xl:right-10",
     idleDelay: "-1.5s",
   },
   {
@@ -81,9 +81,9 @@ const FLOATING_KNIVES: FloatingKnifeConfig[] = [
     baseRotate: 18,
     scale: 0.7,
     depth: 0.08,
-    sizeClass: "h-16 w-4 lg:h-20 lg:w-5",
-    opacityClass: "text-primary/7 dark:text-primary/10",
-    horizontalClass: "right-2 sm:right-8 lg:right-20 xl:right-28",
+    sizeClass: "h-[2.5rem] w-2.5 sm:h-16 sm:w-4 lg:h-20 lg:w-5",
+    opacityClass: "text-primary/6 sm:text-primary/7 dark:text-primary/9 sm:dark:text-primary/10",
+    horizontalClass: "-right-4 sm:right-8 lg:right-20 xl:right-28",
     idleDelay: "-7s",
   },
 ];
@@ -126,7 +126,7 @@ function FloatingKnife({
 
 /**
  * Fixed decorative knife layer for public marketing pages.
- * Parallax on scroll; hidden on small screens and when reduced motion is preferred.
+ * Parallax on scroll; disabled when reduced motion is preferred.
  */
 export function FloatingKnivesScrollDecor() {
   const reduceMotion = useReducedMotion();
@@ -135,10 +135,7 @@ export function FloatingKnivesScrollDecor() {
   if (reduceMotion) return null;
 
   return (
-    <div
-      className="pointer-events-none fixed inset-0 z-0 hidden overflow-hidden md:block"
-      aria-hidden
-    >
+    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
       {FLOATING_KNIVES.map((config) => (
         <FloatingKnife key={config.id} config={config} scrollY={scrollY} />
       ))}
