@@ -9,7 +9,7 @@ import { AccountKnifeDetailResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 import { customerKnifeListLabel } from "@/lib/helpers/customer-display";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,13 +40,7 @@ export default function AccountKnifeDetailPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        homeHref="/account/dashboard"
-        items={[
-          { label: "Knives", href: "/account/knives" },
-          { label: k?.tag_id ? customerKnifeListLabel(k.tag_id, 0) : "Blade" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: k?.tag_id ? customerKnifeListLabel(k.tag_id, 0) : "Blade" }]} />
 
       {detailQuery.status === "pending" ? (
         <div className="flex min-h-[24vh] flex-col items-center justify-center gap-3 text-muted-foreground">

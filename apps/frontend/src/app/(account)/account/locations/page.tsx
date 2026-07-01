@@ -7,7 +7,7 @@ import { useState } from "react";
 import { LocationsResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -75,7 +75,7 @@ export default function AccountLocationsPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Locations" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Your locations"
         description="Accurate addresses help us schedule collections and find you on the day."

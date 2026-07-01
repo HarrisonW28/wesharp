@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { ExecutiveFinanceDashboardResponseSchema } from "@/lib/api/admin-executive-finance-dashboard-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -87,12 +87,7 @@ export default function ExecutiveFinanceDashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 pb-16">
-      <Breadcrumbs
-        items={[
-          { label: "Reporting hub", href: "/admin/reporting" },
-          { label: "Executive dashboard" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Executive dashboard" }]} />
       <PageHeader
         title="Executive finance dashboard"
         description="Sprint 24.6 — profit, cash, runway, MRR, routes, subscription signals and actionable alerts in one owner snapshot."

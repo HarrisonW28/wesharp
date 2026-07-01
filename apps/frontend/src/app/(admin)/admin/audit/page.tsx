@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -117,12 +117,7 @@ export default function AdminAuditLogsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Operations", href: "/admin/dashboard" },
-          { label: "Audit log", href: "/admin/audit" },
-        ]}
-      />
+      <NavBreadcrumbs />
       <PageHeader title="Audit log" description="Internal activity across CRM, bookings, orders, and billing." />
 
       <Card>

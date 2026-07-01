@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { SubscriptionProfitabilityReportResponseSchema } from "@/lib/api/admin-subscription-profitability-report-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -149,12 +149,7 @@ export default function AdminSubscriptionProfitabilityReportPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Reporting hub", href: "/admin/reporting" },
-          { label: "Subscription profitability" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Subscription profitability" }]} />
       <PageHeader
         title="Subscription profitability"
         description="Subscription vs overage invoice lines, covered usage, and cost allocations — Sprint 24.3."

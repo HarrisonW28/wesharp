@@ -25,7 +25,7 @@ import { FinanceDashboardResponseSchema } from "@/lib/api/admin-finance-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -240,12 +240,7 @@ export default function AdminFinanceDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Finance", href: "/admin/finance" },
-        ]}
-      />
+      <NavBreadcrumbs />
       <PageHeader
         title="Finance dashboard"
         description="Billing KPIs, overdue AR, and recent cash — amounts in GBP from the server."

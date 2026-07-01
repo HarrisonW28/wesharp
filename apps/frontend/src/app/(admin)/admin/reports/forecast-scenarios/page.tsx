@@ -13,7 +13,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,13 +81,7 @@ export default function AdminForecastScenariosListPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-16">
-      <Breadcrumbs
-        homeHref="/admin/dashboard"
-        items={[
-          { label: "Reporting hub", href: "/admin/reporting" },
-          { label: "Forecast scenarios" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Forecast scenarios" }]} />
       <PageHeader
         title="Forecast scenarios"
         description="Sprint 24.2 planning models — estimates only; ledger data stays untouched."

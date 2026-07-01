@@ -16,7 +16,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 import { useBackendMe } from "@/hooks/use-backend-me";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -148,12 +148,7 @@ export default function AdminFinanceCostLedgerPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Finance", href: "/admin/finance" },
-          { label: "Cost ledger", href: "/admin/finance/cost-ledger" },
-        ]}
-      />
+      <NavBreadcrumbs />
       <PageHeader
         title="Cost ledger"
         description="Record how internal costs are attributed to customers, orders, routes and invoices — used in margin and billing views."

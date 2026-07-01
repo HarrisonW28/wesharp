@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Loader2, Webhook } from "lucide-react";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,12 +51,7 @@ export default function AdminWebhooksInboxPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Audit log", href: "/admin/audit" },
-          { label: "Webhook inbox" },
-        ]}
-      />
+      <NavBreadcrumbs />
       <PageHeader
         title="Webhook inbox"
         description="Recent provider deliveries (Clerk/Svix, future Stripe consolidated here). Metadata only — no raw payloads."

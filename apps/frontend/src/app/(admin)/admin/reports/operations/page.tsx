@@ -25,7 +25,7 @@ import {
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -270,12 +270,7 @@ export default function AdminOperationsReportsPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Operations reports", href: "/admin/reports/operations" },
-        ]}
-      />
+      <NavBreadcrumbs />
       <PageHeader
         title="Booking & order throughput"
         description="Operational KPIs from live bookings and orders. Date range applies to cohorts noted in each card; pipeline snapshots ignore dates (see definitions)."

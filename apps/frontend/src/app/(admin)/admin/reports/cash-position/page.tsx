@@ -13,7 +13,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -180,13 +180,7 @@ export default function AdminCashPositionReportPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-16">
-      <Breadcrumbs
-        homeHref="/admin/dashboard"
-        items={[
-          { label: "Reporting hub", href: "/admin/reporting" },
-          { label: "Cash position" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Cash position" }]} />
       <PageHeader
         title="Cash position"
         description="Live buffer from starting capital and purchased one-time spend; burn from recurring commitments; optional period profitability context."

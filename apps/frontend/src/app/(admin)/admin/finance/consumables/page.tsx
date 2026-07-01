@@ -16,7 +16,7 @@ import {
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { useBackendMe } from "@/hooks/use-backend-me";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -159,12 +159,7 @@ export default function AdminFinanceConsumablesPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Finance", href: "/admin/finance" },
-          { label: "Consumables", href: "/admin/finance/consumables" },
-        ]}
-      />
+      <NavBreadcrumbs />
 
       <PageHeader
         title="Consumables inventory"

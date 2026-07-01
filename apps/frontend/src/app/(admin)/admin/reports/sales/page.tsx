@@ -22,7 +22,7 @@ import { SalesReportResponseSchema } from "@/lib/api/admin-sales-report-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -150,13 +150,7 @@ export default function AdminSalesReportPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Finance", href: "/admin/finance" },
-          { label: "Sales report", href: "/admin/reports/sales" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Sales report" }]} />
       <PageHeader
         title="Sales & revenue"
         description="Invoice accrual and payment cash in GBP — all figures from the server; definitions below each section."

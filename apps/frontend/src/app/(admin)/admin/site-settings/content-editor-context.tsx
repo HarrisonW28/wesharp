@@ -5,7 +5,7 @@ import { Loader2, Newspaper, RotateCcw } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   AlertDialog,
@@ -134,7 +134,7 @@ export function ContentSettingsGate({ children }: { children: ReactNode }) {
   if (!canManage) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site settings" }]} />
+        <NavBreadcrumbs />
         <PageHeader title="Site settings" description="Your role cannot edit marketing copy." />
       </>
     );
@@ -143,7 +143,7 @@ export function ContentSettingsGate({ children }: { children: ReactNode }) {
   if (isLoadPending || !draft) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site settings" }]} />
+        <NavBreadcrumbs />
         <PageHeader title="Site settings" description="Loading…" />
         <div className="flex min-h-[30vh] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
@@ -155,7 +155,7 @@ export function ContentSettingsGate({ children }: { children: ReactNode }) {
   if (isLoadError) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site settings" }]} />
+        <NavBreadcrumbs />
         <PageHeader title="Site settings" description="Could not load settings." />
         <p className="break-words text-sm text-destructive">{loadError?.message ?? "Error"}</p>
       </>

@@ -21,7 +21,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { useBackendMe } from "@/hooks/use-backend-me";
 
 import { Badge } from "@/components/ui/badge";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/tables/DataTable";
 import { Input } from "@/components/ui/input";
@@ -176,14 +176,7 @@ export default function AdminCostImportPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Finance", href: "/admin/finance" },
-          { label: "Cost catalogue", href: "/admin/finance/costs" },
-          { label: "Import" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Import" }]} />
       <PageHeader
         title="Cost workbook import"
         description="Upload a Cost Plan / consumables workbook (CSV or Excel). Rows are validated before anything is written — commit only when the preview looks correct."

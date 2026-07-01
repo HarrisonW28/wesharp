@@ -19,7 +19,7 @@ import {
 import { CustomerBookingStatusBadge } from "@/components/bookings/CustomerBookingStatusBadge";
 import { TenantFulfilmentUpdatesCard } from "@/components/orders/TenantFulfilmentUpdatesCard";
 import { CustomerActivityTimeline } from "@/components/account/CustomerActivityTimeline";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   AlertDialog,
@@ -141,13 +141,7 @@ export default function TenantBookingDetailPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        homeHref="/account/dashboard"
-        items={[
-          { label: "My bookings", href: "/account/bookings" },
-          { label: "Booking details" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Booking details" }]} />
       <PageHeader
         title="Booking details"
         description="Everything you need to know about this collection — in plain language."

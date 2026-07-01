@@ -18,7 +18,7 @@ import { orderStatusLabel, routeStopStatusLabel } from "@/lib/helpers/status-hel
 
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { RouteLookup } from "@/components/admin/lookups/AsyncEntityLookup";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -628,11 +628,8 @@ export default function AdminBookingDetailPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Bookings", href: "/admin/bookings" },
-          { label: b.reference?.trim() ? b.reference : (b.company?.name ?? "Booking") },
-        ]}
+      <NavBreadcrumbs
+        suffix={[{ label: b.reference?.trim() ? b.reference : (b.company?.name ?? "Booking") }]}
       />
       <PageHeader
         title={b.reference ?? "Booking"}

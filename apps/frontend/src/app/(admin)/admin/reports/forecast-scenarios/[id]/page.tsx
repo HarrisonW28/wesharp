@@ -13,7 +13,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -162,10 +162,8 @@ export default function AdminForecastScenarioDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-16">
-      <Breadcrumbs
-        homeHref="/admin/dashboard"
-        items={[
-          { label: "Reporting hub", href: "/admin/reporting" },
+      <NavBreadcrumbs
+        suffix={[
           { label: "Forecast scenarios", href: "/admin/reports/forecast-scenarios" },
           { label: scenarioMeta?.name ?? "Scenario" },
         ]}

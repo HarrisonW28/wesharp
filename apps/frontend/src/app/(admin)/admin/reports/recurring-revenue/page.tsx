@@ -24,7 +24,7 @@ import { RecurringRevenueReportResponseSchema } from "@/lib/api/admin-recurring-
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { Badge } from "@/components/ui/badge";
@@ -175,13 +175,7 @@ export default function AdminRecurringRevenueReportPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Finance", href: "/admin/finance" },
-          { label: "Recurring revenue", href: "/admin/reports/recurring-revenue" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Recurring revenue" }]} />
       <PageHeader
         title="Recurring revenue"
         description="Subscriptions, renewals, and recurring vs one-off split. Revenue figures are invoice-issued cohorts and payment cash in period (see definitions)."

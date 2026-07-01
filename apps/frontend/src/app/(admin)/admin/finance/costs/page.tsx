@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -389,13 +389,7 @@ export default function AdminCostCataloguePage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Finance", href: "/admin/finance" },
-          { label: "Cost catalogue" },
-        ]}
-      />
+      <NavBreadcrumbs />
       <PageHeader
         title="Cost catalogue"
         description="Your internal cost plan — amounts are stored in GBP on the server."

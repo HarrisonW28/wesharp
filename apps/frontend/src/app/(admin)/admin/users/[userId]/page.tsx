@@ -17,7 +17,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
 import { CompanyLookup } from "@/components/admin/lookups/AsyncEntityLookup";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   AlertDialog,
@@ -140,12 +140,7 @@ export default function AdminUserDetailPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Users", href: "/admin/users" },
-          { label: user?.name ?? "Profile" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: user?.name ?? "Profile" }]} />
       {userQuery.isLoading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

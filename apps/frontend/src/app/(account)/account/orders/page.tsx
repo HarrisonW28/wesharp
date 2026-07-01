@@ -10,7 +10,7 @@ import { formatGBP } from "@/lib/format/money";
 
 import { CustomerOrderStatusBadge } from "@/components/orders/CustomerOrderStatusBadge";
 import { EmptyState } from "@/components/feedback/EmptyState";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,7 +37,7 @@ export default function AccountOrdersPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "My orders" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="My orders"
         description="Track sharpening work for your business — status, blades, and amounts in plain English."

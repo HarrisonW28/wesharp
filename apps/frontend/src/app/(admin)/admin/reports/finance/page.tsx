@@ -18,7 +18,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -162,10 +162,7 @@ export default function AdminFinanceReportsHubPage() {
 
   return (
     <PortalPage>
-      <Breadcrumbs
-        homeHref="/admin/dashboard"
-        items={[{ label: "Reports", href: "/admin/reporting" }, { label: "Finance reports" }]}
-      />
+      <NavBreadcrumbs />
       <PageHeader
         title="Finance reports"
         description="Pick a report below. What you see depends on your role — ask an admin if something is missing."

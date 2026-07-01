@@ -11,6 +11,7 @@ import { TenantRouteGate } from "@/components/auth/TenantRouteGate";
 import { ShellPermissionBoundary } from "@/components/auth/ShellPermissionBoundary";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { MobileDrawer } from "@/components/navigation/MobileDrawer";
+import { NavSectionsProvider } from "@/components/navigation/NavSectionsContext";
 import { AccountMobileDrawerProfile } from "@/components/navigation/AccountMobileDrawerProfile";
 import { InAppNotificationBell } from "@/components/notifications/InAppNotificationBell";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
@@ -56,7 +57,8 @@ export function AccountShell({ children }: { children: ReactNode }) {
   return (
     <TenantRouteGate>
       <ShellPermissionBoundary scope="account" label="Checking your account access…">
-        <div className="flex min-h-svh bg-muted/25 print:min-h-0 print:bg-white">
+        <NavSectionsProvider sections={navSections}>
+          <div className="flex min-h-svh bg-muted/25 print:min-h-0 print:bg-white">
           <aside className="app-chrome hidden h-svh shrink-0 print:hidden md:flex md:w-60 md:flex-col md:border-r md:bg-background">
             <div className="flex shrink-0 flex-col border-b px-4 py-3">
               <WeSharpLogo className="h-8" href="/" />
@@ -96,6 +98,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
             />
           </div>
         </div>
+        </NavSectionsProvider>
       </ShellPermissionBoundary>
     </TenantRouteGate>
   );

@@ -8,7 +8,7 @@ import { PaginatedBookingsResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 
 import { CustomerBookingStatusBadge } from "@/components/bookings/CustomerBookingStatusBadge";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export default function AccountBookingsPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "My bookings" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="My bookings"
         description="Collections you’ve booked with us — requested times, confirmed visits, and live status."

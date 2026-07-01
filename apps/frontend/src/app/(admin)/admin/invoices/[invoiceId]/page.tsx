@@ -16,7 +16,7 @@ import { useBackendMe } from "@/hooks/use-backend-me";
 import { InvoiceDocument } from "@/components/invoices/InvoiceDocument";
 
 import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTimeline";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { NotificationHistoryPlaceholder } from "@/components/notifications/NotificationHistoryPlaceholder";
 import { StatusBadge, StatusBadgeGroup } from "@/components/status/StatusBadge";
@@ -306,7 +306,7 @@ export default function AdminInvoiceDetailPage() {
   if (invQuery.isPending) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Invoices", href: "/admin/invoices" }, { label: "…" }]} />
+        <NavBreadcrumbs suffix={[{ label: "…" }]} />
         <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         </div>
@@ -317,7 +317,7 @@ export default function AdminInvoiceDetailPage() {
   if (invQuery.isError) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Invoices", href: "/admin/invoices" }, { label: "Error" }]} />
+        <NavBreadcrumbs suffix={[{ label: "Error" }]} />
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">{(invQuery.error as Error).message}</p>
           <Button className="mt-3" type="button" variant="outline" size="default" onClick={() => void invQuery.refetch()}>
@@ -358,7 +358,7 @@ export default function AdminInvoiceDetailPage() {
   return (
     <>
       <div className="print:hidden">
-        <Breadcrumbs crumbs={[{ label: "Invoices", href: "/admin/invoices" }, { label: title }]} />
+        <NavBreadcrumbs suffix={[{ label: title  }]} />
         <PageHeader
           title={title}
           description={

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Undo2 } from "lucide-react";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,10 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function StripeCheckoutCanceledReturnPage() {
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        homeHref="/account/dashboard"
-        items={[{ label: "Invoices", href: "/account/invoices" }, { label: "Checkout canceled" }]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Checkout canceled" }]} />
       <PageHeader
         title="Checkout canceled"
         description="No payment was taken. You can try again from an invoice or your subscription page whenever you’re ready."

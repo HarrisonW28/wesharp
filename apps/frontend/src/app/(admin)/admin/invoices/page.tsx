@@ -21,7 +21,7 @@ import { paginationRangeCaption } from "@/lib/format/pagination-caption";
 import { formatGBP } from "@/lib/format/money";
 
 import { CompanyLookup, OrderLookup } from "@/components/admin/lookups/AsyncEntityLookup";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Badge } from "@/components/ui/badge";
@@ -276,7 +276,7 @@ export default function AdminInvoicesPage() {
   if (listQuery.isPending) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Invoices" }]} />
+        <NavBreadcrumbs />
         <div className="flex min-h-[30vh] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         </div>
@@ -287,7 +287,7 @@ export default function AdminInvoicesPage() {
   if (listQuery.isError) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Invoices" }]} />
+        <NavBreadcrumbs />
         <PageHeader title="Invoices" description="Charge documents linked to orders." />
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">{(listQuery.error as Error).message}</p>
@@ -307,7 +307,7 @@ export default function AdminInvoicesPage() {
 
   return (
     <>
-      <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Invoices" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Invoices"
         description="Search, filter, and manage AR documents — totals and settlement at a glance."

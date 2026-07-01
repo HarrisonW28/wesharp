@@ -14,7 +14,7 @@ import { CustomerOrderStatusBadge } from "@/components/orders/CustomerOrderStatu
 import { humanizeUnderscored, invoiceStatusLabel } from "@/lib/helpers/status-helpers";
 
 import { InvoiceDocument } from "@/components/invoices/InvoiceDocument";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -105,10 +105,7 @@ export default function AccountInvoiceDetailPage() {
   return (
     <div className="space-y-8 print:space-y-6">
       <div className="print:hidden">
-        <Breadcrumbs
-          homeHref="/account/dashboard"
-          items={[{ label: "Invoices", href: "/account/invoices" }, { label: "Invoice details" }]}
-        />
+        <NavBreadcrumbs suffix={[{ label: "Invoice details" }]} />
         <PageHeader
           title={docTitle}
           description={

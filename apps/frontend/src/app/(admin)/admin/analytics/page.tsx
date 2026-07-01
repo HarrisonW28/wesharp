@@ -37,7 +37,7 @@ import {
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageActions, PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -231,7 +231,7 @@ type ErrWithStatus = Error & { status?: number };
   if (first403) {
     return (
       <PortalPage>
-        <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Analytics" }]} />
+        <NavBreadcrumbs />
         <PageHeader title="Analytics" description="Requires analytics.view on your staff profile." />
         <Card>
           <CardContent className="flex items-center gap-3 py-6 text-sm">
@@ -246,7 +246,7 @@ type ErrWithStatus = Error & { status?: number };
 
   return (
     <PortalPage>
-      <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Analytics" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Analytics"
         description="Throughput, revenue and route performance totals are computed on the server only."

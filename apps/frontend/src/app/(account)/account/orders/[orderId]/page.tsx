@@ -19,7 +19,7 @@ import { CustomerOrderStatusBadge } from "@/components/orders/CustomerOrderStatu
 import { TenantFulfilmentUpdatesCard } from "@/components/orders/TenantFulfilmentUpdatesCard";
 import { CustomerOrderFeedbackCard } from "@/components/orders/CustomerOrderFeedbackCard";
 import { CustomerActivityTimeline } from "@/components/account/CustomerActivityTimeline";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CustomerInvoiceStatusBadge } from "@/components/invoices/CustomerInvoiceStatusBadge";
 import { StatusBadge, StatusBadgeGroup } from "@/components/status/StatusBadge";
@@ -240,10 +240,7 @@ export default function TenantOrderDetailPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 md:space-y-8">
-      <Breadcrumbs
-        homeHref="/account/dashboard"
-        items={[{ label: "My orders", href: "/account/orders" }, { label: "Order details" }]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Order details" }]} />
       <PageHeader
         title={o?.display_reference ?? "Order details"}
         description="Read-only view of this sharpening order — totals match what we bill, shown in GBP."

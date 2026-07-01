@@ -21,7 +21,7 @@ import { parseGbpInputToMinorUnits, formatGBP } from "@/lib/format/money";
 import { orderPaymentStatusLabel } from "@/lib/helpers/status-helpers";
 
 import { BookingLookup, CompanyLookup } from "@/components/admin/lookups/AsyncEntityLookup";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Badge } from "@/components/ui/badge";
@@ -327,7 +327,7 @@ export default function AdminOrdersPage() {
   if (listQuery.status === "pending") {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Orders" }]} />
+        <NavBreadcrumbs />
         <div className="flex min-h-[30vh] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         </div>
@@ -338,7 +338,7 @@ export default function AdminOrdersPage() {
   if (listQuery.isError) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Orders" }]} />
+        <NavBreadcrumbs />
         <PageHeader title="Orders" description="Charges linked to bookings and per-blade workshop tracking." />
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">{(listQuery.error as Error).message}</p>
@@ -358,7 +358,7 @@ export default function AdminOrdersPage() {
 
   return (
     <>
-      <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Orders" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Orders"
         description="Workshop desk — open a booking’s order in two picks; search and manage fulfilment below."

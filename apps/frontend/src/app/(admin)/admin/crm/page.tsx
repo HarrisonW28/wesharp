@@ -18,7 +18,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
 import { CompanyStatusBadge } from "@/components/crm/CompanyStatusBadge";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/tables/DataTable";
@@ -207,7 +207,7 @@ export default function AdminCrmPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs items={[{ label: "CRM" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Accounts"
         description="Kitchens and groups you work with — search, filter, and open a full timeline on each account."

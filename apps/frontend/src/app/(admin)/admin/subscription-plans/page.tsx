@@ -15,7 +15,7 @@ import { formatGBP } from "@/lib/format/money";
 import { useBackendMe } from "@/hooks/use-backend-me";
 
 import { AdminPayAsYouGoRulesSection } from "@/components/admin/AdminPayAsYouGoRulesSection";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   AlertDialog,
@@ -330,12 +330,7 @@ export default function AdminSubscriptionPlansPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 md:gap-10">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Plans & pricing", href: "/admin/subscription-plans" },
-        ]}
-      />
+      <NavBreadcrumbs />
 
       <PageHeader
         title="Plans & pricing"

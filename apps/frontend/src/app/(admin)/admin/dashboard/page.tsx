@@ -35,7 +35,7 @@ import { AdminQuickActionsCard } from "@/components/admin/AdminQuickActionsCard"
 import { WorkQueueAttentionCard } from "@/components/admin/WorkQueueAttentionCard";
 import { ChartCard } from "@/components/cards/ChartCard";
 import { StatCard } from "@/components/cards/StatCard";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageActions, PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -137,7 +137,7 @@ export default function AdminDashboardPage() {
 
   return (
     <PortalPage>
-      <Breadcrumbs items={[{ label: "Dashboard" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Operations dashboard"
         description="Recent bookings, sharpening totals, and revenue — usually covering about the last three months."

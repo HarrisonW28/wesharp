@@ -33,7 +33,7 @@ import { CompanyContactsManager } from "@/components/crm/CompanyContactsManager"
 import { CompanyLocationsManager } from "@/components/crm/CompanyLocationsManager";
 import { CompanySubscriptionPanel } from "@/components/crm/CompanySubscriptionPanel";
 import { CompanyStatusBadge } from "@/components/crm/CompanyStatusBadge";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -554,7 +554,7 @@ export default function AdminCrmCompanyPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs items={[{ label: "CRM", href: "/admin/crm" }, { label: c.name }]} />
+      <NavBreadcrumbs suffix={[{ label: c.name }]} />
       <PageHeader
         title={c.name}
         description={`Slug · ${c.slug}`}

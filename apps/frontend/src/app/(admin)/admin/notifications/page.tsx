@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { InAppNotificationsFullList } from "@/components/notifications/InAppNotificationsFullList";
 import { Button } from "@/components/ui/button";
@@ -166,7 +166,7 @@ export default function AdminNotificationsPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs homeHref="/admin/dashboard" items={[{ label: "Notifications" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Notifications"
         description="Delivery history across customers — filter failures, tune opt-out behaviour, and preview fixtures without sending."

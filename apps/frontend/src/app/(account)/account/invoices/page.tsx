@@ -10,7 +10,7 @@ import { formatGBP } from "@/lib/format/money";
 
 import { CustomerInvoiceStatusBadge } from "@/components/invoices/CustomerInvoiceStatusBadge";
 import { EmptyState } from "@/components/feedback/EmptyState";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,7 +38,7 @@ export default function AccountInvoicesPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Invoices" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Invoices"
         description="Bills for your knife orders — what’s due, what’s paid, and line-by-line detail."

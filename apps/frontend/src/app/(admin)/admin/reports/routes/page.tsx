@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { RoutePerformanceReportResponseSchema } from "@/lib/api/admin-route-performance-report-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -171,12 +171,7 @@ export default function AdminRoutePerformanceReportPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Route performance", href: "/admin/reports/routes" },
-        ]}
-      />
+      <NavBreadcrumbs />
       <PageHeader
         title="Route performance"
         description="Stop throughput, failures, and completion quality for routes scheduled in the selected window."

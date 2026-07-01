@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CreditCard, Loader2 } from "lucide-react";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -162,12 +162,7 @@ export default function AdminStripeSettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Webhook inbox", href: "/admin/webhooks/inbox" },
-          { label: "Stripe" },
-        ]}
-      />
+      <NavBreadcrumbs />
       <PageHeader
         title="Stripe integration"
         description="Secrets are encrypted at rest (APP_KEY). Only developers and super admins can view this page. Leave a field empty to leave it unchanged; check clear to drop a database override and fall back to environment variables."

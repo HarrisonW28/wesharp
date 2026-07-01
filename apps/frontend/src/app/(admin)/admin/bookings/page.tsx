@@ -20,7 +20,7 @@ import { paginationRangeCaption } from "@/lib/format/pagination-caption";
 import { formatGBP, parseGbpInputToMinorUnits } from "@/lib/format/money";
 
 import { CompanyLookup, ContactLookup, LocationLookup } from "@/components/admin/lookups/AsyncEntityLookup";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -349,7 +349,7 @@ export default function AdminBookingsPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs items={[{ label: "Bookings" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Bookings"
         description="Search, filter, and manage collection bookings — confirm windows, routes, and conversion to orders."

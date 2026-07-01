@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { KnifeServiceReportResponseSchema } from "@/lib/api/admin-knife-service-report-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -189,12 +189,7 @@ export default function AdminKnifeServiceReportPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Knife & service volume", href: "/admin/reports/knives" },
-        ]}
-      />
+      <NavBreadcrumbs />
       <PageHeader
         title="Knife & service volume"
         description="Workshop throughput from knife rows: activity is scoped by updated_at; pipeline and assignment metrics are defined in the API."

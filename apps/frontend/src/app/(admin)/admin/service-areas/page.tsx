@@ -20,7 +20,7 @@ import {
   type ServiceAreaCoverageMapProps,
 } from "@/components/admin/ServiceAreaCoverageMap";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   AlertDialog,
@@ -247,7 +247,7 @@ export default function AdminServiceAreasPage() {
   if (!canView) {
     return (
       <div className="space-y-8">
-        <Breadcrumbs homeHref="/admin/dashboard" items={[{ label: "Service areas" }]} />
+        <NavBreadcrumbs />
         <PageHeader title="Service areas" description="You do not have access to this page." />
       </div>
     );
@@ -257,10 +257,7 @@ export default function AdminServiceAreasPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        homeHref="/admin/dashboard"
-        items={[{ label: "Service areas", href: "/admin/service-areas" }]}
-      />
+      <NavBreadcrumbs />
       <PageHeader
         title="Service areas"
         description="Define postcode prefix and optional map radius for each coverage cell. Public checks still use backend rules (radius applies after Sprint 17.3)."

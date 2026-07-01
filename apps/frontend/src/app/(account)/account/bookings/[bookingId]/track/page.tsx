@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
 import { CustomerTrackingView } from "@/components/account/CustomerTrackingView";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AccountBookingDetailResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
@@ -37,10 +37,8 @@ export default function AccountBookingTrackPage() {
 
   return (
     <div className="min-w-0 space-y-8 overflow-x-hidden">
-      <Breadcrumbs
-        homeHref="/account/dashboard"
-        items={[
-          { label: "My bookings", href: "/account/bookings" },
+      <NavBreadcrumbs
+        suffix={[
           { label: "Booking details", href: `/account/bookings/${bookingId}` },
           { label: "Track progress" },
         ]}

@@ -24,7 +24,7 @@ import { BillingReportResponseSchema } from "@/lib/api/admin-billing-report-sche
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ReportCsvExportButton } from "@/components/reports/ReportCsvExportButton";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -276,13 +276,7 @@ export default function AdminBillingReportPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin/dashboard" },
-          { label: "Finance", href: "/admin/finance" },
-          { label: "Billing report", href: "/admin/reports/billing" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Billing report" }]} />
       <PageHeader
         title="Invoices & payments"
         description="AR snapshot as of the period end date, payment cash in period, and ageing — amounts in GBP from the server."

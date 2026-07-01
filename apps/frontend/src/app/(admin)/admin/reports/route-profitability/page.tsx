@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { RouteProfitabilityReportResponseSchema } from "@/lib/api/admin-route-profitability-report-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -124,12 +124,7 @@ export default function AdminRouteProfitabilityReportPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Reporting hub", href: "/admin/reporting" },
-          { label: "Route profitability" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Route profitability" }]} />
       <PageHeader
         title="Route profitability"
         description="Sprint 24.4 — route revenue from billable orders, ledger allocations (fuel, consumables, other), stops timing, photo compliance, and driver rollups."

@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { SettingsResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PortalFormWidth } from "@/components/layout/PortalForm";
 import { PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -80,7 +80,7 @@ export default function AccountSettingsPage() {
 
   return (
     <PortalPage>
-      <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Settings" }]} />
+      <NavBreadcrumbs />
       <PageHeader title="Account basics" description="Operational emails and phone routing only — invoicing thresholds stay behind finance." />
 
       {profileQuery.status === "pending" ? (

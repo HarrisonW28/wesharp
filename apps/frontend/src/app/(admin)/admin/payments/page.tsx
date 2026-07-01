@@ -14,7 +14,7 @@ import { PaginatedPaymentsResponseSchema, PaymentRowSchema } from "@/lib/api/adm
 import { useAdminApi } from "@/lib/api/use-admin-api";
 import { formatGBP } from "@/lib/format/money";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { DataTable } from "@/components/tables/DataTable";
@@ -119,7 +119,7 @@ export default function AdminPaymentsPage() {
   if (listQuery.isPending) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Payments" }]} />
+        <NavBreadcrumbs />
         <div className="flex min-h-[30vh] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         </div>
@@ -130,7 +130,7 @@ export default function AdminPaymentsPage() {
   if (listQuery.isError) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Payments" }]} />
+        <NavBreadcrumbs />
         <p className="text-sm text-destructive">{(listQuery.error as Error).message}</p>
       </>
     );
@@ -140,7 +140,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <>
-      <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Payments" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Payments"
         description="Settlement rows (Stripe, FPS, adjustments). Manual entries require PAYMENTS.manage on the backend."

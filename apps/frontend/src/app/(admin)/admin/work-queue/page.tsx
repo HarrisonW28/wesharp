@@ -7,7 +7,7 @@ import { ClipboardList } from "lucide-react";
 import { WorkQueueApiResponseSchema } from "@/lib/api/admin-work-queue-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageActions, PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PortalEmptyCard, PortalErrorAlert, PortalLoadingCenter } from "@/components/layout/PortalStates";
@@ -37,7 +37,7 @@ export default function AdminWorkQueuePage() {
 
   return (
     <PortalPage>
-      <Breadcrumbs homeHref="/admin/dashboard" items={[{ label: "Work queue" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Work queue"
         description="Role-aware list of operational tasks that need a clear next step. Items with a zero count are hidden so this stays actionable."

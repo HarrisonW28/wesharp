@@ -18,7 +18,7 @@ import { USER_ROLE_LABELS, USER_STATUS_LABELS } from "@/lib/admin-user-role-copy
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { CompanyLookup } from "@/components/admin/lookups/AsyncEntityLookup";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -223,7 +223,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs items={[{ label: "Users" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Users"
         description="Directory and access control — Laravel roles are the source of truth. Clerk handles sign-in only."

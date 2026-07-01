@@ -8,7 +8,7 @@ import { AccountSubscriptionResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 import { formatGBP } from "@/lib/format/money";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +54,7 @@ export default function AccountSubscriptionPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Your plan" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Your plan"
         description="Everything about your WeSharp programme in one place. To change your plan or billing setup, please reach out to our team — you can’t do that from here yet."

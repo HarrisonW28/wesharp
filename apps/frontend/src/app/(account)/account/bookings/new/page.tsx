@@ -8,7 +8,7 @@ import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { LocationsResponseSchema, SettingsResponseSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -235,13 +235,7 @@ export default function NewAccountBookingPage() {
   if (createdId && createdSummary) {
     return (
       <div className="mx-auto max-w-2xl space-y-8">
-        <Breadcrumbs
-          homeHref="/account/dashboard"
-          items={[
-            { label: "My bookings", href: "/account/bookings" },
-            { label: "Book a collection" },
-          ]}
-        />
+        <NavBreadcrumbs suffix={[{ label: "Book a collection" }]} />
         <Card className="border-primary/25 bg-primary/5">
           <CardHeader>
             <div className="flex items-center gap-2 text-primary">
@@ -281,13 +275,7 @@ export default function NewAccountBookingPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <Breadcrumbs
-        homeHref="/account/dashboard"
-        items={[
-          { label: "My bookings", href: "/account/bookings" },
-          { label: "Book a collection" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Book a collection" }]} />
       <PageHeader
         title="Book a collection"
         description="A few quick steps — we’ll confirm your window before we’re on the way."

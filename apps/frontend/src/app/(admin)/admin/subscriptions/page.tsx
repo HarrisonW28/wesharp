@@ -7,7 +7,7 @@ import { Loader2, Repeat } from "lucide-react";
 import { AdminSubscriptionDashboardResponseSchema } from "@/lib/api/admin-subscription-dashboard-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +29,7 @@ export default function AdminSubscriptionsDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs homeHref="/admin/dashboard" items={[{ label: "Subscriptions" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Subscriptions"
         description="Operational programme subscriptions — who renews next, and who needs attention after their renewal date."

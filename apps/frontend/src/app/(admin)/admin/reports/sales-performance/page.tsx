@@ -13,7 +13,7 @@ import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -123,12 +123,7 @@ export default function AdminSalesPosPerformanceReportPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        items={[
-          { label: "Reporting hub", href: "/admin/reporting" },
-          { label: "Sales & POS performance" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Sales & POS performance" }]} />
       <PageHeader
         title="Sales & POS performance"
         description="Checkout funnel, POS-like payments, discounts, booking estimates, allocated costs, and sales attribution — Sprint 24.5."

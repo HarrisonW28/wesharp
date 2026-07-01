@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,10 +18,7 @@ export default async function StripeCheckoutInvoicePaidReturnPage({ params }: Pr
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs
-        homeHref="/account/dashboard"
-        items={[{ label: "Invoices", href: "/account/invoices" }, { label: "Payment received" }]}
-      />
+      <NavBreadcrumbs suffix={[{ label: "Payment received" }]} />
       <PageHeader
         title="Thank you"
         description="Stripe sent you back here after checkout. Your bank charge may still be confirming."

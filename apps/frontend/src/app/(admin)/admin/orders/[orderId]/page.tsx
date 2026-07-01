@@ -26,7 +26,7 @@ import { AuditTimeline, type AuditTimelineRow } from "@/components/admin/AuditTi
 import { WorkshopEvidenceSection } from "@/components/admin/WorkshopEvidenceSection";
 import { KnifePhotoTile } from "@/components/admin/KnifePhotoTile";
 import { KnifeLookup } from "@/components/admin/lookups/AsyncEntityLookup";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Badge } from "@/components/ui/badge";
@@ -626,7 +626,7 @@ export default function AdminOrderDetailPage() {
   if (orderQuery.isPending) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Orders", href: "/admin/orders" }, { label: "…" }]} />
+        <NavBreadcrumbs suffix={[{ label: "…" }]} />
         <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         </div>
@@ -637,7 +637,7 @@ export default function AdminOrderDetailPage() {
   if (orderQuery.isError) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Orders", href: "/admin/orders" }, { label: "Error" }]} />
+        <NavBreadcrumbs suffix={[{ label: "Error" }]} />
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">{(orderQuery.error as Error).message}</p>
           <Button className="mt-3" type="button" variant="outline" size="default" onClick={() => void orderQuery.refetch()}>
@@ -651,7 +651,7 @@ export default function AdminOrderDetailPage() {
   if (!orderQuery.data) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Orders", href: "/admin/orders" }, { label: "Not found" }]} />
+        <NavBreadcrumbs suffix={[{ label: "Not found" }]} />
         <p className="text-sm text-muted-foreground">Order could not be loaded.</p>
       </>
     );
@@ -784,11 +784,8 @@ export default function AdminOrderDetailPage() {
 
   return (
     <>
-      <Breadcrumbs
-        crumbs={[
-          { label: "Orders", href: "/admin/orders" },
-          { label: orderRef },
-        ]}
+      <NavBreadcrumbs
+        suffix={[{ label: orderRef }]}
       />
       <PageHeader
         title={orderRef}

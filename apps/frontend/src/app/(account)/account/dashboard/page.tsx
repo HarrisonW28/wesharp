@@ -30,7 +30,7 @@ import { useAccountApi } from "@/lib/api/use-account-api";
 import { customerKnifeListLabel } from "@/lib/helpers/customer-display";
 import { formatGBP } from "@/lib/format/money";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageActions, PortalPage } from "@/components/layout/PortalPage";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PortalErrorAlert } from "@/components/layout/PortalStates";
@@ -188,7 +188,7 @@ export default function AccountDashboardPage() {
   if (dashQuery.status === "pending") {
     return (
       <PortalPage>
-        <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Overview" }]} />
+        <NavBreadcrumbs />
         <div className="space-y-2">
           <Skeleton className="h-10 w-64 max-w-full" />
           <Skeleton className="h-4 w-96 max-w-full" />
@@ -208,7 +208,7 @@ export default function AccountDashboardPage() {
       dashQuery.error instanceof Error ? dashQuery.error.message : "Something went wrong on our side.";
     return (
       <PortalPage>
-        <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Overview" }]} />
+        <NavBreadcrumbs />
         <PageHeader title="Overview" description="Your bookings, orders and account activity in one place." />
         <PortalErrorAlert
           title="We couldn’t load your overview"
@@ -252,7 +252,7 @@ export default function AccountDashboardPage() {
 
   return (
     <PortalPage>
-      <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Overview" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title={greetingName ? `Hello, ${greetingName}` : "Welcome back"}
         description={

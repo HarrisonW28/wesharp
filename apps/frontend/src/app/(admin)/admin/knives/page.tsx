@@ -14,7 +14,7 @@ import { KnifeRowSchema, PaginatedKnivesResponseSchema } from "@/lib/api/admin-k
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
 import { CompanyLookup, OrderLookup } from "@/components/admin/lookups/AsyncEntityLookup";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -258,7 +258,7 @@ export default function AdminKnivesPage() {
   if (listQuery.isPending) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Knives" }]} />
+        <NavBreadcrumbs />
         <div className="flex min-h-[30vh] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         </div>
@@ -269,7 +269,7 @@ export default function AdminKnivesPage() {
   if (listQuery.isError) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Knives" }]} />
+        <NavBreadcrumbs />
         <PageHeader
           title="Knife tracking"
           description="Search by tag or free text; filter by account, order, type, or workshop status."
@@ -288,7 +288,7 @@ export default function AdminKnivesPage() {
 
   return (
     <>
-      <Breadcrumbs crumbs={[{ label: "Operations", href: "/admin/dashboard" }, { label: "Knives" }]} />
+      <NavBreadcrumbs />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageHeader
           title="Knife tracking"

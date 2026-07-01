@@ -14,7 +14,7 @@ import { availableWorkflowSteps, canReportIssue, isRiskyKnifeTransition } from "
 
 import { KnifePhotoGalleryCard } from "@/components/admin/KnifePhotoGalleryCard";
 import { WorkshopEvidenceSection } from "@/components/admin/WorkshopEvidenceSection";
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -358,7 +358,7 @@ export default function AdminKnifeDetailPage() {
   if (knifeQuery.isPending) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Knives", href: "/admin/knives" }, { label: "…" }]} />
+        <NavBreadcrumbs suffix={[{ label: "…" }]} />
         <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         </div>
@@ -369,7 +369,7 @@ export default function AdminKnifeDetailPage() {
   if (knifeQuery.isError) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Knives", href: "/admin/knives" }, { label: "Error" }]} />
+        <NavBreadcrumbs suffix={[{ label: "Error" }]} />
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
           <p className="font-medium text-destructive">{(knifeQuery.error as Error).message}</p>
           <Button className="mt-3" type="button" variant="outline" size="sm" onClick={() => void knifeQuery.refetch()}>
@@ -383,7 +383,7 @@ export default function AdminKnifeDetailPage() {
   if (!knifeQuery.data) {
     return (
       <>
-        <Breadcrumbs crumbs={[{ label: "Knives", href: "/admin/knives" }, { label: "Not found" }]} />
+        <NavBreadcrumbs suffix={[{ label: "Not found" }]} />
         <p className="text-sm text-muted-foreground">Knife could not be loaded.</p>
       </>
     );
@@ -413,12 +413,7 @@ export default function AdminKnifeDetailPage() {
 
   return (
     <>
-      <Breadcrumbs
-        crumbs={[
-          { label: "Knives", href: "/admin/knives" },
-          { label: k.tag_id ?? "Blade" },
-        ]}
-      />
+      <NavBreadcrumbs suffix={[{ label: k.tag_id ?? "Blade" }]} />
       <PageHeader
         title={k.tag_id ?? "Knife"}
         description={`${statusStr.replace(/_/g, " ")}${typeof k.company?.name === "string" ? ` · ${k.company.name}` : ""}`}

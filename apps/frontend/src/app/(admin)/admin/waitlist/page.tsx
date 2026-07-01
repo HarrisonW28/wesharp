@@ -7,7 +7,7 @@ import { Inbox, Loader2 } from "lucide-react";
 import { ServiceAreaWaitlistApiResponseSchema } from "@/lib/api/admin-service-area-waitlist-schema";
 import { useAdminApi } from "@/lib/api/use-admin-api";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +45,7 @@ export default function AdminWaitlistPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs homeHref="/admin/dashboard" items={[{ label: "Waitlist" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Service area waitlist"
         description="People who asked to be notified when we expand collection beyond our current areas."

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -22,7 +22,7 @@ function SiteSettingsHeaderActions() {
 export default function AdminSiteSettingsHubPage() {
   return (
     <ContentSettingsGate>
-      <Breadcrumbs crumbs={[{ label: "Settings", href: "/admin/dashboard" }, { label: "Site settings" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Site settings"
         description="Edit public marketing copy in sections. Changes apply to the marketing site and booking flow when you save."

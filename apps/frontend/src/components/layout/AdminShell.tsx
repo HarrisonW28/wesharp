@@ -15,6 +15,7 @@ import { StaffRouteGate } from "@/components/auth/StaffRouteGate";
 import { ShellPermissionBoundary } from "@/components/auth/ShellPermissionBoundary";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { MobileDrawer } from "@/components/navigation/MobileDrawer";
+import { NavSectionsProvider } from "@/components/navigation/NavSectionsContext";
 import { InAppNotificationBell } from "@/components/notifications/InAppNotificationBell";
 import { SidebarNav } from "@/components/navigation/SidebarNav";
 import { TopBar } from "@/components/navigation/TopBar";
@@ -50,7 +51,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <StaffRouteGate>
       <Toaster richColors closeButton position="top-right" />
       <ShellPermissionBoundary scope="admin" label="Checking operations permissions…">
-        <div className="flex min-h-svh bg-gradient-to-br from-muted/35 via-background to-muted/20 print:min-h-0 print:bg-white">
+        <NavSectionsProvider sections={navSections}>
+          <div className="flex min-h-svh bg-gradient-to-br from-muted/35 via-background to-muted/20 print:min-h-0 print:bg-white">
           <aside className="app-chrome hidden shrink-0 print:hidden md:sticky md:top-0 md:flex md:h-svh md:max-h-svh md:w-64 md:flex-col md:self-start md:border-r md:bg-background/95 md:backdrop-blur">
             <div className="flex shrink-0 flex-col border-b px-4 py-3">
               <WeSharpLogo className="h-9" href="/admin/dashboard" />
@@ -92,6 +94,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             />
           </div>
         </div>
+        </NavSectionsProvider>
       </ShellPermissionBoundary>
     </StaffRouteGate>
   );

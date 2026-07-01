@@ -8,7 +8,7 @@ import { PaginatedTenantKnivesSchema } from "@/lib/api/account-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
 import { customerKnifeListLabel } from "@/lib/helpers/customer-display";
 
-import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { NavBreadcrumbs } from "@/components/layout/NavBreadcrumbs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/status/StatusBadge";
 
@@ -34,7 +34,7 @@ export default function AccountKnivesPage() {
 
   return (
     <div className="space-y-8">
-      <Breadcrumbs homeHref="/account/dashboard" items={[{ label: "Knives" }]} />
+      <NavBreadcrumbs />
       <PageHeader
         title="Your knives"
         description="Each blade we track for you, with its current status in sharpening."
