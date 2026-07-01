@@ -137,7 +137,7 @@ export function VenuePendingClient() {
   const sole = registrationType === "sole_customer";
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-4 py-12">
+    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-6 px-4 py-12">
       <div className="text-center">
         <h1 className="text-xl font-semibold tracking-tight">Finish your WeSharp profile</h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -146,55 +146,41 @@ export function VenuePendingClient() {
         </p>
       </div>
 
-      <div
-        className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-sm"
-        role="radiogroup"
-        aria-label="Account type"
-      >
+      <div className="space-y-3" role="radiogroup" aria-label="Account type">
         <Label className="text-sm font-medium text-foreground">How should we set you up?</Label>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Button
-            type="button"
-            variant={sole ? "outline" : "default"}
-            className={cn(
-              "h-auto w-full min-w-0 justify-start whitespace-normal py-3 text-left",
-              sole && "border-border bg-transparent",
-            )}
-            aria-checked={!sole}
-            role="radio"
-            onClick={() => setRegistrationType("business")}
-          >
-            <span className="block text-sm font-semibold">Business / venue</span>
-            <span
-              className={cn(
-                "block text-xs font-normal",
-                sole ? "text-muted-foreground" : "text-primary-foreground/85",
-              )}
-            >
-              Kitchen, brasserie, collective, etc.
-            </span>
-          </Button>
-          <Button
-            type="button"
-            variant={sole ? "default" : "outline"}
-            className={cn(
-              "h-auto w-full min-w-0 justify-start whitespace-normal py-3 text-left",
-              !sole && "border-border bg-transparent",
-            )}
-            aria-checked={sole}
-            role="radio"
-            onClick={() => setRegistrationType("sole_customer")}
-          >
-            <span className="block text-sm font-semibold">Sole trader / individual</span>
-            <span
-              className={cn(
-                "block text-xs font-normal",
-                sole ? "text-primary-foreground/85" : "text-muted-foreground",
-              )}
-            >
-              Not a registered company — billed to you.
-            </span>
-          </Button>
+        <div className="grid gap-3">
+          {(
+            [
+              {
+                value: "business" as const,
+                title: "Business / venue",
+                body: "Kitchen, brasserie, collective, etc.",
+              },
+              {
+                value: "sole_customer" as const,
+                title: "Sole trader / individual",
+                body: "Not a registered company — billed to you.",
+              },
+            ] as const
+          ).map((opt) => {
+            const selected = registrationType === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setRegistrationType(opt.value)}
+                className={cn(
+                  "flex min-h-[4.25rem] w-full touch-manipulation flex-col rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:bg-muted/40",
+                  selected ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/30",
+                )}
+              >
+                <span className="text-sm font-semibold text-foreground">{opt.title}</span>
+                <span className="mt-1 text-xs leading-relaxed text-muted-foreground">{opt.body}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
