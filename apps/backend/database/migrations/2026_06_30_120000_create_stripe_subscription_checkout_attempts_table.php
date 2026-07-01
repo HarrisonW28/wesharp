@@ -12,8 +12,8 @@ return new class extends Migration
     {
         Schema::create('stripe_subscription_checkout_attempts', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('company_id')->constrained('companies')->cascadeOnDelete();
-            $table->foreignUuid('subscription_plan_id')->constrained('subscription_plans')->cascadeOnDelete();
+            $table->uuid('company_id');
+            $table->uuid('subscription_plan_id');
             $table->string('stripe_checkout_session_id', 255);
             $table->string('status', 32);
             $table->unsignedInteger('amount_pence');
@@ -25,9 +25,18 @@ return new class extends Migration
             $table->timestampTz('follow_up_dispatched_at')->nullable();
             $table->timestampsTz();
 
-            $table->unique('stripe_checkout_session_id');
-            $table->index(['company_id', 'status']);
-            $table->index(['status', 'created_at']);
+            $table->foreign('company_id', 'sub_checkout_attempts_company_fk')
+                ->references('id')
+                ->on('companies')
+                ->cascadeOnDelete();
+            $table->foreign('subscription_plan_id', 'sub_checkout_attempts_plan_fk')
+                ->references('id')
+                ->on('subscription_plans')
+                ->cascadeOnDelete();
+
+            $table->unique('stripe_checkout_session_id', 'sub_checkout_attempts_session_uq');
+            $table->index(['company_id', 'status'], 'sub_checkout_attempts_co_status_idx');
+            $table->index(['status', 'created_at'], 'sub_checkout_attempts_status_created_idx');
         });
     }
 
