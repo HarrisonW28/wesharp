@@ -68,6 +68,7 @@ use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\TenantSmokeController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\Public\PublicBookingEnquiryController;
+use App\Http\Controllers\Public\PublicContactEnquiryController;
 use App\Http\Controllers\Public\PublicPricingEstimateController;
 use App\Http\Controllers\Public\PublicServiceAreaCheckController;
 use App\Http\Controllers\Public\PublicServiceAreaWaitlistController;
@@ -467,6 +468,7 @@ Route::prefix('public')->middleware('throttle:pricing-estimate-public')->group(f
 
 Route::prefix('public')->middleware('throttle:booking-enquiries')->group(function (): void {
     Route::post('booking-enquiries', [PublicBookingEnquiryController::class, 'store'])->name('api.public.booking_enquiries.store');
+    Route::post('contact-enquiries', [PublicContactEnquiryController::class, 'store'])->name('api.public.contact_enquiries.store');
 });
 
 /** Provider webhooks — unauthenticated; each controller verifies signatures and returns safe JSON errors. */

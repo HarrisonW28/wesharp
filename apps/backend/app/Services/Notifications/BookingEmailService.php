@@ -8,6 +8,7 @@ use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Support\Portal\CustomerPortalUrls;
 use Illuminate\Support\Str;
 
 final class BookingEmailService
@@ -25,6 +26,40 @@ final class BookingEmailService
             subject: 'We’ve received your booking request',
             headline: 'Booking request received',
             body: $this->bodyRequested($booking),
+        );
+    }
+
+    /** Nudge anonymous enquirers to create a portal account with the same email. */
+    public function sendBookingEnquiryAccountInvite(Booking $booking): void
+    {
+        $booking->load(['company', 'contact']);
+        $to = $this->recipientEmail($booking);
+        if ($to === null || trim($to) === '') {
+            return;
+        }
+
+        $registerUrl = CustomerPortalUrls::base().'/register?returnTo='.rawurlencode('/account/bookings');
+        $type = 'booking.enquiry.account_invite';
+        $idempotencyKey = NotificationService::idempotencyKey($type, Booking::class, (string) $booking->id);
+
+        $this->notifications->queueEmail(
+            type: $type,
+            idempotencyKey: $idempotencyKey,
+            subject: 'Track your WeSharp enquiry in your account',
+            view: 'emails.notifications.generic',
+            viewData: [
+                'headline' => 'Create your free WeSharp account',
+                'body' => "Thanks for your booking enquiry — we'll be in touch shortly.\n\nCreate a free account with this email address to track your request, manage collections, and subscribe to a programme when you're ready.",
+                'ctaUrl' => $registerUrl,
+                'ctaLabel' => 'Create account',
+            ],
+            ctx: [
+                'company_id' => (string) $booking->company_id,
+                'recipient_email' => mb_strtolower(trim($to)),
+                'recipient_name' => $this->recipientName($booking),
+                'source_type' => Booking::class,
+                'source_id' => (string) $booking->id,
+            ],
         );
     }
 

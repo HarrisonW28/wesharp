@@ -13,6 +13,7 @@ import { apiOrigin } from "@/lib/env";
 import { formatGBP } from "@/lib/format/money";
 import { PublicPricingEstimateResponseSchema, type PublicPricingEstimateResponse } from "@/lib/public-pricing-estimate-schema";
 import { publicBillingCadence } from "@/lib/site-content/public-subscription-plans";
+import { subscriptionCheckoutPath } from "@/lib/subscription-checkout-path";
 import { cn } from "@/lib/utils";
 
 function bookHrefFromCalculator(
@@ -61,6 +62,12 @@ function bookHrefFromCalculator(
   const q = p.toString();
 
   return q !== "" ? `/book?${q}` : "/book";
+}
+
+function subscribeHrefFromCalculator(result: PublicPricingEstimateResponse | null): string | null {
+  const planId = result?.subscription_plan?.id?.trim();
+  if (!planId) return null;
+  return subscriptionCheckoutPath(planId);
 }
 
 export function PublicPricingCalculator({ className }: { className?: string }) {
@@ -136,6 +143,7 @@ export function PublicPricingCalculator({ className }: { className?: string }) {
     },
     result,
   );
+  const subscribeHref = subscribeHrefFromCalculator(result);
 
   return (
     <Card className={cn("border-border/80 shadow-sm", className)}>
@@ -286,7 +294,14 @@ export function PublicPricingCalculator({ className }: { className?: string }) {
             {result.visit_note ? <p className="text-xs text-muted-foreground">{result.visit_note}</p> : null}
             <p className="text-xs text-muted-foreground">{result.disclaimer}</p>
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
-              <Button asChild className="h-11 rounded-lg">
+              {subscribeHref ? (
+                <Button asChild className="col-span-2 h-11 rounded-lg sm:col-auto">
+                  <Link href={subscribeHref}>
+                    Subscribe now <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+                  </Link>
+                </Button>
+              ) : null}
+              <Button asChild className="h-11 rounded-lg" variant={subscribeHref ? "outline" : "default"}>
                 <Link href={bookHref}>
                   Book a collection <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                 </Link>

@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\StorePublicServiceAreaWaitlistRequest;
 use App\Models\ServiceAreaWaitlistSignup;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Crm\CompanyLeadResolver;
+use App\Enums\NoteVisibility;
+use App\Models\Contact;
 use App\Support\ApiResponses;
 use App\Support\ServiceAreas\InvalidUkPostcodeException;
 use App\Support\ServiceAreas\ServiceAreaCoverageResolver;
@@ -15,6 +18,10 @@ use Illuminate\Support\Str;
 
 final class PublicServiceAreaWaitlistController extends Controller
 {
+    public function __construct(
+        private readonly CompanyLeadResolver $leadResolver,
+    ) {}
+
     public function store(StorePublicServiceAreaWaitlistRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -63,6 +70,29 @@ final class PublicServiceAreaWaitlistController extends Controller
             'email_domain' => Str::after($signup->email, '@') ?: '-',
             'source' => $signup->source,
         ], $request);
+
+        $company = $this->leadResolver->resolveOrCreateLead([
+            'name' => $signup->name,
+            'email' => $signup->email,
+        ]);
+
+        Contact::query()->updateOrCreate(
+            [
+                'company_id' => $company->id,
+                'email' => $signup->email,
+            ],
+            [
+                'first_name' => Str::before($signup->name, ' ') ?: $signup->name,
+                'last_name' => Str::after($signup->name, ' ') ?: '-',
+                'billing_contact' => true,
+            ]
+        );
+
+        $company->notes()->create([
+            'author_id' => null,
+            'body' => 'Service area waitlist signup for '.$signup->postcode.' ('.$signup->customer_type.'). Source: '.$signup->source.'.',
+            'visibility' => NoteVisibility::Internal,
+        ]);
 
         return ApiResponses::success([
             'accepted' => true,

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChevronLeft, Loader2 } from "lucide-react";
 
 import { BookingWizardStepNav } from "@/components/bookings/BookingWizardStepNav";
+import { PublicSubscriptionPlanPicker } from "@/components/marketing/PublicSubscriptionPlanPicker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,9 @@ import {
 import { postPublicBookingServiceAreaCheck } from "@/lib/public-booking-service-area-check";
 import type { PublicBookingFlowSettings } from "@/lib/site-content/fetch-site-content";
 import type { SiteContent } from "@/lib/site-content/site-content-defaults";
+import { trackBookingWizard } from "@/lib/booking-wizard-analytics";
 import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
+import { subscriptionCheckoutPath } from "@/lib/subscription-checkout-path";
 import { formatGBP } from "@/lib/format/money";
 import { cn } from "@/lib/utils";
 
@@ -101,8 +104,29 @@ export function BookPageClient({
   const [coverageCheckLoading, setCoverageCheckLoading] = useState(false);
   const [coverageGateBlocked, setCoverageGateBlocked] = useState(false);
   const [outOfAreaAcknowledged, setOutOfAreaAcknowledged] = useState(false);
+  const [selectedPlanLabel, setSelectedPlanLabel] = useState<string | null>(null);
 
   const endpoint = useMemo(() => `${apiOrigin()}/api/public/booking-enquiries`, []);
+
+  useEffect(() => {
+    trackBookingWizard("booking_wizard_step_view", {
+      step: step + 1,
+      step_name: STEP_HEADINGS[step]?.name ?? "unknown",
+    });
+  }, [step]);
+
+  const subscribeRegisterHref =
+    values.subscription_plan_id && looksLikeUuid(values.subscription_plan_id)
+      ? `/register?returnTo=${encodeURIComponent(subscriptionCheckoutPath(values.subscription_plan_id))}`
+      : "/register";
+  const subscribeLoginHref =
+    values.subscription_plan_id && looksLikeUuid(values.subscription_plan_id)
+      ? `/login?returnTo=${encodeURIComponent(subscriptionCheckoutPath(values.subscription_plan_id))}`
+      : "/login";
+  const subscribeNowHref =
+    values.subscription_plan_id && looksLikeUuid(values.subscription_plan_id)
+      ? subscriptionCheckoutPath(values.subscription_plan_id)
+      : null;
 
   useEffect(() => {
     const kn = searchParams.get("knives");
@@ -334,6 +358,10 @@ export function BookPageClient({
       }
 
       setStatus("success");
+      trackBookingWizard("booking_wizard_submit", {
+        programme: values.programme_interest ?? "none",
+        has_plan: Boolean(values.subscription_plan_id),
+      });
     } catch {
       setGlobalMessage(
         apiOrigin() === ""
@@ -345,6 +373,10 @@ export function BookPageClient({
   };
 
   const advanceToNextStep = () => {
+    trackBookingWizard("booking_wizard_step_complete", {
+      step: step + 1,
+      step_name: STEP_HEADINGS[step]?.name ?? "unknown",
+    });
     setFieldErrors({});
     setStatus("idle");
     setCoverageGateBlocked(false);
@@ -441,16 +473,29 @@ export function BookPageClient({
           values.programme_interest === "subscription" ? (
             <Alert className="border-primary/25 bg-primary/5 text-left">
               <AlertDescription className="text-sm leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">Subscribe online</span> — when your plan supports card billing,
-                you can finish subscription checkout from your WeSharp account (Stripe hosted checkout). Create an account with
-                the same email you used above, then sign in and open your subscription area once our team has linked your
-                organisation.
+                <span className="font-medium text-foreground">Subscribe online</span> — finish payment on Stripe when your
+                plan supports card billing. Use the same email you used above so we can match your enquiry.
                 <div className="mt-3 flex flex-wrap gap-2">
+                  {subscribeNowHref ? (
+                    <Button asChild variant="default" size="sm" className="rounded-lg">
+                      <Link
+                        href={subscribeNowHref}
+                        onClick={() =>
+                          trackBookingWizard("booking_wizard_subscribe_click", {
+                            plan_id: values.subscription_plan_id ?? "",
+                            context: "success",
+                          })
+                        }
+                      >
+                        Subscribe now
+                      </Link>
+                    </Button>
+                  ) : null}
                   <Button asChild variant="secondary" size="sm" className="rounded-lg">
-                    <Link href="/register">Create account</Link>
+                    <Link href={subscribeRegisterHref}>Create account</Link>
                   </Button>
                   <Button asChild variant="outline" size="sm" className="rounded-lg">
-                    <Link href="/login">Sign in</Link>
+                    <Link href={subscribeLoginHref}>Sign in</Link>
                   </Button>
                 </div>
               </AlertDescription>
@@ -827,6 +872,10 @@ export function BookPageClient({
                     aria-checked={selected}
                     onClick={() => {
                       patch("programme_interest")(opt.value);
+                      if (opt.value !== "subscription") {
+                        patch("subscription_plan_id")(undefined);
+                        setSelectedPlanLabel(null);
+                      }
                       setFieldErrors((prev) => ({ ...prev, programme_interest: undefined }));
                     }}
                     className={cn(
@@ -842,6 +891,16 @@ export function BookPageClient({
               {fieldErrors.programme_interest && (
                 <p className="text-sm text-destructive">{fieldErrors.programme_interest}</p>
               )}
+              {values.programme_interest === "subscription" ? (
+                <PublicSubscriptionPlanPicker
+                  selectedPlanId={values.subscription_plan_id}
+                  onSelect={(planId, planName) => {
+                    patch("subscription_plan_id")(planId);
+                    setSelectedPlanLabel(planName ?? null);
+                  }}
+                  className="pt-2"
+                />
+              ) : null}
             </div>
           ) : null}
 
@@ -880,7 +939,10 @@ export function BookPageClient({
                   </div>
                   <div>
                     <dt className="text-xs uppercase tracking-wide">Programme</dt>
-                    <dd className="text-foreground">{programmeLabel}</dd>
+                    <dd className="text-foreground">
+                      {programmeLabel}
+                      {selectedPlanLabel ? ` — ${selectedPlanLabel}` : null}
+                    </dd>
                   </div>
                 </dl>
               </div>
@@ -889,15 +951,29 @@ export function BookPageClient({
               values.programme_interest === "subscription" ? (
                 <Alert className="border-primary/25 bg-primary/5">
                   <AlertDescription className="text-sm leading-relaxed text-muted-foreground">
-                    <span className="font-medium text-foreground">Pay for your programme online</span> — this site can invite
-                    subscription checkout after you have a WeSharp account (hosted by Stripe). Use the same email below so we
-                    can match your enquiry quickly.
+                    <span className="font-medium text-foreground">Pay for your programme online</span> — subscribe on Stripe
+                    after you submit this enquiry, or create an account first with the same email below.
                     <div className="mt-3 flex flex-wrap gap-2">
+                      {subscribeNowHref ? (
+                        <Button asChild type="button" variant="default" size="sm" className="rounded-lg">
+                          <Link
+                            href={subscribeNowHref}
+                            onClick={() =>
+                              trackBookingWizard("booking_wizard_subscribe_click", {
+                                plan_id: values.subscription_plan_id ?? "",
+                                context: "review",
+                              })
+                            }
+                          >
+                            Subscribe now
+                          </Link>
+                        </Button>
+                      ) : null}
                       <Button asChild type="button" variant="secondary" size="sm" className="rounded-lg">
-                        <Link href="/register">Create account</Link>
+                        <Link href={subscribeRegisterHref}>Create account</Link>
                       </Button>
                       <Button asChild type="button" variant="outline" size="sm" className="rounded-lg">
-                        <Link href="/login">Already registered</Link>
+                        <Link href={subscribeLoginHref}>Already registered</Link>
                       </Button>
                     </div>
                   </AlertDescription>

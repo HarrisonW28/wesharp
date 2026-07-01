@@ -8,8 +8,10 @@ import { Loader2 } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useBackendMe } from "@/hooks/use-backend-me";
 import { InvoiceStripeCheckoutSessionResponseSchema } from "@/lib/api/admin-invoices-schema";
 import { useAccountApi } from "@/lib/api/use-account-api";
+import { venuePendingPath } from "@/lib/safe-return-to";
 import { subscriptionCheckoutSignInPath } from "@/lib/subscription-checkout-path";
 import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
 import { cn } from "@/lib/utils";
@@ -18,9 +20,12 @@ export default function SubscriptionCheckoutPage() {
   const { planId } = useParams<{ planId: string }>();
   const router = useRouter();
   const { isLoaded, userId } = useAuth();
+  const { data: meData, status: meStatus } = useBackendMe();
   const api = useAccountApi();
   const startedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
+
+  const returnPath = planId ? `/subscribe/${planId}` : "/subscriptions";
 
   useEffect(() => {
     if (!isLoaded || !planId) {
@@ -29,6 +34,19 @@ export default function SubscriptionCheckoutPage() {
 
     if (!userId) {
       router.replace(subscriptionCheckoutSignInPath(planId));
+      return;
+    }
+
+    if (meStatus === "pending") {
+      return;
+    }
+
+    if (meStatus === "success" && !meData?.data?.user?.company_id) {
+      router.replace(venuePendingPath(returnPath));
+      return;
+    }
+
+    if (meStatus !== "success") {
       return;
     }
 
@@ -47,7 +65,11 @@ export default function SubscriptionCheckoutPage() {
 
         if (!res.ok) {
           if (res.status === 401) {
-            router.replace(`/auth/continue?returnTo=${encodeURIComponent(`/subscribe/${planId}`)}`);
+            router.replace(`/auth/continue?returnTo=${encodeURIComponent(returnPath)}`);
+            return;
+          }
+          if (res.status === 403) {
+            router.replace(venuePendingPath(returnPath));
             return;
           }
           setError(res.message || "Could not start subscription checkout.");
@@ -73,7 +95,7 @@ export default function SubscriptionCheckoutPage() {
     }
 
     void startCheckout();
-  }, [api, isLoaded, planId, router, userId]);
+  }, [api, isLoaded, meData?.data?.user?.company_id, meStatus, planId, returnPath, router, userId]);
 
   return (
     <div className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "py-16 md:py-24")}>

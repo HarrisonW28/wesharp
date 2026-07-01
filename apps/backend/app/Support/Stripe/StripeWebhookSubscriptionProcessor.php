@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Support\Stripe;
 
+use App\Enums\CompanyStatus;
 use App\Enums\SubscriptionStatus;
 use App\Models\Company;
 use App\Models\CompanySubscription;
 use App\Models\SubscriptionPlan;
+use App\Services\Notifications\SubscriptionEmailService;
 use App\Services\Stripe\StripeSubscriptionRetrieveClient;
 use App\Services\Subscriptions\CompanySubscriptionProvisioningService;
+use App\Services\Subscriptions\StripeSubscriptionCheckoutAttemptService;
 use App\Services\Subscriptions\SubscriptionBillingPeriodService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -25,6 +28,8 @@ final class StripeWebhookSubscriptionProcessor
         private readonly CompanySubscriptionProvisioningService $provisioning,
         private readonly StripeSubscriptionRetrieveClient $stripeSubscriptions,
         private readonly SubscriptionBillingPeriodService $billingPeriods,
+        private readonly SubscriptionEmailService $subscriptionEmails,
+        private readonly StripeSubscriptionCheckoutAttemptService $checkoutAttempts,
     ) {}
 
     /** @param  array<string, mixed>  $event */
@@ -38,6 +43,7 @@ final class StripeWebhookSubscriptionProcessor
 
         match ($type) {
             'checkout.session.completed' => $this->onCheckoutSessionCompleted($object),
+            'checkout.session.expired' => $this->onCheckoutSessionExpired($object),
             'customer.subscription.created',
             'customer.subscription.updated' => $this->onCustomerSubscriptionUpdated($object),
             'customer.subscription.deleted' => $this->onCustomerSubscriptionDeleted($object),
@@ -90,7 +96,8 @@ final class StripeWebhookSubscriptionProcessor
         }
 
         try {
-            $this->activateFromStripeCheckout($companyId, $planId, $customerId, $stripeSubId);
+            $sessionId = isset($obj['id']) && is_string($obj['id']) ? $obj['id'] : '';
+            $this->activateFromStripeCheckout($companyId, $planId, $customerId, $stripeSubId, $sessionId);
         } catch (Throwable $e) {
             Log::error('stripe.subscription.checkout_activate_failed', [
                 'subscription_id' => $stripeSubId,
@@ -106,6 +113,7 @@ final class StripeWebhookSubscriptionProcessor
         string $planId,
         string $stripeCustomerId,
         string $stripeSubscriptionId,
+        string $checkoutSessionId = '',
     ): void {
         $company = Company::query()->find($companyId);
         if ($company === null) {
@@ -150,6 +158,38 @@ final class StripeWebhookSubscriptionProcessor
             $periodStart,
             $periodEnd,
         );
+
+        if ($company->company_status !== CompanyStatus::Active) {
+            $company->forceFill(['company_status' => CompanyStatus::Active])->save();
+        }
+
+        $localSub = CompanySubscription::query()
+            ->where('stripe_subscription_id', $stripeSubscriptionId)
+            ->first();
+        if ($localSub !== null) {
+            $this->subscriptionEmails->sendSubscriptionStarted($localSub);
+        }
+
+        if ($checkoutSessionId !== '') {
+            $this->checkoutAttempts->markCompleted($checkoutSessionId);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $obj
+     */
+    private function onCheckoutSessionExpired(array $obj): void
+    {
+        if (($obj['mode'] ?? '') !== 'subscription') {
+            return;
+        }
+
+        $sessionId = isset($obj['id']) && is_string($obj['id']) ? $obj['id'] : '';
+        if ($sessionId === '') {
+            return;
+        }
+
+        $this->checkoutAttempts->markExpired($sessionId);
     }
 
     /**

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { ContactEnquiryFormSection } from "@/components/marketing/ContactEnquiryFormSection";
 import { ContactTopicNotice } from "@/components/marketing/ContactTopicNotice";
 import { MarketingArticle } from "@/components/marketing/MarketingArticle";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,10 @@ export default async function ContactPage() {
       <Suspense fallback={null}>
         <ContactTopicNotice />
       </Suspense>
+      <Suspense fallback={null}>
+        <ContactEnquiryFormSection />
+      </Suspense>
+      <p className="text-sm text-muted-foreground">Prefer email or phone instead?</p>
       <p>
         Email:&nbsp;
         <a href={`mailto:${email}`} className="font-medium text-foreground underline underline-offset-4">

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CompanyStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\Company;
@@ -47,6 +48,36 @@ final class BootstrapTenantOrganisationApiTest extends TestCase
             ->postJson('/api/v1/account/bootstrap-organisation', ['name' => 'Another Org'])
             ->assertStatus(422)
             ->assertJsonPath('error.code', 'organisation_already_linked');
+    }
+
+    #[Test]
+    public function bootstrap_attaches_existing_lead_company_by_billing_email(): void
+    {
+        $existing = Company::factory()->create([
+            'name' => 'Prior Enquiry Kitchen',
+            'billing_email' => 'owner@prior.example',
+            'company_status' => CompanyStatus::Lead,
+        ]);
+
+        $user = User::factory()->create([
+            'role' => UserRole::CustomerOwner,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+            'email' => 'owner@prior.example',
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->postJson('/api/v1/account/bootstrap-organisation', [
+                'name' => 'Different Typed Name',
+                'billing_email' => 'owner@prior.example',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.company.id', (string) $existing->id);
+
+        $user->refresh();
+        /** @phpstan-ignore-next-line */
+        $this->assertSame((string) $existing->id, (string) $user->company_id);
+        $this->assertSame(1, Company::query()->where('billing_email', 'owner@prior.example')->count());
     }
 
     #[Test]

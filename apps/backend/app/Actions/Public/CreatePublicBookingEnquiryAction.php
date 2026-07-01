@@ -12,6 +12,7 @@ use App\Models\CompanyLocation;
 use App\Models\Contact;
 use App\Models\SubscriptionPlan;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Crm\CompanyLeadResolver;
 use App\Services\Notifications\BookingEmailService;
 use App\Services\Notifications\InAppNotificationDispatcher;
 use Carbon\Carbon;
@@ -24,6 +25,7 @@ final class CreatePublicBookingEnquiryAction
     public function __construct(
         private readonly BookingEmailService $bookingEmails,
         private readonly InAppNotificationDispatcher $inAppNotifications,
+        private readonly CompanyLeadResolver $leadResolver,
     ) {}
 
     /**
@@ -87,6 +89,7 @@ TXT,
         if ($booking instanceof Booking) {
             $booking->load(['company:id,name,city', 'location:id,city,line_one', 'contact']);
             $this->bookingEmails->sendBookingRequested($booking);
+            $this->bookingEmails->sendBookingEnquiryAccountInvite($booking);
             $this->inAppNotifications->notifyStaffNewBooking($booking);
         }
 
@@ -98,22 +101,9 @@ TXT,
 
     private function resolveOrCreateCompany(array $validated, string $emailNorm): Company
     {
-        /** @phpstan-ignore-next-line */
-        $existing = Company::query()
-            ->whereRaw('LOWER(TRIM(billing_email)) = ?', [$emailNorm])
-            ->first();
-
+        $existing = $this->leadResolver->findByEmail($emailNorm);
         if ($existing instanceof Company) {
             return $existing;
-        }
-
-        /** @phpstan-ignore-next-line */
-        $byContact = Company::query()
-            ->whereHas('contacts', static fn ($q): mixed => $q->whereRaw('LOWER(TRIM(email)) = ?', [$emailNorm]))
-            ->first();
-
-        if ($byContact instanceof Company) {
-            return $byContact;
         }
 
         /** @phpstan-ignore-next-line */

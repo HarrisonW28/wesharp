@@ -33,4 +33,9 @@ final class CustomerPortalUrls
     {
         return self::base().'/account/subscription';
     }
+
+    public static function onboarding(): string
+    {
+        return self::base().'/account/onboarding';
+    }
 }

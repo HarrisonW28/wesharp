@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
+import { safeReturnTo } from "@/lib/safe-return-to";
 
 type BackendHealthReport = {
   ok: boolean;
@@ -49,7 +50,9 @@ export function AuthContinueClient() {
           ? "/admin/dashboard"
           : u.company_id
             ? "/account/dashboard"
-            : "/venue-pending";
+            : safeReturnTo
+              ? `/venue-pending?returnTo=${encodeURIComponent(safeReturnTo)}`
+              : "/venue-pending";
 
     void router.replace(target);
   }, [data?.data?.user, fetchStatus, isLoaded, router, searchParams, status, userId]);

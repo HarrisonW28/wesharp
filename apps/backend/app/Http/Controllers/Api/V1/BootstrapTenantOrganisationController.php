@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\BootstrapTenantOrganisationRequest;
 use App\Models\Company;
 use App\Models\User;
 use App\Services\Audit\AuditRecorder;
+use App\Services\Crm\CompanyLeadResolver;
 use App\Support\ApiResponses;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,10 @@ use Illuminate\Support\Str;
 
 final class BootstrapTenantOrganisationController extends Controller
 {
+    public function __construct(
+        private readonly CompanyLeadResolver $leadResolver,
+    ) {}
+
     /** First portal sign-in when no Laravel company binding exists yet. */
     public function store(BootstrapTenantOrganisationRequest $request): JsonResponse
     {
@@ -94,6 +99,30 @@ final class BootstrapTenantOrganisationController extends Controller
                 $city = isset($validated['city']) ? trim((string) $validated['city']) : '';
                 /** @phpstan-ignore-next-line */
                 $phone = isset($validated['phone']) ? trim((string) $validated['phone']) : '';
+                $emailNorm = strtolower(trim((string) $billingEmail));
+
+                $existingLead = $this->leadResolver->findByEmail($emailNorm);
+
+                if ($existingLead instanceof Company) {
+                    /** @phpstan-ignore-next-line */
+                    $locked->company_id = $existingLead->id;
+                    /** @phpstan-ignore-next-line */
+                    $locked->save();
+
+                    AuditRecorder::record($locked, $existingLead, 'company.matched_existing_lead', [
+                        'via' => 'tenant_portal_bootstrap',
+                        /** @phpstan-ignore-next-line */
+                        'registration_type' => $registrationType,
+                    ], $request);
+
+                    AuditRecorder::record($locked, $locked->refresh(), 'user.company_attached_via_portal', [
+                        /** @phpstan-ignore-next-line */
+                        'company_id' => (string) $existingLead->id,
+                        'matched_existing_lead' => true,
+                    ], $request);
+
+                    return $existingLead;
+                }
 
                 $companyModel = Company::query()->create([
                     /** @phpstan-ignore-next-line */

@@ -9,6 +9,7 @@ use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Services\Payments\HostedCheckoutAvailability;
 use App\Services\Payments\StripeCheckoutSessionClient;
+use App\Services\Subscriptions\StripeSubscriptionCheckoutAttemptService;
 use App\Support\Stripe\ResolvedStripeConfig;
 use App\Support\Stripe\StripeCheckoutEnvironmentGuard;
 use Stripe\Exception\ApiErrorException;
@@ -21,6 +22,7 @@ final class StripeSubscriptionCheckoutService
     public function __construct(
         private readonly StripeCheckoutSessionClient $checkoutSessions,
         private readonly ResolvedStripeConfig $stripe,
+        private readonly StripeSubscriptionCheckoutAttemptService $checkoutAttempts,
     ) {}
 
     public function createCheckoutSession(Company $company, SubscriptionPlan $plan, User $user): HostedCheckoutAvailability
@@ -87,6 +89,19 @@ final class StripeSubscriptionCheckoutService
         $url = $session->url ?? null;
         if (! is_string($url) || $url === '') {
             return new HostedCheckoutAvailability(false, 'Stripe returned an incomplete checkout session.', null);
+        }
+
+        $sessionId = is_string($session->id ?? null) ? (string) $session->id : '';
+        $expiresAt = is_int($session->expires_at ?? null) ? (int) $session->expires_at : null;
+        $customerEmail = is_string($user->email) ? trim($user->email) : null;
+        if ($sessionId !== '') {
+            $this->checkoutAttempts->recordPendingForSession(
+                $company,
+                $plan,
+                $sessionId,
+                $expiresAt,
+                $customerEmail,
+            );
         }
 
         return new HostedCheckoutAvailability(true, null, $url);
