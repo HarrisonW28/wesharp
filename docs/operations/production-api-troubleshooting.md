@@ -46,7 +46,7 @@ done
 | --- | --- | --- | --- |
 | `www.wesharp.co.uk` | Vercel | Valid Let’s Encrypt for `www.wesharp.co.uk` | Secure padlock |
 | `wesharp.co.uk` | Vercel | Valid Let’s Encrypt for `wesharp.co.uk` | Secure padlock |
-| `api.wesharp.co.uk` | Plesk `217.154.54.237` | **Wrong** — serves `*.gigastudios.info` | **“Connection not private”** |
+| `api.wesharp.co.uk` | Plesk `217.154.54.237` | Valid for `api` + `www.api` (after Plesk fix) | Secure padlock |
 | `mail.wesharp.co.uk` | Plesk | **Wrong** — serves `giganode.co.uk` | **“Connection not private”** |
 | `webmail.wesharp.co.uk` | Plesk | Valid for `mail` + `webmail` | Secure padlock |
 
@@ -177,3 +177,39 @@ If the browser **reaches** the API but `/api/v1/me` returns **401**:
 | Vercel `NEXT_PUBLIC_API_ORIGIN=https://api.wesharp.co.uk` + redeploy | ☐ |
 | Clerk prod keys on API + frontend | ☐ |
 | Sign-in → `/auth/continue` → dashboard | ☐ |
+
+---
+
+## 5. API works but Vercel (`www`) does not
+
+**Symptom:** `https://api.wesharp.co.uk/api/health` is fine, but `https://www.wesharp.co.uk` shows **Not secure**, a **Vercel Security Checkpoint**, blank page, or never loads.
+
+**Cause A — `www` DNS points at Plesk (most common after fixing API DNS):**
+
+The marketing site lives on **Vercel**, not Plesk. Only **`api`** / **`www.api`** / mail hosts use Plesk.
+
+**Namecheap Advanced DNS should look like:**
+
+| Type | Host | Value |
+| --- | --- | --- |
+| **A** | `@` | `216.198.79.1` |
+| **CNAME** | `www` | *(copy exact target from Vercel → Project → Settings → Domains)* |
+| **A** | `api` | `217.154.54.237` |
+| **A** | `www.api` | `217.154.54.237` |
+
+**Delete** any `www` **A** record, URL Redirect, or `@` **A** pointing to `217.154.54.237`.
+
+Verify on your PC: `nslookup www.wesharp.co.uk` must **not** return `217.154.54.237`.
+
+**Cause B — Vercel Firewall challenge (HTTP 429 / “Verifying your browser”):**
+
+If DNS is correct but the site shows a Vercel checkpoint instead of WeSharp:
+
+1. Vercel → your project → **Firewall**
+2. **Disable Attack Challenge Mode** (⋯ menu top-right)
+3. If it persists >1 hour: **Pause System Mitigations** (24h) — Pro/Enterprise only
+4. **Redeploy** production after DNS/env changes
+
+**Cause C — stale Vercel env (sign-in works on API tab but app still fails):**
+
+Set `NEXT_PUBLIC_API_ORIGIN=https://api.wesharp.co.uk` in Vercel Production env and **Redeploy** (build-time variable).
