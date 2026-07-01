@@ -31,28 +31,18 @@ describe("subscription-checkout-state", () => {
     meFetching: false,
     profileReady: true,
     companyId: null,
-    setupComplete: false,
     hasCheckoutError: false,
   };
 
-  it("defaults subscribe bootstrap to sole trader", () => {
-    expect(defaultBootstrapRegistrationType(null)).toBe("sole_customer");
-    expect(defaultBootstrapRegistrationType("sole")).toBe("sole_customer");
-    expect(defaultBootstrapRegistrationType("business")).toBe("business");
+  it("defaults bootstrap registration type to business", () => {
+    expect(defaultBootstrapRegistrationType(null)).toBe("business");
     expect(defaultBootstrapRegistrationType("venue")).toBe("business");
+    expect(defaultBootstrapRegistrationType("sole")).toBe("sole_customer");
+    expect(defaultBootstrapRegistrationType("individual")).toBe("sole_customer");
   });
 
-  it("shows organisation step for signed-in user without company", () => {
+  it("shows organisation redirect for signed-in user without company", () => {
     expect(subscriptionCheckoutPhase(base)).toBe("needs-organisation");
-  });
-
-  it("shows linking spinner after bootstrap until company_id arrives", () => {
-    expect(
-      subscriptionCheckoutPhase({
-        ...base,
-        setupComplete: true,
-      }),
-    ).toBe("linking-profile");
   });
 
   it("starts checkout when company is linked", () => {

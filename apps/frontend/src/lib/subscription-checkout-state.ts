@@ -1,7 +1,6 @@
 export type SubscriptionCheckoutPhase =
   | "auth-loading"
   | "profile-loading"
-  | "linking-profile"
   | "needs-organisation"
   | "starting-checkout"
   | "checkout-error";
@@ -13,7 +12,6 @@ type PhaseInput = {
   meFetching: boolean;
   profileReady: boolean;
   companyId: string | null;
-  setupComplete: boolean;
   hasCheckoutError: boolean;
 };
 
@@ -27,11 +25,7 @@ export function subscriptionCheckoutPhase(input: PhaseInput): SubscriptionChecko
     return "profile-loading";
   }
 
-  if (input.setupComplete && !input.companyId) {
-    return "linking-profile";
-  }
-
-  if (input.profileReady && !input.companyId && !input.setupComplete) {
+  if (input.profileReady && !input.companyId) {
     return "needs-organisation";
   }
 
@@ -44,15 +38,12 @@ export function subscriptionCheckoutPhase(input: PhaseInput): SubscriptionChecko
 
 export type BootstrapRegistrationType = "business" | "sole_customer";
 
-/** Subscribe checkout defaults to sole trader — most self-serve sign-ups are individuals. */
+/** Matches venue-pending onboarding — business unless the link explicitly selects individual. */
 export function defaultBootstrapRegistrationType(
   profileQuery: string | null | undefined,
 ): BootstrapRegistrationType {
   if (profileQuery === "sole" || profileQuery === "individual") {
     return "sole_customer";
   }
-  if (profileQuery === "business" || profileQuery === "venue") {
-    return "business";
-  }
-  return "sole_customer";
+  return "business";
 }

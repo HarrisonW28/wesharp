@@ -7,8 +7,6 @@ import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
-import { isSubscriptionCheckoutPath } from "@/lib/subscription-checkout-path";
-
 type BackendHealthReport = {
   ok: boolean;
   apiOrigin: string;
@@ -43,8 +41,6 @@ export function AuthContinueClient() {
     const safeReturnTo =
       returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : null;
 
-    const subscribeReturn = isSubscriptionCheckoutPath(safeReturnTo);
-
     const target =
       safeReturnTo && u.company_id
         ? safeReturnTo
@@ -52,11 +48,9 @@ export function AuthContinueClient() {
           ? "/admin/dashboard"
           : u.company_id
             ? "/account/dashboard"
-            : subscribeReturn && safeReturnTo
-              ? safeReturnTo
-              : safeReturnTo
-                ? `/venue-pending?returnTo=${encodeURIComponent(safeReturnTo)}`
-                : "/venue-pending";
+            : safeReturnTo
+              ? `/venue-pending?returnTo=${encodeURIComponent(safeReturnTo)}`
+              : "/venue-pending";
 
     void router.replace(target);
   }, [data?.data?.user, fetchStatus, isLoaded, router, searchParams, status, userId]);
