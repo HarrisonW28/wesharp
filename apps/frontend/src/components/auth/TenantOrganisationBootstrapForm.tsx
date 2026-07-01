@@ -11,8 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiOrigin } from "@/lib/env";
 import { cn } from "@/lib/utils";
+import type { BootstrapRegistrationType } from "@/lib/subscription-checkout-state";
 
-type RegistrationType = "business" | "sole_customer";
+type RegistrationType = BootstrapRegistrationType;
 
 type BootstrapSuccessPayload = {
   success: boolean;
@@ -57,6 +58,7 @@ export type TenantOrganisationBootstrapFormProps = {
   onSuccess?: () => void | Promise<void>;
   submitLabel?: string;
   showAlternateSignIn?: boolean;
+  defaultRegistrationType?: RegistrationType;
 };
 
 /** Business / sole-trader profile step before tenant portal or Stripe checkout. */
@@ -65,11 +67,12 @@ export function TenantOrganisationBootstrapForm({
   onSuccess,
   submitLabel,
   showAlternateSignIn = true,
+  defaultRegistrationType = "business",
 }: TenantOrganisationBootstrapFormProps) {
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
   const { user } = useUser();
-  const [registrationType, setRegistrationType] = useState<RegistrationType>("business");
+  const [registrationType, setRegistrationType] = useState<RegistrationType>(defaultRegistrationType);
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");

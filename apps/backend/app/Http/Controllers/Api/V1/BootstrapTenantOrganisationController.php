@@ -104,6 +104,14 @@ final class BootstrapTenantOrganisationController extends Controller
                 $existingLead = $this->leadResolver->findByEmail($emailNorm);
 
                 if ($existingLead instanceof Company) {
+                    if ($isSole && $existingLead->company_status === CompanyStatus::Lead) {
+                        $existingLead->is_sole_customer = true;
+                        if ($trimName !== '') {
+                            $existingLead->name = $trimName;
+                        }
+                        $existingLead->save();
+                    }
+
                     /** @phpstan-ignore-next-line */
                     $locked->company_id = $existingLead->id;
                     /** @phpstan-ignore-next-line */

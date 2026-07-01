@@ -7,7 +7,6 @@ import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useBackendMe } from "@/hooks/use-backend-me";
-import { safeReturnTo } from "@/lib/safe-return-to";
 import { isSubscriptionCheckoutPath } from "@/lib/subscription-checkout-path";
 
 type BackendHealthReport = {
@@ -53,7 +52,7 @@ export function AuthContinueClient() {
           ? "/admin/dashboard"
           : u.company_id
             ? "/account/dashboard"
-            : subscribeReturn
+            : subscribeReturn && safeReturnTo
               ? safeReturnTo
               : safeReturnTo
                 ? `/venue-pending?returnTo=${encodeURIComponent(safeReturnTo)}`

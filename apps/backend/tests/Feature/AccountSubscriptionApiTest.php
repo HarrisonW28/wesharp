@@ -101,4 +101,24 @@ final class AccountSubscriptionApiTest extends TestCase
         $this->assertSame('Plan description.', $json['data']['subscription']['summary']);
         $this->assertSame('billing@example.test', $json['data']['subscription']['billing_contact']['email']);
     }
+
+    public function test_stripe_checkout_session_forbidden_without_company(): void
+    {
+        $user = User::factory()->create([
+            'company_id' => null,
+            'role' => \App\Enums\UserRole::CustomerOwner,
+        ]);
+
+        $plan = SubscriptionPlan::factory()->create([
+            'stripe_price_id' => 'price_no_co',
+            'is_active' => true,
+            'show_on_public_site' => true,
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->postJson('/api/account/subscription/stripe-checkout-session', [
+                'subscription_plan_id' => $plan->id,
+            ])
+            ->assertForbidden();
+    }
 }

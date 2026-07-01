@@ -125,4 +125,39 @@ final class BootstrapTenantOrganisationApiTest extends TestCase
         /** @phpstan-ignore-next-line */
         $this->assertTrue(str_starts_with((string) $company->slug, 'solo-'));
     }
+
+    #[Test]
+    public function sole_trader_bootstrap_updates_existing_lead_profile(): void
+    {
+        $existing = Company::factory()->create([
+            'name' => 'Prior Enquiry Kitchen',
+            'billing_email' => 'solo@prior.example',
+            'company_status' => CompanyStatus::Lead,
+            'is_sole_customer' => false,
+        ]);
+
+        $user = User::factory()->create([
+            'role' => UserRole::CustomerOwner,
+            'status' => UserStatus::Active,
+            'company_id' => null,
+            'email' => 'solo@prior.example',
+        ]);
+
+        $this->withHeader('X-WeSharp-Test-User-Id', (string) $user->id)
+            ->postJson('/api/v1/account/bootstrap-organisation', [
+                'registration_type' => 'sole_customer',
+                'name' => 'Alex Chen trading as SharpEdge',
+                'billing_email' => 'solo@prior.example',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.company.id', (string) $existing->id)
+            ->assertJsonPath('data.company.is_sole_customer', true);
+
+        $existing->refresh();
+        $user->refresh();
+
+        $this->assertSame((string) $existing->id, (string) $user->company_id);
+        $this->assertTrue((bool) $existing->is_sole_customer);
+        $this->assertSame('Alex Chen trading as SharpEdge', $existing->name);
+    }
 }

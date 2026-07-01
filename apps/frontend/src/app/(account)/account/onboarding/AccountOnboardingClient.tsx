@@ -35,7 +35,9 @@ export function AccountOnboardingClient() {
         <ol className="space-y-4 text-sm">
           <li className="rounded-xl border bg-muted/20 p-4">
             <span className="font-medium text-foreground">1. Add a pickup address</span>
-            <p className="mt-1 text-muted-foreground">Save your kitchen or venue location under Locations.</p>
+            <p className="mt-1 text-muted-foreground">
+              Save your kitchen, venue, or home address under Locations.
+            </p>
             <Button asChild className="mt-3 rounded-lg" size="sm">
               <Link href="/account/locations">Add location</Link>
             </Button>
