@@ -15,7 +15,7 @@ export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange storageKey="wesharp-theme">
       <ClerkProvider
         publishableKey={publishableKey}
         signInFallbackRedirectUrl="/auth/continue"

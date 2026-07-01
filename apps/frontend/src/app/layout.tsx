@@ -25,6 +25,15 @@ export const metadata: Metadata = {
     template: "WeSharp · %s",
   },
   description: "Commercial knife sharpening operations for hospitality teams.",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0f172a" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+  ],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "WeSharp",
+  },
 };
 
 export default function RootLayout({
@@ -33,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-GB" suppressHydrationWarning>
+    <html lang="en-GB" className="dark" suppressHydrationWarning>
       <body className={`${sora.variable} ${geistMono.variable} min-h-screen font-sans font-medium`}>
         <Providers>{children}</Providers>
         <SpeedInsights />
