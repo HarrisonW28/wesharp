@@ -1,25 +1,11 @@
-"use client";
+import { Suspense } from "react";
 
-import Link from "next/link";
-import { SignIn } from "@clerk/nextjs";
-
-import { ClerkAuthWordmarkFooter } from "@/components/auth/ClerkAuthWordmarkFooter";
-import { PUBLIC_SITE_CONTENT_CONTAINER_CLASS } from "@/lib/public-site-layout";
-import { cn } from "@/lib/utils";
+import { LoginClient } from "./LoginClient";
 
 export default function LoginPage() {
   return (
-    <div className={cn(PUBLIC_SITE_CONTENT_CONTAINER_CLASS, "flex min-h-[70vh] flex-col items-center justify-center gap-8 py-16")}>
-      <div className="wesharp-clerk-auth-card w-full max-w-[28rem] [&_.cl-card]:shadow-md">
-        <SignIn routing="path" path="/login" signUpUrl="/register" forceRedirectUrl="/auth/continue" />
-        <ClerkAuthWordmarkFooter />
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Sign in to book collections, follow your orders, and manage invoices — all in one calm dashboard.
-      </p>
-      <Link className="text-sm text-muted-foreground underline" href="/">
-        Back home
-      </Link>
-    </div>
+    <Suspense fallback={null}>
+      <LoginClient />
+    </Suspense>
   );
 }

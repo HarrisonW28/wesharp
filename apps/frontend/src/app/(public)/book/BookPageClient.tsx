@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChevronLeft, Loader2 } from "lucide-react";
 
+import { BookingWizardStepNav } from "@/components/bookings/BookingWizardStepNav";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -487,39 +488,7 @@ export function BookPageClient({
           <p className="text-muted-foreground">{booking.page_lead}</p>
         </div>
 
-      <nav aria-label="Booking progress" className="rounded-xl border bg-muted/30 px-3 py-3 md:px-4">
-        <div className="space-y-1">
-          <p className="text-sm font-semibold text-foreground">Booking progress</p>
-          <p className="text-xs text-muted-foreground tabular-nums">
-            Step {step + 1}/{PUBLIC_BOOKING_WIZARD_STEP_COUNT}
-          </p>
-        </div>
-        <ol className="mt-4 flex flex-wrap items-center justify-center gap-2 md:justify-between md:gap-1">
-          {STEP_HEADINGS.map((s, i) => (
-            <li key={s.name} className="flex items-center gap-1">
-              <span
-                className={cn(
-                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
-                  i === step
-                    ? "bg-primary text-primary-foreground"
-                    : i < step
-                      ? "bg-emerald-600 text-white dark:bg-emerald-500"
-                      : "bg-muted text-muted-foreground",
-                )}
-                aria-current={i === step ? "step" : undefined}
-              >
-                {i < step ? "✓" : i + 1}
-              </span>
-              <span className="min-w-0 max-w-[7.25rem] truncate text-xs text-muted-foreground sm:max-w-[9rem] md:max-w-none">
-                {s.name}
-              </span>
-              {i < STEP_HEADINGS.length - 1 ? (
-                <span className="mx-0.5 hidden h-px w-3 shrink-0 bg-border md:mx-1 md:block lg:w-4" aria-hidden />
-              ) : null}
-            </li>
-          ))}
-        </ol>
-      </nav>
+      <BookingWizardStepNav steps={STEP_HEADINGS} currentStep={step} />
 
       {apiOrigin() === "" && (
         <Alert variant="destructive">

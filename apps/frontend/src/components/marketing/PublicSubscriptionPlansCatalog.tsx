@@ -14,6 +14,7 @@ import {
   type PublicSubscriptionPlan,
   publicBillingCadence,
 } from "@/lib/site-content/public-subscription-plans";
+import { subscriptionCheckoutPath } from "@/lib/subscription-checkout-path";
 import { cn } from "@/lib/utils";
 
 function allowanceLine(plan: PublicSubscriptionPlan): string | null {
@@ -26,13 +27,6 @@ function allowanceLine(plan: PublicSubscriptionPlan): string | null {
   }
   if (!parts.length) return null;
   return `${parts.join(" · ")} included per period`;
-}
-
-function bookEnquiryHrefForPlan(planName: string): string {
-  const p = new URLSearchParams();
-  p.set("programme", "subscription");
-  p.set("plan_name", planName);
-  return `/book?${p.toString()}`;
 }
 
 const BESPOKE_BOOK_HREF = "/book?programme=subscription&custom_plan=1";
@@ -149,7 +143,7 @@ export function PublicSubscriptionPlansCatalog(props: Props) {
                     ? `Overage from ${plan.overage_price_amount_minor} ${plan.currency} per knife beyond allowance`
                     : null;
               const highlights = plan.public_highlights ?? [];
-              const cta = (plan.public_cta_label ?? "").trim() || "Choose plan";
+              const cta = (plan.public_cta_label ?? "").trim() || "Subscribe";
 
               return (
                 <Card
@@ -186,7 +180,7 @@ export function PublicSubscriptionPlansCatalog(props: Props) {
                   </CardContent>
                   <CardFooter className="mt-auto flex flex-col items-stretch gap-2 border-t pt-4 sm:flex-row sm:justify-end">
                     <Button asChild className="rounded-lg">
-                      <Link href={bookEnquiryHrefForPlan(plan.name)}>{cta}</Link>
+                      <Link href={subscriptionCheckoutPath(plan.id)}>{cta}</Link>
                     </Button>
                   </CardFooter>
                 </Card>
