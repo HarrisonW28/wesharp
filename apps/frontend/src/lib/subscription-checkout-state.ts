@@ -21,11 +21,11 @@ export function subscriptionCheckoutPhase(input: PhaseInput): SubscriptionChecko
     return "auth-loading";
   }
 
-  if (input.meStatus === "pending" || (input.meFetching && !input.profileReady)) {
+  if (!input.profileReady || input.meFetching) {
     return "profile-loading";
   }
 
-  if (input.profileReady && !input.companyId) {
+  if (!input.companyId) {
     return "needs-organisation";
   }
 

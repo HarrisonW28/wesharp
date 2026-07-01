@@ -27,7 +27,7 @@ export function useBackendMe() {
 
   return useQuery({
     enabled: Boolean(isLoaded && userId),
-    queryKey: ["backend-me"],
+    queryKey: ["backend-me", userId],
     staleTime: 60_000,
     queryFn: async (): Promise<BackendMePayload> => {
       const origin = apiOrigin();

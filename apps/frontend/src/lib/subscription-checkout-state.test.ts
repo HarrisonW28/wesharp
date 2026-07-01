@@ -45,6 +45,16 @@ describe("subscription-checkout-state", () => {
     expect(subscriptionCheckoutPhase(base)).toBe("needs-organisation");
   });
 
+  it("waits for backend-me to settle before checkout", () => {
+    expect(
+      subscriptionCheckoutPhase({
+        ...base,
+        companyId: "co_1",
+        meFetching: true,
+      }),
+    ).toBe("profile-loading");
+  });
+
   it("starts checkout when company is linked", () => {
     expect(
       subscriptionCheckoutPhase({

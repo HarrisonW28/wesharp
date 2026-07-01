@@ -20,7 +20,7 @@ export function SubscribeCheckoutClient() {
   const { planId } = useParams<{ planId: string }>();
   const router = useRouter();
   const { isLoaded, userId } = useAuth();
-  const { data: meData, status: meStatus, isFetching: meFetching } = useBackendMe();
+  const { data: meData, status: meStatus, isFetching: meFetching, refetch: refetchMe } = useBackendMe();
   const api = useAccountApi();
   const startedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +61,14 @@ export function SubscribeCheckoutClient() {
           return;
         }
         if (res.status === 403) {
-          redirectToProfileSetup();
+          const refreshed = await refetchMe();
+          const linkedCompanyId = refreshed.data?.data?.user?.company_id ?? null;
+          if (!linkedCompanyId) {
+            redirectToProfileSetup();
+            return;
+          }
+          setError(res.message || "Checkout is not available for this account or plan.");
+          startedRef.current = false;
           return;
         }
         setError(res.message || "Could not start subscription checkout.");
@@ -88,7 +95,7 @@ export function SubscribeCheckoutClient() {
       setError("Network error — could not reach the payment service.");
       startedRef.current = false;
     }
-  }, [api, planId, redirectToProfileSetup, returnPath, router]);
+  }, [api, planId, redirectToProfileSetup, refetchMe, returnPath, router]);
 
   useEffect(() => {
     if (!isLoaded || !planId) {
@@ -105,11 +112,7 @@ export function SubscribeCheckoutClient() {
       return;
     }
 
-    if (phase === "profile-loading" || phase === "checkout-error") {
-      return;
-    }
-
-    if (!companyId) {
+    if (phase !== "starting-checkout") {
       return;
     }
 
@@ -119,7 +122,7 @@ export function SubscribeCheckoutClient() {
     startedRef.current = true;
 
     void startCheckout();
-  }, [companyId, isLoaded, phase, planId, redirectToProfileSetup, router, startCheckout, userId]);
+  }, [isLoaded, phase, planId, redirectToProfileSetup, router, startCheckout, userId]);
 
   if (phase === "auth-loading" || phase === "profile-loading" || phase === "needs-organisation") {
     return (
