@@ -2,6 +2,32 @@
 
 When sign-in succeeds in Clerk but `/auth/continue` shows **“We Sharp could not attach your Laravel profile (Failed to fetch…)”**, the browser never got a valid response from **`${NEXT_PUBLIC_API_ORIGIN}/api/v1/me`**.
 
+## The weird part — one server breaks multiple hostnames
+
+Your Plesk box at **`217.154.54.237`** is the default SSL host for **other people's domains**. When **any** `wesharp.co.uk` hostname hits that IP, the browser gets the **wrong certificate**:
+
+| Hostname (SNI) | Cert Plesk serves | Browser |
+| --- | --- | --- |
+| `api.wesharp.co.uk` | `*.gigastudios.info` | Not secure |
+| `www.wesharp.co.uk` | `giganode.co.uk` | Not secure |
+| `wesharp.co.uk` | `giganode.co.uk` | Not secure |
+| `mail.wesharp.co.uk` | `giganode.co.uk` | Not secure |
+
+So **`api` is always broken today** (DNS → Plesk). **`www` looks broken too** if traffic ever reaches Plesk instead of Vercel — wrong DNS, stale cache, an extra **`www` A record** in Namecheap, or opening the site from the Plesk panel.
+
+**30-second check on your PC** (Windows CMD or Mac Terminal):
+
+```bash
+nslookup www.wesharp.co.uk
+nslookup api.wesharp.co.uk
+```
+
+| Result | Meaning |
+| --- | --- |
+| `www` → `216.198.79.x` / `64.29.17.x` | DNS OK for Vercel; if browser still warns, try incognito or another network |
+| `www` → **`217.154.54.237`** | **Namecheap DNS wrong** — remove `www` **A** record; keep only **CNAME** → `…vercel-dns-017.com` |
+| `api` → **`217.154.54.237`** | Expected — fix SSL in Plesk (below) |
+
 ## Which host is actually broken?
 
 Run from any machine:
